@@ -28,3 +28,6 @@ Thumbs.db
 # Ignore temporary files
 *.tmp
 *.temp
+
+# Ignore test files
+backend/test_fixes.py
