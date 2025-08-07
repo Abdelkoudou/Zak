@@ -33,6 +33,8 @@ def get_questions(
             course=question.course,
             number=question.number,
             question_text=question.question_text,
+            created_at=question.created_at,
+            updated_at=question.updated_at,
             answers=question.answers,
             correct_answers=question.correct_answers if current_user.is_paid else None
         )
@@ -63,6 +65,8 @@ def get_question(
         course=question.course,
         number=question.number,
         question_text=question.question_text,
+        created_at=question.created_at,
+        updated_at=question.updated_at,
         answers=question.answers,
         correct_answers=question.correct_answers if current_user.is_paid else None
     )
