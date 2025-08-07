@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedStudy - Design Assets Demo</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .assets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .asset-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .asset-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .asset-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .asset-preview {
+            width: 100%;
+            height: 200px;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .medical-diagram {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .ecg-trace {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .xray-image {
+            background: linear-gradient(135deg, #45b7d1, #96c93d);
+            color: white;
+        }
+
+        .anatomy-model {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: white;
+        }
+
+        .lab-results {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+        }
+
+        .pathology-slide {
+            background: linear-gradient(135deg, #43e97b, #38f9d7);
+            color: white;
+        }
+
+        .asset-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .asset-description {
+            color: #7f8c8d;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-showcase {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-title {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .feature-name {
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-desc {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .color-palette {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .palette-title {
+            color: #2c3e50;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .colors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .color-card {
+            text-align: center;
+        }
+
+        .color-swatch {
+            width: 100%;
+            height: 100px;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.25rem;
+        }
+
+        .color-code {
+            color: #7f8c8d;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .mockup-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .mockup-title {
+            color: #2c3e50;
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .mockup-card {
+            border: 3px solid #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .mockup-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .mockup-preview {
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+            font-weight: bold;
+            position: relative;
+        }
+
+        .mockup-info {
+            padding: 1.5rem;
+            background: white;
+        }
+
+        .mockup-name {
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .mockup-desc {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .desktop-mockup {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .mobile-mockup {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .tablet-mockup {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            body {
+                padding: 1rem;
+            }
+            
+            .assets-grid,
+            .features-grid,
+            .colors-grid,
+            .mockup-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🩺 MedStudy Design Assets</h1>
+            <p>Comprehensive visual design system for medical student education</p>
+        </div>
+
+        <!-- Medical Assets -->
+        <div class="assets-grid">
+            <div class="asset-card">
+                <h3 class="asset-title">Medical Diagrams</h3>
+                <div class="asset-preview medical-diagram">
+                    <div>
+                        <i class="fas fa-heart asset-icon"></i>
+                        <div>Anatomical Illustrations</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    High-quality medical diagrams showing anatomical structures, systems, and pathological conditions for visual learning.
+                </p>
+            </div>
+
+            <div class="asset-card">
+                <h3 class="asset-title">ECG Traces</h3>
+                <div class="asset-preview ecg-trace">
+                    <div>
+                        <i class="fas fa-heartbeat asset-icon"></i>
+                        <div>Electrocardiograms</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    Interactive ECG readings with normal and pathological patterns for cardiology study and interpretation practice.
+                </p>
+            </div>
+
+            <div class="asset-card">
+                <h3 class="asset-title">X-ray Images</h3>
+                <div class="asset-preview xray-image">
+                    <div>
+                        <i class="fas fa-x-ray asset-icon"></i>
+                        <div>Radiological Studies</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    Chest X-rays, bone fractures, and other radiological studies for medical imaging interpretation skills.
+                </p>
+            </div>
+
+            <div class="asset-card">
+                <h3 class="asset-title">3D Anatomy</h3>
+                <div class="asset-preview anatomy-model">
+                    <div>
+                        <i class="fas fa-cube asset-icon"></i>
+                        <div>Interactive Models</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    3D anatomical models with interactive features for comprehensive understanding of human body structures.
+                </p>
+            </div>
+
+            <div class="asset-card">
+                <h3 class="asset-title">Lab Results</h3>
+                <div class="asset-preview lab-results">
+                    <div>
+                        <i class="fas fa-flask asset-icon"></i>
+                        <div>Laboratory Data</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    Blood work, urinalysis, and other laboratory test results for clinical correlation and interpretation.
+                </p>
+            </div>
+
+            <div class="asset-card">
+                <h3 class="asset-title">Pathology Slides</h3>
+                <div class="asset-preview pathology-slide">
+                    <div>
+                        <i class="fas fa-microscope asset-icon"></i>
+                        <div>Histological Images</div>
+                    </div>
+                </div>
+                <p class="asset-description">
+                    Microscopic images of tissues, cells, and pathogens for histopathology and microbiology studies.
+                </p>
+            </div>
+        </div>
+
+        <!-- Features Showcase -->
+        <div class="feature-showcase">
+            <h2 class="feature-title">🎯 Key Design Features</h2>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h4 class="feature-name">Responsive Design</h4>
+                    <p class="feature-desc">Optimized for all devices - desktop, tablet, and mobile</p>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h4 class="feature-name">Medical Theme</h4>
+                    <p class="feature-desc">Professional medical color scheme and iconography</p>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h4 class="feature-name">Progress Tracking</h4>
+                    <p class="feature-desc">Visual analytics and performance monitoring</p>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <h4 class="feature-name">Gamification</h4>
+                    <p class="feature-desc">Achievement system and study streaks</p>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        <i class="fas fa-universal-access"></i>
+                    </div>
+                    <h4 class="feature-name">Accessibility</h4>
+                    <p class="feature-desc">WCAG compliant with keyboard navigation</p>
+                </div>
+
+                <div class="feature-item">
+                    <div class="feature-icon" style="background: linear-gradient(135deg, #1abc9c, #16a085);">
+                        <i class="fas fa-lightning-bolt"></i>
+                    </div>
+                    <h4 class="feature-name">Fast Performance</h4>
+                    <p class="feature-desc">Optimized loading and smooth interactions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="color-palette">
+            <h2 class="palette-title">🎨 Medical Color Palette</h2>
+            <div class="colors-grid">
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #3498db;"></div>
+                    <div class="color-name">Medical Blue</div>
+                    <div class="color-code">#3498db</div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #2ecc71;"></div>
+                    <div class="color-name">Health Green</div>
+                    <div class="color-code">#2ecc71</div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #e74c3c;"></div>
+                    <div class="color-name">Alert Red</div>
+                    <div class="color-code">#e74c3c</div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #f39c12;"></div>
+                    <div class="color-name">Warning Orange</div>
+                    <div class="color-code">#f39c12</div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #9b59b6;"></div>
+                    <div class="color-name">Science Purple</div>
+                    <div class="color-code">#9b59b6</div>
+                </div>
+
+                <div class="color-card">
+                    <div class="color-swatch" style="background: #2c3e50;"></div>
+                    <div class="color-name">Professional Dark</div>
+                    <div class="color-code">#2c3e50</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Mockups -->
+        <div class="mockup-section">
+            <h2 class="mockup-title">📱 Responsive Mockups</h2>
+            <div class="mockup-grid">
+                <div class="mockup-card">
+                    <div class="mockup-preview desktop-mockup">
+                        <div>
+                            <i class="fas fa-desktop" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <div>Desktop Experience</div>
+                        </div>
+                    </div>
+                    <div class="mockup-info">
+                        <h4 class="mockup-name">Desktop Dashboard</h4>
+                        <p class="mockup-desc">Full-featured interface with multi-column layout and advanced analytics</p>
+                    </div>
+                </div>
+
+                <div class="mockup-card">
+                    <div class="mockup-preview tablet-mockup">
+                        <div>
+                            <i class="fas fa-tablet-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <div>Tablet Interface</div>
+                        </div>
+                    </div>
+                    <div class="mockup-info">
+                        <h4 class="mockup-name">Tablet Adaptation</h4>
+                        <p class="mockup-desc">Touch-optimized interface perfect for bedside studying</p>
+                    </div>
+                </div>
+
+                <div class="mockup-card">
+                    <div class="mockup-preview mobile-mockup">
+                        <div>
+                            <i class="fas fa-mobile-alt" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <div>Mobile App</div>
+                        </div>
+                    </div>
+                    <div class="mockup-info">
+                        <h4 class="mockup-name">Mobile First</h4>
+                        <p class="mockup-desc">Streamlined mobile experience for on-the-go studying</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate color swatches on hover
+            const swatches = document.querySelectorAll('.color-swatch');
+            swatches.forEach(swatch => {
+                swatch.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.1) rotate(5deg)';
+                    this.style.transition = 'all 0.3s ease';
+                });
+                
+                swatch.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1) rotate(0deg)';
+                });
+            });
+
+            // Add click to copy functionality for color codes
+            const colorCodes = document.querySelectorAll('.color-code');
+            colorCodes.forEach(code => {
+                code.addEventListener('click', function() {
+                    navigator.clipboard.writeText(this.textContent).then(() => {
+                        const originalText = this.textContent;
+                        this.textContent = 'Copied!';
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                        }, 1000);
+                    });
+                });
+                
+                code.style.cursor = 'pointer';
+                code.title = 'Click to copy';
+            });
+        });
+    </script>
+</body>
+</html>
