@@ -32,7 +32,7 @@ def get_user(
     Get a specific user by ID.
     Users can only access their own profile unless they're manager or admin.
     """
-    if current_user.id != user_id and current_user.user_type.value not in ["admin", "manager"]:
+    if current_user.id != user_id and current_user.user_type.value not in ["admin", "manager", "owner"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
@@ -59,17 +59,17 @@ def update_user(
     Managers and admins can update payment status and user types.
     """
     # Check if user is updating their own profile or has admin/manager privileges
-    if current_user.id != user_id and current_user.user_type.value not in ["admin", "manager"]:
+    if current_user.id != user_id and current_user.user_type.value not in ["admin", "manager", "owner"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions"
         )
     
-    # Only admins can change user types
-    if user_update.user_type is not None and current_user.user_type.value != "admin":
+    # Only admins and owners can change user types
+    if user_update.user_type is not None and current_user.user_type.value not in ["admin", "owner"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admins can change user types"
+            detail="Only admins and owners can change user types"
         )
     
     user = crud.update_user(db=db, user_id=user_id, user_update=user_update)
