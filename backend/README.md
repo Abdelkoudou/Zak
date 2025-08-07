@@ -5,7 +5,7 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 ## Features
 
 - **Authentication**: User registration, login, and JWT token-based authentication
-- **Role-Based Access Control**: Admin, Manager, and Student user types
+- **Role-Based Access Control**: Owner, Admin, Manager, and Student user types
 - **Question Management**: CRUD operations for MCQ questions with answers (Manager/Admin only)
 - **Access Control**: Only paid users can access questions
 - **Admin Dashboard**: Comprehensive statistics and user management
@@ -19,7 +19,7 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 - `email`: Unique email address
 - `username`: Unique username
 - `hashed_password`: Encrypted password
-- `user_type`: Enum (admin, manager, student)
+- `user_type`: Enum (owner, admin, manager, student)
 - `is_paid`: Boolean indicating payment status
 - `created_at`: Account creation timestamp
 - `updated_at`: Last update timestamp
@@ -82,6 +82,33 @@ The API will be available at `http://localhost:8000`
 Once the server is running, you can access:
 - **Interactive API docs**: `http://localhost:8000/docs`
 - **ReDoc documentation**: `http://localhost:8000/redoc`
+
+## New Owner Role
+
+The system now includes a special **OWNER** role with the following privileges:
+- Full access to all system features and endpoints
+- Bypasses payment requirements for accessing questions
+- Can modify their own role (unlike admin users)
+- Can delete their own account (unlike admin users)
+- Has all admin and manager permissions plus additional owner-only features
+
+### Pre-configured Owner Account
+- **Email**: doudous6666@gmail.com
+- **Username**: owner
+- **Password**: 123456789
+
+## Frontend Testing Interface
+
+A complete frontend testing interface is available at `/frontend/index.html` that allows you to:
+- Test all API endpoints with different user roles
+- Quick login as the owner account
+- Visually interact with all system features
+- View formatted API responses
+
+To use the frontend:
+1. Start the backend server: `python run.py`
+2. Serve the frontend: `cd frontend && python -m http.server 3000`
+3. Open `http://localhost:3000` in your browser
 
 ## API Endpoints
 

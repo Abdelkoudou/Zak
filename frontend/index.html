@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCQ Study App - API Testing Frontend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.danger {
+            background-color: #dc3545;
+        }
+        button.danger:hover {
+            background-color: #c82333;
+        }
+        .response {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .error {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .token-display {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .tab {
+            background-color: #e9ecef;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MCQ Study App - API Testing Frontend</h1>
+        <p>Test all the API endpoints with different user roles including the new <strong>OWNER</strong> role.</p>
+        
+        <div id="token-section">
+            <h3>Authentication Token</h3>
+            <div id="token-display" class="token-display" style="display: none;">
+                <strong>Current Token:</strong> <span id="current-token"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('auth')">Authentication</button>
+        <button class="tab" onclick="showTab('users')">Users</button>
+        <button class="tab" onclick="showTab('questions')">Questions</button>
+        <button class="tab" onclick="showTab('admin')">Admin</button>
+    </div>
+
+    <!-- Authentication Tab -->
+    <div id="auth" class="container tab-content active">
+        <h2>Authentication</h2>
+        
+        <h3>Register User</h3>
+        <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input type="email" id="register-email" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" placeholder="username">
+        </div>
+        <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" placeholder="password">
+        </div>
+        <button onclick="registerUser()">Register</button>
+        <div id="register-response" class="response" style="display: none;"></div>
+
+        <h3>Login</h3>
+        <div class="form-group">
+            <label for="login-username">Username:</label>
+            <input type="text" id="login-username" placeholder="owner" value="owner">
+        </div>
+        <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" placeholder="123456789" value="123456789">
+        </div>
+        <button onclick="login()">Login</button>
+        <button onclick="quickLoginOwner()">Quick Login as Owner</button>
+        <div id="login-response" class="response" style="display: none;"></div>
+
+        <h3>Get Current User</h3>
+        <button onclick="getCurrentUser()">Get My Profile</button>
+        <div id="me-response" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="users" class="container tab-content">
+        <h2>Users Management</h2>
+        
+        <h3>Get All Users</h3>
+        <button onclick="getAllUsers()">Get All Users</button>
+        <div id="users-response" class="response" style="display: none;"></div>
+
+        <h3>Get User by ID</h3>
+        <div class="form-group">
+            <label for="user-id">User ID:</label>
+            <input type="number" id="user-id" placeholder="1">
+        </div>
+        <button onclick="getUserById()">Get User</button>
+        <div id="user-response" class="response" style="display: none;"></div>
+
+        <h3>Update User</h3>
+        <div class="form-group">
+            <label for="update-user-id">User ID:</label>
+            <input type="number" id="update-user-id" placeholder="1">
+        </div>
+        <div class="form-group">
+            <label for="update-email">New Email (optional):</label>
+            <input type="email" id="update-email" placeholder="newemail@example.com">
+        </div>
+        <div class="form-group">
+            <label for="update-user-type">User Type (optional):</label>
+            <select id="update-user-type">
+                <option value="">-- Don't Change --</option>
+                <option value="owner">Owner</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="student">Student</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="update-is-paid">Paid Status (optional):</label>
+            <select id="update-is-paid">
+                <option value="">-- Don't Change --</option>
+                <option value="true">Paid</option>
+                <option value="false">Not Paid</option>
+            </select>
+        </div>
+        <button onclick="updateUser()">Update User</button>
+        <div id="update-user-response" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- Questions Tab -->
+    <div id="questions" class="container tab-content">
+        <h2>Questions Management</h2>
+        
+        <h3>Get All Questions</h3>
+        <div class="form-group">
+            <label for="questions-year">Filter by Year (optional):</label>
+            <input type="number" id="questions-year" placeholder="2023">
+        </div>
+        <div class="form-group">
+            <label for="questions-course">Filter by Course (optional):</label>
+            <input type="text" id="questions-course" placeholder="Mathematics">
+        </div>
+        <button onclick="getAllQuestions()">Get Questions</button>
+        <div id="questions-response" class="response" style="display: none;"></div>
+
+        <h3>Get Available Courses</h3>
+        <button onclick="getCourses()">Get Courses</button>
+        <div id="courses-response" class="response" style="display: none;"></div>
+
+        <h3>Get Available Years</h3>
+        <button onclick="getYears()">Get Years</button>
+        <div id="years-response" class="response" style="display: none;"></div>
+
+        <h3>Create Question</h3>
+        <div class="form-group">
+            <label for="create-year">Year:</label>
+            <input type="number" id="create-year" placeholder="2024">
+        </div>
+        <div class="form-group">
+            <label for="create-course">Course:</label>
+            <input type="text" id="create-course" placeholder="Mathematics">
+        </div>
+        <div class="form-group">
+            <label for="create-number">Question Number:</label>
+            <input type="number" id="create-number" placeholder="1">
+        </div>
+        <div class="form-group">
+            <label for="create-question">Question Text:</label>
+            <textarea id="create-question" rows="3" placeholder="What is 2 + 2?"></textarea>
+        </div>
+        <h4>Answers</h4>
+        <div class="form-group">
+            <label for="answer1">Answer 1:</label>
+            <input type="text" id="answer1" placeholder="Answer text">
+            <label><input type="checkbox" id="correct1"> Correct</label>
+        </div>
+        <div class="form-group">
+            <label for="answer2">Answer 2:</label>
+            <input type="text" id="answer2" placeholder="Answer text">
+            <label><input type="checkbox" id="correct2"> Correct</label>
+        </div>
+        <div class="form-group">
+            <label for="answer3">Answer 3:</label>
+            <input type="text" id="answer3" placeholder="Answer text">
+            <label><input type="checkbox" id="correct3"> Correct</label>
+        </div>
+        <div class="form-group">
+            <label for="answer4">Answer 4:</label>
+            <input type="text" id="answer4" placeholder="Answer text">
+            <label><input type="checkbox" id="correct4"> Correct</label>
+        </div>
+        <button onclick="createQuestion()">Create Question</button>
+        <div id="create-question-response" class="response" style="display: none;"></div>
+    </div>
+
+    <!-- Admin Tab -->
+    <div id="admin" class="container tab-content">
+        <h2>Admin Dashboard</h2>
+        
+        <h3>Dashboard Statistics</h3>
+        <button onclick="getDashboardStats()">Get Dashboard Stats</button>
+        <div id="dashboard-response" class="response" style="display: none;"></div>
+
+        <h3>Admin User Management</h3>
+        <button onclick="getAdminUsers()">Get All Users (Admin View)</button>
+        <div id="admin-users-response" class="response" style="display: none;"></div>
+
+        <h3>Update User Payment Status</h3>
+        <div class="form-group">
+            <label for="payment-user-id">User ID:</label>
+            <input type="number" id="payment-user-id" placeholder="1">
+        </div>
+        <div class="form-group">
+            <label for="payment-status">Payment Status:</label>
+            <select id="payment-status">
+                <option value="true">Paid</option>
+                <option value="false">Not Paid</option>
+            </select>
+        </div>
+        <button onclick="updatePaymentStatus()">Update Payment</button>
+        <div id="payment-response" class="response" style="display: none;"></div>
+
+        <h3>Update User Role</h3>
+        <div class="form-group">
+            <label for="role-user-id">User ID:</label>
+            <input type="number" id="role-user-id" placeholder="1">
+        </div>
+        <div class="form-group">
+            <label for="new-role">New Role:</label>
+            <select id="new-role">
+                <option value="owner">Owner</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="student">Student</option>
+            </select>
+        </div>
+        <button onclick="updateUserRole()">Update Role</button>
+        <div id="role-response" class="response" style="display: none;"></div>
+
+        <h3>Delete User</h3>
+        <div class="form-group">
+            <label for="delete-user-id">User ID:</label>
+            <input type="number" id="delete-user-id" placeholder="1">
+        </div>
+        <button class="danger" onclick="deleteUser()">Delete User</button>
+        <div id="delete-response" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let authToken = localStorage.getItem('authToken');
+
+        // Update token display
+        function updateTokenDisplay() {
+            const tokenDisplay = document.getElementById('token-display');
+            const tokenSpan = document.getElementById('current-token');
+            
+            if (authToken) {
+                tokenSpan.textContent = authToken;
+                tokenDisplay.style.display = 'block';
+            } else {
+                tokenDisplay.style.display = 'none';
+            }
+        }
+
+        // Initialize token display
+        updateTokenDisplay();
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const tabButtons = document.querySelectorAll('.tab');
+            tabButtons.forEach(button => button.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // API request helper
+        async function makeRequest(url, method = 'GET', data = null, requireAuth = true) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+
+            if (requireAuth && authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            const config = {
+                method,
+                headers
+            };
+
+            if (data) {
+                config.body = JSON.stringify(data);
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}${url}`, config);
+                const result = await response.text();
+                
+                let jsonResult;
+                try {
+                    jsonResult = JSON.parse(result);
+                } catch {
+                    jsonResult = result;
+                }
+
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: jsonResult
+                };
+            } catch (error) {
+                return {
+                    status: 0,
+                    ok: false,
+                    data: { error: error.message }
+                };
+            }
+        }
+
+        // Show response
+        function showResponse(elementId, response) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'response ' + (response.ok ? 'success' : 'error');
+            element.textContent = `Status: ${response.status}\n${JSON.stringify(response.data, null, 2)}`;
+        }
+
+        // Authentication functions
+        async function registerUser() {
+            const email = document.getElementById('register-email').value;
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+
+            const response = await makeRequest('/auth/register', 'POST', {
+                email, username, password
+            }, false);
+
+            showResponse('register-response', response);
+        }
+
+        async function login() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+
+            const response = await fetch(`${API_BASE}/auth/token`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            const apiResponse = {
+                status: response.status,
+                ok: response.ok,
+                data: result
+            };
+
+            if (response.ok && result.access_token) {
+                authToken = result.access_token;
+                localStorage.setItem('authToken', authToken);
+                updateTokenDisplay();
+            }
+
+            showResponse('login-response', apiResponse);
+        }
+
+        async function quickLoginOwner() {
+            document.getElementById('login-username').value = 'owner';
+            document.getElementById('login-password').value = '123456789';
+            await login();
+        }
+
+        async function getCurrentUser() {
+            const response = await makeRequest('/auth/me');
+            showResponse('me-response', response);
+        }
+
+        // Users functions
+        async function getAllUsers() {
+            const response = await makeRequest('/users/');
+            showResponse('users-response', response);
+        }
+
+        async function getUserById() {
+            const userId = document.getElementById('user-id').value;
+            const response = await makeRequest(`/users/${userId}`);
+            showResponse('user-response', response);
+        }
+
+        async function updateUser() {
+            const userId = document.getElementById('update-user-id').value;
+            const email = document.getElementById('update-email').value;
+            const userType = document.getElementById('update-user-type').value;
+            const isPaid = document.getElementById('update-is-paid').value;
+
+            const updateData = {};
+            if (email) updateData.email = email;
+            if (userType) updateData.user_type = userType;
+            if (isPaid) updateData.is_paid = isPaid === 'true';
+
+            const response = await makeRequest(`/users/${userId}`, 'PUT', updateData);
+            showResponse('update-user-response', response);
+        }
+
+        // Questions functions
+        async function getAllQuestions() {
+            const year = document.getElementById('questions-year').value;
+            const course = document.getElementById('questions-course').value;
+            
+            let url = '/questions/';
+            const params = new URLSearchParams();
+            if (year) params.append('year', year);
+            if (course) params.append('course', course);
+            if (params.toString()) url += '?' + params.toString();
+
+            const response = await makeRequest(url);
+            showResponse('questions-response', response);
+        }
+
+        async function getCourses() {
+            const response = await makeRequest('/questions/courses/list');
+            showResponse('courses-response', response);
+        }
+
+        async function getYears() {
+            const response = await makeRequest('/questions/years/list');
+            showResponse('years-response', response);
+        }
+
+        async function createQuestion() {
+            const questionData = {
+                year: parseInt(document.getElementById('create-year').value),
+                course: document.getElementById('create-course').value,
+                number: parseInt(document.getElementById('create-number').value),
+                question_text: document.getElementById('create-question').value,
+                answers: []
+            };
+
+            for (let i = 1; i <= 4; i++) {
+                const answerText = document.getElementById(`answer${i}`).value;
+                const isCorrect = document.getElementById(`correct${i}`).checked;
+                
+                if (answerText.trim()) {
+                    questionData.answers.push({
+                        answer_text: answerText,
+                        is_correct: isCorrect
+                    });
+                }
+            }
+
+            const response = await makeRequest('/questions/', 'POST', questionData);
+            showResponse('create-question-response', response);
+        }
+
+        // Admin functions
+        async function getDashboardStats() {
+            const response = await makeRequest('/admin/dashboard');
+            showResponse('dashboard-response', response);
+        }
+
+        async function getAdminUsers() {
+            const response = await makeRequest('/admin/users');
+            showResponse('admin-users-response', response);
+        }
+
+        async function updatePaymentStatus() {
+            const userId = document.getElementById('payment-user-id').value;
+            const isPaid = document.getElementById('payment-status').value === 'true';
+
+            const response = await makeRequest(`/admin/users/${userId}/payment?is_paid=${isPaid}`, 'PUT');
+            showResponse('payment-response', response);
+        }
+
+        async function updateUserRole() {
+            const userId = document.getElementById('role-user-id').value;
+            const userType = document.getElementById('new-role').value;
+
+            const response = await makeRequest(`/admin/users/${userId}/role?user_type=${userType}`, 'PUT');
+            showResponse('role-response', response);
+        }
+
+        async function deleteUser() {
+            const userId = document.getElementById('delete-user-id').value;
+            
+            if (!confirm(`Are you sure you want to delete user ${userId}?`)) {
+                return;
+            }
+
+            const response = await makeRequest(`/admin/users/${userId}`, 'DELETE');
+            showResponse('delete-response', response);
+        }
+    </script>
+</body>
+</html>

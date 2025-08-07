@@ -13,6 +13,7 @@ question_correct_answers = Table(
 )
 
 class UserType(str, enum.Enum):
+    OWNER = "owner"
     ADMIN = "admin"
     MANAGER = "manager"
     STUDENT = "student"

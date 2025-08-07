@@ -22,6 +22,7 @@ def get_dashboard_stats(
     # User statistics
     total_users = db.query(func.count(User.id)).scalar()
     paid_users = db.query(func.count(User.id)).filter(User.is_paid == True).scalar()
+    owner_users = db.query(func.count(User.id)).filter(User.user_type == UserType.OWNER).scalar()
     admin_users = db.query(func.count(User.id)).filter(User.user_type == UserType.ADMIN).scalar()
     manager_users = db.query(func.count(User.id)).filter(User.user_type == UserType.MANAGER).scalar()
     student_users = db.query(func.count(User.id)).filter(User.user_type == UserType.STUDENT).scalar()
@@ -43,6 +44,7 @@ def get_dashboard_stats(
             "total_users": total_users,
             "paid_users": paid_users,
             "unpaid_users": total_users - paid_users,
+            "owner_users": owner_users,
             "admin_users": admin_users,
             "manager_users": manager_users,
             "student_users": student_users
@@ -122,8 +124,8 @@ def update_user_role(
             detail="User not found"
         )
     
-    # Prevent admin from changing their own role
-    if user_id == current_user.id:
+    # Prevent admin from changing their own role (but allow owner)
+    if user_id == current_user.id and current_user.user_type != UserType.OWNER:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot change your own role"
@@ -174,8 +176,8 @@ def delete_user_admin(
     """
     Delete a user (admin only).
     """
-    # Prevent admin from deleting themselves
-    if user_id == current_user.id:
+    # Prevent admin from deleting themselves (but allow owner)
+    if user_id == current_user.id and current_user.user_type != UserType.OWNER:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete your own account"
