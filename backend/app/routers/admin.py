@@ -89,12 +89,20 @@ def update_user_payment_status(
 ):
     """
     Update user payment status (manager or admin only).
+    Owner users cannot be edited by anyone except themselves.
     """
     user = crud.get_user(db, user_id=user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
+        )
+    
+    # Owner users can only be edited by themselves
+    if user.user_type.value == "owner" and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner users cannot be edited by anyone else"
         )
     
     user.is_paid = is_paid
@@ -116,12 +124,20 @@ def update_user_role(
 ):
     """
     Update user role (admin only).
+    Owner users cannot be edited by anyone except themselves.
     """
     user = crud.get_user(db, user_id=user_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
+        )
+    
+    # Owner users can only be edited by themselves
+    if user.user_type.value == "owner" and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner users cannot be edited by anyone else"
         )
     
     # Prevent admin from changing their own role (but allow owner)
@@ -175,7 +191,23 @@ def delete_user_admin(
 ):
     """
     Delete a user (admin only).
+    Owner users cannot be deleted by anyone except themselves.
     """
+    # Get the target user first to check their role
+    target_user = crud.get_user(db, user_id=user_id)
+    if target_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Owner users can only be deleted by themselves
+    if target_user.user_type.value == "owner" and current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner users cannot be deleted by anyone else"
+        )
+    
     # Prevent admin from deleting themselves (but allow owner)
     if user_id == current_user.id and current_user.user_type != UserType.OWNER:
         raise HTTPException(
