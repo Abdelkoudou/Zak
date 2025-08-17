@@ -6,11 +6,14 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 
 - **Authentication**: User registration, login, and JWT token-based authentication
 - **Role-Based Access Control**: Owner, Admin, Manager, and Student user types
-- **Question Management**: CRUD operations for MCQ questions with answers (Manager/Admin only)
-- **Access Control**: Only paid users can access questions
-- **Admin Dashboard**: Comprehensive statistics and user management
+- **Enhanced Student Profiles**: Year of study and academic speciality tracking
+- **Question Management**: CRUD operations for MCQ questions with enhanced categorization (Manager/Admin only)
+- **Answer System**: Support for 5 labeled answers (a-e) with multiple correct answers
+- **Activation Key System**: Secure key-based user activation instead of direct payment updates
+- **Access Control**: Only paid users can access questions (activated via keys)
+- **Advanced Filtering**: Questions can be filtered by year, course, speciality, and chapter
+- **Admin Dashboard**: Comprehensive statistics including activation key metrics
 - **User Management**: Payment status and role management by Admin/Manager
-- **Filtering**: Questions can be filtered by year and course
 
 ## Database Schema
 
@@ -21,6 +24,8 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 - `hashed_password`: Encrypted password
 - `user_type`: Enum (owner, admin, manager, student)
 - `is_paid`: Boolean indicating payment status
+- `year_of_study`: Year of study (for students)
+- `speciality`: Academic speciality (for students)
 - `created_at`: Account creation timestamp
 - `updated_at`: Last update timestamp
 
@@ -28,6 +33,8 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 - `id`: Primary key
 - `year`: Year of the exam
 - `course`: Course name
+- `speciality`: Academic speciality
+- `chapter`: Chapter or topic
 - `number`: Question number
 - `question_text`: The actual question
 - `created_at`: Creation timestamp
@@ -38,7 +45,17 @@ A FastAPI backend for a MCQ (Multiple Choice Questions) study application with a
 - `question_id`: Foreign key to questions
 - `answer_text`: The answer option
 - `is_correct`: Boolean indicating if it's correct
+- `option_label`: Answer label ('a', 'b', 'c', 'd', 'e')
 - `created_at`: Creation timestamp
+
+### Activation Keys
+- `id`: Primary key
+- `key`: Unique activation key
+- `user_id`: Foreign key to user who used the key
+- `is_used`: Boolean indicating if key was used
+- `created_by`: Foreign key to admin/owner who created it
+- `created_at`: Key creation timestamp
+- `used_at`: Timestamp when key was used
 
 ## Setup Instructions
 
