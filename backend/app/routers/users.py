@@ -135,4 +135,26 @@ def delete_user(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return {"message": "User deleted successfully"} 
+    return {"message": "User deleted successfully"}
+
+@router.post("/activate")
+def activate_with_key(
+    activation_data: schemas.ActivationKeyUse,
+    current_user: User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Activate a user account using an activation key.
+    """
+    used_key = crud.use_activation_key(db=db, key=activation_data.key, user_id=current_user.id)
+    if used_key is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or already used activation key"
+        )
+    
+    return {
+        "message": "Account activated successfully",
+        "user_id": current_user.id,
+        "is_paid": True
+    } 

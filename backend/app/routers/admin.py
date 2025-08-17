@@ -5,7 +5,7 @@ from sqlalchemy import func
 
 from ..database import get_db
 from .. import crud, schemas, auth
-from ..models import User, UserType, Question, Answer
+from ..models import User, UserType, Question, Answer, ActivationKey
 from ..permissions import require_admin, can_manage_users
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -31,9 +31,17 @@ def get_dashboard_stats(
     total_questions = db.query(func.count(Question.id)).scalar()
     total_answers = db.query(func.count(Answer.id)).scalar()
     
+    # Activation key statistics
+    total_keys = db.query(func.count(ActivationKey.id)).scalar()
+    used_keys = db.query(func.count(ActivationKey.id)).filter(ActivationKey.is_used == True).scalar()
+    
     # Course statistics
     courses = db.query(Question.course, func.count(Question.id)).group_by(Question.course).all()
     course_stats = [{"course": course, "count": count} for course, count in courses]
+    
+    # Speciality statistics
+    specialities = db.query(Question.speciality, func.count(Question.id)).filter(Question.speciality != None).group_by(Question.speciality).all()
+    speciality_stats = [{"speciality": speciality, "count": count} for speciality, count in specialities]
     
     # Year statistics
     years = db.query(Question.year, func.count(Question.id)).group_by(Question.year).order_by(Question.year).all()
@@ -54,7 +62,13 @@ def get_dashboard_stats(
             "total_answers": total_answers,
             "average_answers_per_question": total_answers / total_questions if total_questions > 0 else 0
         },
+        "activation_key_stats": {
+            "total_keys": total_keys,
+            "used_keys": used_keys,
+            "unused_keys": total_keys - used_keys
+        },
         "course_stats": course_stats,
+        "speciality_stats": speciality_stats,
         "year_stats": year_stats
     }
 
@@ -221,4 +235,46 @@ def delete_user_admin(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    return {"message": "User deleted successfully"} 
+    return {"message": "User deleted successfully"}
+
+# Activation Key management endpoints
+@router.post("/activation-keys", response_model=schemas.ActivationKey)
+def create_activation_key(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Generate a new activation key (admin/owner only).
+    """
+    return crud.create_activation_key(db=db, created_by=current_user.id)
+
+@router.get("/activation-keys", response_model=List[schemas.ActivationKey])
+def get_activation_keys(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    is_used: Optional[bool] = Query(None, description="Filter by usage status"),
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all activation keys (admin/owner only).
+    """
+    return crud.get_activation_keys(db=db, skip=skip, limit=limit, is_used=is_used)
+
+@router.get("/activation-keys/stats")
+def get_activation_key_stats(
+    current_user: User = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get activation key statistics (admin/owner only).
+    """
+    total_keys = db.query(func.count(ActivationKey.id)).scalar()
+    used_keys = db.query(func.count(ActivationKey.id)).filter(ActivationKey.is_used == True).scalar()
+    unused_keys = total_keys - used_keys
+    
+    return {
+        "total_keys": total_keys,
+        "used_keys": used_keys,
+        "unused_keys": unused_keys
+    } 
