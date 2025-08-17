@@ -34,6 +34,7 @@ class User(Base):
     
     # Relationships - specify foreign_keys to avoid ambiguity
     activation_keys = relationship("ActivationKey", back_populates="user", foreign_keys="ActivationKey.user_id")
+    device_sessions = relationship("DeviceSession", back_populates="user")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -75,7 +76,22 @@ class ActivationKey(Base):
     created_by = Column(Integer, ForeignKey("users.id"))  # admin/owner who created it
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     used_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # expires 1 year after activation
     
     # Relationships
     user = relationship("User", back_populates="activation_keys", foreign_keys=[user_id])
-    creator = relationship("User", foreign_keys=[created_by]) 
+    creator = relationship("User", foreign_keys=[created_by])
+
+class DeviceSession(Base):
+    __tablename__ = "device_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    device_fingerprint = Column(String, index=True)  # unique device identifier
+    device_name = Column(String, nullable=True)  # user-friendly device name
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    user = relationship("User", back_populates="device_sessions") 

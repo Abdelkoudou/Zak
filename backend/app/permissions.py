@@ -21,7 +21,7 @@ def require_manager_or_admin(current_user: User = Depends(get_current_active_use
     return current_user
 
 def require_paid_user(current_user: User = Depends(get_current_active_user)) -> User:
-    """Require paid user"""
+    """Require paid user with valid (non-expired) activation"""
     # Owners bypass payment requirements
     if current_user.user_type == UserType.OWNER:
         return current_user
@@ -31,6 +31,35 @@ def require_paid_user(current_user: User = Depends(get_current_active_user)) -> 
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Paid subscription required"
         )
+    return current_user
+
+def require_valid_subscription(
+    current_user: User = Depends(get_current_active_user),
+    db = Depends(lambda: None)  # This will be properly injected in routes
+) -> User:
+    """Require paid user with valid (non-expired) activation"""
+    from . import crud
+    
+    # Owners bypass payment requirements
+    if current_user.user_type == UserType.OWNER:
+        return current_user
+    
+    if not current_user.is_paid:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Paid subscription required"
+        )
+    
+    # Check if activation is still valid (not expired)
+    if db and not crud.is_user_activation_valid(db, current_user.id):
+        # Mark user as unpaid since activation expired
+        current_user.is_paid = False
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Subscription has expired. Please renew your activation."
+        )
+    
     return current_user
 
 def can_manage_users(current_user: User = Depends(get_current_active_user)) -> User:
