@@ -202,6 +202,8 @@ def get_activation_keys(db: Session, skip: int = 0, limit: int = 100, is_used: O
     return query.offset(skip).limit(limit).all()
 
 def use_activation_key(db: Session, key: str, user_id: int):
+    from datetime import timedelta
+    
     db_key = db.query(models.ActivationKey).filter(
         models.ActivationKey.key == key,
         models.ActivationKey.is_used == False
@@ -210,10 +212,12 @@ def use_activation_key(db: Session, key: str, user_id: int):
     if not db_key:
         return None
     
-    # Mark key as used
+    # Mark key as used and set expiration to 1 year from now
+    activation_time = datetime.utcnow()
     db_key.is_used = True
     db_key.user_id = user_id
-    db_key.used_at = datetime.utcnow()
+    db_key.used_at = activation_time
+    db_key.expires_at = activation_time + timedelta(days=365)  # 1 year from activation
     
     # Update user payment status
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
@@ -223,3 +227,102 @@ def use_activation_key(db: Session, key: str, user_id: int):
     db.commit()
     db.refresh(db_key)
     return db_key
+
+def is_user_activation_valid(db: Session, user_id: int) -> bool:
+    """Check if user's activation is still valid (not expired)"""
+    user_key = db.query(models.ActivationKey).filter(
+        models.ActivationKey.user_id == user_id,
+        models.ActivationKey.is_used == True
+    ).first()
+    
+    if not user_key or not user_key.expires_at:
+        return False
+    
+    return datetime.utcnow() < user_key.expires_at
+
+# Device Session CRUD operations
+def get_user_device_sessions(db: Session, user_id: int):
+    """Get all active device sessions for a user"""
+    return db.query(models.DeviceSession).filter(
+        models.DeviceSession.user_id == user_id,
+        models.DeviceSession.is_active == True
+    ).all()
+
+def create_device_session(db: Session, user_id: int, device_session: schemas.DeviceSessionCreate):
+    """Create a new device session"""
+    # Check if user already has 2 active devices
+    active_sessions = get_user_device_sessions(db, user_id)
+    if len(active_sessions) >= 2:
+        # Deactivate the oldest session
+        oldest_session = min(active_sessions, key=lambda x: x.last_seen)
+        oldest_session.is_active = False
+    
+    # Check if device already exists
+    existing_session = db.query(models.DeviceSession).filter(
+        models.DeviceSession.user_id == user_id,
+        models.DeviceSession.device_fingerprint == device_session.device_fingerprint
+    ).first()
+    
+    if existing_session:
+        # Reactivate existing session
+        existing_session.is_active = True
+        existing_session.last_seen = datetime.utcnow()
+        db.commit()
+        db.refresh(existing_session)
+        return existing_session
+    
+    # Create new session
+    db_session = models.DeviceSession(
+        user_id=user_id,
+        device_fingerprint=device_session.device_fingerprint,
+        device_name=device_session.device_name,
+        last_seen=datetime.utcnow()
+    )
+    db.add(db_session)
+    db.commit()
+    db.refresh(db_session)
+    return db_session
+
+def update_device_last_seen(db: Session, user_id: int, device_fingerprint: str):
+    """Update last seen time for a device"""
+    device_session = db.query(models.DeviceSession).filter(
+        models.DeviceSession.user_id == user_id,
+        models.DeviceSession.device_fingerprint == device_fingerprint,
+        models.DeviceSession.is_active == True
+    ).first()
+    
+    if device_session:
+        device_session.last_seen = datetime.utcnow()
+        db.commit()
+        db.refresh(device_session)
+    
+    return device_session
+
+def deactivate_device_session(db: Session, user_id: int, device_id: int):
+    """Deactivate a specific device session"""
+    device_session = db.query(models.DeviceSession).filter(
+        models.DeviceSession.id == device_id,
+        models.DeviceSession.user_id == user_id
+    ).first()
+    
+    if device_session:
+        device_session.is_active = False
+        db.commit()
+        return True
+    return False
+
+# Password change function
+def change_user_password(db: Session, email: str, current_password: str, new_password: str) -> bool:
+    """Change user password after verifying current password"""
+    user = get_user_by_email(db, email)
+    if not user:
+        return False
+    
+    # Verify current password
+    if not auth.verify_password(current_password, user.hashed_password):
+        return False
+    
+    # Update password
+    user.hashed_password = auth.get_password_hash(new_password)
+    db.commit()
+    return True

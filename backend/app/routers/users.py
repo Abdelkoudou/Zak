@@ -156,5 +156,69 @@ def activate_with_key(
     return {
         "message": "Account activated successfully",
         "user_id": current_user.id,
-        "is_paid": True
-    } 
+        "is_paid": True,
+        "expires_at": used_key.expires_at.isoformat() if used_key.expires_at else None
+    }
+
+@router.post("/change-password")
+def change_password(
+    password_change: schemas.PasswordChangeRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Change user password by providing email, current password, and new password.
+    """
+    success = crud.change_user_password(
+        db=db,
+        email=password_change.email,
+        current_password=password_change.current_password,
+        new_password=password_change.new_password
+    )
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid email or current password"
+        )
+    
+    return {"message": "Password changed successfully"}
+
+@router.get("/devices", response_model=List[schemas.DeviceSession])
+def get_user_devices(
+    current_user: User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all active device sessions for the current user.
+    """
+    devices = crud.get_user_device_sessions(db=db, user_id=current_user.id)
+    return devices
+
+@router.post("/devices", response_model=schemas.DeviceSession)
+def register_device(
+    device: schemas.DeviceSessionCreate,
+    current_user: User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Register a new device for the current user (max 2 devices).
+    """
+    device_session = crud.create_device_session(db=db, user_id=current_user.id, device_session=device)
+    return device_session
+
+@router.delete("/devices/{device_id}")
+def deactivate_device(
+    device_id: int,
+    current_user: User = Depends(auth.get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Deactivate a device session.
+    """
+    success = crud.deactivate_device_session(db=db, user_id=current_user.id, device_id=device_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+    return {"message": "Device deactivated successfully"} 

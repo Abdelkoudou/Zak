@@ -18,6 +18,21 @@ This document provides a step-by-step migration process for upgrading the MCQ St
 - New `ActivationKey` model for paid user activation
 - Key generation by owners/admins
 - Student activation via keys instead of direct payment status updates
+- **NEW**: Activation keys now expire 1 year after activation (not creation)
+
+### Device Management System
+- **NEW**: Device tracking and management for users
+- **NEW**: Limit users to maximum 2 active devices
+- **NEW**: Device session management with fingerprinting
+
+### User Management Enhancements
+- **NEW**: Password change endpoint for users
+- **NEW**: Enhanced activation validation with expiration checks
+
+### Offline Question Entry Tool
+- **NEW**: Standalone HTML tool for offline question creation
+- **NEW**: Export questions to JSON/CSV formats
+- **NEW**: Import script for batch question upload
 
 ## 📋 Migration Steps
 
@@ -277,7 +292,108 @@ After migration, verify:
 - Activation keys are randomly generated 16-character strings
 - Keys are single-use and automatically marked as used
 - Only owners/admins can generate keys
-- Consider implementing key expiration for enhanced security
+- **NEW**: Keys now expire 1 year after activation for enhanced security
+- **NEW**: Device fingerprinting helps prevent unauthorized access
+- **NEW**: Password change requires current password verification
+
+## 🆕 New API Endpoints (Version 2.0)
+
+### Device Management
+```
+GET /users/devices                   # List user's active devices
+POST /users/devices                  # Register new device (max 2)
+DELETE /users/devices/{device_id}    # Deactivate device
+```
+
+### Enhanced User Management
+```
+POST /users/change-password          # Change password with email verification
+POST /users/activate                 # Enhanced activation with expiration info
+```
+
+### Questions by Chapter
+```
+GET /questions/?chapter=ChapterName  # Filter questions by chapter (already available)
+GET /questions/chapters/list         # List all available chapters
+```
+
+## 🛠️ New Tools and Scripts
+
+### Question Data Entry Tool
+- **Location**: `frontend/question-entry.html`
+- **Purpose**: Offline question creation and management
+- **Features**: 
+  - Create questions with 5 answer options
+  - Export to JSON/CSV formats
+  - Import previously saved questions
+  - Validation and duplicate checking
+
+### Question Import Script
+- **Location**: `backend/scripts/import_questions.py`
+- **Usage**: `python import_questions.py questions.json`
+- **Features**:
+  - Batch import from JSON files
+  - Duplicate detection and handling
+  - Validation and error reporting
+  - Import statistics
+
+### Database Reset Script (Enhanced)
+- **Location**: `backend/scripts/reset_database.py`
+- **Usage**: `python reset_database.py --confirm`
+- **Features**:
+  - Complete database reset
+  - Automatic backup creation
+  - Owner user recreation
+  - Database verification
+
+## 📋 Migration Checklist for Version 2.0
+
+- [ ] Backup current database
+- [ ] Update dependencies
+- [ ] Apply database migration (new fields and tables)
+- [ ] Test activation key expiration logic
+- [ ] Verify device management functionality
+- [ ] Test password change endpoint
+- [ ] Validate question filtering by chapter
+- [ ] Test offline question entry tool
+- [ ] Verify question import script
+- [ ] Update admin procedures for key management
+- [ ] Train users on device limitations
+- [ ] Update documentation and user guides
+
+## 🎯 Quick Start for New Features
+
+### 1. Testing Device Management
+```bash
+# Register a device (requires authentication)
+curl -X POST "http://localhost:8000/users/devices" \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"device_fingerprint": "device123", "device_name": "My Laptop"}'
+
+# List user devices
+curl -X GET "http://localhost:8000/users/devices" \
+     -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### 2. Testing Password Change
+```bash
+curl -X POST "http://localhost:8000/users/change-password" \
+     -H "Content-Type: application/json" \
+     -d '{"email": "user@example.com", "current_password": "old123", "new_password": "new456"}'
+```
+
+### 3. Using the Question Entry Tool
+1. Open `frontend/question-entry.html` in any web browser
+2. Fill in question details and answers
+3. Export questions as JSON
+4. Import to main system: `python scripts/import_questions.py exported_questions.json`
+
+### 4. Testing Activation Key Expiration
+- Create activation key via admin panel
+- Activate user account (sets 1-year expiration)
+- Check expiration with activation validation
+- Test automatic deactivation after expiration
 
 ---
 

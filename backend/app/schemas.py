@@ -112,6 +112,31 @@ class ActivationKey(ActivationKeyBase):
     created_by: int
     created_at: datetime
     used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
+
+# Device Session schemas
+class DeviceSessionBase(BaseModel):
+    device_fingerprint: str
+    device_name: Optional[str] = None
+
+class DeviceSessionCreate(DeviceSessionBase):
+    pass
+
+class DeviceSession(DeviceSessionBase):
+    id: int
+    user_id: int
+    is_active: bool
+    created_at: datetime
+    last_seen: datetime
+
+    class Config:
+        from_attributes = True
+
+# Password change schema
+class PasswordChangeRequest(BaseModel):
+    email: str
+    current_password: str
+    new_password: str
