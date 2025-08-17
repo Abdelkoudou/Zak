@@ -15,14 +15,16 @@ def get_questions(
     limit: int = Query(100, ge=1, le=1000),
     year: Optional[int] = Query(None, description="Filter by year"),
     course: Optional[str] = Query(None, description="Filter by course"),
+    speciality: Optional[str] = Query(None, description="Filter by speciality"),
+    chapter: Optional[str] = Query(None, description="Filter by chapter"),
     current_user: User = Depends(require_paid_user),
     db: Session = Depends(get_db)
 ):
     """
-    Get questions with optional filtering by year and course.
+    Get questions with optional filtering by year, course, speciality, and chapter.
     Only paid users can access questions.
     """
-    questions = crud.get_questions(db, skip=skip, limit=limit, year=year, course=course)
+    questions = crud.get_questions(db, skip=skip, limit=limit, year=year, course=course, speciality=speciality, chapter=chapter)
     
     result = []
     for question in questions:
@@ -31,6 +33,8 @@ def get_questions(
             id=question.id,
             year=question.year,
             course=question.course,
+            speciality=question.speciality,
+            chapter=question.chapter,
             number=question.number,
             question_text=question.question_text,
             created_at=question.created_at,
@@ -63,6 +67,8 @@ def get_question(
         id=question.id,
         year=question.year,
         course=question.course,
+        speciality=question.speciality,
+        chapter=question.chapter,
         number=question.number,
         question_text=question.question_text,
         created_at=question.created_at,
@@ -94,6 +100,30 @@ def get_available_years(
     """
     years = db.query(crud.models.Question.year).distinct().order_by(crud.models.Question.year).all()
     return {"years": [year[0] for year in years]}
+
+@router.get("/specialities/list")
+def get_available_specialities(
+    current_user: User = Depends(require_paid_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of available specialities.
+    Only paid users can access.
+    """
+    specialities = db.query(crud.models.Question.speciality).distinct().filter(crud.models.Question.speciality != None).all()
+    return {"specialities": [spec[0] for spec in specialities]}
+
+@router.get("/chapters/list")
+def get_available_chapters(
+    current_user: User = Depends(require_paid_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of available chapters.
+    Only paid users can access.
+    """
+    chapters = db.query(crud.models.Question.chapter).distinct().filter(crud.models.Question.chapter != None).all()
+    return {"chapters": [chapter[0] for chapter in chapters]}
 
 # Manager/Admin endpoints for managing questions
 @router.post("/", response_model=schemas.Question)
