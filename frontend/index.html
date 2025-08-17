@@ -187,6 +187,47 @@
         </div>
         <button onclick="activateAccount()">Activate Account</button>
         <div id="activation-response" class="response" style="display: none;"></div>
+
+        <h3>Change Password</h3>
+        <div class="form-group">
+            <label for="change-email">Email:</label>
+            <input type="email" id="change-email" placeholder="doudous6666@gmail.com" value="doudous6666@gmail.com">
+        </div>
+        <div class="form-group">
+            <label for="current-password">Current Password:</label>
+            <input type="password" id="current-password" placeholder="Enter current password">
+        </div>
+        <div class="form-group">
+            <label for="new-password">New Password:</label>
+            <input type="password" id="new-password" placeholder="Enter new password">
+        </div>
+        <button onclick="changePassword()">Change Password</button>
+        <div id="change-password-response" class="response" style="display: none;"></div>
+
+        <h3>Device Management</h3>
+        <h4>Your Devices (Max 2)</h4>
+        <button onclick="getUserDevices()">Get My Devices</button>
+        <div id="devices-response" class="response" style="display: none;"></div>
+        
+        <h4>Register New Device</h4>
+        <div class="form-group">
+            <label for="device-fingerprint">Device Fingerprint:</label>
+            <input type="text" id="device-fingerprint" placeholder="device123">
+        </div>
+        <div class="form-group">
+            <label for="device-name">Device Name:</label>
+            <input type="text" id="device-name" placeholder="My Laptop">
+        </div>
+        <button onclick="registerDevice()">Register Device</button>
+        <div id="register-device-response" class="response" style="display: none;"></div>
+
+        <h4>Deactivate Device</h4>
+        <div class="form-group">
+            <label for="deactivate-device-id">Device ID:</label>
+            <input type="number" id="deactivate-device-id" placeholder="1">
+        </div>
+        <button onclick="deactivateDevice()">Deactivate Device</button>
+        <div id="deactivate-device-response" class="response" style="display: none;"></div>
     </div>
 
     <!-- Users Tab -->
@@ -259,6 +300,15 @@
         <h3>Get Available Years</h3>
         <button onclick="getYears()">Get Years</button>
         <div id="years-response" class="response" style="display: none;"></div>
+
+        <h3>Import Questions to Database</h3>
+        <p>Upload a JSON file from the question entry tool to import questions directly to the database.</p>
+        <div class="form-group">
+            <label for="import-questions-file">Select JSON file:</label>
+            <input type="file" id="import-questions-file" accept=".json" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        <button onclick="importQuestionsToDatabase()">Import Questions to Database</button>
+        <div id="import-questions-response" class="response" style="display: none;"></div>
 
         <h3>Create Question</h3>
         <div class="form-group">
@@ -524,6 +574,43 @@
             showResponse('activation-response', response);
         }
 
+        // Change Password function
+        async function changePassword() {
+            const email = document.getElementById('change-email').value;
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+
+            const response = await makeRequest('/users/change-password', 'POST', {
+                email: email,
+                current_password: currentPassword,
+                new_password: newPassword
+            });
+            showResponse('change-password-response', response);
+        }
+
+        // Device Management functions
+        async function getUserDevices() {
+            const response = await makeRequest('/users/devices');
+            showResponse('devices-response', response);
+        }
+
+        async function registerDevice() {
+            const deviceFingerprint = document.getElementById('device-fingerprint').value;
+            const deviceName = document.getElementById('device-name').value;
+
+            const response = await makeRequest('/users/devices', 'POST', {
+                device_fingerprint: deviceFingerprint,
+                device_name: deviceName
+            });
+            showResponse('register-device-response', response);
+        }
+
+        async function deactivateDevice() {
+            const deviceId = document.getElementById('deactivate-device-id').value;
+            const response = await makeRequest(`/users/devices/${deviceId}`, 'DELETE');
+            showResponse('deactivate-device-response', response);
+        }
+
         // Users functions
         async function getAllUsers() {
             const response = await makeRequest('/users/');
@@ -603,6 +690,49 @@
 
             const response = await makeRequest('/questions/', 'POST', questionData);
             showResponse('create-question-response', response);
+        }
+
+        // Import Questions function
+        async function importQuestionsToDatabase() {
+            const fileInput = document.getElementById('import-questions-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showResponse('import-questions-response', {
+                    status: 400,
+                    ok: false,
+                    data: { detail: 'Please select a JSON file to import.' }
+                });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/questions/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                const result = await response.json();
+                const apiResponse = {
+                    status: response.status,
+                    ok: response.ok,
+                    data: result
+                };
+
+                showResponse('import-questions-response', apiResponse);
+            } catch (error) {
+                showResponse('import-questions-response', {
+                    status: 500,
+                    ok: false,
+                    data: { detail: `Import failed: ${error.message}` }
+                });
+            }
         }
 
         // Admin functions

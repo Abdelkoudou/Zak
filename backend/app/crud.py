@@ -77,6 +77,14 @@ def get_questions(db: Session, skip: int = 0, limit: int = 100, year: Optional[i
     
     return query.offset(skip).limit(limit).all()
 
+def get_question_by_details(db: Session, year: int, course: str, number: int):
+    """Get a question by year, course, and number (for duplicate checking)"""
+    return db.query(models.Question).filter(
+        models.Question.year == year,
+        models.Question.course == course,
+        models.Question.number == number
+    ).first()
+
 def create_question(db: Session, question: schemas.QuestionCreate):
     db_question = models.Question(
         year=question.year,
