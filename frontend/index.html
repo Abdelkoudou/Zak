@@ -279,56 +279,105 @@
 
     <!-- Questions Tab -->
     <div id="questions" class="container tab-content">
-        <h2>Questions Management</h2>
+        <h2>Gestion des Questions</h2>
         
-        <h3>Get All Questions</h3>
+        <h3>Obtenir Toutes les Questions</h3>
         <div class="form-group">
-            <label for="questions-year">Filter by Year (optional):</label>
-            <input type="number" id="questions-year" placeholder="2023">
+            <label for="questions-year">Filtrer par Année d'Examen (optionnel):</label>
+            <input type="number" id="questions-year" placeholder="2024">
         </div>
         <div class="form-group">
-            <label for="questions-course">Filter by Course (optional):</label>
-            <input type="text" id="questions-course" placeholder="Mathematics">
+            <label for="questions-study-year">Filtrer par Année d'Étude (optionnel):</label>
+            <select id="questions-study-year">
+                <option value="">Toutes les années</option>
+                <option value="1">1ère Année</option>
+                <option value="2">2ème Année</option>
+                <option value="3">3ème Année</option>
+            </select>
         </div>
-        <button onclick="getAllQuestions()">Get Questions</button>
+        <div class="form-group">
+            <label for="questions-module">Filtrer par Module (optionnel):</label>
+            <input type="text" id="questions-module" placeholder="Anatomie">
+        </div>
+        <div class="form-group">
+            <label for="questions-exam-type">Filtrer par Type d'Examen (optionnel):</label>
+            <select id="questions-exam-type">
+                <option value="">Tous les types</option>
+                <option value="EMD">EMD</option>
+                <option value="EMD1">EMD1</option>
+                <option value="EMD2">EMD2</option>
+                <option value="Rattrapage">Rattrapage</option>
+            </select>
+        </div>
+        <button onclick="getAllQuestions()">Obtenir les Questions</button>
         <div id="questions-response" class="response" style="display: none;"></div>
 
-        <h3>Get Available Courses</h3>
-        <button onclick="getCourses()">Get Courses</button>
-        <div id="courses-response" class="response" style="display: none;"></div>
+        <h3>Obtenir les Modules Disponibles</h3>
+        <button onclick="getModules()">Obtenir les Modules</button>
+        <div id="modules-response" class="response" style="display: none;"></div>
 
-        <h3>Get Available Years</h3>
-        <button onclick="getYears()">Get Years</button>
+        <h3>Obtenir les Années Disponibles</h3>
+        <button onclick="getYears()">Obtenir les Années</button>
         <div id="years-response" class="response" style="display: none;"></div>
 
-        <h3>Import Questions to Database</h3>
-        <p>Upload a JSON file from the question entry tool to import questions directly to the database.</p>
+        <h3>Obtenir la Structure Médicale</h3>
+        <button onclick="getMedicalStructure()">Obtenir la Structure</button>
+        <div id="structure-response" class="response" style="display: none;"></div>
+
+        <h3>Importer des Questions dans la Base de Données</h3>
+        <p>Téléchargez un fichier JSON à partir de l'outil de saisie des questions pour importer directement dans la base de données.</p>
         <div class="form-group">
-            <label for="import-questions-file">Select JSON file:</label>
+            <label for="import-questions-file">Sélectionner le fichier JSON:</label>
             <input type="file" id="import-questions-file" accept=".json" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
         </div>
-        <button onclick="importQuestionsToDatabase()">Import Questions to Database</button>
+        <button onclick="importQuestionsToDatabase()">Importer les Questions</button>
         <div id="import-questions-response" class="response" style="display: none;"></div>
 
-        <h3>Create Question</h3>
+        <h3>Créer une Question</h3>
         <div class="form-group">
-            <label for="create-year">Year:</label>
+            <label for="create-year">Année d'Examen:</label>
             <input type="number" id="create-year" placeholder="2024">
         </div>
         <div class="form-group">
-            <label for="create-course">Course:</label>
-            <input type="text" id="create-course" placeholder="Mathematics">
+            <label for="create-study-year">Année d'Étude:</label>
+            <select id="create-study-year" onchange="updateCreateModuleOptions()">
+                <option value="">Choisir l'année d'étude</option>
+                <option value="1">1ère Année</option>
+                <option value="2">2ème Année</option>
+                <option value="3">3ème Année</option>
+            </select>
         </div>
         <div class="form-group">
-            <label for="create-speciality">Speciality:</label>
-            <input type="text" id="create-speciality" placeholder="Computer Science">
+            <label for="create-module">Module:</label>
+            <select id="create-module" onchange="updateCreateExamTypes()">
+                <option value="">Choisir d'abord l'année d'étude</option>
+            </select>
         </div>
         <div class="form-group">
-            <label for="create-chapter">Chapter:</label>
-            <input type="text" id="create-chapter" placeholder="Algorithms">
+            <label for="create-unite">Unité (si applicable):</label>
+            <input type="text" id="create-unite" placeholder="Laissez vide si pas d'unité">
         </div>
         <div class="form-group">
-            <label for="create-number">Question Number:</label>
+            <label for="create-speciality">Spécialité:</label>
+            <select id="create-speciality">
+                <option value="">Choisir la spécialité</option>
+                <option value="Médecine">Médecine</option>
+                <option value="Pharmacie">Pharmacie</option>
+                <option value="Dentaire">Dentaire</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="create-cours">Cours:</label>
+            <input type="text" id="create-cours" placeholder="Nom du cours">
+        </div>
+        <div class="form-group">
+            <label for="create-exam-type">Type d'Examen:</label>
+            <select id="create-exam-type">
+                <option value="">Choisir le type d'examen</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="create-number">Numéro de Question:</label>
             <input type="number" id="create-number" placeholder="1">
         </div>
         <div class="form-group">
@@ -641,21 +690,25 @@
         // Questions functions
         async function getAllQuestions() {
             const year = document.getElementById('questions-year').value;
-            const course = document.getElementById('questions-course').value;
+            const studyYear = document.getElementById('questions-study-year').value;
+            const module = document.getElementById('questions-module').value;
+            const examType = document.getElementById('questions-exam-type').value;
             
             let url = '/questions/';
             const params = new URLSearchParams();
             if (year) params.append('year', year);
-            if (course) params.append('course', course);
+            if (studyYear) params.append('study_year', studyYear);
+            if (module) params.append('module', module);
+            if (examType) params.append('exam_type', examType);
             if (params.toString()) url += '?' + params.toString();
 
             const response = await makeRequest(url);
             showResponse('questions-response', response);
         }
 
-        async function getCourses() {
-            const response = await makeRequest('/questions/courses/list');
-            showResponse('courses-response', response);
+        async function getModules() {
+            const response = await makeRequest('/questions/modules/list');
+            showResponse('modules-response', response);
         }
 
         async function getYears() {
@@ -663,12 +716,92 @@
             showResponse('years-response', response);
         }
 
+        async function getMedicalStructure() {
+            const response = await makeRequest('/questions/structure');
+            showResponse('structure-response', response);
+        }
+
+        // Store medical structure for form updates
+        let medicalStructure = null;
+
+        // Load medical structure on page load
+        async function loadMedicalStructure() {
+            try {
+                const response = await fetch(`${API_BASE}/questions/structure`);
+                if (response.ok) {
+                    const data = await response.json();
+                    medicalStructure = data;
+                }
+            } catch (error) {
+                console.error('Failed to load medical structure:', error);
+            }
+        }
+
+        // Update module options based on study year
+        function updateCreateModuleOptions() {
+            const studyYear = document.getElementById('create-study-year').value;
+            const moduleSelect = document.getElementById('create-module');
+            
+            moduleSelect.innerHTML = '<option value="">Choisir le module</option>';
+            
+            if (studyYear && medicalStructure) {
+                if (studyYear === '1' && medicalStructure.first_year) {
+                    Object.keys(medicalStructure.first_year.modules).forEach(module => {
+                        moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
+                    });
+                } else if (studyYear === '2' && medicalStructure.second_year) {
+                    // Add unites
+                    Object.keys(medicalStructure.second_year.unites).forEach(unite => {
+                        moduleSelect.innerHTML += `<option value="${unite}" data-is-unite="true">${unite}</option>`;
+                    });
+                    // Add standalone modules
+                    medicalStructure.second_year.modules_standalone.forEach(module => {
+                        moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
+                    });
+                } else if (studyYear === '3' && medicalStructure.third_year) {
+                    // Add unites
+                    Object.keys(medicalStructure.third_year.unites).forEach(unite => {
+                        moduleSelect.innerHTML += `<option value="${unite}" data-is-unite="true">${unite}</option>`;
+                    });
+                    // Add standalone modules
+                    medicalStructure.third_year.modules_standalone.forEach(module => {
+                        moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
+                    });
+                }
+            }
+        }
+
+        // Update exam types based on study year and module
+        function updateCreateExamTypes() {
+            const studyYear = document.getElementById('create-study-year').value;
+            const module = document.getElementById('create-module').value;
+            const examTypeSelect = document.getElementById('create-exam-type');
+            
+            examTypeSelect.innerHTML = '<option value="">Choisir le type d\'examen</option>';
+            
+            if (studyYear && module && medicalStructure) {
+                if (studyYear === '1' && medicalStructure.first_year && medicalStructure.first_year.modules[module]) {
+                    medicalStructure.first_year.modules[module].forEach(examType => {
+                        examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
+                    });
+                } else if ((studyYear === '2' || studyYear === '3') && medicalStructure.second_year) {
+                    // For 2nd and 3rd year, all modules have EMD and Rattrapage
+                    ['EMD', 'Rattrapage'].forEach(examType => {
+                        examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
+                    });
+                }
+            }
+        }
+
         async function createQuestion() {
             const questionData = {
                 year: parseInt(document.getElementById('create-year').value),
-                course: document.getElementById('create-course').value,
+                study_year: parseInt(document.getElementById('create-study-year').value),
+                module: document.getElementById('create-module').value,
+                unite: document.getElementById('create-unite').value || null,
                 speciality: document.getElementById('create-speciality').value,
-                chapter: document.getElementById('create-chapter').value,
+                cours: document.getElementById('create-cours').value,
+                exam_type: document.getElementById('create-exam-type').value,
                 number: parseInt(document.getElementById('create-number').value),
                 question_text: document.getElementById('create-question').value,
                 answers: []
@@ -788,6 +921,11 @@
             const response = await makeRequest('/admin/activation-keys/stats');
             showResponse('activation-keys-response', response);
         }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMedicalStructure();
+        });
     </script>
 </body>
 </html>
