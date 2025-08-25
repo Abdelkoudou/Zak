@@ -45,6 +45,7 @@ class User(UserBase):
 # Answer schemas
 class AnswerBase(BaseModel):
     answer_text: str
+    answer_image: Optional[str] = None
     is_correct: bool
     option_label: str  # 'a', 'b', 'c', 'd', 'e'
 
@@ -61,23 +62,31 @@ class Answer(AnswerBase):
 
 # Question schemas
 class QuestionBase(BaseModel):
-    year: int
-    course: str
+    year: int  # Year when exam was made
+    study_year: int  # Academic year (1, 2, 3)
+    module: str  # What was previously "course"
+    unite: Optional[str] = None  # Unit (for 2nd and 3rd year)
     speciality: str
-    chapter: str
+    cours: str  # What was previously "chapter"
+    exam_type: str  # EMD, EMD1, EMD2, Rattrapage
     number: int
     question_text: str
+    question_image: Optional[str] = None
 
 class QuestionCreate(QuestionBase):
     answers: List[AnswerCreate]
 
 class QuestionUpdate(BaseModel):
     year: Optional[int] = None
-    course: Optional[str] = None
+    study_year: Optional[int] = None
+    module: Optional[str] = None
+    unite: Optional[str] = None
     speciality: Optional[str] = None
-    chapter: Optional[str] = None
+    cours: Optional[str] = None
+    exam_type: Optional[str] = None
     number: Optional[int] = None
     question_text: Optional[str] = None
+    question_image: Optional[str] = None
     answers: Optional[List[AnswerCreate]] = None
 
 class Question(QuestionBase):

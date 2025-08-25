@@ -40,12 +40,16 @@ class Question(Base):
     __tablename__ = "questions"
 
     id = Column(Integer, primary_key=True, index=True)
-    year = Column(Integer, index=True)
-    course = Column(String, index=True)
-    speciality = Column(String, index=True)  # New field
-    chapter = Column(String, index=True)  # New field
+    year = Column(Integer, index=True)  # Year when the exam was made (e.g., 2024)
+    study_year = Column(Integer, index=True)  # Academic year (1st, 2nd, 3rd)
+    module = Column(String, index=True)  # What was previously called "course"
+    unite = Column(String, index=True, nullable=True)  # Unit (for 2nd and 3rd year)
+    speciality = Column(String, index=True)
+    cours = Column(String, index=True)  # What was previously called "chapter"
+    exam_type = Column(String, index=True)  # EMD, EMD1, EMD2, Rattrapage
     number = Column(Integer)
     question_text = Column(Text)
+    question_image = Column(String, nullable=True)  # Path to question image
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -59,6 +63,7 @@ class Answer(Base):
     id = Column(Integer, primary_key=True, index=True)
     question_id = Column(Integer, ForeignKey("questions.id"))
     answer_text = Column(Text)
+    answer_image = Column(String, nullable=True)  # Path to answer image
     is_correct = Column(Boolean, default=False)
     option_label = Column(String(1), index=True)  # 'a', 'b', 'c', 'd', 'e'
     created_at = Column(DateTime(timezone=True), server_default=func.now())

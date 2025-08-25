@@ -1,233 +1,230 @@
-# MCQ Study App Backend
+# Application MCQ - Éducation Médicale Française
 
-A FastAPI backend for a MCQ (Multiple Choice Questions) study application with authentication and question management features.
+## Vue d'ensemble
 
-## Features
+Cette application MCQ est spécialement conçue pour l'éducation médicale française, supportant la structure académique des études de médecine en France avec les modules, unités et types d'examens appropriés.
 
-- **Authentication**: User registration, login, and JWT token-based authentication
-- **Role-Based Access Control**: Owner, Admin, Manager, and Student user types
-- **Enhanced Student Profiles**: Year of study and academic speciality tracking
-- **Question Management**: CRUD operations for MCQ questions with enhanced categorization (Manager/Admin only)
-- **Answer System**: Support for 5 labeled answers (a-e) with multiple correct answers
-- **Activation Key System**: Secure key-based user activation instead of direct payment updates
-- **Access Control**: Only paid users can access questions (activated via keys)
-- **Advanced Filtering**: Questions can be filtered by year, course, speciality, and chapter
-- **Admin Dashboard**: Comprehensive statistics including activation key metrics
-- **User Management**: Payment status and role management by Admin/Manager
+## Fonctionnalités
 
-## Database Schema
+### Étudiants
+- Accès aux questions MCQ par année d'étude (1ère, 2ème, 3ème année)
+- Filtrage par module, unité, type d'examen (EMD, EMD1, EMD2, Rattrapage)
+- Support des images dans les questions et réponses
+- Système d'activation par clés
 
-### Users
-- `id`: Primary key
-- `email`: Unique email address
-- `username`: Unique username
-- `hashed_password`: Encrypted password
-- `user_type`: Enum (owner, admin, manager, student)
-- `is_paid`: Boolean indicating payment status
-- `year_of_study`: Year of study (for students)
-- `speciality`: Academic speciality (for students)
-- `created_at`: Account creation timestamp
-- `updated_at`: Last update timestamp
+### Gestionnaires/Administrateurs
+- Création et gestion des questions
+- Import/export des questions en JSON
+- Gestion des utilisateurs et clés d'activation
+- Statistiques et tableau de bord
 
-### Questions
-- `id`: Primary key
-- `year`: Year of the exam
-- `course`: Course name
-- `speciality`: Academic speciality
-- `chapter`: Chapter or topic
-- `number`: Question number
-- `question_text`: The actual question
-- `created_at`: Creation timestamp
-- `updated_at`: Last update timestamp
+## Structure de l'Éducation Médicale
 
-### Answers
-- `id`: Primary key
-- `question_id`: Foreign key to questions
-- `answer_text`: The answer option
-- `is_correct`: Boolean indicating if it's correct
-- `option_label`: Answer label ('a', 'b', 'c', 'd', 'e')
-- `created_at`: Creation timestamp
+### 1ère Année
+**Modules avec EMD1/EMD2/Rattrapage:**
+- Anatomie
+- Biochimie
+- Biophysique
+- Biostatistique / Informatique
+- Chimie
+- Cytologie
 
-### Activation Keys
-- `id`: Primary key
-- `key`: Unique activation key
-- `user_id`: Foreign key to user who used the key
-- `is_used`: Boolean indicating if key was used
-- `created_by`: Foreign key to admin/owner who created it
-- `created_at`: Key creation timestamp
-- `used_at`: Timestamp when key was used
+**Modules avec EMD/Rattrapage:**
+- Embryologie
+- Histologie
+- Physiologie
+- S.S.H
 
-## Setup Instructions
+### 2ème Année
+**Unités avec 4 modules chacune:**
+- Appareil Cardio-vasculaire et Respiratoire (Anatomie, Histologie, Physiologie, Biophysique)
+- Appareil Digestif (Anatomie, Histologie, Physiologie, Biochimie)
+- Appareil Urinaire (Anatomie, Histologie, Physiologie, Biochimie)
+- Appareil Endocrinien et de la Reproduction (Anatomie, Histologie, Physiologie, Biochimie)
+- Appareil Nerveux et Organes des Sens (Anatomie, Histologie, Physiologie, Biophysique)
 
-### 1. Install Dependencies
+**Modules autonomes:**
+- Génétique
+- Immunologie
 
+### 3ème Année
+**Unités avec 4 modules chacune:**
+- Appareil Cardio-vasculaire et Appareil Respiratoire (Semiologie, physiopathologie, radiologie, biochimie)
+- Psychologie Médicale et Semiologie Générale (Semiologie, physiopathologie, radiologie, biochimie)
+- Appareil Neurologique (Semiologie, physiopathologie, radiologie, biochimie)
+- Appareil Endocrinien (Semiologie, physiopathologie, radiologie, biochimie)
+- Appareil Urinaire (Semiologie, physiopathologie, radiologie, biochimie)
+- Appareil Digestif (Semiologie, physiopathologie, radiologie, biochimie)
+
+**Modules autonomes:**
+- Anatomie pathologique
+- Immunologie
+- Pharmacologie
+- Microbiologie
+- Parasitologie
+
+## Installation et Configuration
+
+### Prérequis
+- Python 3.8+
+- SQLite (inclus avec Python)
+- Requirements listés dans `requirements.txt`
+
+### Installation
 ```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
-
-Create a `.env` file in the backend directory with the following variables:
-
-```env
-DATABASE_URL=postgresql://username:password@localhost:5432/mcq_study_db
-SECRET_KEY=your-secret-key-here-make-it-long-and-random
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-```
-
-For development, you can use SQLite:
-```env
-DATABASE_URL=sqlite:///./mcq_study.db
-```
-
-### 3. Run the Application
-
+### Configuration de la Base de Données
+Pour une installation fresh avec la nouvelle structure française:
 ```bash
+cd backend
+python scripts/reset_french_structure.py
+```
+
+### Démarrage du Serveur
+```bash
+cd backend
 python run.py
 ```
 
-Or using uvicorn directly:
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+Le serveur démarrera sur `http://localhost:8000`
 
-The API will be available at `http://localhost:8000`
+### Interface Frontend
+Ouvrez `frontend/question-entry-french.html` dans votre navigateur pour l'outil de saisie des questions en français.
 
-## API Documentation
+## Structure de la Base de Données
 
-Once the server is running, you can access:
-- **Interactive API docs**: `http://localhost:8000/docs`
-- **ReDoc documentation**: `http://localhost:8000/redoc`
+### Users (Utilisateurs)
+- `id`: Clé primaire
+- `email`: Adresse email unique
+- `username`: Nom d'utilisateur unique
+- `user_type`: Type (owner, admin, manager, student)
+- `is_paid`: Statut de paiement
+- `year_of_study`: Année d'étude (pour les étudiants)
+- `speciality`: Spécialité académique
 
-## New Owner Role
+### Questions
+- `id`: Clé primaire
+- `year`: Année de l'examen
+- `study_year`: Année d'étude (1, 2, 3)
+- `module`: Nom du module
+- `unite`: Unité (si applicable)
+- `speciality`: Spécialité médicale
+- `cours`: Nom du cours
+- `exam_type`: Type d'examen (EMD, EMD1, EMD2, Rattrapage)
+- `number`: Numéro de la question
+- `question_text`: Texte de la question
+- `question_image`: Image de la question (optionnel)
 
-The system now includes a special **OWNER** role with the following privileges:
-- Full access to all system features and endpoints
-- Bypasses payment requirements for accessing questions
-- Can modify their own role (unlike admin users)
-- Can delete their own account (unlike admin users)
-- Has all admin and manager permissions plus additional owner-only features
-
-### Pre-configured Owner Account
-- **Email**: doudous6666@gmail.com
-- **Username**: owner
-- **Password**: 123456789
-
-## Frontend Testing Interface
-
-A complete frontend testing interface is available at `/frontend/index.html` that allows you to:
-- Test all API endpoints with different user roles
-- Quick login as the owner account
-- Visually interact with all system features
-- View formatted API responses
-
-To use the frontend:
-1. Start the backend server: `python run.py`
-2. Serve the frontend: `cd frontend && python -m http.server 3000`
-3. Open `http://localhost:3000` in your browser
+### Answers (Réponses)
+- `id`: Clé primaire
+- `question_id`: Référence à la question
+- `answer_text`: Texte de la réponse
+- `answer_image`: Image de la réponse (optionnel)
+- `is_correct`: Booléen indiquant si c'est correct
+- `option_label`: Label de l'option ('a', 'b', 'c', 'd', 'e')
 
 ## API Endpoints
 
-### Authentication
-- `POST /auth/register` - Register a new user
-- `POST /auth/token` - Login and get access token
-- `GET /auth/me` - Get current user profile
+### Authentification
+- `POST /auth/register` - Inscription d'un nouvel utilisateur
+- `POST /auth/login` - Connexion utilisateur
+- `POST /auth/activate` - Activation avec clé
 
-### Questions (Paid Users Only)
-- `GET /questions/` - Get all questions (with filtering options)
-- `GET /questions/{question_id}` - Get specific question
-- `GET /questions/courses/list` - Get available courses
-- `GET /questions/years/list` - Get available years
+### Questions (Utilisateurs payants uniquement)
+- `GET /questions/` - Obtenir les questions avec filtres
+- `GET /questions/structure` - Obtenir la structure médicale
+- `GET /questions/modules/list` - Liste des modules disponibles
+- `GET /questions/years/list` - Liste des années disponibles
 
-### Question Management (Manager/Admin Only)
-- `POST /questions/` - Create new question
-- `PUT /questions/{question_id}` - Update question
-- `DELETE /questions/{question_id}` - Delete question
+### Gestion des Questions (Manager/Admin uniquement)
+- `POST /questions/` - Créer une nouvelle question
+- `POST /questions/import` - Importer des questions depuis un fichier JSON
+- `PUT /questions/{id}` - Mettre à jour une question
+- `DELETE /questions/{id}` - Supprimer une question
 
-### Users
-- `GET /users/` - Get all users (manager/admin)
-- `GET /users/{user_id}` - Get specific user
-- `PUT /users/{user_id}` - Update user profile
-- `DELETE /users/{user_id}` - Delete user account
+### Administration
+- `GET /admin/users` - Gestion des utilisateurs
+- `POST /admin/activation-keys` - Générer des clés d'activation
+- `GET /admin/stats` - Statistiques du tableau de bord
 
-### Admin Dashboard
-- `GET /admin/dashboard` - Get dashboard statistics (admin only)
-- `GET /admin/users` - Get all users with filtering (manager/admin)
-- `PUT /admin/users/{user_id}/payment` - Update user payment status (manager/admin)
-- `PUT /admin/users/{user_id}/role` - Update user role (admin only)
-- `GET /admin/users/{user_id}/details` - Get detailed user info (manager/admin)
-- `DELETE /admin/users/{user_id}` - Delete user (admin only)
+## Sécurité
 
-## Usage Examples
+- Hachage des mots de passe avec bcrypt
+- Authentification basée sur les tokens JWT
+- Middleware CORS pour les requêtes cross-origin
+- Validation des entrées avec les schémas Pydantic
+- Contrôle d'accès basé sur le statut de paiement des utilisateurs
 
-### 1. Register a User
+## Utilisation
+
+### 1. Créer un Compte Utilisateur
 ```bash
 curl -X POST "http://localhost:8000/auth/register" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "email": "student@example.com",
-       "username": "student1",
-       "password": "password123"
-     }'
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "etudiant@exemple.com",
+    "username": "etudiant123",
+    "password": "motdepasse123",
+    "year_of_study": 2,
+    "speciality": "Médecine"
+  }'
 ```
 
-### 2. Login
+### 2. Se Connecter
 ```bash
-curl -X POST "http://localhost:8000/auth/token" \
-     -H "Content-Type: application/x-www-form-urlencoded" \
-     -d "username=student1&password=password123"
+curl -X POST "http://localhost:8000/auth/login" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'username=etudiant@exemple.com&password=motdepasse123'
 ```
 
-### 3. Get Questions (with token)
+### 3. Accéder aux Questions (avec token)
 ```bash
-curl -X GET "http://localhost:8000/questions/" \
-     -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+curl -X GET "http://localhost:8000/questions/?study_year=2&module=Anatomie" \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
-### 4. Create a Question
-```bash
-curl -X POST "http://localhost:8000/questions/" \
-     -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "year": 2023,
-       "course": "Mathematics",
-       "number": 1,
-       "question_text": "What is 2 + 2?",
-       "answers": [
-         {"answer_text": "3", "is_correct": false},
-         {"answer_text": "4", "is_correct": true},
-         {"answer_text": "5", "is_correct": false},
-         {"answer_text": "6", "is_correct": false}
-       ]
-     }'
+## Outils de Saisie des Données
+
+### Outil Hors-ligne
+Utilisez `frontend/question-entry-french.html` pour saisir les questions hors-ligne. Cet outil:
+- Propose des sélections structurées par année/module/unité
+- Valide la structure des données
+- Exporte en JSON pour import dans la base de données
+- Support des images pour questions et réponses
+
+### Import en Base
+Utilisez l'endpoint `/questions/import` ou l'interface web pour importer les fichiers JSON générés par l'outil de saisie.
+
+## Développement
+
+### Structure du Projet
+```
+backend/
+├── app/
+│   ├── models.py          # Modèles de base de données
+│   ├── schemas.py         # Schémas Pydantic
+│   ├── crud.py           # Opérations CRUD
+│   ├── constants.py      # Structure médicale française
+│   └── routers/          # Endpoints API
+├── scripts/
+│   └── reset_french_structure.py  # Script de reset
+└── alembic/              # Migrations de base de données
+
+frontend/
+├── question-entry-french.html  # Outil de saisie français
+└── index.html                  # Interface d'administration
 ```
 
-## Security Features
+### Ajout de Nouveaux Modules
+Pour ajouter de nouveaux modules ou modifier la structure, éditez `backend/app/constants.py` et exécutez les migrations appropriées.
 
-- Password hashing using bcrypt
-- JWT token-based authentication
-- CORS middleware for cross-origin requests
-- Input validation using Pydantic schemas
-- Access control based on user payment status
+## Support et Contribution
 
-## Development Notes
+Pour signaler des bugs ou demander des fonctionnalités, créez une issue dans le dépôt GitHub.
 
-- The application uses SQLAlchemy for database operations
-- Alembic is included for database migrations (not configured yet)
-- The current implementation allows any authenticated user to create/edit questions
-- In production, you should implement proper role-based access control
-- Consider adding rate limiting and additional security measures
+## Licence
 
-## Future Enhancements
-
-- Database migrations with Alembic
-- Role-based access control (admin, teacher, student)
-- Question categories and tags
-- User progress tracking
-- Quiz sessions and scoring
-- Payment integration
-- File upload for question images
-- Search functionality
-- Analytics and reporting 
+Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.

@@ -1,402 +1,273 @@
-# Migration Guide for Enhanced MCQ Study App
+# Guide de Migration - Structure Française d'Éducation Médicale
 
-This document provides a step-by-step migration process for upgrading the MCQ Study App with new features including student fields, question enhancements, answer labels, and activation key system.
+## Vue d'ensemble
 
-## 🚀 New Features Overview
+Ce guide explique comment migrer vers la nouvelle structure française d'éducation médicale avec support des modules, unités et types d'examens spécifiques au système français.
 
-### Student Enhancements
-- Added `year_of_study` field (integer) for students
-- Added `speciality` field (string) for students
+## ⚠️ Migration Complète Recommandée
 
-### Question Enhancements
-- Added `speciality` field to questions
-- Added `chapter` field to questions
-- Questions now require 5 answers labeled 'a' through 'e'
-- Support for multiple correct answers per question
-
-### Activation Key System
-- New `ActivationKey` model for paid user activation
-- Key generation by owners/admins
-- Student activation via keys instead of direct payment status updates
-- **NEW**: Activation keys now expire 1 year after activation (not creation)
-
-### Device Management System
-- **NEW**: Device tracking and management for users
-- **NEW**: Limit users to maximum 2 active devices
-- **NEW**: Device session management with fingerprinting
-
-### User Management Enhancements
-- **NEW**: Password change endpoint for users
-- **NEW**: Enhanced activation validation with expiration checks
-
-### Offline Question Entry Tool
-- **NEW**: Standalone HTML tool for offline question creation
-- **NEW**: Export questions to JSON/CSV formats
-- **NEW**: Import script for batch question upload
-
-## 📋 Migration Steps
-
-### Step 1: Backup Current Database
-
-**⚠️ CRITICAL: Always backup before migration!**
+Pour une migration propre, nous recommandons une **réinitialisation complète** de la base de données:
 
 ```bash
 cd backend
-cp mcq_study.db mcq_study_backup_$(date +%Y%m%d_%H%M%S).db
+python scripts/reset_french_structure.py
 ```
 
-### Step 2: Update Dependencies
+Cette commande va:
+1. Supprimer toutes les données existantes
+2. Recréer la structure de base de données avec les nouveaux champs
+3. Créer l'utilisateur propriétaire par défaut
+4. Ajouter des questions d'exemple
 
-Ensure all dependencies are installed:
+## Nouvelles Fonctionnalités
 
-```bash
-cd backend
-pip install -r requirements.txt
+### Champs de Base de Données
+
+#### Table Questions - Nouveaux Champs
+- `study_year` (INTEGER) - Année d'étude (1, 2, 3)
+- `module` (STRING) - Nom du module (remplace `course`)
+- `unite` (STRING, NULLABLE) - Unité pour 2ème/3ème année
+- `cours` (STRING) - Nom du cours (remplace `chapter`)
+- `exam_type` (STRING) - Type d'examen (EMD, EMD1, EMD2, Rattrapage)
+- `question_image` (STRING, NULLABLE) - Chemin vers l'image de la question
+
+#### Table Answers - Nouveaux Champs
+- `answer_image` (STRING, NULLABLE) - Chemin vers l'image de la réponse
+
+### Structure Éducative Française
+
+#### 1ère Année
+- Modules autonomes avec différents types d'examens
+- Certains modules ont EMD1/EMD2/Rattrapage
+- D'autres ont seulement EMD/Rattrapage
+
+#### 2ème et 3ème Années
+- Système d'unités avec 4 modules par unité
+- Modules autonomes séparés
+- Tous les examens sont EMD/Rattrapage
+
+### Nouvelles API
+
+#### Endpoints Remplacés
+- `/questions/courses/list` → `/questions/modules/list`
+- `/questions/chapters/list` → `/questions/cours/list`
+
+#### Nouveaux Endpoints
+- `/questions/structure` - Structure complète de l'éducation médicale
+- `/questions/unites/list` - Liste des unités disponibles
+- `/questions/study-years/list` - Liste des années d'étude
+
+#### Paramètres de Filtrage Mis à Jour
+```javascript
+// Ancien format
+GET /questions/?year=2024&course=Mathematics&chapter=Algebra
+
+// Nouveau format
+GET /questions/?year=2024&study_year=2&module=Anatomie&exam_type=EMD&cours=Anatomie%20cardiaque
 ```
 
-### Step 3: Apply Database Migration
+## Interface Utilisateur
 
-The migration will add new fields and tables:
+### Nouvel Outil de Saisie
+- `frontend/question-entry-french.html` - Interface française complète
+- Sélections structurées par année/module/unité
+- Support des images pour questions et réponses
+- Validation automatique des données
 
-```bash
-cd backend
-alembic upgrade head
+### Interface Principale Mise à Jour
+- `frontend/index.html` - Interface d'administration mise à jour
+- Nouveaux champs de filtrage
+- Support de la structure française
+
+## Format des Données
+
+### Ancien Format (Questions)
+```json
+{
+  "year": 2024,
+  "course": "Mathematics",
+  "speciality": "Computer Science", 
+  "chapter": "Algebra",
+  "number": 1,
+  "question_text": "What is 2+2?",
+  "answers": [...]
+}
 ```
 
-This migration adds:
-- `users.year_of_study` column (nullable)
-- `users.speciality` column (nullable)
-- `questions.speciality` column (nullable)
-- `questions.chapter` column (nullable)
-- `answers.option_label` column (a-e labels)
-- `activation_keys` table with relationships
-
-### Step 4: Verify Migration Success
-
-Check that all tables and columns exist:
-
-```bash
-python -c "
-import sqlite3
-conn = sqlite3.connect('mcq_study.db')
-cursor = conn.cursor()
-
-# Check new user columns
-cursor.execute('PRAGMA table_info(users);')
-print('Users table schema:')
-for col in cursor.fetchall():
-    print(f'  {col[1]} {col[2]}')
-
-# Check new question columns
-cursor.execute('PRAGMA table_info(questions);')
-print('\nQuestions table schema:')
-for col in cursor.fetchall():
-    print(f'  {col[1]} {col[2]}')
-
-# Check activation_keys table
-cursor.execute('PRAGMA table_info(activation_keys);')
-print('\nActivation Keys table schema:')
-for col in cursor.fetchall():
-    print(f'  {col[1]} {col[2]}')
-
-conn.close()
-"
+### Nouveau Format (Questions)
+```json
+{
+  "year": 2024,
+  "study_year": 2,
+  "module": "Anatomie",
+  "unite": "Appareil Cardio-vasculaire et Respiratoire",
+  "speciality": "Médecine",
+  "cours": "Anatomie cardiaque",
+  "exam_type": "EMD",
+  "number": 1,
+  "question_text": "Combien de cavités a le cœur?",
+  "question_image": null,
+  "answers": [...]
+}
 ```
 
-### Step 5: Test Application Startup
-
-```bash
-python run.py
+### Nouveau Format (Réponses)
+```json
+{
+  "answer_text": "4 cavités",
+  "answer_image": null,
+  "is_correct": true,
+  "option_label": "c"
+}
 ```
 
-Verify the application starts without errors.
+## Script de Migration Personnalisé
 
-### Step 6: Update Existing Data (Optional)
-
-If you have existing data, you may want to populate the new fields:
+Si vous avez besoin de conserver certaines données existantes, voici un exemple de script de migration:
 
 ```python
-# Example script to update existing data
-import sqlite3
+#!/usr/bin/env python3
+"""
+Script de migration personnalisé
+"""
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-conn = sqlite3.connect('mcq_study.db')
-cursor = conn.cursor()
+from app.database import get_db
+from app.models import Question, Answer
 
-# Set default speciality for existing students
-cursor.execute("""
-    UPDATE users 
-    SET speciality = 'General Studies', year_of_study = 1 
-    WHERE user_type = 'STUDENT' AND speciality IS NULL
-""")
+def migrate_existing_questions():
+    """Migrer les questions existantes vers la nouvelle structure"""
+    db = next(get_db())
+    
+    try:
+        # Exemple: Convertir les anciennes questions
+        questions = db.query(Question).all()
+        
+        for question in questions:
+            # Mapper les anciens champs vers les nouveaux
+            if hasattr(question, 'course'):
+                question.module = question.course
+                delattr(question, 'course')
+            
+            if hasattr(question, 'chapter'):
+                question.cours = question.chapter
+                delattr(question, 'chapter')
+            
+            # Définir des valeurs par défaut
+            question.study_year = 1  # À adapter selon votre logique
+            question.exam_type = "EMD"  # À adapter
+            question.unite = None
+            question.question_image = None
+        
+        # Mettre à jour les réponses
+        answers = db.query(Answer).all()
+        for answer in answers:
+            answer.answer_image = None
+        
+        db.commit()
+        print("Migration réussie!")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Erreur de migration: {e}")
+    finally:
+        db.close()
 
-# Set default speciality for existing questions
-cursor.execute("""
-    UPDATE questions 
-    SET speciality = 'General', chapter = 'Miscellaneous' 
-    WHERE speciality IS NULL
-""")
-
-# Update existing answers to have option labels
-cursor.execute("""
-    UPDATE answers 
-    SET option_label = 
-        CASE 
-            WHEN id % 5 = 1 THEN 'a'
-            WHEN id % 5 = 2 THEN 'b'
-            WHEN id % 5 = 3 THEN 'c'
-            WHEN id % 5 = 4 THEN 'd'
-            ELSE 'e'
-        END
-    WHERE option_label IS NULL
-""")
-
-conn.commit()
-conn.close()
+if __name__ == "__main__":
+    migrate_existing_questions()
 ```
 
-## 🔑 Using the Activation Key System
+## Validation des Données
 
-### For Owners/Admins: Creating Keys
+### Champs Obligatoires
+- `year` - Année de l'examen
+- `study_year` - Année d'étude (1, 2, ou 3)
+- `module` - Nom du module
+- `speciality` - Spécialité médicale
+- `cours` - Nom du cours
+- `exam_type` - Type d'examen
+- `number` - Numéro de la question
+- `question_text` - Texte de la question
 
-1. Login as owner/admin
-2. Use the admin endpoint to create keys:
+### Champs Optionnels
+- `unite` - Unité (requis seulement pour certains modules de 2ème/3ème année)
+- `question_image` - Image de la question
+- `answer_image` - Image de la réponse
 
+## Test de la Migration
+
+### Vérifier la Structure
 ```bash
-curl -X POST "http://localhost:8000/admin/activation-keys" \
-     -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+# Tester la nouvelle API
+curl -X GET "http://localhost:8000/questions/structure"
+
+# Vérifier les modules
+curl -X GET "http://localhost:8000/questions/modules/list" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### For Students: Using Keys
-
-1. Register as student (optionally include year_of_study and speciality)
-2. Login to get access token
-3. Use activation endpoint:
-
+### Créer une Question Test
 ```bash
-curl -X POST "http://localhost:8000/users/activate" \
-     -H "Authorization: Bearer YOUR_STUDENT_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"key": "ACTIVATION_KEY"}'
-```
-
-## 📊 New API Endpoints
-
-### Student Registration (Enhanced)
-```
-POST /auth/register
-{
-    "email": "student@example.com",
-    "username": "student123",
-    "password": "password123",
-    "year_of_study": 3,
-    "speciality": "Computer Science"
-}
-```
-
-### Question Creation (Enhanced)
-```
-POST /questions/
-{
+curl -X POST "http://localhost:8000/questions/" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
     "year": 2024,
-    "course": "Advanced Programming",
-    "speciality": "Computer Science",
-    "chapter": "Object-Oriented Programming",
+    "study_year": 1,
+    "module": "Anatomie",
+    "unite": null,
+    "speciality": "Médecine",
+    "cours": "Anatomie générale",
+    "exam_type": "EMD1",
     "number": 1,
-    "question_text": "What is encapsulation?",
+    "question_text": "Test question",
     "answers": [
-        {"answer_text": "Hiding details", "is_correct": true, "option_label": "a"},
-        {"answer_text": "Wrong answer", "is_correct": false, "option_label": "b"},
-        {"answer_text": "Wrong answer", "is_correct": false, "option_label": "c"},
-        {"answer_text": "Wrong answer", "is_correct": false, "option_label": "d"},
-        {"answer_text": "Wrong answer", "is_correct": false, "option_label": "e"}
+      {"answer_text": "Réponse A", "is_correct": true, "option_label": "a"},
+      {"answer_text": "Réponse B", "is_correct": false, "option_label": "b"},
+      {"answer_text": "Réponse C", "is_correct": false, "option_label": "c"},
+      {"answer_text": "Réponse D", "is_correct": false, "option_label": "d"},
+      {"answer_text": "Réponse E", "is_correct": false, "option_label": "e"}
     ]
-}
+  }'
 ```
 
-### New Filtering Options
-```
-GET /questions/?speciality=Computer Science&chapter=OOP
-GET /questions/specialities/list
-GET /questions/chapters/list
-```
+## Dépannage
 
-### Activation Key Management
-```
-POST /admin/activation-keys          # Create key (admin only)
-GET /admin/activation-keys           # List keys (admin only)
-GET /admin/activation-keys/stats     # Key statistics (admin only)
-POST /users/activate                 # Use key (student)
-```
+### Erreurs Communes
 
-## 🔄 Rollback Procedure
+1. **Champs manquants dans les questions existantes**
+   - Solution: Exécuter le script de réinitialisation complet
 
-If you need to rollback the migration:
+2. **Erreurs de validation des types d'examens**
+   - Vérifier que `exam_type` correspond aux valeurs autorisées
+   - 1ère année: EMD, EMD1, EMD2, Rattrapage
+   - 2ème/3ème année: EMD, Rattrapage
 
-1. Stop the application
-2. Restore backup:
-   ```bash
-   cp mcq_study_backup_TIMESTAMP.db mcq_study.db
-   ```
-3. Downgrade migration:
-   ```bash
-   alembic downgrade 0001
-   ```
+3. **Problèmes avec les unités**
+   - Les unités sont optionnelles pour les modules autonomes
+   - Requises pour les modules faisant partie d'une unité
 
-## ✅ Verification Checklist
-
-After migration, verify:
-
-- [ ] Application starts without errors
-- [ ] Existing users can still login
-- [ ] Existing questions are still accessible
-- [ ] New user registration includes student fields
-- [ ] Question creation includes new fields
-- [ ] Activation key system works
-- [ ] All answer options have labels (a-e)
-- [ ] Admin dashboard shows new statistics
-- [ ] Question filtering by speciality/chapter works
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Migration fails with "table already exists"**
-   - Check current migration status: `alembic current`
-   - Mark migration as applied: `alembic stamp head`
-
-2. **Application won't start after migration**
-   - Check server logs for specific error
-   - Verify all new dependencies are installed
-   - Check database file permissions
-
-3. **Existing questions missing new fields**
-   - Run the data update script in Step 6
-   - Or update manually via admin interface
-
-### Getting Help
-
-1. Check application logs: `python run.py` output
-2. Verify database schema with SQLite browser
-3. Use the test script to verify functionality
-4. Check API documentation at `/docs` endpoint
-
-## 📈 Performance Considerations
-
-- New indexes are automatically created for new fields
-- Activation key lookups are optimized with unique index
-- Consider adding indexes on speciality/chapter if you have many questions
-- Monitor database size growth with activation keys
-
-## 🔐 Security Notes
-
-- Activation keys are randomly generated 16-character strings
-- Keys are single-use and automatically marked as used
-- Only owners/admins can generate keys
-- **NEW**: Keys now expire 1 year after activation for enhanced security
-- **NEW**: Device fingerprinting helps prevent unauthorized access
-- **NEW**: Password change requires current password verification
-
-## 🆕 New API Endpoints (Version 2.0)
-
-### Device Management
-```
-GET /users/devices                   # List user's active devices
-POST /users/devices                  # Register new device (max 2)
-DELETE /users/devices/{device_id}    # Deactivate device
-```
-
-### Enhanced User Management
-```
-POST /users/change-password          # Change password with email verification
-POST /users/activate                 # Enhanced activation with expiration info
-```
-
-### Questions by Chapter
-```
-GET /questions/?chapter=ChapterName  # Filter questions by chapter (already available)
-GET /questions/chapters/list         # List all available chapters
-```
-
-## 🛠️ New Tools and Scripts
-
-### Question Data Entry Tool
-- **Location**: `frontend/question-entry.html`
-- **Purpose**: Offline question creation and management
-- **Features**: 
-  - Create questions with 5 answer options
-  - Export to JSON/CSV formats
-  - Import previously saved questions
-  - Validation and duplicate checking
-
-### Question Import Script
-- **Location**: `backend/scripts/import_questions.py`
-- **Usage**: `python import_questions.py questions.json`
-- **Features**:
-  - Batch import from JSON files
-  - Duplicate detection and handling
-  - Validation and error reporting
-  - Import statistics
-
-### Database Reset Script (Enhanced)
-- **Location**: `backend/scripts/reset_database.py`
-- **Usage**: `python reset_database.py --confirm`
-- **Features**:
-  - Complete database reset
-  - Automatic backup creation
-  - Owner user recreation
-  - Database verification
-
-## 📋 Migration Checklist for Version 2.0
-
-- [ ] Backup current database
-- [ ] Update dependencies
-- [ ] Apply database migration (new fields and tables)
-- [ ] Test activation key expiration logic
-- [ ] Verify device management functionality
-- [ ] Test password change endpoint
-- [ ] Validate question filtering by chapter
-- [ ] Test offline question entry tool
-- [ ] Verify question import script
-- [ ] Update admin procedures for key management
-- [ ] Train users on device limitations
-- [ ] Update documentation and user guides
-
-## 🎯 Quick Start for New Features
-
-### 1. Testing Device Management
+### Logs et Débogage
 ```bash
-# Register a device (requires authentication)
-curl -X POST "http://localhost:8000/users/devices" \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"device_fingerprint": "device123", "device_name": "My Laptop"}'
+# Vérifier les logs du serveur
+python run.py
 
-# List user devices
-curl -X GET "http://localhost:8000/users/devices" \
-     -H "Authorization: Bearer YOUR_TOKEN"
+# Tester la connectivité de la base de données
+python -c "from app.database import engine; from app.models import Base; Base.metadata.create_all(bind=engine); print('OK')"
 ```
 
-### 2. Testing Password Change
-```bash
-curl -X POST "http://localhost:8000/users/change-password" \
-     -H "Content-Type: application/json" \
-     -d '{"email": "user@example.com", "current_password": "old123", "new_password": "new456"}'
-```
+## Support
 
-### 3. Using the Question Entry Tool
-1. Open `frontend/question-entry.html` in any web browser
-2. Fill in question details and answers
-3. Export questions as JSON
-4. Import to main system: `python scripts/import_questions.py exported_questions.json`
+Pour des questions spécifiques sur la migration, consultez:
+- Le fichier README.md pour la documentation complète
+- Les constantes dans `app/constants.py` pour la structure éducative
+- Les exemples dans `scripts/reset_french_structure.py`
 
-### 4. Testing Activation Key Expiration
-- Create activation key via admin panel
-- Activate user account (sets 1-year expiration)
-- Check expiration with activation validation
-- Test automatic deactivation after expiration
+## Rollback
 
----
-
-**Migration completed successfully! 🎉**
-
-Your MCQ Study App now supports enhanced student profiles, detailed question categorization, and a secure activation key system.
+Si vous devez revenir à l'ancienne structure, les fichiers de sauvegarde sont dans:
+- `archive/README_OLD.md`
+- `archive/MIGRATION_GUIDE_OLD.md`
+- Migration Alembic: utilisez `alembic downgrade` pour revenir aux versions précédentes

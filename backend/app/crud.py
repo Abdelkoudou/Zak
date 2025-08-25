@@ -63,36 +63,48 @@ def delete_user(db: Session, user_id: int):
 def get_question(db: Session, question_id: int):
     return db.query(models.Question).filter(models.Question.id == question_id).first()
 
-def get_questions(db: Session, skip: int = 0, limit: int = 100, year: Optional[int] = None, course: Optional[str] = None, speciality: Optional[str] = None, chapter: Optional[str] = None):
+def get_questions(db: Session, skip: int = 0, limit: int = 100, year: Optional[int] = None, study_year: Optional[int] = None, module: Optional[str] = None, unite: Optional[str] = None, speciality: Optional[str] = None, cours: Optional[str] = None, exam_type: Optional[str] = None):
     query = db.query(models.Question)
     
     if year:
         query = query.filter(models.Question.year == year)
-    if course:
-        query = query.filter(models.Question.course.ilike(f"%{course}%"))
+    if study_year:
+        query = query.filter(models.Question.study_year == study_year)
+    if module:
+        query = query.filter(models.Question.module.ilike(f"%{module}%"))
+    if unite:
+        query = query.filter(models.Question.unite.ilike(f"%{unite}%"))
     if speciality:
         query = query.filter(models.Question.speciality.ilike(f"%{speciality}%"))
-    if chapter:
-        query = query.filter(models.Question.chapter.ilike(f"%{chapter}%"))
+    if cours:
+        query = query.filter(models.Question.cours.ilike(f"%{cours}%"))
+    if exam_type:
+        query = query.filter(models.Question.exam_type == exam_type)
     
     return query.offset(skip).limit(limit).all()
 
-def get_question_by_details(db: Session, year: int, course: str, number: int):
-    """Get a question by year, course, and number (for duplicate checking)"""
+def get_question_by_details(db: Session, year: int, study_year: int, module: str, number: int, exam_type: str):
+    """Get a question by year, study_year, module, number, and exam_type (for duplicate checking)"""
     return db.query(models.Question).filter(
         models.Question.year == year,
-        models.Question.course == course,
-        models.Question.number == number
+        models.Question.study_year == study_year,
+        models.Question.module == module,
+        models.Question.number == number,
+        models.Question.exam_type == exam_type
     ).first()
 
 def create_question(db: Session, question: schemas.QuestionCreate):
     db_question = models.Question(
         year=question.year,
-        course=question.course,
+        study_year=question.study_year,
+        module=question.module,
+        unite=question.unite,
         speciality=question.speciality,
-        chapter=question.chapter,
+        cours=question.cours,
+        exam_type=question.exam_type,
         number=question.number,
-        question_text=question.question_text
+        question_text=question.question_text,
+        question_image=question.question_image
     )
     db.add(db_question)
     db.commit()
@@ -103,6 +115,7 @@ def create_question(db: Session, question: schemas.QuestionCreate):
         db_answer = models.Answer(
             question_id=db_question.id,
             answer_text=answer_data.answer_text,
+            answer_image=answer_data.answer_image,
             is_correct=answer_data.is_correct,
             option_label=answer_data.option_label
         )
@@ -136,6 +149,7 @@ def update_question(db: Session, question_id: int, question_update: schemas.Ques
             db_answer = models.Answer(
                 question_id=question_id,
                 answer_text=answer_data.answer_text,
+                answer_image=answer_data.answer_image,
                 is_correct=answer_data.is_correct,
                 option_label=answer_data.option_label
             )
@@ -169,6 +183,7 @@ def create_answer(db: Session, answer: schemas.AnswerCreate, question_id: int):
     db_answer = models.Answer(
         question_id=question_id,
         answer_text=answer.answer_text,
+        answer_image=answer.answer_image,
         is_correct=answer.is_correct,
         option_label=answer.option_label
     )
@@ -334,3 +349,24 @@ def change_user_password(db: Session, email: str, current_password: str, new_pas
     user.hashed_password = auth.get_password_hash(new_password)
     db.commit()
     return True
+
+# Helper functions for frontend dropdowns
+def get_available_modules(db: Session):
+    """Get all unique modules from questions"""
+    return [r[0] for r in db.query(models.Question.module).distinct().all() if r[0]]
+
+def get_available_unites(db: Session):
+    """Get all unique unites from questions"""
+    return [r[0] for r in db.query(models.Question.unite).distinct().all() if r[0]]
+
+def get_available_cours(db: Session):
+    """Get all unique cours from questions"""
+    return [r[0] for r in db.query(models.Question.cours).distinct().all() if r[0]]
+
+def get_available_years(db: Session):
+    """Get all unique years from questions"""
+    return [r[0] for r in db.query(models.Question.year).distinct().order_by(models.Question.year.desc()).all()]
+
+def get_available_study_years(db: Session):
+    """Get all unique study years from questions"""
+    return [r[0] for r in db.query(models.Question.study_year).distinct().order_by(models.Question.study_year).all()]
