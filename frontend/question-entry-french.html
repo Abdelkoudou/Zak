@@ -318,7 +318,9 @@
                     </div>
                     <div class="form-group">
                         <label for="cours">Cours:</label>
-                        <input type="text" id="cours" required placeholder="Nom du cours">
+                        <div id="cours-container">
+                            <input type="text" id="cours" required placeholder="Nom du cours">
+                        </div>
                     </div>
                 </div>
                 
@@ -457,44 +459,51 @@
             const studyYear = document.getElementById('study-year').value;
             const moduleSelect = document.getElementById('module');
             const uniteGroup = document.getElementById('unite-group');
+            const uniteSelect = document.getElementById('unite');
             
             moduleSelect.innerHTML = '<option value="">Choisir le module</option>';
+            uniteSelect.innerHTML = '<option value="">Choisir l\'unité</option>';
             
             if (studyYear && medicalStructure[studyYear]) {
                 const structure = medicalStructure[studyYear];
                 
-                // Add standalone modules
-                if (structure.modules) {
-                    if (Array.isArray(structure.modules)) {
-                        structure.modules.forEach(module => {
-                            moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
-                        });
-                    } else {
+                if (studyYear === "1") {
+                    // 1st year: Only standalone modules, no unités
+                    uniteGroup.classList.add('hidden');
+                    if (structure.modules) {
                         Object.keys(structure.modules).forEach(module => {
                             moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
                         });
                     }
-                }
-                
-                // Add unites as modules for 2nd and 3rd year
-                if (structure.unites) {
-                    Object.keys(structure.unites).forEach(unite => {
-                        moduleSelect.innerHTML += `<option value="${unite}" data-is-unite="true">${unite}</option>`;
-                    });
-                    uniteGroup.classList.remove('hidden');
                 } else {
-                    uniteGroup.classList.add('hidden');
+                    // 2nd and 3rd year: Show unités and standalone modules
+                    uniteGroup.classList.remove('hidden');
+                    
+                    // Add standalone modules first
+                    if (structure.modules) {
+                        structure.modules.forEach(module => {
+                            moduleSelect.innerHTML += `<option value="${module}">${module}</option>`;
+                        });
+                    }
+                    
+                    // Add unités to the unité dropdown
+                    if (structure.unites) {
+                        Object.keys(structure.unites).forEach(unite => {
+                            uniteSelect.innerHTML += `<option value="${unite}">${unite}</option>`;
+                        });
+                    }
                 }
             }
+            
+            // Clear dependent fields
+            document.getElementById('exam-type').innerHTML = '<option value="">Choisir le type d\'examen</option>';
+            document.getElementById('cours-container').innerHTML = '<input type="text" id="cours" required placeholder="Nom du cours">';
         }
 
-        // Update unite and exam options based on module selection
+        // Update exam options when a standalone module is selected
         function updateUniteAndExamOptions() {
             const studyYear = document.getElementById('study-year').value;
             const module = document.getElementById('module').value;
-            const selectedOption = document.querySelector(`#module option[value="${module}"]`);
-            const isUnite = selectedOption && selectedOption.dataset.isUnite;
-            const uniteSelect = document.getElementById('unite');
             const examTypeSelect = document.getElementById('exam-type');
             
             // Clear exam types
@@ -503,22 +512,14 @@
             if (studyYear && module) {
                 const structure = medicalStructure[studyYear];
                 
-                if (isUnite) {
-                    // If it's a unite, show it in unite field
-                    uniteSelect.innerHTML = `<option value="${module}" selected>${module}</option>`;
-                    document.getElementById('unite').value = module;
-                } else {
-                    // If it's a standalone module, clear unite
-                    uniteSelect.innerHTML = '<option value="">Pas d\'unité</option>';
-                    document.getElementById('unite').value = '';
-                }
-                
                 // Set exam types based on year and module
-                if (studyYear === "1" && structure.modules[module]) {
+                if (studyYear === "1" && structure.modules && structure.modules[module]) {
+                    // 1st year: module-specific exam types
                     structure.modules[module].forEach(examType => {
                         examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
                     });
                 } else if ((studyYear === "2" || studyYear === "3") && structure.examTypes) {
+                    // 2nd/3rd year: standard exam types for standalone modules
                     structure.examTypes.forEach(examType => {
                         examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
                     });
@@ -526,15 +527,37 @@
             }
         }
 
-        // Update cours options based on unite selection
+        // Update cours options and exam types when a unité is selected
         function updateCoursOptions() {
             const studyYear = document.getElementById('study-year').value;
             const unite = document.getElementById('unite').value;
+            const coursContainer = document.getElementById('cours-container');
+            const examTypeSelect = document.getElementById('exam-type');
+            
+            // Clear exam types
+            examTypeSelect.innerHTML = '<option value="">Choisir le type d\'examen</option>';
             
             if (studyYear && unite && medicalStructure[studyYear] && medicalStructure[studyYear].unites && medicalStructure[studyYear].unites[unite]) {
-                // For unites, suggest cours options but keep it as text input for flexibility
-                const cours = medicalStructure[studyYear].unites[unite];
-                document.getElementById('cours').placeholder = `Ex: ${cours.join(', ')}`;
+                // Create a select dropdown for modules within the unité
+                const modulesInUnite = medicalStructure[studyYear].unites[unite];
+                
+                coursContainer.innerHTML = `
+                    <select id="cours" required>
+                        <option value="">Choisir le module dans l'unité</option>
+                        ${modulesInUnite.map(module => `<option value="${module}">${module}</option>`).join('')}
+                    </select>
+                `;
+                
+                // Set exam types for unité-based modules
+                const structure = medicalStructure[studyYear];
+                if (structure.examTypes) {
+                    structure.examTypes.forEach(examType => {
+                        examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
+                    });
+                }
+            } else {
+                // Reset to text input when no unité is selected
+                coursContainer.innerHTML = '<input type="text" id="cours" required placeholder="Nom du cours">';
             }
         }
 
