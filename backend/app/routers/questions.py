@@ -14,18 +14,25 @@ router = APIRouter(prefix="/questions", tags=["questions"])
 def get_questions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-    year: Optional[int] = Query(None, description="Filter by year"),
-    course: Optional[str] = Query(None, description="Filter by course"),
+    year: Optional[int] = Query(None, description="Filter by exam year"),
+    study_year: Optional[int] = Query(None, description="Filter by study year (1-3)"),
+    module: Optional[str] = Query(None, description="Filter by module"),
+    unite: Optional[str] = Query(None, description="Filter by unite"),
     speciality: Optional[str] = Query(None, description="Filter by speciality"),
-    chapter: Optional[str] = Query(None, description="Filter by chapter"),
+    cours: Optional[str] = Query(None, description="Filter by cours"),
+    exam_type: Optional[str] = Query(None, description="Filter by exam type (EMD, EMD1, EMD2, Rattrapage)"),
     current_user: User = Depends(require_paid_user),
     db: Session = Depends(get_db)
 ):
     """
-    Get questions with optional filtering by year, course, speciality, and chapter.
+    Get questions with optional filtering.
     Only paid users can access questions.
     """
-    questions = crud.get_questions(db, skip=skip, limit=limit, year=year, course=course, speciality=speciality, chapter=chapter)
+    questions = crud.get_questions(
+        db, skip=skip, limit=limit, 
+        year=year, study_year=study_year, module=module, unite=unite,
+        speciality=speciality, cours=cours, exam_type=exam_type
+    )
     
     result = []
     for question in questions:
@@ -33,11 +40,15 @@ def get_questions(
         question_response = schemas.QuestionResponse(
             id=question.id,
             year=question.year,
-            course=question.course,
+            study_year=question.study_year,
+            module=question.module,
+            unite=question.unite,
             speciality=question.speciality,
-            chapter=question.chapter,
+            cours=question.cours,
+            exam_type=question.exam_type,
             number=question.number,
             question_text=question.question_text,
+            question_image=question.question_image,
             created_at=question.created_at,
             updated_at=question.updated_at,
             answers=question.answers,
@@ -67,28 +78,56 @@ def get_question(
     return schemas.QuestionResponse(
         id=question.id,
         year=question.year,
-        course=question.course,
+        study_year=question.study_year,
+        module=question.module,
+        unite=question.unite,
         speciality=question.speciality,
-        chapter=question.chapter,
+        cours=question.cours,
+        exam_type=question.exam_type,
         number=question.number,
         question_text=question.question_text,
+        question_image=question.question_image,
         created_at=question.created_at,
         updated_at=question.updated_at,
         answers=question.answers,
         correct_answers=question.correct_answers if current_user.is_paid else None
     )
 
-@router.get("/courses/list")
-def get_available_courses(
+@router.get("/modules/list")
+def get_available_modules(
     current_user: User = Depends(require_paid_user),
     db: Session = Depends(get_db)
 ):
     """
-    Get list of available courses.
+    Get list of available modules.
     Only paid users can access.
     """
-    courses = db.query(crud.models.Question.course).distinct().all()
-    return {"courses": [course[0] for course in courses]}
+    modules = crud.get_available_modules(db)
+    return {"modules": modules}
+
+@router.get("/unites/list")
+def get_available_unites(
+    current_user: User = Depends(require_paid_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of available unites.
+    Only paid users can access.
+    """
+    unites = crud.get_available_unites(db)
+    return {"unites": unites}
+
+@router.get("/cours/list")  
+def get_available_cours(
+    current_user: User = Depends(require_paid_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of available cours.
+    Only paid users can access.
+    """
+    cours = crud.get_available_cours(db)
+    return {"cours": cours}
 
 @router.get("/years/list")
 def get_available_years(
@@ -99,32 +138,38 @@ def get_available_years(
     Get list of available years.
     Only paid users can access.
     """
-    years = db.query(crud.models.Question.year).distinct().order_by(crud.models.Question.year).all()
-    return {"years": [year[0] for year in years]}
+    years = crud.get_available_years(db)
+    return {"years": years}
 
-@router.get("/specialities/list")
-def get_available_specialities(
+@router.get("/study-years/list")
+def get_available_study_years(
     current_user: User = Depends(require_paid_user),
     db: Session = Depends(get_db)
 ):
     """
-    Get list of available specialities.
+    Get list of available study years.
     Only paid users can access.
     """
-    specialities = db.query(crud.models.Question.speciality).distinct().filter(crud.models.Question.speciality != None).all()
-    return {"specialities": [spec[0] for spec in specialities]}
+    study_years = crud.get_available_study_years(db)
+    return {"study_years": study_years}
 
-@router.get("/chapters/list")
-def get_available_chapters(
-    current_user: User = Depends(require_paid_user),
-    db: Session = Depends(get_db)
-):
+@router.get("/structure")
+def get_medical_structure():
     """
-    Get list of available chapters.
-    Only paid users can access.
+    Get the complete medical education structure.
+    No authentication required as this is reference data.
     """
-    chapters = db.query(crud.models.Question.chapter).distinct().filter(crud.models.Question.chapter != None).all()
-    return {"chapters": [chapter[0] for chapter in chapters]}
+    from ..constants import STUDY_YEARS, FIRST_YEAR_MODULES, SECOND_YEAR_STRUCTURE, THIRD_YEAR_STRUCTURE, EXAM_TYPES
+    
+    return {
+        "study_years": STUDY_YEARS,
+        "exam_types": EXAM_TYPES,
+        "first_year": {
+            "modules": FIRST_YEAR_MODULES
+        },
+        "second_year": SECOND_YEAR_STRUCTURE,
+        "third_year": THIRD_YEAR_STRUCTURE
+    }
 
 # Manager/Admin endpoints for managing questions
 @router.post("/", response_model=schemas.Question)
@@ -170,7 +215,7 @@ async def import_questions(
         for i, question_data in enumerate(questions_data):
             try:
                 # Validate required fields
-                required_fields = ['year', 'course', 'speciality', 'chapter', 'number', 'question_text', 'answers']
+                required_fields = ['year', 'study_year', 'module', 'speciality', 'cours', 'exam_type', 'number', 'question_text', 'answers']
                 for field in required_fields:
                     if field not in question_data:
                         errors.append(f"Question {i+1}: Missing required field '{field}'")
@@ -180,8 +225,10 @@ async def import_questions(
                 existing = crud.get_question_by_details(
                     db, 
                     year=question_data['year'],
-                    course=question_data['course'],
-                    number=question_data['number']
+                    study_year=question_data['study_year'],
+                    module=question_data['module'],
+                    number=question_data['number'],
+                    exam_type=question_data['exam_type']
                 )
                 
                 if existing:
@@ -191,11 +238,15 @@ async def import_questions(
                 # Create question schema
                 question_create = schemas.QuestionCreate(
                     year=question_data['year'],
-                    course=question_data['course'],
+                    study_year=question_data['study_year'],
+                    module=question_data['module'],
+                    unite=question_data.get('unite'),
                     speciality=question_data['speciality'],
-                    chapter=question_data['chapter'],
+                    cours=question_data['cours'],
+                    exam_type=question_data['exam_type'],
                     number=question_data['number'],
                     question_text=question_data['question_text'],
+                    question_image=question_data.get('question_image'),
                     answers=question_data['answers']
                 )
                 
