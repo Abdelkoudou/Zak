@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedStudy - Medical MCQ Study App</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #3498db;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #2c3e50;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .main-container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .welcome-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .welcome-title {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card.questions .stat-icon {
+            color: #3498db;
+        }
+
+        .stat-card.progress .stat-icon {
+            color: #2ecc71;
+        }
+
+        .stat-card.streak .stat-icon {
+            color: #f39c12;
+        }
+
+        .stat-card.accuracy .stat-icon {
+            color: #e74c3c;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-align: center;
+        }
+
+        .action-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .action-card.study .action-icon {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .action-card.practice .action-icon {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+
+        .action-card.review .action-icon {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .action-card.analytics .action-icon {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
+        .action-title {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .action-description {
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .action-button {
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .quick-access {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .quick-access h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .subject-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .subject-card:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            transform: scale(0);
+            transition: transform 0.3s ease;
+        }
+
+        .subject-card:hover:before {
+            transform: scale(1);
+        }
+
+        .subject-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .subject-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .subject-name {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .subject-count {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-title {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .login-button {
+            width: 100%;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+            }
+            
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .welcome-title {
+                font-size: 2rem;
+            }
+            
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 3000;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-modal">
+            <h2 class="login-title">
+                <i class="fas fa-stethoscope"></i>
+                Welcome to MedStudy
+            </h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-button">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login to Study
+                </button>
+            </form>
+            <p style="margin-top: 1rem; color: #7f8c8d; font-size: 0.9rem;">
+                Demo: Username: owner, Password: 123456789
+            </p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-stethoscope"></i>
+                <span>MedStudy</span>
+            </div>
+            <div class="user-info">
+                <span id="userName">Medical Student</span>
+                <div class="user-avatar" id="userAvatar">MS</div>
+                <button onclick="logout()" style="background: none; border: none; color: #e74c3c; cursor: pointer; margin-left: 1rem;">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Container -->
+        <div class="main-container">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 class="welcome-title">Welcome back, Future Doctor! 🩺</h1>
+                <p class="welcome-subtitle">Ready to ace your medical exams? Let's dive into your personalized study experience.</p>
+                
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card questions">
+                        <i class="fas fa-question-circle stat-icon"></i>
+                        <span class="stat-number" id="totalQuestions">1,247</span>
+                        <span class="stat-label">Questions Available</span>
+                    </div>
+                    <div class="stat-card progress">
+                        <i class="fas fa-chart-line stat-icon"></i>
+                        <span class="stat-number" id="progressPercent">73%</span>
+                        <span class="stat-label">Study Progress</span>
+                    </div>
+                    <div class="stat-card streak">
+                        <i class="fas fa-fire stat-icon"></i>
+                        <span class="stat-number" id="studyStreak">12</span>
+                        <span class="stat-label">Day Streak</span>
+                    </div>
+                    <div class="stat-card accuracy">
+                        <i class="fas fa-bullseye stat-icon"></i>
+                        <span class="stat-number" id="accuracy">85%</span>
+                        <span class="stat-label">Accuracy Rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Grid -->
+            <div class="action-grid">
+                <div class="action-card study">
+                    <div class="action-icon">
+                        <i class="fas fa-book-medical"></i>
+                    </div>
+                    <h3 class="action-title">Study Mode</h3>
+                    <p class="action-description">Deep dive into medical concepts with our comprehensive question bank. Perfect for thorough learning and understanding.</p>
+                    <button class="action-button" onclick="startStudyMode()">Start Studying</button>
+                </div>
+
+                <div class="action-card practice">
+                    <div class="action-icon">
+                        <i class="fas fa-dumbbell"></i>
+                    </div>
+                    <h3 class="action-title">Practice Tests</h3>
+                    <p class="action-description">Simulate real exam conditions with timed practice tests. Build confidence and improve your speed.</p>
+                    <button class="action-button" onclick="startPracticeTest()">Take Practice Test</button>
+                </div>
+
+                <div class="action-card review">
+                    <div class="action-icon">
+                        <i class="fas fa-search-plus"></i>
+                    </div>
+                    <h3 class="action-title">Review Mistakes</h3>
+                    <p class="action-description">Learn from your mistakes with detailed explanations and similar question recommendations.</p>
+                    <button class="action-button" onclick="reviewMistakes()">Review Now</button>
+                </div>
+
+                <div class="action-card analytics">
+                    <div class="action-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3 class="action-title">Performance Analytics</h3>
+                    <p class="action-description">Track your progress with detailed analytics and personalized improvement suggestions.</p>
+                    <button class="action-button" onclick="viewAnalytics()">View Analytics</button>
+                </div>
+            </div>
+
+            <!-- Quick Access -->
+            <div class="quick-access">
+                <h2>
+                    <i class="fas fa-graduation-cap"></i>
+                    Quick Access by Subject
+                </h2>
+                <div class="subject-grid" id="subjectGrid">
+                    <!-- Subjects will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <span id="notificationText"></span>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let authToken = localStorage.getItem('authToken');
+        let currentUser = null;
+
+        // Medical subjects with icons
+        const medicalSubjects = [
+            { name: 'Anatomy', icon: 'fas fa-skeleton', count: 245, color: '#e74c3c' },
+            { name: 'Physiology', icon: 'fas fa-heart', count: 198, color: '#3498db' },
+            { name: 'Pathology', icon: 'fas fa-microscope', count: 234, color: '#9b59b6' },
+            { name: 'Pharmacology', icon: 'fas fa-pills', count: 167, color: '#2ecc71' },
+            { name: 'Surgery', icon: 'fas fa-scalpel-path', count: 189, color: '#f39c12' },
+            { name: 'Pediatrics', icon: 'fas fa-baby', count: 123, color: '#ff6b9d' },
+            { name: 'Internal Medicine', icon: 'fas fa-stethoscope', count: 201, color: '#1abc9c' },
+            { name: 'Cardiology', icon: 'fas fa-heartbeat', count: 156, color: '#e67e22' }
+        ];
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            if (authToken) {
+                getCurrentUser();
+            } else {
+                showLogin();
+            }
+            populateSubjects();
+        });
+
+        // Show notification
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            const notificationText = document.getElementById('notificationText');
+            
+            notificationText.textContent = message;
+            notification.className = `notification ${isError ? 'error' : ''} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show login
+        function showLogin() {
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+
+        // Show main app
+        function showMainApp() {
+            document.getElementById('loginOverlay').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            const formData = new FormData();
+            formData.append('username', username);
+            formData.append('password', password);
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/token`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.access_token) {
+                    authToken = result.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    await getCurrentUser();
+                    showMainApp();
+                    showNotification('Welcome back! Ready to study?');
+                } else {
+                    showNotification('Login failed. Please check your credentials.', true);
+                }
+            } catch (error) {
+                showNotification('Connection error. Please try again.', true);
+            }
+        });
+
+        // Get current user
+        async function getCurrentUser() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    currentUser = await response.json();
+                    updateUserInfo();
+                    updateStats();
+                    showMainApp();
+                } else {
+                    showLogin();
+                }
+            } catch (error) {
+                showLogin();
+            }
+        }
+
+        // Update user info in UI
+        function updateUserInfo() {
+            if (currentUser) {
+                document.getElementById('userName').textContent = currentUser.username;
+                const initials = currentUser.username.substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').textContent = initials;
+            }
+        }
+
+        // Update stats (mock data for now)
+        async function updateStats() {
+            try {
+                const response = await fetch(`${API_BASE}/questions/`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const questions = await response.json();
+                    document.getElementById('totalQuestions').textContent = questions.length || 1247;
+                }
+            } catch (error) {
+                console.error('Error fetching stats:', error);
+            }
+        }
+
+        // Populate subjects
+        function populateSubjects() {
+            const subjectGrid = document.getElementById('subjectGrid');
+            subjectGrid.innerHTML = '';
+            
+            medicalSubjects.forEach(subject => {
+                const subjectCard = document.createElement('div');
+                subjectCard.className = 'subject-card';
+                subjectCard.style.background = `linear-gradient(135deg, ${subject.color}, ${subject.color}dd)`;
+                subjectCard.onclick = () => startSubjectStudy(subject.name);
+                
+                subjectCard.innerHTML = `
+                    <i class="${subject.icon} subject-icon"></i>
+                    <div class="subject-name">${subject.name}</div>
+                    <div class="subject-count">${subject.count} questions</div>
+                `;
+                
+                subjectGrid.appendChild(subjectCard);
+            });
+        }
+
+        // Action functions
+        function startStudyMode() {
+            showNotification('Starting study mode... 📚');
+            // Here you would implement navigation to study mode
+            setTimeout(() => {
+                showNotification('Study mode feature coming soon!', true);
+            }, 1000);
+        }
+
+        function startPracticeTest() {
+            showNotification('Preparing your practice test... ⏱️');
+            setTimeout(() => {
+                showNotification('Practice test feature coming soon!', true);
+            }, 1000);
+        }
+
+        function reviewMistakes() {
+            showNotification('Loading your review session... 🔍');
+            setTimeout(() => {
+                showNotification('Review feature coming soon!', true);
+            }, 1000);
+        }
+
+        function viewAnalytics() {
+            showNotification('Generating your performance report... 📊');
+            setTimeout(() => {
+                showNotification('Analytics feature coming soon!', true);
+            }, 1000);
+        }
+
+        function startSubjectStudy(subjectName) {
+            showNotification(`Opening ${subjectName} study session... 🎯`);
+            setTimeout(() => {
+                showNotification(`${subjectName} study feature coming soon!`, true);
+            }, 1000);
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('authToken');
+            authToken = null;
+            currentUser = null;
+            showLogin();
+            showNotification('Logged out successfully');
+        }
+
+        // Add some dynamic effects
+        setInterval(() => {
+            const cards = document.querySelectorAll('.action-card, .stat-card, .subject-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.transform = 'scale(1.02)';
+                    setTimeout(() => {
+                        card.style.transform = 'scale(1)';
+                    }, 100);
+                }, index * 50);
+            });
+        }, 10000);
+    </script>
+</body>
+</html>

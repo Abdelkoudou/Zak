@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedStudy - Analytics Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #2c3e50;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .logo i {
+            font-size: 2rem;
+            color: #3498db;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: #3498db;
+        }
+
+        .nav-link.active {
+            color: #3498db;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #2c3e50;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .main-container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .dashboard-title {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .dashboard-subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #3498db;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-change {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .stat-change.positive {
+            color: #2ecc71;
+        }
+
+        .stat-change.negative {
+            color: #e74c3c;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .subjects-performance {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .subject-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .subject-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .subject-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .subject-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .subject-info h3 {
+            color: #2c3e50;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .subject-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .subject-stat {
+            text-align: center;
+        }
+
+        .subject-stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .subject-stat-label {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .recent-activity {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            transition: background-color 0.3s ease;
+        }
+
+        .activity-item:hover {
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .activity-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-description {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .activity-time {
+            color: #95a5a6;
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        .achievements {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .achievement-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .achievement-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .achievement-card.earned {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        .achievement-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .achievement-card.earned .achievement-icon {
+            color: white;
+        }
+
+        .achievement-card:not(.earned) .achievement-icon {
+            color: #bdc3c7;
+        }
+
+        .achievement-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .achievement-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .stats-overview {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .subjects-performance {
+                grid-template-columns: 1fr;
+            }
+            
+            .achievements {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .nav-links {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-stethoscope"></i>
+            <span>MedStudy</span>
+        </div>
+        <nav class="nav-links">
+            <a href="#" class="nav-link">Dashboard</a>
+            <a href="#" class="nav-link active">Analytics</a>
+            <a href="#" class="nav-link">Study</a>
+            <a href="#" class="nav-link">Practice</a>
+        </nav>
+        <div class="user-info">
+            <span>Dr. Sarah Johnson</span>
+            <div class="user-avatar">SJ</div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Performance Analytics 📊</h1>
+            <p class="dashboard-subtitle">Track your medical study progress and identify areas for improvement</p>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-overview">
+            <div class="stat-card">
+                <i class="fas fa-question-circle stat-icon"></i>
+                <div class="stat-number">2,847</div>
+                <div class="stat-label">Questions Attempted</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> +234 this week
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <i class="fas fa-bullseye stat-icon" style="color: #2ecc71;"></i>
+                <div class="stat-number">87.3%</div>
+                <div class="stat-label">Overall Accuracy</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> +2.1% improvement
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <i class="fas fa-fire stat-icon" style="color: #f39c12;"></i>
+                <div class="stat-number">23</div>
+                <div class="stat-label">Study Streak (Days)</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-trophy"></i> Personal best!
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <i class="fas fa-clock stat-icon" style="color: #9b59b6;"></i>
+                <div class="stat-number">147</div>
+                <div class="stat-label">Study Hours</div>
+                <div class="stat-change positive">
+                    <i class="fas fa-arrow-up"></i> +12h this month
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-line"></i>
+                    Study Progress Over Time
+                </h3>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Subject Distribution
+                </h3>
+                <div class="chart-container">
+                    <canvas id="subjectChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subject Performance -->
+        <h2 style="color: #2c3e50; margin-bottom: 2rem; font-size: 2rem; text-align: center;">
+            <i class="fas fa-graduation-cap"></i> Subject Performance
+        </h2>
+        
+        <div class="subjects-performance">
+            <div class="subject-card">
+                <div class="subject-header">
+                    <div class="subject-icon" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">
+                        <i class="fas fa-skeleton"></i>
+                    </div>
+                    <div class="subject-info">
+                        <h3>Anatomy</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 92%; background: linear-gradient(90deg, #e74c3c, #c0392b);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="subject-stats">
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">92%</div>
+                        <div class="subject-stat-label">Accuracy</div>
+                    </div>
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">456</div>
+                        <div class="subject-stat-label">Questions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subject-card">
+                <div class="subject-header">
+                    <div class="subject-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="subject-info">
+                        <h3>Physiology</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 85%; background: linear-gradient(90deg, #3498db, #2980b9);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="subject-stats">
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">85%</div>
+                        <div class="subject-stat-label">Accuracy</div>
+                    </div>
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">367</div>
+                        <div class="subject-stat-label">Questions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subject-card">
+                <div class="subject-header">
+                    <div class="subject-icon" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <div class="subject-info">
+                        <h3>Pathology</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 78%; background: linear-gradient(90deg, #9b59b6, #8e44ad);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="subject-stats">
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">78%</div>
+                        <div class="subject-stat-label">Accuracy</div>
+                    </div>
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">289</div>
+                        <div class="subject-stat-label">Questions</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="subject-card">
+                <div class="subject-header">
+                    <div class="subject-icon" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                        <i class="fas fa-pills"></i>
+                    </div>
+                    <div class="subject-info">
+                        <h3>Pharmacology</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 89%; background: linear-gradient(90deg, #2ecc71, #27ae60);"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="subject-stats">
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">89%</div>
+                        <div class="subject-stat-label">Accuracy</div>
+                    </div>
+                    <div class="subject-stat">
+                        <div class="subject-stat-number">334</div>
+                        <div class="subject-stat-label">Questions</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <h2 style="color: #2c3e50; margin-bottom: 2rem; font-size: 2rem; text-align: center;">
+            <i class="fas fa-trophy"></i> Achievements & Milestones
+        </h2>
+        
+        <div class="achievements">
+            <div class="achievement-card earned">
+                <i class="fas fa-fire achievement-icon"></i>
+                <div class="achievement-title">Study Streak Master</div>
+                <div class="achievement-description">Study for 21 consecutive days</div>
+            </div>
+
+            <div class="achievement-card earned">
+                <i class="fas fa-bullseye achievement-icon"></i>
+                <div class="achievement-title">Precision Expert</div>
+                <div class="achievement-description">Achieve 90%+ accuracy in 100 questions</div>
+            </div>
+
+            <div class="achievement-card">
+                <i class="fas fa-graduation-cap achievement-icon"></i>
+                <div class="achievement-title">Subject Master</div>
+                <div class="achievement-description">Complete all questions in a subject</div>
+            </div>
+
+            <div class="achievement-card earned">
+                <i class="fas fa-clock achievement-icon"></i>
+                <div class="achievement-title">Time Warrior</div>
+                <div class="achievement-description">Study for 100+ hours total</div>
+            </div>
+
+            <div class="achievement-card">
+                <i class="fas fa-star achievement-icon"></i>
+                <div class="achievement-title">Perfect Score</div>
+                <div class="achievement-description">Score 100% on a practice test</div>
+            </div>
+
+            <div class="achievement-card">
+                <i class="fas fa-rocket achievement-icon"></i>
+                <div class="achievement-title">Speed Demon</div>
+                <div class="achievement-description">Answer 50 questions in under 30 minutes</div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity">
+            <h3 class="chart-title">
+                <i class="fas fa-history"></i>
+                Recent Activity
+            </h3>
+            
+            <div class="activity-item">
+                <div class="activity-icon" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                    <i class="fas fa-check"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">Completed Anatomy Quiz</div>
+                    <div class="activity-description">Scored 94% on Cardiovascular System questions</div>
+                </div>
+                <div class="activity-time">2 hours ago</div>
+            </div>
+
+            <div class="activity-item">
+                <div class="activity-icon" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">Achievement Unlocked</div>
+                    <div class="activity-description">Earned "Study Streak Master" badge</div>
+                </div>
+                <div class="activity-time">5 hours ago</div>
+            </div>
+
+            <div class="activity-item">
+                <div class="activity-icon" style="background: linear-gradient(135deg, #3498db, #2980b9);">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">Study Session</div>
+                    <div class="activity-description">Reviewed 45 Physiology questions</div>
+                </div>
+                <div class="activity-time">Yesterday</div>
+            </div>
+
+            <div class="activity-item">
+                <div class="activity-icon" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">Questions Bookmarked</div>
+                    <div class="activity-description">Added 8 challenging Pathology questions to review</div>
+                </div>
+                <div class="activity-time">2 days ago</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Progress Chart
+        const progressCtx = document.getElementById('progressChart').getContext('2d');
+        new Chart(progressCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                datasets: [{
+                    label: 'Accuracy %',
+                    data: [72, 75, 78, 82, 85, 87, 86, 87],
+                    borderColor: 'rgb(52, 152, 219)',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }, {
+                    label: 'Questions per Week',
+                    data: [45, 62, 78, 95, 123, 145, 167, 189],
+                    borderColor: 'rgb(46, 204, 113)',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                }
+            }
+        });
+
+        // Subject Distribution Chart
+        const subjectCtx = document.getElementById('subjectChart').getContext('2d');
+        new Chart(subjectCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Anatomy', 'Physiology', 'Pathology', 'Pharmacology', 'Surgery', 'Others'],
+                datasets: [{
+                    data: [456, 367, 289, 334, 245, 156],
+                    backgroundColor: [
+                        '#e74c3c',
+                        '#3498db',
+                        '#9b59b6',
+                        '#2ecc71',
+                        '#f39c12',
+                        '#95a5a6'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Add interactive elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stat numbers on scroll
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        animateValue(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.stat-number').forEach(stat => {
+                observer.observe(stat);
+            });
+
+            function animateValue(element) {
+                const target = parseInt(element.textContent.replace(/[^\d]/g, ''));
+                const increment = target / 50;
+                let current = 0;
+
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        element.textContent = element.textContent.replace(/[\d,]+/, target.toLocaleString());
+                        clearInterval(timer);
+                    } else {
+                        element.textContent = element.textContent.replace(/[\d,]+/, Math.floor(current).toLocaleString());
+                    }
+                }, 20);
+            }
+        });
+    </script>
+</body>
+</html>
