@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Affichage des MCQ depuis un JSON local</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      line-height: 1.5;
+    }
+    #controls {
+      margin-bottom: 1.5rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .question {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 5px;
+    }
+    .question img,
+    .answer img {
+      max-width: 200px;
+      display: block;
+      margin: 0.5rem 0;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+    }
+    .answer {
+      margin-left: 1rem;
+    }
+    .answer.correct {
+      background-color: #e6ffe6;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Liste des Questions MCQ</h1>
+
+  <div id="controls">
+    <button id="load-button">🔍 Choisir un fichier JSON...</button>
+    <input type="file" id="file-input" accept=".json" style="display:none">
+  </div>
+
+  <div id="questions-container">Aucun fichier chargé.</div>
+
+  <script>
+    const loadBtn = document.getElementById('load-button');
+    const fileInput = document.getElementById('file-input');
+    const container = document.getElementById('questions-container');
+
+    // Quand on clique sur le bouton, on déclenche l'input type=file
+    loadBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Quand un fichier est sélectionné
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = evt => {
+        try {
+          const questions = JSON.parse(evt.target.result);
+          renderQuestions(questions);
+        } catch (err) {
+          container.textContent = 'Erreur de parsing JSON : ' + err.message;
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Fonction d'affichage
+    function renderQuestions(questions) {
+      if (!Array.isArray(questions) || !questions.length) {
+        container.textContent = 'Le JSON doit être un tableau de questions.';
+        return;
+      }
+
+      container.innerHTML = '';
+      questions.forEach(q => {
+        const qDiv = document.createElement('div');
+        qDiv.className = 'question';
+
+        // En-tête
+        const h2 = document.createElement('h2');
+        h2.textContent = `Question ${q.number} : ${q.question_text}`;
+        qDiv.appendChild(h2);
+
+        // Image question
+        if (q.question_image) {
+          const img = document.createElement('img');
+          img.src = q.question_image;
+          img.alt = `Image question ${q.number}`;
+          qDiv.appendChild(img);
+        }
+
+        // Réponses
+        q.answers.forEach(a => {
+          const ansDiv = document.createElement('div');
+          ansDiv.className = 'answer' + (a.is_correct ? ' correct' : '');
+
+          const label = document.createElement('strong');
+          label.textContent = `${a.option_label.toUpperCase()} : `;
+          ansDiv.appendChild(label);
+
+          ansDiv.appendChild(document.createTextNode(a.answer_text));
+
+          if (a.answer_image) {
+            const img = document.createElement('img');
+            img.src = a.answer_image;
+            img.alt = `Image réponse ${a.option_label.toUpperCase()}`;
+            ansDiv.appendChild(img);
+          }
+
+          if (a.is_correct) {
+            const tick = document.createElement('span');
+            tick.textContent = ' ✓';
+            tick.style.color = 'green';
+            ansDiv.appendChild(tick);
+          }
+
+          qDiv.appendChild(ansDiv);
+        });
+
+        container.appendChild(qDiv);
+      });
+    }
+  </script>
+
+</body>
+</html>
