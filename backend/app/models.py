@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Table, Enum
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, ForeignKey, Table, Enum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
@@ -45,7 +45,7 @@ class Question(Base):
     module = Column(String, index=True)  # What was previously called "course"
     unite = Column(String, index=True, nullable=True)  # Unit (for 2nd and 3rd year)
     speciality = Column(String, index=True)
-    cours = Column(String, index=True)  # What was previously called "chapter"
+    cours = Column(JSON, index=False)  # Multiple courses as JSON array
     exam_type = Column(String, index=True)  # EMD, EMD1, EMD2, Rattrapage
     number = Column(Integer)
     question_text = Column(Text)

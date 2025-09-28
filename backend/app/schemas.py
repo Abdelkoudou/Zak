@@ -67,7 +67,7 @@ class QuestionBase(BaseModel):
     module: str  # What was previously "course"
     unite: Optional[str] = None  # Unit (for 2nd and 3rd year)
     speciality: str
-    cours: str  # What was previously "chapter"
+    cours: List[str]  # Multiple courses as array
     exam_type: str  # EMD, EMD1, EMD2, Rattrapage
     number: int
     question_text: str
@@ -82,7 +82,7 @@ class QuestionUpdate(BaseModel):
     module: Optional[str] = None
     unite: Optional[str] = None
     speciality: Optional[str] = None
-    cours: Optional[str] = None
+    cours: Optional[List[str]] = None
     exam_type: Optional[str] = None
     number: Optional[int] = None
     question_text: Optional[str] = None

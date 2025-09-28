@@ -205,6 +205,51 @@
       margin-top: 10px;
       border-radius: 5px;
     }
+    .cours-input-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .cours-input {
+      flex: 1;
+      margin-right: 8px;
+    }
+    .btn-add-cours {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 35px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-cours {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 35px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+    .btn-add-cours:hover {
+      background: #218838;
+    }
+    .btn-remove-cours:hover {
+      background: #c82333;
+    }
   </style>
 </head>
 <body>
@@ -238,11 +283,21 @@
     <form id="question-form">
       <div class="form-section">
         <h3>📖 Détails de la Question</h3>
+        <!-- 1. Spécialité -->
         <div class="form-row">
           <div class="form-group">
-            <label for="year">Année de l'Examen:</label>
-            <input type="number" id="year" required min="2020" max="2030" value="2024">
+            <label for="speciality">Spécialité:</label>
+            <select id="speciality" required>
+              <option value="">Choisir la spécialité</option>
+              <option value="Médecine">Médecine</option>
+              <option value="Pharmacie">Pharmacie</option>
+              <option value="Dentaire">Dentaire</option>
+            </select>
           </div>
+        </div>
+
+        <!-- 2. Année d'Étude -->
+        <div class="form-row">
           <div class="form-group">
             <label for="study-year">Année d'Étude:</label>
             <select id="study-year" required onchange="updateModuleOptions()">
@@ -254,6 +309,7 @@
           </div>
         </div>
 
+        <!-- 3. Module -->
         <div class="form-row">
           <div class="form-group">
             <label for="module">Module:</label>
@@ -269,24 +325,15 @@
           </div>
         </div>
 
+        <!-- 4. Année de l'Examen -->
         <div class="form-row">
           <div class="form-group">
-            <label for="speciality">Spécialité:</label>
-            <select id="speciality" required>
-              <option value="">Choisir la spécialité</option>
-              <option value="Médecine">Médecine</option>
-              <option value="Pharmacie">Pharmacie</option>
-              <option value="Dentaire">Dentaire</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="cours">Cours:</label>
-            <div id="cours-container">
-              <input type="text" id="cours" required placeholder="Nom du cours">
-            </div>
+            <label for="year">Année de l'Examen:</label>
+            <input type="number" id="year" required min="2020" max="2030" value="2024">
           </div>
         </div>
 
+        <!-- 5. Type d'Examen -->
         <div class="form-row">
           <div class="form-group">
             <label for="exam-type">Type d'Examen:</label>
@@ -294,6 +341,24 @@
               <option value="">Choisir le type d'examen</option>
             </select>
           </div>
+        </div>
+
+        <!-- 6. Cours (Multiple) -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cours">Cours:</label>
+            <div id="cours-container">
+              <div class="cours-input-group">
+                <input type="text" class="cours-input" required placeholder="Nom du cours" style="width: calc(100% - 40px); display: inline-block;">
+                <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+              </div>
+            </div>
+            <small style="color: #6c757d;">Vous pouvez ajouter plusieurs cours en cliquant sur le bouton +</small>
+          </div>
+        </div>
+
+        <!-- 7. Numéro de la Question -->
+        <div class="form-row">
           <div class="form-group">
             <label for="number">Numéro de la Question:</label>
             <input type="number" id="number" required min="1" value="1">
@@ -524,7 +589,7 @@
       const module = document.getElementById('module').value.trim();
       const unite = document.getElementById('unite').value.trim() || null;
       const speciality = document.getElementById('speciality').value.trim();
-      const cours = document.getElementById('cours').value.trim();
+      const cours = getAllCours();
       const examType = document.getElementById('exam-type').value.trim();
       const number = parseInt(document.getElementById('number').value);
       const questionText = document.getElementById('question-text').value.trim();
@@ -559,6 +624,10 @@
       }
       if (!hasCorrect) {
         showMessage('Veuillez marquer au moins une réponse comme correcte.', 'error');
+        return;
+      }
+      if (cours.length === 0) {
+        showMessage('Veuillez fournir au moins un cours.', 'error');
         return;
       }
 
@@ -636,6 +705,7 @@
       document.getElementById('exam-type').innerHTML = '<option value="">Choisir le type d\'examen</option>';
       document.getElementById('unite-group').classList.add('hidden');
       answerLabels.forEach(l => document.getElementById(`correct-${l}`).checked = false);
+      clearAllCoursInputs();
     }
 
     function renderQuestionsList() {
@@ -661,7 +731,7 @@
               <div class="question-item">
                 <div class="question-header">
                   <strong>Question ${q.number}</strong>
-                  <div class="question-meta">${q.year} | ${q.cours}</div>
+                  <div class="question-meta">${q.year} | ${Array.isArray(q.cours) ? q.cours.join(', ') : q.cours}</div>
                   <button onclick="deleteQuestion(${q.id})" class="btn btn-danger" style="padding:5px 10px;font-size:12px;">Supprimer</button>
                 </div>
                 <p><strong>Q:</strong> ${q.question_text}</p>
@@ -691,7 +761,15 @@
     function updateStatistics() {
       document.getElementById('total-questions').textContent = questions.length;
       document.getElementById('total-modules').textContent = new Set(questions.map(q => q.module)).size;
-      document.getElementById('total-cours').textContent = new Set(questions.map(q => q.cours)).size;
+      const allCours = new Set();
+      questions.forEach(q => {
+        if (Array.isArray(q.cours)) {
+          q.cours.forEach(c => allCours.add(c));
+        } else if (q.cours) {
+          allCours.add(q.cours);
+        }
+      });
+      document.getElementById('total-cours').textContent = allCours.size;
     }
 
     function exportToJSON() {
@@ -733,7 +811,7 @@
           `"${q.module.replace(/"/g,'""')}"`,
           `"${(q.unite||'').replace(/"/g,'""')}"`,
           `"${q.speciality.replace(/"/g,'""')}"`,
-          `"${q.cours.replace(/"/g,'""')}"`,
+          `"${(Array.isArray(q.cours) ? q.cours.join('; ') : q.cours).replace(/"/g,'""')}"`,
           `"${q.exam_type.replace(/"/g,'""')}"`,
           q.number,
           `"${q.question_text.replace(/"/g,'""')}"`,
@@ -761,6 +839,46 @@
         renderQuestionsList();
         showMessage('Toutes les questions ont été supprimées.', 'success');
       }
+    }
+
+    function addCoursInput() {
+      const container = document.getElementById('cours-container');
+      const newGroup = document.createElement('div');
+      newGroup.className = 'cours-input-group';
+      newGroup.innerHTML = `
+        <input type="text" class="cours-input" placeholder="Nom du cours" style="width: calc(100% - 80px); display: inline-block;">
+        <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+        <button type="button" onclick="removeCoursInput(this)" class="btn-remove-cours" style="width: 35px; padding: 12px 5px; margin-left: 4px;">-</button>
+      `;
+      container.appendChild(newGroup);
+    }
+
+    function removeCoursInput(button) {
+      const container = document.getElementById('cours-container');
+      if (container.children.length > 1) {
+        button.parentElement.remove();
+      }
+    }
+
+    function getAllCours() {
+      const inputs = document.querySelectorAll('.cours-input');
+      const cours = [];
+      inputs.forEach(input => {
+        if (input.value.trim()) {
+          cours.push(input.value.trim());
+        }
+      });
+      return cours;
+    }
+
+    function clearAllCoursInputs() {
+      const container = document.getElementById('cours-container');
+      container.innerHTML = `
+        <div class="cours-input-group">
+          <input type="text" class="cours-input" required placeholder="Nom du cours" style="width: calc(100% - 40px); display: inline-block;">
+          <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+        </div>
+      `;
     }
 
     document.addEventListener('DOMContentLoaded', initializeForm);

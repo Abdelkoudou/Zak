@@ -28,3 +28,7 @@ Thumbs.db
 # Ignore temporary files
 *.tmp
 *.temp
+
+# Ignore virtual environment
+backend/venv/
+venv/
