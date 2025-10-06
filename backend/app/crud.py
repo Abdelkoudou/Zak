@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, String
 from typing import List, Optional
 from datetime import datetime
 
@@ -77,7 +77,8 @@ def get_questions(db: Session, skip: int = 0, limit: int = 100, year: Optional[i
     if speciality:
         query = query.filter(models.Question.speciality.ilike(f"%{speciality}%"))
     if cours:
-        query = query.filter(models.Question.cours.ilike(f"%{cours}%"))
+        # For JSON array, search within the JSON string representation
+        query = query.filter(models.Question.cours.cast(String).like(f'%{cours}%'))
     if exam_type:
         query = query.filter(models.Question.exam_type == exam_type)
     
