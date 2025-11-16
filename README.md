@@ -1,54 +1,35 @@
 # MCQ Study App - Medical Exam Preparation Platform
 
-A comprehensive mobile application for medical students to practice MCQ questions, designed specifically for French medical education (Algerian market).
-
-## 📱 Project Overview
-
-**MCQ Study App** is a mobile-first platform that helps medical students prepare for their exams through:
-- 📚 Structured MCQ questions (1st, 2nd, 3rd year)
-- 💾 Save questions for later review
-- 📊 Track test results and statistics
-- 📖 Access course resources (Google Drive links)
-- 🔐 Secure subscription-based access
+**Mobile application for Algerian medical students to practice MCQ questions based on the French medical curriculum.**
 
 ---
 
-## 🎯 Key Features
+## 🎯 Project Overview
 
-### For Students
-- ✅ Browse questions by module, year, and exam type
-- ✅ Practice with immediate feedback
-- ✅ Save difficult questions
-- ✅ Track progress and statistics
-- ✅ Access course resources
-- ✅ Multi-device support (max 2 devices)
-
-### For Admins
-- ✅ Manage questions and answers
-- ✅ Generate activation keys
-- ✅ Manage users and subscriptions
-- ✅ View system statistics
-- ✅ Add course resources
+A React Native mobile app that helps medical students (1st, 2nd, 3rd year) prepare for their exams through:
+- 📚 Practice MCQ questions organized by year, module, and exam type
+- 💾 Save difficult questions for review
+- 📊 Track test results and progress
+- 📖 Access course resources (Google Drive, Telegram)
+- 🔌 Offline-first architecture (works without internet)
+- ⚡ Instant content updates (no app store approval needed)
 
 ---
 
 ## 🏗️ Architecture
 
 ### Technology Stack
+- **Mobile App**: React Native with Expo SDK 50
+- **Backend**: Supabase (managed cloud platform)
+- **Database**: PostgreSQL (for user data)
+- **Storage**: JSON files (for questions)
+- **Authentication**: Email/password with JWT tokens
 
-**Backend**:
-- FastAPI (Python 3.8+)
-- PostgreSQL / SQLite
-- JWT Authentication
-- SQLAlchemy ORM
-- Alembic Migrations
-
-**Mobile App**:
-- React Native (Expo SDK 50)
-- TypeScript
-- React Navigation
-- AsyncStorage
-- Axios
+### Why This Architecture?
+- ✅ **$0/month** for up to 50,000 users
+- ✅ **Fast**: Questions load instantly (offline-first)
+- ✅ **Flexible**: Update questions without app store approval
+- ✅ **Scalable**: Handles thousands of concurrent users
 
 ---
 
@@ -56,35 +37,38 @@ A comprehensive mobile application for medical students to practice MCQ question
 
 ```
 mcq-study-app/
-├── backend/                 # FastAPI backend
-│   ├── app/
-│   │   ├── routers/        # API endpoints
-│   │   ├── models.py       # Database models
-│   │   ├── schemas.py      # Pydantic schemas
-│   │   ├── crud.py         # CRUD operations
-│   │   └── main.py         # FastAPI app
-│   ├── scripts/            # Utility scripts
-│   ├── alembic/            # Database migrations
-│   └── requirements.txt    # Python dependencies
 │
-├── react-native-med-app/   # React Native mobile app
+├── .git/                         # Version control
+├── .kiro/                        # Kiro steering files
+│   └── steering/
+│       ├── structure.md          # Project structure guidelines
+│       ├── tech.md               # Technology stack guidelines
+│       └── product.md            # Product requirements
+│
+├── react-native-med-app/         # Mobile app (React Native + Expo)
 │   ├── src/
-│   │   ├── screens/        # App screens
-│   │   ├── components/     # Reusable components
-│   │   ├── services/       # API services
-│   │   ├── navigation/     # Navigation config
-│   │   └── context/        # React contexts
-│   ├── assets/             # Images, fonts
-│   └── package.json        # Node dependencies
+│   │   ├── components/           # Reusable UI components
+│   │   ├── screens/              # App screens
+│   │   ├── services/             # API services
+│   │   ├── navigation/           # Navigation configuration
+│   │   ├── context/              # React Context
+│   │   └── data/                 # Bundled JSON questions
+│   ├── assets/                   # Images, fonts, icons
+│   ├── App.tsx                   # Root component
+│   ├── app.json                  # Expo configuration
+│   └── package.json              # Dependencies
 │
-├── docs/                   # Documentation
-│   ├── ARCHITECTURE.md     # System architecture
-│   ├── FEATURES.md         # Feature specifications
-│   ├── API_SPECIFICATION.md # API documentation
-│   ├── DEVELOPMENT_PLAN.md # Development roadmap
-│   └── DEPLOYMENT_GUIDE.md # Deployment instructions
+├── docs/                          # Archived documentation
+│   ├── README.md                 # Documentation archive guide
+│   ├── ARCHITECTURE.md           # Old architecture (archived)
+│   ├── API_SPECIFICATION.md      # Old API docs (archived)
+│   └── ...                       # Other archived docs
 │
-└── README.md              # This file
+├── CLIENT_ROADMAP.md             # Client presentation (20-day plan)
+├── ROADMAP.md                    # Technical roadmap (detailed)
+├── README.md                     # This file
+├── .gitignore
+└── .gitattributes
 ```
 
 ---
@@ -92,431 +76,189 @@ mcq-study-app/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Python 3.8+
 - Node.js 16+
-- PostgreSQL (production) or SQLite (development)
-- Expo CLI (`npm install -g @expo/cli`)
+- npm or yarn
+- Expo CLI: `npm install -g @expo/cli`
+- Supabase account (free): https://supabase.com
 
-### Backend Setup
+### Setup
 
-```bash
-# Navigate to backend directory
-cd backend
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd mcq-study-app
+   ```
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+2. **Setup Supabase** (see CLIENT_ROADMAP.md Day 1)
+   - Create Supabase project
+   - Setup database tables
+   - Configure authentication
+   - Upload initial JSON files
 
-# Install dependencies
-pip install -r requirements.txt
+3. **Install mobile app dependencies**
+   ```bash
+   cd react-native-med-app
+   npm install
+   ```
 
-# Setup environment variables
-cp env_example.txt .env
-# Edit .env with your settings
+4. **Configure environment**
+   ```bash
+   # Create .env file
+   cp .env.example .env
+   
+   # Add your Supabase credentials
+   SUPABASE_URL=your-project-url
+   SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-# Run migrations
-alembic upgrade head
+5. **Start development**
+   ```bash
+   npm start
+   
+   # Then:
+   # - Press 'a' for Android emulator
+   # - Press 'i' for iOS simulator (Mac only)
+   # - Scan QR code with Expo Go app on your phone
+   ```
 
-# Create owner user
-python scripts/create_owner.py
+---
 
-# Start development server
-python run.py
-```
+## 📅 Development Timeline
 
-Backend will be available at `http://localhost:8000`
+**Total Duration**: 20 days
 
-API Documentation: `http://localhost:8000/docs`
+- **Week 1 (Days 1-5)**: Foundation (Backend + Mobile setup)
+- **Week 2 (Days 6-10)**: Core Features (Auth + Questions)
+- **Week 3 (Days 11-15)**: Advanced Features (Saved, Results, Resources)
+- **Week 4 (Days 16-20)**: Polish & Launch (Testing + Deployment)
 
-### Mobile App Setup
-
-```bash
-# Navigate to mobile app directory
-cd react-native-med-app
-
-# Install dependencies
-npm install
-
-# Start Expo development server
-npm start
-
-# Run on device
-# Scan QR code with Expo Go app (iOS/Android)
-# Or press 'a' for Android emulator
-# Or press 'i' for iOS simulator (Mac only)
-```
+See **CLIENT_ROADMAP.md** for detailed day-by-day breakdown.
 
 ---
 
 ## 📚 Documentation
 
-Comprehensive documentation is available in the `docs/` directory:
-
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
-- **[FEATURES.md](FEATURES.md)** - Complete feature specifications
-- **[API_SPECIFICATION.md](API_SPECIFICATION.md)** - API endpoints documentation
-- **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - Development timeline and tasks
-- **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Production deployment guide
+- **CLIENT_ROADMAP.md** - Client presentation with 20-day timeline
+- **ROADMAP.md** - Detailed technical roadmap
+- **.kiro/steering/** - Project guidelines and standards
 
 ---
 
-## 🔐 Default Credentials
-
-### Owner Account (Backend)
-```
-Email: doudous6666@gmail.com
-Username: owner
-Password: 123456789
-```
-
-**⚠️ Important**: Change the password after first login!
-
-### Demo Student Account (Mobile App)
-```
-Email: demo@student.com
-Password: demo123
-```
-
----
-
-## 🎓 Medical Education Structure
-
-The app supports the French medical education curriculum:
+## 🎓 French Medical Curriculum Support
 
 ### 1st Year (1ère Année)
-- **Annual Modules**: Anatomie, Biochimie, Biophysique, Biostatistique/Informatique, Chimie, Cytologie
-  - Exam types: EMD1, EMD2, Rattrapage
+- **Annual Modules**: Anatomie, Biochimie, Biophysique, Biostatistique, Chimie, Cytologie
 - **Semestrial Modules**: Embryologie, Histologie, Physiologie, S.S.H
-  - Exam types: EMD, Rattrapage
+- **Exam Types**: EMD1, EMD2, Rattrapage
 
 ### 2nd Year (2ème Année)
-- **Units (UEI)**: 
-  - Appareil Cardio-vasculaire et Respiratoire
-  - Appareil Digestif
-  - Appareil Urinaire
-  - Appareil Endocrinien et de la Reproduction
-  - Appareil Nerveux et Organes des Sens
-- **Standalone Modules**: Génétique, Immunologie
-- Exam types: EMD, Rattrapage
+- **Units**: Cardio-vasculaire, Digestif, Urinaire, Endocrinien, Nerveux
+- **Standalone**: Génétique, Immunologie
+- **Exam Types**: EMD, Rattrapage
 
 ### 3rd Year (3ème Année)
-- **Units**: Similar structure to 2nd year
-- **Standalone Modules**: Anatomie pathologique, Immunologie, Pharmacologie, Microbiologie, Parasitologie
-- Exam types: EMD, Rattrapage
+- **Units**: Similar to 2nd year
+- **Standalone**: Anatomie pathologique, Pharmacologie, Microbiologie, Parasitologie
+- **Exam Types**: EMD, Rattrapage
 
 ---
 
-## 🛠️ Development
+## 💰 Cost Breakdown
 
-### Backend Development
+### Infrastructure (Monthly)
+- **0-50,000 users**: $0/month (Supabase free tier)
+- **50,000-100,000 users**: $25/month (Supabase Pro)
+- **100,000+ users**: $50-100/month
 
-```bash
-# Run tests
-pytest
-
-# Create new migration
-alembic revision --autogenerate -m "description"
-
-# Apply migrations
-alembic upgrade head
-
-# Rollback migration
-alembic downgrade -1
-
-# Import questions from JSON
-python scripts/import_questions.py questions.json
-
-# Seed test data
-python scripts/seed_data.py
-```
-
-### Mobile App Development
-
-```bash
-# Start with cache clear
-npm start -- --clear
-
-# Run on specific platform
-npm run android
-npm run ios
-
-# Build for production
-expo build:android
-expo build:ios
-```
+### One-Time Costs
+- **Google Play Developer**: $25 (one-time)
+- **Apple Developer**: $99/year (optional, for iOS)
 
 ---
 
-## 📦 Deployment
+## 🎯 Key Features
 
-### Backend Deployment Options
+### For Students
+- ✅ Practice MCQ questions by year, module, and exam type
+- ✅ Save difficult questions for review
+- ✅ Track test results and progress
+- ✅ Access course resources (Google Drive, Telegram)
+- ✅ Offline-first (works without internet)
+- ✅ View statistics and analytics
 
-1. **Railway** (Easiest)
-   - Cost: $5-10/month
-   - Time: 15 minutes
-   - Difficulty: ⭐ Very Easy
-
-2. **DigitalOcean** (Best Value)
-   - Cost: $6/month
-   - Time: 1-2 hours
-   - Difficulty: ⭐⭐⭐ Medium
-
-3. **Heroku** (Simple)
-   - Cost: $7/month
-   - Time: 30 minutes
-   - Difficulty: ⭐⭐ Easy
-
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for detailed instructions.
-
-### Mobile App Distribution
-
-- **Android**: Google Play Store ($25 one-time)
-- **iOS**: Apple App Store ($99/year)
-- **Direct**: APK distribution (Android only)
+### For Admins
+- ✅ Add/update questions via JSON
+- ✅ Generate activation keys
+- ✅ Manage users and subscriptions
+- ✅ View usage statistics
+- ✅ Instant content updates (no app store approval)
 
 ---
 
-## 🔒 Security
+## 🔒 Security & Privacy
 
-- JWT token authentication
-- Password hashing (bcrypt)
-- Role-based access control (RBAC)
-- Device session limits (max 2 per user)
-- HTTPS in production
-- SQL injection prevention (SQLAlchemy ORM)
+- Encrypted passwords (bcrypt)
+- Secure authentication (JWT tokens)
+- HTTPS only in production
+- Row-level security on database
+- Max 2 devices per user
+- GDPR compliant
 
 ---
 
-## 📊 Current Status
+## 📱 Supported Platforms
 
-### Completed (85%)
-- ✅ Backend API (85% complete)
-- ✅ Authentication system
-- ✅ User management
-- ✅ Question CRUD
-- ✅ Admin dashboard
-- ✅ React Native app structure (60% complete)
-- ✅ UI components
-- ✅ Navigation
-- ✅ Authentication screens
-
-### In Progress (15%)
-- 🔄 Saved questions feature
-- 🔄 Course resources
-- 🔄 Test results tracking
-- 🔄 API integration
-- 🔄 Mobile app completion
-
-### Timeline
-- **Estimated Completion**: 10-12 days
-- **MVP Launch**: 2 weeks
+- **Android**: 8.0+ (API level 26+)
+- **iOS**: 13.0+ (optional, requires Mac for development)
+- **Devices**: Smartphones and tablets
 
 ---
 
 ## 🤝 Contributing
 
-### Development Workflow
-
-1. Create a feature branch
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-
-2. Make your changes
-   ```bash
-   git add .
-   git commit -m "Add your feature"
-   ```
-
-3. Push to repository
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-4. Create Pull Request
-
-### Code Style
-
-**Backend (Python)**:
-- Follow PEP 8
-- Use type hints
-- Write docstrings
-- Add tests
-
-**Mobile (TypeScript)**:
-- Use TypeScript strict mode
-- Follow React best practices
-- Use functional components
-- Add PropTypes/interfaces
-
----
-
-## 📝 API Documentation
-
-### Base URL
-- Development: `http://localhost:8000`
-- Production: `https://api.mcqstudy.com`
-
-### Key Endpoints
-
-**Authentication**:
-- `POST /auth/register` - Register new user
-- `POST /auth/token` - Login and get JWT token
-- `GET /auth/me` - Get current user
-
-**Questions**:
-- `GET /questions/` - List questions (with filters)
-- `GET /questions/{id}` - Get single question
-- `POST /questions/` - Create question (admin)
-
-**Admin**:
-- `GET /admin/dashboard` - System statistics
-- `POST /admin/activation-keys` - Generate key
-- `GET /admin/users` - List all users
-
-See [API_SPECIFICATION.md](API_SPECIFICATION.md) for complete documentation.
-
----
-
-## 🐛 Troubleshooting
-
-### Backend Issues
-
-**Database connection error**:
-```bash
-# Check PostgreSQL is running
-systemctl status postgresql
-
-# Check DATABASE_URL in .env
-```
-
-**Migration error**:
-```bash
-# Reset migrations (development only)
-alembic downgrade base
-alembic upgrade head
-```
-
-### Mobile App Issues
-
-**Metro bundler error**:
-```bash
-# Clear cache
-expo start -c
-```
-
-**Dependency error**:
-```bash
-# Reinstall dependencies
-rm -rf node_modules
-npm install
-```
-
----
-
-## 📈 Roadmap
-
-### Phase 1 (Current - MVP)
-- ✅ Core MCQ features
-- ✅ User authentication
-- ✅ Admin dashboard
-- 🔄 Saved questions
-- 🔄 Course resources
-- 🔄 Test results
-
-### Phase 2 (Post-Launch)
-- Study timer
-- Advanced analytics
-- Push notifications
-- Offline mode
-- Dark mode
-- Search functionality
-
-### Phase 3 (Growth)
-- Arabic language support
-- Payment gateway integration
-- Gamification (badges, streaks)
-- Social features
-- Web app version
-
----
-
-## 💰 Costs
-
-### Development
-- Solo developer: 10-12 days
-- Two developers: 7-8 days
-- Three developers: 5-6 days
-
-### Infrastructure (Monthly)
-- Backend hosting: $6-12
-- Domain: $1-2
-- **Total**: $7-14/month
-
-### One-Time
-- Google Play: $25
-- Apple Developer: $99/year
-- **Total**: $25-124
+This is a client project. For development guidelines, see:
+- `.kiro/steering/structure.md` - Project structure
+- `.kiro/steering/tech.md` - Technology stack
+- `.kiro/steering/product.md` - Product requirements
 
 ---
 
 ## 📞 Support
 
-### Documentation
-- Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
-- Features: [FEATURES.md](FEATURES.md)
-- API: [API_SPECIFICATION.md](API_SPECIFICATION.md)
-- Development: [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
-- Deployment: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-
-### Contact
-- Email: support@mcqstudy.com
-- GitHub Issues: [Create an issue](https://github.com/yourusername/mcq-study-app/issues)
+For questions or issues:
+- Review **CLIENT_ROADMAP.md** for project plan
+- Review **ROADMAP.md** for technical details
+- Check `.kiro/steering/` for guidelines
 
 ---
 
-## 📄 License
+## 📈 Success Metrics
 
-This project is proprietary software. All rights reserved.
+### Launch Goals (First 3 Months)
+- 500+ registered users
+- 100+ paid subscriptions
+- 10,000+ questions attempted
+- 4.0+ app store rating
 
----
-
-## 🙏 Acknowledgments
-
-- FastAPI for the excellent Python framework
-- Expo for simplifying React Native development
-- PostgreSQL for reliable database
-- All contributors and testers
-
----
-
-## 🎉 Getting Started
-
-Ready to start? Follow these steps:
-
-1. **Read the documentation**
-   - Start with [ARCHITECTURE.md](ARCHITECTURE.md)
-   - Review [FEATURES.md](FEATURES.md)
-   - Check [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
-
-2. **Setup development environment**
-   - Follow [Quick Start](#-quick-start) above
-   - Test backend API
-   - Test mobile app
-
-3. **Start developing**
-   - Pick a task from [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)
-   - Create a feature branch
-   - Code and test
-   - Submit pull request
-
-4. **Deploy to production**
-   - Follow [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
-   - Test thoroughly
-   - Launch! 🚀
+### Growth Goals (6 Months)
+- 5,000+ registered users
+- 500+ paid subscriptions
+- 100,000+ questions attempted
+- 60% user retention
 
 ---
 
-**Built with ❤️ for medical students**
+## 🚀 Next Steps
+
+1. **Review** CLIENT_ROADMAP.md for the 20-day plan
+2. **Setup** Supabase project (Day 1)
+3. **Start** mobile app development (Day 2)
+4. **Test** thoroughly (Days 16-17)
+5. **Deploy** to app stores (Days 18-20)
+6. **Launch!** 🎉
+
+---
+
+**Built for Algerian medical students following the French curriculum** 🇩🇿
 
 *Last updated: January 2024*
