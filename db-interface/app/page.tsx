@@ -5,7 +5,7 @@ export default function Home() {
         Tableau de Bord
       </h1>
       <p className="text-gray-600 mb-8">
-        Interface d'administration pour l'application MCQ Study
+        Interface d&apos;administration pour l&apos;application MCQ Study
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

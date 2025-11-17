@@ -160,7 +160,7 @@ export default function ModulesPage() {
                       </div>
                       
                       <div className="mb-3">
-                        <p className="text-xs text-gray-500 mb-1">Types d'examens:</p>
+                        <p className="text-xs text-gray-500 mb-1">Types d&apos;examens:</p>
                         <div className="flex flex-wrap gap-2">
                           {module.examTypes.map((examType) => (
                             <span

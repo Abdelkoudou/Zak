@@ -130,7 +130,7 @@ export default function QuestionsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Type d'Examen
+                  Type d&apos;Examen
                 </label>
                 <select
                   value={formData.examType}
@@ -299,7 +299,7 @@ export default function QuestionsPage() {
         <div className="p-6">
           {questions.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              Aucune question ajoutée. Cliquez sur "Nouvelle Question" pour commencer.
+              Aucune question ajoutée. Cliquez sur &quot;Nouvelle Question&quot; pour commencer.
             </p>
           ) : (
             <div className="space-y-4">

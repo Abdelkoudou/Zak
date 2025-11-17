@@ -205,7 +205,7 @@ export default function ResourcesPage() {
         <div className="p-6">
           {resources.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              Aucune ressource ajoutée. Cliquez sur "Nouvelle Ressource" pour commencer.
+              Aucune ressource ajoutée. Cliquez sur &quot;Nouvelle Ressource&quot; pour commencer.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

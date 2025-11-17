@@ -250,7 +250,7 @@ export default function ImportExportPage() {
           <div className="p-4 border border-gray-200 rounded-lg">
             <h3 className="font-semibold mb-2">3. Importer</h3>
             <p className="text-sm text-gray-600">
-              Utilisez la section d'import ci-dessus pour chaque fichier
+              Utilisez la section d&apos;import ci-dessus pour chaque fichier
             </p>
           </div>
         </div>
