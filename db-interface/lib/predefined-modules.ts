@@ -130,10 +130,78 @@ export const PREDEFINED_MODULES: Omit<Module, 'id' | 'createdAt' | 'updatedAt'>[
     examTypes: ['EMD', 'Rattrapage'],
     hasSubDisciplines: false,
   },
+
+  // 3ème Année - U.E.I
+  {
+    name: 'Appareil Cardio-vasculaire et respiratoire, Psychologie Médicale et Semiologie Générale',
+    year: '3',
+    type: 'uei',
+    examTypes: ['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage'],
+    hasSubDisciplines: true,
+  },
+  {
+    name: 'Appareil Neurologique, Locomoteur et Cutané',
+    year: '3',
+    type: 'uei',
+    examTypes: ['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage'],
+    hasSubDisciplines: true,
+  },
+  {
+    name: 'Appareil Endocrines, Appareil de Reproduction et Appareil Urinaire',
+    year: '3',
+    type: 'uei',
+    examTypes: ['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage'],
+    hasSubDisciplines: true,
+  },
+  {
+    name: 'Appareil Digestif et Organes Hématopoïétiques',
+    year: '3',
+    type: 'uei',
+    examTypes: ['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage'],
+    hasSubDisciplines: true,
+  },
+
+  // 3ème Année - Modules Autonomes
+  {
+    name: 'Anatomie pathologique',
+    year: '3',
+    type: 'standalone',
+    examTypes: ['EMD', 'Rattrapage'],
+    hasSubDisciplines: false,
+  },
+  {
+    name: 'Immunologie',
+    year: '3',
+    type: 'standalone',
+    examTypes: ['EMD', 'Rattrapage'],
+    hasSubDisciplines: false,
+  },
+  {
+    name: 'Pharmacologie',
+    year: '3',
+    type: 'standalone',
+    examTypes: ['EMD', 'Rattrapage'],
+    hasSubDisciplines: false,
+  },
+  {
+    name: 'Microbiologie',
+    year: '3',
+    type: 'standalone',
+    examTypes: ['EMD', 'Rattrapage'],
+    hasSubDisciplines: false,
+  },
+  {
+    name: 'Parasitologie',
+    year: '3',
+    type: 'standalone',
+    examTypes: ['EMD', 'Rattrapage'],
+    hasSubDisciplines: false,
+  },
 ];
 
 // Predefined sub-disciplines for U.E.I
 export const PREDEFINED_SUBDISCIPLINES: Record<string, string[]> = {
+  // 2ème Année U.E.I
   'Appareil Cardio-vasculaire et Respiratoire': [
     'Anatomie',
     'Histologie',
@@ -163,5 +231,32 @@ export const PREDEFINED_SUBDISCIPLINES: Record<string, string[]> = {
     'Histologie',
     'Physiologie',
     'Biophysique',
+  ],
+
+  // 3ème Année U.E.I
+  'Appareil Cardio-vasculaire et respiratoire, Psychologie Médicale et Semiologie Générale': [
+    'Psychologie',
+    'Sémiologie',
+    'Physiopathologie',
+    'Radiologie',
+    'Biochimie',
+  ],
+  'Appareil Neurologique, Locomoteur et Cutané': [
+    'Sémiologie',
+    'Physiopathologie',
+    'Radiologie',
+    'Biochimie',
+  ],
+  'Appareil Endocrines, Appareil de Reproduction et Appareil Urinaire': [
+    'Sémiologie',
+    'Physiopathologie',
+    'Radiologie',
+    'Biochimie',
+  ],
+  'Appareil Digestif et Organes Hématopoïétiques': [
+    'Sémiologie',
+    'Physiopathologie',
+    'Radiologie',
+    'Biochimie',
   ],
 };
