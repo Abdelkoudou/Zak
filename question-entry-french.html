@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saisie des Questions MCQ - Système Médical Français</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+      line-height: 1.6;
+    }
+    .header {
+      text-align: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-section {
+      border: 2px solid #e9ecef;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      background-color: #f8f9fa;
+    }
+    .form-section h3 {
+      color: #495057;
+      margin-top: 0;
+      border-bottom: 2px solid #dee2e6;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-row {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .form-row > div {
+      flex: 1;
+      min-width: 200px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #495057;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    .answer-group {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+      background-color: white;
+    }
+    .answer-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .answer-label {
+      background: #667eea;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 50%;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: all 0.3s;
+      margin: 5px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+    }
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    }
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      color: white;
+    }
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+    }
+    .btn-danger:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    }
+    .message {
+      padding: 12px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-weight: 600;
+    }
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .questions-list {
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .question-item {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+    .question-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .question-meta {
+      color: #6c757d;
+      font-size: 14px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .statistics {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      min-width: 150px;
+      margin: 5px;
+    }
+    .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-label {
+      color: #6c757d;
+      margin-top: 5px;
+    }
+    .image-upload {
+      margin-top: 10px;
+    }
+    .image-preview {
+      max-width: 200px;
+      max-height: 200px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+    .cours-input-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    .cours-input {
+      flex: 1;
+      margin-right: 8px;
+    }
+    .btn-add-cours {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 35px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-cours {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 35px;
+      height: 45px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 4px;
+    }
+    .btn-add-cours:hover {
+      background: #218838;
+    }
+    .btn-remove-cours:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>🏥 Système de Saisie des Questions MCQ</h1>
+    <p>Éducation Médicale Française - Structure par Années et Modules</p>
+  </div>
+
+  <div class="container">
+    <div class="statistics">
+      <div class="stat-card">
+        <div class="stat-number" id="total-questions">0</div>
+        <div class="stat-label">Questions Totales</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-modules">0</div>
+        <div class="stat-label">Modules</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="total-cours">0</div>
+        <div class="stat-label">Cours</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="message-container"></div>
+
+  <div class="container">
+    <h2>➕ Ajouter une Question</h2>
+    <form id="question-form">
+      <div class="form-section">
+        <h3>📖 Détails de la Question</h3>
+        <!-- 1. Spécialité -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="speciality">Spécialité:</label>
+            <select id="speciality" required>
+              <option value="">Choisir la spécialité</option>
+              <option value="Médecine">Médecine</option>
+              <option value="Pharmacie">Pharmacie</option>
+              <option value="Dentaire">Dentaire</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Année d'Étude -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="study-year">Année d'Étude:</label>
+            <select id="study-year" required onchange="updateModuleOptions()">
+              <option value="">Choisir l'année d'étude</option>
+              <option value="1">1ère Année</option>
+              <option value="2">2ème Année</option>
+              <option value="3">3ème Année</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. Module -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="module">Module:</label>
+            <select id="module" required onchange="updateUniteAndExamOptions()">
+              <option value="">Choisir d'abord l'année d'étude</option>
+            </select>
+          </div>
+          <div class="form-group hidden" id="unite-group">
+            <label for="unite">Unité:</label>
+            <select id="unite" onchange="updateModuleOptionsForUnit()">
+              <option value="">Choisir l'unité</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 4. Année de l'Examen -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="year">Année de l'Examen:</label>
+            <input type="number" id="year" required min="2020" max="2030" value="2024">
+          </div>
+        </div>
+
+        <!-- 5. Type d'Examen -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="exam-type">Type d'Examen:</label>
+            <select id="exam-type" required>
+              <option value="">Choisir le type d'examen</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 6. Cours (Multiple) -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cours">Cours:</label>
+            <div id="cours-container">
+              <div class="cours-input-group">
+                <input type="text" class="cours-input" required placeholder="Nom du cours" style="width: calc(100% - 40px); display: inline-block;">
+                <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+              </div>
+            </div>
+            <small style="color: #6c757d;">Vous pouvez ajouter plusieurs cours en cliquant sur le bouton +</small>
+          </div>
+        </div>
+
+        <!-- 7. Numéro de la Question -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="number">Numéro de la Question:</label>
+            <input type="number" id="number" required min="1" value="1">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="question-text">Texte de la Question:</label>
+          <textarea id="question-text" required rows="3" placeholder="Entrez votre question ici..."></textarea>
+          <div class="image-upload">
+            <label for="question-image">Image de la Question (optionnel):</label>
+            <input type="file" id="question-image" accept="image/*" onchange="previewImage(this, 'question-image-preview')">
+            <img id="question-image-preview" class="image-preview hidden" alt="Aperçu de l'image">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h3>✅ Options de Réponse</h3>
+        <p style="margin-bottom: 15px; color: #6c757d;">
+          Entrez les cinq options de réponse (A-E) et cochez les bonnes réponses. Vous pouvez avoir plusieurs bonnes réponses.
+        </p>
+        <div id="answers-container"></div>
+      </div>
+
+      <button type="submit" class="btn-success">Ajouter la Question</button>
+      <button type="button" onclick="clearForm()" class="btn-secondary">Effacer le Formulaire</button>
+    </form>
+  </div>
+
+  <div class="container">
+    <h2>📋 Liste des Questions</h2>
+    <div class="questions-list" id="questions-list">
+      <p style="text-align: center; color: #6c757d; font-style: italic;">
+        Aucune question ajoutée. Ajoutez votre première question ci-dessus!
+      </p>
+    </div>
+  </div>
+
+  <div class="container export-section">
+    <h2>💾 Exporter les Questions</h2>
+    <p>Téléchargez vos questions au format JSON pour l'importation dans le système principal.</p>
+    <button onclick="exportToJSON()" class="btn-secondary">📄 Exporter en JSON</button>
+    <button onclick="exportToCSV()" class="btn-secondary">📊 Exporter en CSV</button>
+    <button onclick="clearAllQuestions()" class="btn-danger">🗑️ Effacer Toutes les Questions</button>
+  </div>
+
+  <script>
+    let questions = [];
+    const answerLabels = ['a', 'b', 'c', 'd', 'e'];
+
+    const medicalStructure = {
+      "1": {
+        modules: {
+          "Anatomie": ["EMD1", "EMD2", "Rattrapage"],
+          "Biochimie": ["EMD1", "EMD2", "Rattrapage"],
+          "Biophysique": ["EMD1", "EMD2", "Rattrapage"],
+          "Biostatistique / Informatique": ["EMD1", "EMD2", "Rattrapage"],
+          "Chimie": ["EMD1", "EMD2", "Rattrapage"],
+          "Cytologie": ["EMD1", "EMD2", "Rattrapage"],
+          "Embryologie": ["EMD", "Rattrapage"],
+          "Histologie": ["EMD", "Rattrapage"],
+          "Physiologie": ["EMD", "Rattrapage"],
+          "S.S.H": ["EMD", "Rattrapage"]
+        }
+      },
+      "2": {
+        unites: {
+          "Appareil Cardio-vasculaire et Respiratoire": ["Anatomie", "Histologie", "Physiologie", "Biophysique"],
+          "Appareil Digestif": ["Anatomie", "Histologie", "Physiologie", "Biochimie"],
+          "Appareil Urinaire": ["Anatomie", "Histologie", "Physiologie", "Biochimie"],
+          "Appareil Endocrinien et de la Reproduction": ["Anatomie", "Histologie", "Physiologie", "Biochimie"],
+          "Appareil Nerveux et Organes des Sens": ["Anatomie", "Histologie", "Physiologie", "Biophysique"]
+        },
+        modules: ["Génétique", "Immunologie"],
+        examTypes: ["EMD", "Rattrapage"]
+      },
+      "3": {
+        unites: {
+          "Appareil Cardio-vasculaire et Appareil Respiratoire": ["Semiologie", "physiopathologie", "radiologie", "biochimie"],
+          "Psychologie Médicale et Semiologie Générale": ["Semiologie", "physiopathologie", "radiologie", "biochimie"],
+          "Appareil Neurologique": ["Semiologie", "physiopathologie", "radiologie", "biochimie"],
+          "Appareil Endocrinien": ["Semiologie", "physiopathologie", "radiologie", "biochimie"],
+          "Appareil Urinaire": ["Semiologie", "physiopathologie", "radiologie", "biochimie"],
+          "Appareil Digestif": ["Semiologie", "physiopathologie", "radiologie", "biochimie"]
+        },
+        modules: ["Anatomie pathologique", "Immunologie", "Pharmacologie", "Microbiologie", "Parasitologie"],
+        examTypes: ["EMD", "Rattrapage"]
+      }
+    };
+
+    function initializeForm() {
+      const answersContainer = document.getElementById('answers-container');
+      answersContainer.innerHTML = '';
+      answerLabels.forEach(label => {
+        const group = document.createElement('div');
+        group.className = 'answer-group';
+        group.innerHTML = `
+          <div class="answer-header">
+            <div class="answer-label">${label.toUpperCase()}</div>
+            <label>
+              <input type="checkbox" class="correct-checkbox" id="correct-${label}">
+              Réponse Correcte
+            </label>
+          </div>
+          <input type="text" id="answer-${label}" required placeholder="Entrez l'option de réponse ${label.toUpperCase()}">
+          <div class="image-upload">
+            <label for="answer-image-${label}">Image pour la réponse ${label.toUpperCase()} (optionnel):</label>
+            <input type="file" id="answer-image-${label}" accept="image/*" onchange="previewImage(this, 'answer-image-preview-${label}')">
+            <img id="answer-image-preview-${label}" class="image-preview hidden" alt="Aperçu de l'image">
+          </div>
+        `;
+        answersContainer.appendChild(group);
+      });
+      loadQuestions();
+      updateStatistics();
+    }
+
+    function updateModuleOptions() {
+      const yearSelect = document.getElementById('study-year').value;
+      const moduleSelect = document.getElementById('module');
+      const uniteGroup = document.getElementById('unite-group');
+      const uniteSelect = document.getElementById('unite');
+
+      moduleSelect.innerHTML = '<option value="">Choisir le module</option>';
+      uniteSelect.innerHTML = '<option value="">Choisir l\'unité</option>';
+
+      if (yearSelect && medicalStructure[yearSelect]) {
+        const struct = medicalStructure[yearSelect];
+        if (yearSelect === "1") {
+          uniteGroup.classList.add('hidden');
+          for (let mod in struct.modules) {
+            moduleSelect.innerHTML += `<option value="${mod}">${mod}</option>`;
+          }
+        } else {
+          uniteGroup.classList.remove('hidden');
+          struct.modules.forEach(mod => {
+            moduleSelect.innerHTML += `<option value="${mod}">${mod}</option>`;
+          });
+          for (let u in struct.unites) {
+            uniteSelect.innerHTML += `<option value="${u}">${u}</option>`;
+          }
+        }
+      }
+
+      document.getElementById('exam-type').innerHTML = '<option value="">Choisir le type d\'examen</option>';
+      document.getElementById('cours-container').innerHTML =
+        '<input type="text" id="cours" required placeholder="Nom du cours">';
+    }
+
+    function updateUniteAndExamOptions() {
+      const yearSelect = document.getElementById('study-year').value;
+      const mod = document.getElementById('module').value;
+      const examSelect = document.getElementById('exam-type');
+      examSelect.innerHTML = '<option value="">Choisir le type d\'examen</option>';
+
+      if (yearSelect === "1") {
+        const types = medicalStructure[yearSelect].modules[mod] || [];
+        types.forEach(t => {
+          examSelect.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+      } else if ((yearSelect === "2" || yearSelect === "3") && medicalStructure[yearSelect].examTypes) {
+        medicalStructure[yearSelect].examTypes.forEach(t => {
+          examSelect.innerHTML += `<option value="${t}">${t}</option>`;
+        });
+      }
+    }
+
+    // Nouvelle fonction corrigée
+    function updateModuleOptionsForUnit() {
+      const studyYear = document.getElementById('study-year').value;
+      const unite = document.getElementById('unite').value;
+      const moduleSelect = document.getElementById('module');
+      const examTypeSelect = document.getElementById('exam-type');
+
+      moduleSelect.innerHTML = '<option value="">Choisir le module</option>';
+      examTypeSelect.innerHTML = '<option value="">Choisir le type d\'examen</option>';
+
+      if (
+        studyYear &&
+        unite &&
+        medicalStructure[studyYear] &&
+        medicalStructure[studyYear].unites &&
+        medicalStructure[studyYear].unites[unite]
+      ) {
+        const modulesInUnite = medicalStructure[studyYear].unites[unite];
+        modulesInUnite.forEach(mod => {
+          moduleSelect.innerHTML += `<option value="${mod}">${mod}</option>`;
+        });
+        medicalStructure[studyYear].examTypes.forEach(examType => {
+          examTypeSelect.innerHTML += `<option value="${examType}">${examType}</option>`;
+        });
+      }
+    }
+
+    function previewImage(input, previewId) {
+      const preview = document.getElementById(previewId);
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          preview.src = e.target.result;
+          preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(input.files[0]);
+      } else {
+        preview.classList.add('hidden');
+      }
+    }
+
+    function loadQuestions() {
+      const saved = localStorage.getItem('mcq-questions-french');
+      if (saved) {
+        questions = JSON.parse(saved);
+        renderQuestionsList();
+        updateStatistics();
+      }
+    }
+
+    function saveQuestions() {
+      localStorage.setItem('mcq-questions-french', JSON.stringify(questions));
+      updateStatistics();
+    }
+
+    document.getElementById('question-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const year = parseInt(document.getElementById('year').value);
+      const studyYear = parseInt(document.getElementById('study-year').value);
+      const module = document.getElementById('module').value.trim();
+      const unite = document.getElementById('unite').value.trim() || null;
+      const speciality = document.getElementById('speciality').value.trim();
+      const cours = getAllCours();
+      const examType = document.getElementById('exam-type').value.trim();
+      const number = parseInt(document.getElementById('number').value);
+      const questionText = document.getElementById('question-text').value.trim();
+      const questionImageInput = document.getElementById('question-image');
+      const questionImage = questionImageInput.files[0];
+
+      const answers = [];
+      let hasCorrect = false;
+
+      answerLabels.forEach(label => {
+        const txt = document.getElementById(`answer-${label}`).value.trim();
+        const ok = document.getElementById(`correct-${label}`).checked;
+        const imgInput = document.getElementById(`answer-image-${label}`);
+        const imgFile = imgInput.files[0];
+        if (txt) {
+          const ad = { answer_text: txt, is_correct: ok, option_label: label };
+          if (imgFile) {
+            const reader = new FileReader();
+            reader.onload = e => {
+              ad.answer_image = e.target.result;
+            };
+            reader.readAsDataURL(imgFile);
+          }
+          answers.push(ad);
+          if (ok) hasCorrect = true;
+        }
+      });
+
+      if (answers.length < 2) {
+        showMessage('Veuillez fournir au moins 2 options de réponse.', 'error');
+        return;
+      }
+      if (!hasCorrect) {
+        showMessage('Veuillez marquer au moins une réponse comme correcte.', 'error');
+        return;
+      }
+      if (cours.length === 0) {
+        showMessage('Veuillez fournir au moins un cours.', 'error');
+        return;
+      }
+
+      const dup = questions.find(q =>
+        q.year === year &&
+        q.study_year === studyYear &&
+        q.module === module &&
+        q.exam_type === examType &&
+        q.number === number
+      );
+      if (dup) {
+        if (!confirm(`La question ${number} existe déjà (${module} – ${examType} ${year}). Remplacer ?`)) {
+          return;
+        }
+        questions = questions.filter(q =>
+          !(q.year === year &&
+            q.study_year === studyYear &&
+            q.module === module &&
+            q.exam_type === examType &&
+            q.number === number)
+        );
+      }
+
+      const question = {
+        id: Date.now(),
+        year,
+        study_year: studyYear,
+        module,
+        unite,
+        speciality,
+        cours,
+        exam_type: examType,
+        number,
+        question_text: questionText,
+        answers,
+        created_at: new Date().toISOString()
+      };
+
+      const finishAdd = () => {
+        questions.push(question);
+        saveQuestions();
+        renderQuestionsList();
+        clearForm();
+        showMessage('Question ajoutée avec succès !', 'success');
+        document.getElementById('number').value = number + 1;
+      };
+
+      if (questionImage) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          question.question_image = e.target.result;
+          finishAdd();
+        };
+        reader.readAsDataURL(questionImage);
+      } else {
+        finishAdd();
+      }
+    });
+
+    function showMessage(text, type) {
+      const c = document.getElementById('message-container');
+      const m = document.createElement('div');
+      m.className = `message ${type}`;
+      m.textContent = text;
+      c.appendChild(m);
+      setTimeout(() => m.remove(), 5000);
+    }
+
+    function clearForm() {
+      document.getElementById('question-form').reset();
+      document.getElementById('year').value = 2024;
+      document.getElementById('number').value = 1;
+      document.querySelectorAll('.image-preview').forEach(i => i.classList.add('hidden'));
+      document.getElementById('module').innerHTML = '<option value="">Choisir d\'abord l\'année d\'étude</option>';
+      document.getElementById('exam-type').innerHTML = '<option value="">Choisir le type d\'examen</option>';
+      document.getElementById('unite-group').classList.add('hidden');
+      answerLabels.forEach(l => document.getElementById(`correct-${l}`).checked = false);
+      clearAllCoursInputs();
+    }
+
+    function renderQuestionsList() {
+      const c = document.getElementById('questions-list');
+      if (questions.length === 0) {
+        c.innerHTML = '<p style="text-align:center;color:#6c757d;font-style:italic;">Aucune question ajoutée. Ajoutez votre première question ci-dessus!</p>';
+        return;
+      }
+      const grouped = {};
+      questions.forEach(q => {
+        const key = `${q.study_year}|${q.module}|${q.exam_type}`;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(q);
+      });
+      let html = '';
+      for (let key in grouped) {
+        const [sy, mod, ex] = key.split('|');
+        html += `<div class="question-group"><h4>${sy}ème Année - ${mod} (${ex})</h4>`;
+        grouped[key]
+          .sort((a, b) => a.number - b.number)
+          .forEach(q => {
+            html += `
+              <div class="question-item">
+                <div class="question-header">
+                  <strong>Question ${q.number}</strong>
+                  <div class="question-meta">${q.year} | ${Array.isArray(q.cours) ? q.cours.join(', ') : q.cours}</div>
+                  <button onclick="deleteQuestion(${q.id})" class="btn btn-danger" style="padding:5px 10px;font-size:12px;">Supprimer</button>
+                </div>
+                <p><strong>Q:</strong> ${q.question_text}</p>
+                <div class="answers">
+                  ${q.answers.map(a => `
+                    <p style="color:${a.is_correct ? '#28a745' : '#6c757d'};">
+                      <strong>${a.option_label.toUpperCase()}:</strong> ${a.answer_text} ${a.is_correct ? '✓' : ''}
+                    </p>
+                  `).join('')}
+                </div>
+              </div>`;
+          });
+        html += `</div>`;
+      }
+      c.innerHTML = html;
+    }
+
+    function deleteQuestion(id) {
+      if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
+        questions = questions.filter(q => q.id !== id);
+        saveQuestions();
+        renderQuestionsList();
+        showMessage('Question supprimée avec succès.', 'success');
+      }
+    }
+
+    function updateStatistics() {
+      document.getElementById('total-questions').textContent = questions.length;
+      document.getElementById('total-modules').textContent = new Set(questions.map(q => q.module)).size;
+      const allCours = new Set();
+      questions.forEach(q => {
+        if (Array.isArray(q.cours)) {
+          q.cours.forEach(c => allCours.add(c));
+        } else if (q.cours) {
+          allCours.add(q.cours);
+        }
+      });
+      document.getElementById('total-cours').textContent = allCours.size;
+    }
+
+    function exportToJSON() {
+      if (!questions.length) {
+        showMessage('Aucune question à exporter.', 'error');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(questions, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `questions-mcq-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showMessage(`${questions.length} questions exportées avec succès!`, 'success');
+    }
+
+    function exportToCSV() {
+      if (!questions.length) {
+        showMessage('Aucune question à exporter.', 'error');
+        return;
+      }
+      let csv = 'Année,Année Étude,Module,Unité,Spécialité,Cours,Type Examen,Numéro,Texte Question,Réponse A,Correcte A,Réponse B,Correcte B,Réponse C,Correcte C,Réponse D,Correcte D,Réponse E,Correcte E\n';
+      questions.forEach(q => {
+        const answers = ['', '', '', '', ''];
+        const correct = [false, false, false, false, false];
+        q.answers.forEach(a => {
+          const idx = answerLabels.indexOf(a.option_label);
+          if (idx !== -1) {
+            answers[idx] = a.answer_text.replace(/"/g,'""');
+            correct[idx] = a.is_correct;
+          }
+        });
+        const row = [
+          q.year,
+          q.study_year,
+          `"${q.module.replace(/"/g,'""')}"`,
+          `"${(q.unite||'').replace(/"/g,'""')}"`,
+          `"${q.speciality.replace(/"/g,'""')}"`,
+          `"${(Array.isArray(q.cours) ? q.cours.join('; ') : q.cours).replace(/"/g,'""')}"`,
+          `"${q.exam_type.replace(/"/g,'""')}"`,
+          q.number,
+          `"${q.question_text.replace(/"/g,'""')}"`,
+          ...answers.map(a=>`"${a}"`),
+          ...correct.map(c=>c?'OUI':'NON')
+        ].join(',');
+        csv += row + '\n';
+      });
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `questions-mcq-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showMessage(`${questions.length} questions exportées en CSV!`, 'success');
+    }
+
+    function clearAllQuestions() {
+      if (confirm('Êtes-vous sûr de vouloir supprimer toutes les questions? Cette action est irréversible.')) {
+        questions = [];
+        saveQuestions();
+        renderQuestionsList();
+        showMessage('Toutes les questions ont été supprimées.', 'success');
+      }
+    }
+
+    function addCoursInput() {
+      const container = document.getElementById('cours-container');
+      const newGroup = document.createElement('div');
+      newGroup.className = 'cours-input-group';
+      newGroup.innerHTML = `
+        <input type="text" class="cours-input" placeholder="Nom du cours" style="width: calc(100% - 80px); display: inline-block;">
+        <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+        <button type="button" onclick="removeCoursInput(this)" class="btn-remove-cours" style="width: 35px; padding: 12px 5px; margin-left: 4px;">-</button>
+      `;
+      container.appendChild(newGroup);
+    }
+
+    function removeCoursInput(button) {
+      const container = document.getElementById('cours-container');
+      if (container.children.length > 1) {
+        button.parentElement.remove();
+      }
+    }
+
+    function getAllCours() {
+      const inputs = document.querySelectorAll('.cours-input');
+      const cours = [];
+      inputs.forEach(input => {
+        if (input.value.trim()) {
+          cours.push(input.value.trim());
+        }
+      });
+      return cours;
+    }
+
+    function clearAllCoursInputs() {
+      const container = document.getElementById('cours-container');
+      container.innerHTML = `
+        <div class="cours-input-group">
+          <input type="text" class="cours-input" required placeholder="Nom du cours" style="width: calc(100% - 40px); display: inline-block;">
+          <button type="button" onclick="addCoursInput()" class="btn-add-cours" style="width: 35px; padding: 12px 5px; margin-left: 5px;">+</button>
+        </div>
+      `;
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeForm);
+  </script>
+</body>
+</html>
