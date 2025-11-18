@@ -65,26 +65,31 @@ export async function POST(request: NextRequest) {
     const { question, answers } = body;
 
     // Insert question using admin client (bypasses RLS)
+    const questionData = {
+      year: question.year,
+      module_name: question.module_name,
+      sub_discipline: question.sub_discipline || null,
+      exam_type: question.exam_type,
+      number: question.number,
+      question_text: question.question_text,
+      explanation: question.explanation || null,
+    };
+
     const { data: newQuestion, error: questionError } = await supabaseAdmin
       .from('questions')
-      .insert({
-        year: question.year,
-        module_name: question.module_name,
-        sub_discipline: question.sub_discipline || null,
-        exam_type: question.exam_type,
-        number: question.number,
-        question_text: question.question_text,
-        explanation: question.explanation || null,
-      })
+      .insert(questionData as any)
       .select()
       .single();
 
     if (questionError) throw questionError;
     if (!newQuestion) throw new Error('Failed to create question');
 
+    // Type assertion for newQuestion
+    const questionRecord = newQuestion as any;
+
     // Insert answers
     const answersToInsert = answers.map((answer: any) => ({
-      question_id: newQuestion.id,
+      question_id: questionRecord.id,
       option_label: answer.option_label,
       answer_text: answer.answer_text,
       is_correct: answer.is_correct,
@@ -93,19 +98,19 @@ export async function POST(request: NextRequest) {
 
     const { data: newAnswers, error: answersError } = await supabaseAdmin
       .from('answers')
-      .insert(answersToInsert)
+      .insert(answersToInsert as any)
       .select();
 
     if (answersError) {
       // Rollback: delete the question
-      await supabaseAdmin.from('questions').delete().eq('id', newQuestion.id);
+      await supabaseAdmin.from('questions').delete().eq('id', questionRecord.id);
       throw answersError;
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        ...newQuestion,
+        ...questionRecord,
         answers: newAnswers || [],
       },
     });

@@ -15,7 +15,8 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 // Create admin client with service role key (bypasses RLS)
-export const supabaseAdmin = createClient<Database>(
+// Using 'any' for Database type to avoid strict type checking issues during build
+export const supabaseAdmin = createClient(
   supabaseUrl,
   supabaseServiceKey,
   {

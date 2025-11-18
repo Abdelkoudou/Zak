@@ -7,6 +7,24 @@ interface ModuleQuestions {
   [key: string]: any[];
 }
 
+interface QuestionWithAnswers {
+  id: string;
+  year: number;
+  module_name: string;
+  sub_discipline: string | null;
+  exam_type: string;
+  number: number;
+  question_text: string;
+  explanation: string | null;
+  answers: Array<{
+    id: string;
+    option_label: string;
+    answer_text: string;
+    is_correct: boolean;
+    display_order: number;
+  }>;
+}
+
 // POST /api/export - Export all questions to JSON and upload to Supabase Storage
 export async function POST(request: NextRequest) {
   try {
@@ -64,20 +82,20 @@ export async function POST(request: NextRequest) {
     // Group questions by year and module
     const groupedQuestions: { [key: string]: ModuleQuestions } = {};
 
-    for (const question of questions) {
+    for (const question of questions as QuestionWithAnswers[]) {
       const year = question.year;
-      const module = question.module_name.toLowerCase().replace(/\s+/g, '_');
+      const moduleName = question.module_name.toLowerCase().replace(/\s+/g, '_');
       const key = `year${year}`;
 
       if (!groupedQuestions[key]) {
         groupedQuestions[key] = {};
       }
 
-      if (!groupedQuestions[key][module]) {
-        groupedQuestions[key][module] = [];
+      if (!groupedQuestions[key][moduleName]) {
+        groupedQuestions[key][moduleName] = [];
       }
 
-      groupedQuestions[key][module].push(question);
+      groupedQuestions[key][moduleName].push(question);
     }
 
     console.log('📦 Grouped questions by modules');

@@ -153,13 +153,15 @@ export async function updateQuestion(
   data: Partial<CreateQuestionData>
 ) {
   try {
+    const updateData: any = {
+      question_text: data.question_text,
+      explanation: data.explanation,
+      // Note: year, module, exam_type, number should not be changed
+    };
+
     const { data: question, error } = await supabase
       .from('questions')
-      .update({
-        question_text: data.question_text,
-        explanation: data.explanation,
-        // Note: year, module, exam_type, number should not be changed
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();

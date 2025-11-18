@@ -387,22 +387,22 @@ export interface SubDiscipline {
   examTypes: ExamType[]
 }
 
-export interface QuestionWithAnswers extends Database['public']['Tables']['questions']['Row'] {
+export type QuestionWithAnswers = Database['public']['Tables']['questions']['Row'] & {
   answers: Database['public']['Tables']['answers']['Row'][]
 }
 
-export interface ModuleWithDetails extends Database['public']['Tables']['modules']['Row'] {
+export type ModuleWithDetails = Database['public']['Tables']['modules']['Row'] & {
   question_count?: number
   resource_count?: number
 }
 
-export interface UserProfile extends Database['public']['Tables']['users']['Row'] {
+export type UserProfile = Database['public']['Tables']['users']['Row'] & {
   saved_questions_count?: number
   test_attempts_count?: number
   active_devices_count?: number
 }
 
-export interface TestResult extends Database['public']['Tables']['test_attempts']['Row'] {
+export type TestResult = Database['public']['Tables']['test_attempts']['Row'] & {
   module?: Database['public']['Tables']['modules']['Row']
 }
 

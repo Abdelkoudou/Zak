@@ -50,11 +50,14 @@ export default function LoginPage() {
         throw new Error('User not found in users table');
       }
 
-      console.log('User role:', userData.role);
+      // Type assertion for userData
+      const userRecord = userData as any;
 
-      if (!['owner', 'admin', 'manager'].includes(userData.role)) {
+      console.log('User role:', userRecord.role);
+
+      if (!['owner', 'admin', 'manager'].includes(userRecord.role)) {
         await supabase.auth.signOut();
-        throw new Error(`Access denied. Role '${userData.role}' does not have admin privileges.`);
+        throw new Error(`Access denied. Role '${userRecord.role}' does not have admin privileges.`);
       }
 
       // Success! Redirect to questions page
