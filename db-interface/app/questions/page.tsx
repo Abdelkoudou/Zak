@@ -184,14 +184,14 @@ export default function QuestionsPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Questions MCQ</h1>
-          <p className="text-gray-600">Ajouter et gérer les questions à choix multiples</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Questions MCQ</h1>
+          <p className="text-sm md:text-base text-gray-600">Ajouter et gérer les questions à choix multiples</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
         >
           {showForm ? 'Annuler' : '➕ Nouvelle Question'}
         </button>
@@ -237,36 +237,36 @@ export default function QuestionsPage() {
       )}
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500 text-sm">Total Questions</p>
-          <p className="text-3xl font-bold text-gray-900">{questions.length}</p>
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 md:mb-8">
+        <div className="bg-white rounded-lg shadow p-3 md:p-6">
+          <p className="text-gray-500 text-xs md:text-sm">Total Questions</p>
+          <p className="text-xl md:text-3xl font-bold text-gray-900">{questions.length}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500 text-sm">Modules Couverts</p>
-          <p className="text-3xl font-bold text-blue-600">
+        <div className="bg-white rounded-lg shadow p-3 md:p-6">
+          <p className="text-gray-500 text-xs md:text-sm">Modules Couverts</p>
+          <p className="text-xl md:text-3xl font-bold text-blue-600">
             {new Set(questions.map(q => q.module_name)).size}
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-gray-500 text-sm">Types d&apos;Examens</p>
-          <p className="text-3xl font-bold text-green-600">
+        <div className="bg-white rounded-lg shadow p-3 md:p-6">
+          <p className="text-gray-500 text-xs md:text-sm">Types d&apos;Examens</p>
+          <p className="text-xl md:text-3xl font-bold text-green-600">
             {new Set(questions.map(q => q.exam_type)).size}
           </p>
         </div>
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-semibold mb-6">Ajouter une Question</h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 md:mb-8">
+          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Ajouter une Question</h2>
+          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Section 1: Détails de la Question */}
-            <div className="border-2 border-gray-200 rounded-lg p-6 bg-gray-50">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">
+            <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-700 border-b pb-2">
                 📖 Détails de la Question
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Année */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -376,14 +376,14 @@ export default function QuestionsPage() {
               </div>
 
               {/* Question Text */}
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mt-4 md:mt-6">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                   Texte de la Question *
                 </label>
                 <textarea
                   value={formData.questionText}
                   onChange={(e) => setFormData({ ...formData, questionText: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   rows={4}
                   placeholder="Entrez votre question ici..."
                   required
@@ -391,14 +391,14 @@ export default function QuestionsPage() {
               </div>
 
               {/* Explanation (optional) */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mt-3 md:mt-4">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
                   Explication (optionnel)
                 </label>
                 <textarea
                   value={formData.explanation || ''}
                   onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   rows={3}
                   placeholder="Explication de la réponse correcte..."
                 />
@@ -406,28 +406,28 @@ export default function QuestionsPage() {
             </div>
 
             {/* Section 2: Options de Réponse */}
-            <div className="border-2 border-gray-200 rounded-lg p-6 bg-gray-50">
-              <h3 className="text-lg font-semibold mb-4 text-gray-700 border-b pb-2">
+            <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
+              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-700 border-b pb-2">
                 ✅ Options de Réponse
               </h3>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
                 Entrez les options de réponse (A-E) et cochez les bonnes réponses. Vous pouvez avoir plusieurs bonnes réponses.
               </p>
 
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {formData.answers.map((answer, index) => (
-                  <div key={answer.optionLabel} className="border border-gray-300 rounded-lg p-4 bg-white">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-12 h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-lg">
+                  <div key={answer.optionLabel} className="border border-gray-300 rounded-lg p-3 md:p-4 bg-white">
+                    <div className="flex items-start gap-2 md:gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-base md:text-lg">
                         {answer.optionLabel}
                       </div>
 
-                      <div className="flex-1 space-y-3">
+                      <div className="flex-1 space-y-2 md:space-y-3">
                         <input
                           type="text"
                           value={answer.answerText}
                           onChange={(e) => updateAnswer(index, 'answerText', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                           placeholder={`Texte de la réponse ${answer.optionLabel}...`}
                         />
 
@@ -436,9 +436,9 @@ export default function QuestionsPage() {
                             type="checkbox"
                             checked={answer.isCorrect}
                             onChange={(e) => updateAnswer(index, 'isCorrect', e.target.checked)}
-                            className="w-5 h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                            className="w-4 h-4 md:w-5 md:h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
                           />
-                          <span className="text-sm font-medium text-gray-700">
+                          <span className="text-xs md:text-sm font-medium text-gray-700">
                             Réponse correcte
                           </span>
                         </label>
@@ -448,17 +448,17 @@ export default function QuestionsPage() {
                 ))}
               </div>
 
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-xs md:text-sm text-gray-500 mt-3 md:mt-4">
                 💡 Au moins une réponse doit être marquée comme correcte
               </p>
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
               >
                 {saving ? '⏳ Enregistrement...' : '✅ Enregistrer la Question'}
               </button>
@@ -468,7 +468,7 @@ export default function QuestionsPage() {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                className="px-4 md:px-6 py-2 md:py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm md:text-base"
               >
                 Annuler
               </button>
@@ -479,12 +479,12 @@ export default function QuestionsPage() {
 
       {/* Questions List */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold">
+        <div className="p-4 md:p-6 border-b">
+          <h2 className="text-lg md:text-xl font-semibold">
             Liste des Questions ({questions.length})
           </h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {loading ? (
             <p className="text-gray-500 text-center py-8">
               ⏳ Chargement des questions...
