@@ -1,13 +1,20 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
 import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
+import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI } from '@/lib/api/questions';
+import { getModules } from '@/lib/api/modules';
+import { supabaseConfigured } from '@/lib/supabase';
 
 export default function QuestionsPage() {
   const [showForm, setShowForm] = useState(false);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState<QuestionFormData>({
     year: '1',
     moduleId: '',
@@ -46,52 +53,81 @@ export default function QuestionsPage() {
     return selectedModule?.examTypes || [];
   }, [selectedModule]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load questions on mount
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const loadQuestions = async () => {
+    setLoading(true);
+    setError(null);
+    const result = await getQuestions();
+    if (result.success) {
+      setQuestions(result.data);
+    } else {
+      setError(result.error || 'Failed to load questions');
+    }
+    setLoading(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
 
     // Validation
     const hasCorrectAnswer = formData.answers.some(a => a.isCorrect && a.answerText.trim());
     if (!hasCorrectAnswer) {
-      alert('Veuillez marquer au moins une réponse comme correcte.');
+      setError('Veuillez marquer au moins une réponse comme correcte.');
+      setSaving(false);
       return;
     }
 
     const validAnswers = formData.answers.filter(a => a.answerText.trim());
     if (validAnswers.length < 2) {
-      alert('Veuillez fournir au moins 2 options de réponse.');
+      setError('Veuillez fournir au moins 2 options de réponse.');
+      setSaving(false);
       return;
     }
 
-    const newQuestion: Question = {
-      id: Date.now().toString(),
+    // Prepare data for Supabase
+    const questionData = {
       year: formData.year,
-      moduleId: formData.moduleId,
-      subDisciplineId: formData.subDisciplineId,
-      chapterId: formData.chapterId,
-      examType: formData.examType,
+      module_name: formData.moduleId, // moduleId is actually the module name
+      sub_discipline: formData.subDisciplineId || undefined,
+      exam_type: formData.examType,
       number: formData.number,
-      questionText: formData.questionText,
-      explanation: formData.explanation,
-      answers: formData.answers
-        .filter(a => a.answerText.trim())
-        .map((answer, idx) => ({
-          id: `${Date.now()}-${idx}`,
-          questionId: Date.now().toString(),
-          optionLabel: answer.optionLabel,
-          answerText: answer.answerText,
-          isCorrect: answer.isCorrect,
-          order: idx,
-        })),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      question_text: formData.questionText,
+      explanation: formData.explanation || undefined,
+      answers: validAnswers.map((answer, idx) => ({
+        option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
+        answer_text: answer.answerText,
+        is_correct: answer.isCorrect,
+        display_order: idx + 1,
+      })),
     };
 
-    setQuestions([...questions, newQuestion]);
-    setShowForm(false);
-    resetForm();
-    
-    // Auto-increment question number
-    setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+    // Save to Supabase
+    const result = await createQuestion(questionData);
+
+    if (result.success) {
+      setSuccess('✅ Question ajoutée avec succès!');
+      setShowForm(false);
+      
+      // Reload questions
+      await loadQuestions();
+      
+      // Auto-increment question number
+      setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      setError(result.error || 'Erreur lors de l\'ajout de la question');
+    }
+
+    setSaving(false);
   };
 
   const resetForm = () => {
@@ -118,17 +154,24 @@ export default function QuestionsPage() {
     setFormData({ ...formData, answers: newAnswers });
   };
 
-  const deleteQuestion = (id: string) => {
+  const deleteQuestion = async (id: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
-      setQuestions(questions.filter(q => q.id !== id));
+      const result = await deleteQuestionAPI(id);
+      if (result.success) {
+        setSuccess('✅ Question supprimée avec succès!');
+        await loadQuestions();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        setError(result.error || 'Erreur lors de la suppression');
+      }
     }
   };
 
   // Group questions by module and exam type
   const groupedQuestions = useMemo(() => {
-    const groups: Record<string, Question[]> = {};
+    const groups: Record<string, any[]> = {};
     questions.forEach(q => {
-      const key = `${q.year}-${q.moduleId}-${q.examType}`;
+      const key = `${q.year}-${q.module_name}-${q.exam_type}`;
       if (!groups[key]) groups[key] = [];
       groups[key].push(q);
     });
@@ -154,6 +197,45 @@ export default function QuestionsPage() {
         </button>
       </div>
 
+      {/* Supabase Setup Warning */}
+      {!supabaseConfigured && (
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6 mb-6">
+          <div className="flex items-start gap-4">
+            <span className="text-4xl">⚠️</span>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-yellow-900 mb-2">
+                Configuration Supabase Requise
+              </h3>
+              <p className="text-yellow-800 mb-3">
+                Supabase n&apos;est pas configuré. Pour utiliser cette interface, vous devez:
+              </p>
+              <ol className="list-decimal list-inside space-y-2 text-yellow-800 mb-4">
+                <li>Créer un projet Supabase sur <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">supabase.com</a></li>
+                <li>Exécuter les fichiers SQL dans <code className="bg-yellow-100 px-2 py-1 rounded">supabase/</code></li>
+                <li>Copier <code className="bg-yellow-100 px-2 py-1 rounded">.env.local.example</code> vers <code className="bg-yellow-100 px-2 py-1 rounded">.env.local</code></li>
+                <li>Ajouter vos identifiants Supabase dans <code className="bg-yellow-100 px-2 py-1 rounded">.env.local</code></li>
+                <li>Redémarrer le serveur de développement</li>
+              </ol>
+              <p className="text-sm text-yellow-700">
+                📖 Consultez <code className="bg-yellow-100 px-2 py-1 rounded">SUPABASE_SETUP.md</code> pour les instructions détaillées
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error/Success Messages */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-800">❌ {error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <p className="text-green-800">{success}</p>
+        </div>
+      )}
+
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow p-6">
@@ -163,13 +245,13 @@ export default function QuestionsPage() {
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-500 text-sm">Modules Couverts</p>
           <p className="text-3xl font-bold text-blue-600">
-            {new Set(questions.map(q => q.moduleId)).size}
+            {new Set(questions.map(q => q.module_name)).size}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <p className="text-gray-500 text-sm">Types d&apos;Examens</p>
           <p className="text-3xl font-bold text-green-600">
-            {new Set(questions.map(q => q.examType)).size}
+            {new Set(questions.map(q => q.exam_type)).size}
           </p>
         </div>
       </div>
@@ -375,9 +457,10 @@ export default function QuestionsPage() {
             <div className="flex gap-4">
               <button
                 type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                disabled={saving}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                ✅ Enregistrer la Question
+                {saving ? '⏳ Enregistrement...' : '✅ Enregistrer la Question'}
               </button>
               <button
                 type="button"
@@ -402,18 +485,22 @@ export default function QuestionsPage() {
           </h2>
         </div>
         <div className="p-6">
-          {questions.length === 0 ? (
+          {loading ? (
+            <p className="text-gray-500 text-center py-8">
+              ⏳ Chargement des questions...
+            </p>
+          ) : questions.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
               Aucune question ajoutée. Cliquez sur &quot;Nouvelle Question&quot; pour commencer.
             </p>
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedQuestions).map(([key, groupQuestions]) => {
-                const [year, moduleId, examType] = key.split('-');
+                const [year, moduleName, examType] = key.split('-');
                 return (
                   <div key={key} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                      {YEARS.find(y => y.value === year)?.label} - {moduleId} ({examType})
+                      {YEARS.find(y => y.value === year)?.label} - {moduleName} ({examType})
                     </h3>
                     <div className="space-y-4">
                       {groupQuestions.map((question) => (
@@ -423,9 +510,9 @@ export default function QuestionsPage() {
                               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
                                 Q{question.number}
                               </span>
-                              {question.subDisciplineId && (
+                              {question.sub_discipline && (
                                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
-                                  {question.subDisciplineId}
+                                  {question.sub_discipline}
                                 </span>
                               )}
                             </div>
@@ -437,21 +524,21 @@ export default function QuestionsPage() {
                             </button>
                           </div>
 
-                          <p className="text-gray-900 mb-3 font-medium">{question.questionText}</p>
+                          <p className="text-gray-900 mb-3 font-medium">{question.question_text}</p>
 
                           <div className="space-y-2">
-                            {question.answers.map((answer) => (
+                            {question.answers.map((answer: any) => (
                               <div
                                 key={answer.id}
                                 className={`flex items-start gap-3 p-2 rounded ${
-                                  answer.isCorrect ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                                  answer.is_correct ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
                                 }`}
                               >
                                 <span className="font-bold text-sm min-w-[24px]">
-                                  {answer.optionLabel}.
+                                  {answer.option_label.toUpperCase()}.
                                 </span>
-                                <span className="text-sm flex-1">{answer.answerText}</span>
-                                {answer.isCorrect && (
+                                <span className="text-sm flex-1">{answer.answer_text}</span>
+                                {answer.is_correct && (
                                   <span className="text-green-600 text-sm font-medium">✓ Correct</span>
                                 )}
                               </div>

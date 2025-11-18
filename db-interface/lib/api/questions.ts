@@ -1,0 +1,251 @@
+// API functions for questions
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/types/supabase';
+
+type Question = Database['public']['Tables']['questions']['Row'];
+type QuestionInsert = Database['public']['Tables']['questions']['Insert'];
+type Answer = Database['public']['Tables']['answers']['Row'];
+type AnswerInsert = Database['public']['Tables']['answers']['Insert'];
+
+export interface QuestionWithAnswers extends Question {
+  answers: Answer[];
+}
+
+export interface CreateQuestionData {
+  year: string;
+  module_name: string;
+  sub_discipline?: string;
+  exam_type: string;
+  number: number;
+  question_text: string;
+  explanation?: string;
+  answers: {
+    option_label: 'A' | 'B' | 'C' | 'D' | 'E';
+    answer_text: string;
+    is_correct: boolean;
+    display_order: number;
+  }[];
+}
+
+// Create a new question with answers
+export async function createQuestion(data: CreateQuestionData) {
+  try {
+    // 1. Insert the question
+    const { data: question, error: questionError } = await supabase
+      .from('questions')
+      .insert({
+        year: data.year as any,
+        module_name: data.module_name,
+        sub_discipline: data.sub_discipline || null,
+        exam_type: data.exam_type as any,
+        number: data.number,
+        question_text: data.question_text,
+        explanation: data.explanation || null,
+      })
+      .select()
+      .single();
+
+    if (questionError) throw questionError;
+    if (!question) throw new Error('Failed to create question');
+
+    // 2. Insert the answers
+    const answersToInsert: AnswerInsert[] = data.answers.map((answer) => ({
+      question_id: question.id,
+      option_label: answer.option_label,
+      answer_text: answer.answer_text,
+      is_correct: answer.is_correct,
+      display_order: answer.display_order,
+    }));
+
+    const { data: answers, error: answersError } = await supabase
+      .from('answers')
+      .insert(answersToInsert)
+      .select();
+
+    if (answersError) {
+      // Rollback: delete the question if answers failed
+      await supabase.from('questions').delete().eq('id', question.id);
+      throw answersError;
+    }
+
+    return {
+      success: true,
+      data: {
+        ...question,
+        answers: answers || [],
+      } as QuestionWithAnswers,
+    };
+  } catch (error: any) {
+    console.error('Error creating question:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to create question',
+    };
+  }
+}
+
+// Get all questions with filters
+export async function getQuestions(filters?: {
+  year?: string;
+  module_name?: string;
+  sub_discipline?: string;
+  exam_type?: string;
+}) {
+  try {
+    let query = supabase
+      .from('questions')
+      .select(`
+        *,
+        answers (*)
+      `)
+      .order('number', { ascending: true });
+
+    if (filters?.year) {
+      query = query.eq('year', filters.year);
+    }
+    if (filters?.module_name) {
+      query = query.eq('module_name', filters.module_name);
+    }
+    if (filters?.sub_discipline) {
+      query = query.eq('sub_discipline', filters.sub_discipline);
+    }
+    if (filters?.exam_type) {
+      query = query.eq('exam_type', filters.exam_type);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data as QuestionWithAnswers[],
+    };
+  } catch (error: any) {
+    console.error('Error fetching questions:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch questions',
+      data: [],
+    };
+  }
+}
+
+// Get a single question by ID
+export async function getQuestionById(id: string) {
+  try {
+    const { data, error } = await supabase
+      .from('questions')
+      .select(`
+        *,
+        answers (*)
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data as QuestionWithAnswers,
+    };
+  } catch (error: any) {
+    console.error('Error fetching question:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch question',
+    };
+  }
+}
+
+// Update a question
+export async function updateQuestion(
+  id: string,
+  data: Partial<CreateQuestionData>
+) {
+  try {
+    const { data: question, error } = await supabase
+      .from('questions')
+      .update({
+        question_text: data.question_text,
+        explanation: data.explanation,
+        // Note: year, module, exam_type, number should not be changed
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Update answers if provided
+    if (data.answers) {
+      // Delete old answers
+      await supabase.from('answers').delete().eq('question_id', id);
+
+      // Insert new answers
+      const answersToInsert: AnswerInsert[] = data.answers.map((answer) => ({
+        question_id: id,
+        option_label: answer.option_label,
+        answer_text: answer.answer_text,
+        is_correct: answer.is_correct,
+        display_order: answer.display_order,
+      }));
+
+      await supabase.from('answers').insert(answersToInsert);
+    }
+
+    return {
+      success: true,
+      data: question,
+    };
+  } catch (error: any) {
+    console.error('Error updating question:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to update question',
+    };
+  }
+}
+
+// Delete a question (answers will be deleted automatically via CASCADE)
+export async function deleteQuestion(id: string) {
+  try {
+    const { error } = await supabase.from('questions').delete().eq('id', id);
+
+    if (error) throw error;
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    console.error('Error deleting question:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to delete question',
+    };
+  }
+}
+
+// Get question statistics
+export async function getQuestionStats() {
+  try {
+    const { count, error } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true });
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: {
+        total: count || 0,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error fetching stats:', error);
+    return {
+      success: false,
+      data: { total: 0 },
+    };
+  }
+}
