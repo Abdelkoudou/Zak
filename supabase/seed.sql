@@ -15,7 +15,8 @@ INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, s
 ('Biophysique', '1', 'annual', ARRAY['EMD1', 'EMD2', 'Rattrapage']::exam_type[], FALSE, NULL),
 ('Biostatistique / Informatique', '1', 'annual', ARRAY['EMD1', 'EMD2', 'Rattrapage']::exam_type[], FALSE, NULL),
 ('Chimie', '1', 'annual', ARRAY['EMD1', 'EMD2', 'Rattrapage']::exam_type[], FALSE, NULL),
-('Cytologie', '1', 'annual', ARRAY['EMD1', 'EMD2', 'Rattrapage']::exam_type[], FALSE, NULL);
+('Cytologie', '1', 'annual', ARRAY['EMD1', 'EMD2', 'Rattrapage']::exam_type[], FALSE, NULL)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- 1ÈRE ANNÉE - MODULES SEMESTRIELS (4 modules)
@@ -25,7 +26,8 @@ INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, s
 ('Embryologie', '1', 'semestrial', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
 ('Histologie', '1', 'semestrial', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
 ('Physiologie', '1', 'semestrial', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
-('S.S.H', '1', 'semestrial', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL);
+('S.S.H', '1', 'semestrial', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- 2ÈME ANNÉE - U.E.I (5 modules with sub-disciplines)
@@ -96,7 +98,8 @@ INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, s
     {"name": "Physiologie", "examTypes": ["M1", "M2", "M3", "M4"]},
     {"name": "Biophysique", "examTypes": ["M1", "M2", "M3", "M4"]}
   ]'::JSONB
-);
+)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- 2ÈME ANNÉE - MODULES AUTONOMES (2 modules)
@@ -104,7 +107,61 @@ INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, s
 
 INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, sub_disciplines) VALUES
 ('Génétique', '2', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
-('Immunologie', '2', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL);
+('Immunologie', '2', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL)
+ON CONFLICT (name) DO NOTHING;
+
+-- ============================================================================
+-- 3ÈME ANNÉE - U.E.I (4 modules)
+-- ============================================================================
+
+INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, sub_disciplines) VALUES
+(
+  'Appareil Cardio-vasculaire et respiratoire, Psychologie Médicale et Semiologie Générale',
+  '3',
+  'uei',
+  ARRAY['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage']::exam_type[],
+  TRUE,
+  NULL
+),
+(
+  'Appareil Neurologique, Locomoteur et Cutané',
+  '3',
+  'uei',
+  ARRAY['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage']::exam_type[],
+  TRUE,
+  NULL
+),
+(
+  'Appareil Endocrines, Appareil de Reproduction et Appareil Urinaire',
+  '3',
+  'uei',
+  ARRAY['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage']::exam_type[],
+  TRUE,
+  NULL
+),
+(
+  'Appareil Digestif et Organes Hématopoïétiques',
+  '3',
+  'uei',
+  ARRAY['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage']::exam_type[],
+  TRUE,
+  NULL
+)
+ON CONFLICT (name) DO NOTHING;
+
+-- ============================================================================
+-- 3ÈME ANNÉE - MODULES AUTONOMES (5 modules)
+-- ============================================================================
+
+-- Note: Immunologie appears in both 2ème and 3ème année but with same name
+-- The unique constraint on 'name' means only one will be inserted
+-- Consider renaming to 'Immunologie (3ème année)' if both are needed
+INSERT INTO public.modules (name, year, type, exam_types, has_sub_disciplines, sub_disciplines) VALUES
+('Anatomie pathologique', '3', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
+('Pharmacologie', '3', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
+('Microbiologie', '3', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL),
+('Parasitologie', '3', 'standalone', ARRAY['EMD', 'Rattrapage']::exam_type[], FALSE, NULL)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- VERIFICATION
@@ -117,10 +174,13 @@ DECLARE
 BEGIN
   SELECT COUNT(*) INTO module_count FROM public.modules;
   
-  IF module_count = 17 THEN
-    RAISE NOTICE '✅ Successfully inserted all 17 predefined modules';
+  IF module_count = 26 THEN
+    RAISE NOTICE '✅ Successfully inserted all 26 predefined modules';
+    RAISE NOTICE '   - 1ère année: 10 modules';
+    RAISE NOTICE '   - 2ème année: 7 modules';
+    RAISE NOTICE '   - 3ème année: 9 modules';
   ELSE
-    RAISE WARNING '⚠️ Expected 17 modules but found %', module_count;
+    RAISE WARNING '⚠️ Expected 26 modules but found %', module_count;
   END IF;
 END $$;
 
