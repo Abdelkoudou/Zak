@@ -9,7 +9,7 @@ const navigation = [
   { name: 'Modules', href: '/modules', icon: '📚', badge: 'Lecture' },
   { name: 'Questions', href: '/questions', icon: '❓' },
   { name: 'Ressources', href: '/resources', icon: '📁' },
-  { name: 'Import/Export', href: '/import-export', icon: '📤' },
+  
 ];
 
 export default function Sidebar() {

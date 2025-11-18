@@ -189,12 +189,20 @@ export default function QuestionsPage() {
           <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Questions MCQ</h1>
           <p className="text-sm md:text-base text-gray-600">Ajouter et gérer les questions à choix multiples</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
-        >
-          {showForm ? 'Annuler' : '➕ Nouvelle Question'}
-        </button>
+        <div className="flex gap-2">
+          <a
+            href="/export"
+            className="px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base whitespace-nowrap"
+          >
+            📤 Exporter JSON
+          </a>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
+          >
+            {showForm ? 'Annuler' : '➕ Nouvelle Question'}
+          </button>
+        </div>
       </div>
 
       {/* Supabase Setup Warning */}
