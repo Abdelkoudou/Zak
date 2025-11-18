@@ -115,17 +115,25 @@ cat .env.local
 # Should see no errors
 ```
 
-### Issue: "Permission denied"
+### Issue: "Permission denied" or "row violates row-level security policy"
 
-**Cause:** RLS policies not applied or user not authenticated
+**Cause:** RLS policies are blocking unauthenticated requests from the admin interface
 
-**Solution:**
-1. Re-run `rls-policies.sql` in Supabase SQL Editor
-2. For now, you can disable RLS temporarily for testing:
+**Solution for Admin Interface (Development):**
+
+**Quick Fix (30 seconds)** - See `QUICK_FIX.md` for detailed instructions
+
+1. Open Supabase SQL Editor
+2. Run this SQL:
 ```sql
-ALTER TABLE questions DISABLE ROW LEVEL SECURITY;
-ALTER TABLE answers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.questions DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.answers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.course_resources DISABLE ROW LEVEL SECURITY;
 ```
+
+Or run the complete file: `supabase/disable-rls-for-development.sql`
+
+**⚠️ Important:** This is for admin/development use only. Re-enable RLS before production!
 
 ### Issue: "Module not found"
 

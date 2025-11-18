@@ -1,181 +1,179 @@
-# DB Interface - Admin Panel
+# MCQ Admin Interface
 
-Interface d'administration pour l'application MCQ Study App. Cette application Next.js permet de gérer la structure complète du curriculum médical algérien.
+A secure web interface for managing medical exam questions.
 
-## 🎯 Fonctionnalités
+---
 
-### 1. Gestion des Modules
-- Créer des modules annuels, semestriels, U.E.I et autonomes
-- Définir les types d'examens (EMD, EMD1, EMD2, Rattrapage, M1-M4)
-- Gérer les sous-disciplines pour les U.E.I
-- Structure hiérarchique complète
+## 🎯 Features
 
-### 2. Gestion des Questions
-- Ajouter des QCM avec réponses multiples
-- Associer aux modules et sous-disciplines
-- Définir les réponses correctes
-- Ajouter des explications
-- Support de A à H options
+- ✅ **Secure Authentication** - Admin login required
+- ✅ **Role-Based Access** - Only admins/managers can add questions
+- ✅ **Question Management** - Add, edit, delete questions
+- ✅ **Module Management** - Organize by year, module, exam type
+- ✅ **Resource Management** - Add course resources
+- ✅ **Production Ready** - Deploy to Vercel/Netlify
 
-### 3. Gestion des Ressources
-- Ajouter des liens Google Drive
-- Liens Telegram
-- Vidéos YouTube
-- PDFs et autres ressources
-- Organisation par module et année
+---
 
-### 4. Import/Export
-- Importer des données JSON
-- Exporter modules, questions, ressources
-- Export complet de la base de données
-- Format JSON standardisé
+## 🚀 Quick Start
 
-## 🏗️ Structure du Curriculum
+### For Local Development (Testing)
 
-### 1ère Année
-- **6 Modules Annuels**: Anatomie, Biochimie, Biophysique, Biostatistique/Informatique, Chimie, Cytologie
-  - Examens: EMD1, EMD2, Rattrapage
-- **4 Modules Semestriels**: Embryologie, Histologie, Physiologie, S.S.H
-  - Examens: EMD, Rattrapage
-
-### 2ème Année
-- **5 U.E.I** (Unités d'Enseignement Intégré):
-  1. Appareil Cardio-vasculaire et Respiratoire (Anatomie, Histologie, Physiologie, Biophysique)
-  2. Appareil Digestif (Anatomie, Histologie, Physiologie, Biochimie)
-  3. Appareil Urinaire (Anatomie, Histologie, Physiologie, Biochimie)
-  4. Appareil Endocrinien et de la Reproduction (Anatomie, Histologie, Physiologie, Biochimie)
-  5. Appareil Nerveux et Organes des Sens (Anatomie, Histologie, Physiologie, Biophysique)
-  - Examens: M1, M2, M3, M4, EMD, Rattrapage
-- **2 Modules Autonomes**: Génétique, Immunologie
-  - Examens: EMD, Rattrapage
-
-### 3ème Année
-Structure similaire à la 2ème année avec modules spécifiques
-
-## 🚀 Démarrage
-
+1. **Install dependencies:**
 ```bash
-# Installation
-cd db-interface
 npm install
+```
 
-# Développement
+2. **Configure Supabase:**
+```bash
+cp .env.local.example .env.local
+# Add your Supabase credentials
+```
+
+3. **Run development server:**
+```bash
 npm run dev
-
-# Build production
-npm run build
-npm start
 ```
 
-L'application sera accessible sur `http://localhost:3001`
+4. **Open:** http://localhost:3001
 
-## 📊 Modèle de Données
+---
 
-### Module
-```typescript
-{
-  id: string;
-  name: string;
-  year: '1' | '2' | '3';
-  type: 'annual' | 'semestrial' | 'uei' | 'standalone';
-  examTypes: ExamType[];
-  hasSubDisciplines: boolean;
-  subDisciplines?: SubDiscipline[];
-}
-```
+## 🔐 For Production Hosting
 
-### Question
-```typescript
-{
-  id: string;
-  year: YearLevel;
-  moduleId: string;
-  subDisciplineId?: string;
-  examType: ExamType;
-  number: number;
-  questionText: string;
-  explanation?: string;
-  answers: Answer[];
-}
-```
+**Follow these guides in order:**
 
-### CourseResource
-```typescript
-{
-  id: string;
-  year: YearLevel;
-  moduleId: string;
-  subDisciplineId?: string;
-  title: string;
-  type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
-  url: string;
-  description?: string;
-}
-```
+### 1. SECURE_SETUP.md
+- Install auth dependencies
+- Get service role key
+- Create admin users
+- Test locally
 
-## 📝 Format d'Import JSON
+### 2. DEPLOYMENT_GUIDE.md
+- Deploy to Vercel
+- Configure environment variables
+- Set up custom domain
+- Manage admin users
 
-### Questions
-```json
-{
-  "questions": [
-    {
-      "year": "1",
-      "moduleId": "module-id",
-      "examType": "EMD1",
-      "number": 1,
-      "questionText": "Quelle est la fonction principale...",
-      "explanation": "La réponse correcte est...",
-      "answers": [
-        {
-          "optionLabel": "A",
-          "answerText": "Première option",
-          "isCorrect": true
-        },
-        {
-          "optionLabel": "B",
-          "answerText": "Deuxième option",
-          "isCorrect": false
-        }
-      ]
-    }
-  ]
-}
-```
-
-## 🔗 Intégration Backend
-
-Cette interface est conçue pour fonctionner avec le backend FastAPI. Les prochaines étapes incluent:
-
-1. Connexion à l'API backend
-2. Authentification admin
-3. Synchronisation en temps réel
-4. Validation des données côté serveur
-
-## 🎨 Technologies
-
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- React Hooks
-
-## 📱 Responsive Design
-
-L'interface est entièrement responsive et fonctionne sur:
-- Desktop
-- Tablette
-- Mobile
-
-## 🔐 Sécurité
-
-- Authentification requise (à implémenter)
-- Validation des données
-- Protection CSRF
-- Sanitization des entrées
+---
 
 ## 📚 Documentation
 
-Pour plus d'informations sur la structure du projet, consultez:
-- `/docs/ARCHITECTURE.md`
-- `/docs/API_SPECIFICATION.md`
-- `/docs/DATABASE_MIGRATION_README.md`
+| File | Purpose |
+|------|---------|
+| `SECURE_SETUP.md` | Setup authentication (5 min) |
+| `DEPLOYMENT_GUIDE.md` | Deploy to production (10 min) |
+| `QUICK_FIX.md` | Fix RLS errors (30 sec) |
+| `SUPABASE_SETUP.md` | Initial Supabase setup |
+| `QUICK_START.md` | Quick reference |
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────┐
+│         Admin Users (Browser)           │
+└────────────────┬────────────────────────┘
+                 │ HTTPS
+                 ↓
+┌─────────────────────────────────────────┐
+│      Next.js App (Vercel/Netlify)       │
+│                                          │
+│  ┌──────────────┐  ┌─────────────────┐ │
+│  │ Login Page   │  │  API Routes     │ │
+│  │ (Client)     │  │  (Server-side)  │ │
+│  │              │  │                 │ │
+│  │ anon key     │  │  service key    │ │
+│  └──────────────┘  └─────────────────┘ │
+└────────────────┬────────────────────────┘
+                 │
+                 ↓
+┌─────────────────────────────────────────┐
+│            Supabase                      │
+│  ┌──────────┐  ┌──────────┐            │
+│  │   Auth   │  │ Database │            │
+│  └──────────┘  └──────────┘            │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 🔒 Security
+
+### ✅ What's Secure
+
+- Authentication required (Supabase Auth)
+- Role-based access control
+- RLS enabled on database
+- Service key server-side only
+- HTTPS encryption
+- Session management
+
+### ⚠️ Important
+
+- Never commit `.env.local` to git
+- Never expose service role key to client
+- Use strong passwords for admin accounts
+- Keep RLS enabled in production
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js 15.2
+- **Language:** TypeScript
+- **Database:** Supabase (PostgreSQL)
+- **Auth:** Supabase Auth
+- **Styling:** Tailwind CSS
+- **Hosting:** Vercel (recommended)
+
+---
+
+## 📋 Environment Variables
+
+```env
+# Public (safe to expose)
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
+
+# Secret (server-side only)
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
+```
+
+---
+
+## 🎯 Use Cases
+
+### Local Development
+- Test features
+- Debug issues
+- Quick prototyping
+
+### Production Hosting
+- Multiple admins
+- Remote access
+- Secure and scalable
+
+---
+
+## 📞 Support
+
+- **Supabase Issues:** Check `SUPABASE_SETUP.md`
+- **Auth Issues:** Check `SECURE_SETUP.md`
+- **Deployment Issues:** Check `DEPLOYMENT_GUIDE.md`
+- **RLS Errors:** Check `QUICK_FIX.md`
+
+---
+
+## 🎉 Ready to Deploy?
+
+1. ✅ Read `SECURE_SETUP.md`
+2. ✅ Test locally
+3. ✅ Read `DEPLOYMENT_GUIDE.md`
+4. ✅ Deploy to Vercel
+5. ✅ Share with admin team!
+
+---
+
+**Made with ❤️ for medical students**

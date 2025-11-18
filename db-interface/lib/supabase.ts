@@ -1,5 +1,5 @@
-// Supabase client configuration
-import { createClient } from '@supabase/supabase-js';
+// Supabase client configuration for browser (client-side)
+import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 
 // Get environment variables
@@ -17,13 +17,11 @@ if (!isConfigured) {
   console.warn('📝 Copy .env.local.example to .env.local and add your credentials');
 }
 
-// Create Supabase client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+// Create Supabase client for browser
+export const supabase = createBrowserClient<Database>(
+  supabaseUrl,
+  supabaseAnonKey
+);
 
 // Export configuration status
 export const supabaseConfigured = isConfigured;
@@ -38,7 +36,7 @@ export async function checkSupabaseConnection() {
   }
   
   try {
-    const { data, error } = await supabase.from('modules').select('count');
+    const { error } = await supabase.from('modules').select('count');
     if (error) throw error;
     return { connected: true, error: null };
   } catch (error) {

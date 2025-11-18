@@ -30,51 +30,40 @@ export interface CreateQuestionData {
 // Create a new question with answers
 export async function createQuestion(data: CreateQuestionData) {
   try {
-    // 1. Insert the question
-    const { data: question, error: questionError } = await supabase
-      .from('questions')
-      .insert({
-        year: data.year as any,
-        module_name: data.module_name,
-        sub_discipline: data.sub_discipline || null,
-        exam_type: data.exam_type as any,
-        number: data.number,
-        question_text: data.question_text,
-        explanation: data.explanation || null,
-      })
-      .select()
-      .single();
-
-    if (questionError) throw questionError;
-    if (!question) throw new Error('Failed to create question');
-
-    // 2. Insert the answers
-    const answersToInsert: AnswerInsert[] = data.answers.map((answer) => ({
-      question_id: question.id,
-      option_label: answer.option_label,
-      answer_text: answer.answer_text,
-      is_correct: answer.is_correct,
-      display_order: answer.display_order,
-    }));
-
-    const { data: answers, error: answersError } = await supabase
-      .from('answers')
-      .insert(answersToInsert)
-      .select();
-
-    if (answersError) {
-      // Rollback: delete the question if answers failed
-      await supabase.from('questions').delete().eq('id', question.id);
-      throw answersError;
+    // Get auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Not authenticated');
     }
 
-    return {
-      success: true,
-      data: {
-        ...question,
-        answers: answers || [],
-      } as QuestionWithAnswers,
-    };
+    // Call API route (server-side with service role key)
+    const response = await fetch('/api/questions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        question: {
+          year: data.year,
+          module_name: data.module_name,
+          sub_discipline: data.sub_discipline || null,
+          exam_type: data.exam_type,
+          number: data.number,
+          question_text: data.question_text,
+          explanation: data.explanation || null,
+        },
+        answers: data.answers,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to create question');
+    }
+
+    return result;
   } catch (error: any) {
     console.error('Error creating question:', error);
     return {
