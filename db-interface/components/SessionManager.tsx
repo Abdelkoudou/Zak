@@ -110,6 +110,7 @@ export default function SessionManager() {
       clearInterval(sessionCheckInterval);
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   // This component doesn't render anything

@@ -162,7 +162,6 @@ export async function updateQuestion(
   try {
     const updateData: any = {
       question_text: data.question_text,
-      explanation: data.explanation,
       // Note: year, module, exam_type, number should not be changed
     };
 

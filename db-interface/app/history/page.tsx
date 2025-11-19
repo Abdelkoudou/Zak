@@ -185,8 +185,8 @@ export default function HistoryPage() {
       // Return just the values (strings) from EXAM_TYPES
       return EXAM_TYPES.map(et => et.value);
     }
-    const module = PREDEFINED_MODULES.find(m => m.name === filters.moduleId);
-    return module?.examTypes || EXAM_TYPES.map(et => et.value);
+    const selectedModule = PREDEFINED_MODULES.find(m => m.name === filters.moduleId);
+    return selectedModule?.examTypes || EXAM_TYPES.map(et => et.value);
   }, [filters.moduleId]);
 
   return (
