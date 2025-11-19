@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 // Session timeout settings
-const INACTIVITY_TIMEOUT = 60 * 60 * 1000; // 30 minutes in milliseconds
-const SESSION_CHECK_INTERVAL = 60 * 1000; // Check every 1 minute
+const INACTIVITY_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours in milliseconds (for admin panel)
+const SESSION_CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes
 
 export default function SessionManager() {
   const router = useRouter();
