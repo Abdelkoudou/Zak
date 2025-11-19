@@ -18,6 +18,8 @@ export type ExamType =
   | 'M3'            // For U.E.I sub-disciplines
   | 'M4';           // For U.E.I sub-disciplines
 
+export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire';
+
 export interface Module {
   id: string;
   name: string;
@@ -58,7 +60,13 @@ export interface Question {
   examType: ExamType;
   number: number;
   questionText: string;
-  explanation?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType: ModuleType;
+  createdBy?: string;
+  // Removed: explanation
   answers: Answer[];
   createdAt: Date;
   updatedAt: Date;
@@ -104,7 +112,12 @@ export interface QuestionFormData {
   examType: ExamType;
   number: number;
   questionText: string;
-  explanation?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
+  // Removed: explanation
   answers: {
     optionLabel: string;
     answerText: string;

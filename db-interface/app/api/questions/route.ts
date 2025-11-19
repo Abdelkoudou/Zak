@@ -72,7 +72,11 @@ export async function POST(request: NextRequest) {
       exam_type: question.exam_type,
       number: question.number,
       question_text: question.question_text,
-      explanation: question.explanation || null,
+      speciality: question.speciality || null,
+      cours: question.cours || null,
+      unity_name: question.unity_name || null,
+      module_type: question.module_type,
+      created_by: user.id, // Track who created the question
     };
 
     const { data: newQuestion, error: questionError } = await supabaseAdmin

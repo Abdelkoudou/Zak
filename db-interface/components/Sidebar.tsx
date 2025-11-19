@@ -8,8 +8,8 @@ const navigation = [
   { name: 'Dashboard', href: '/', icon: '📊' },
   { name: 'Modules', href: '/modules', icon: '📚', badge: 'Lecture' },
   { name: 'Questions', href: '/questions', icon: '❓' },
+  { name: 'Historique', href: '/history', icon: '📜' },
   { name: 'Ressources', href: '/resources', icon: '📁' },
-  
 ];
 
 export default function Sidebar() {

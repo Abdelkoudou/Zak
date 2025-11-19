@@ -18,7 +18,11 @@ export interface CreateQuestionData {
   exam_type: string;
   number: number;
   question_text: string;
-  explanation?: string;
+  // New fields
+  speciality?: string;
+  cours?: string[];
+  unity_name?: string;
+  module_type?: string;
   answers: {
     option_label: 'A' | 'B' | 'C' | 'D' | 'E';
     answer_text: string;
@@ -51,7 +55,10 @@ export async function createQuestion(data: CreateQuestionData) {
           exam_type: data.exam_type,
           number: data.number,
           question_text: data.question_text,
-          explanation: data.explanation || null,
+          speciality: data.speciality || null,
+          cours: data.cours || null,
+          unity_name: data.unity_name || null,
+          module_type: data.module_type,
         },
         answers: data.answers,
       }),

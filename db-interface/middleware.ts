@@ -89,6 +89,7 @@ export const config = {
     '/questions/:path*',
     '/resources/:path*',
     '/modules/:path*',
+    '/history/:path*',
     // Add other admin routes here
   ],
 };
