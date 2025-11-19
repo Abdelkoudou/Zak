@@ -1,15 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+
+  // Check for session expiry or logout messages
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    const logoutMessage = sessionStorage.getItem('logout_message');
+
+    if (errorParam === 'session_expired') {
+      setInfo('⏰ Votre session a expiré. Veuillez vous reconnecter.');
+    } else if (errorParam === 'insufficient_permissions') {
+      setError('❌ Accès refusé. Vous n\'avez pas les permissions nécessaires.');
+    }
+
+    if (logoutMessage) {
+      setInfo(logoutMessage);
+      sessionStorage.removeItem('logout_message');
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +109,18 @@ export default function LoginPage() {
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800">
                     {error}
+                  </h3>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {info && (
+            <div className="rounded-md bg-blue-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-blue-800">
+                    {info}
                   </h3>
                 </div>
               </div>
