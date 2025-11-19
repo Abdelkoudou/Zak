@@ -34,10 +34,23 @@ export default function HistoryPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
-  // Load questions and users on mount
+  // Load questions and users on mount, and handle URL parameters
   useEffect(() => {
     loadQuestions();
     loadUsers();
+    
+    // Check for URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const yearParam = params.get('year');
+    const moduleParam = params.get('module');
+    
+    if (yearParam || moduleParam) {
+      setFilters(prev => ({
+        ...prev,
+        year: yearParam || '',
+        moduleId: moduleParam || '',
+      }));
+    }
   }, []);
 
   const loadQuestions = async () => {

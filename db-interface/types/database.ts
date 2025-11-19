@@ -90,6 +90,12 @@ export interface CourseResource {
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
   url: string;
   description?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
+  createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -133,4 +139,9 @@ export interface CourseResourceFormData {
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
   url: string;
   description?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
 }
