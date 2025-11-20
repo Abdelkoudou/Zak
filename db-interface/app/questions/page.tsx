@@ -318,8 +318,7 @@ export default function QuestionsPage() {
                     required
                   >
                     <option value="Médecine">Médecine</option>
-                    <option value="Pharmacie">Pharmacie</option>
-                    <option value="Dentaire">Dentaire</option>
+                    
                   </select>
                 </div>
 

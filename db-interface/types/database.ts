@@ -13,10 +13,7 @@ export type ExamType =
   | 'EMD1'          // For annual modules
   | 'EMD2'          // For annual modules
   | 'Rattrapage'    // For all
-  | 'M1'            // For U.E.I sub-disciplines
-  | 'M2'            // For U.E.I sub-disciplines
-  | 'M3'            // For U.E.I sub-disciplines
-  | 'M4';           // For U.E.I sub-disciplines
+         
 
 export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire';
 
