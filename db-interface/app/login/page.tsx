@@ -81,6 +81,14 @@ function LoginForm() {
 
       // Success! Redirect to questions page
       console.log('Login successful, redirecting...');
+      
+      // Refresh session to ensure cookies are set (important for SSR middleware)
+      await supabase.auth.refreshSession();
+      
+      // Wait a moment for cookies to be written
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Use window.location for full page reload (ensures middleware gets fresh cookies)
       window.location.href = '/questions';
     } catch (err: any) {
       console.error('Login error:', err);

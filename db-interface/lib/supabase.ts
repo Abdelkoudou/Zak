@@ -29,11 +29,11 @@ export const supabase = createBrowserClient(
       persistSession: true,
       // Detect session in URL (for email confirmations, etc.)
       detectSessionInUrl: true,
-      // Storage key
-      storageKey: 'mcq-auth-token',
       // Flow type
       flowType: 'pkce',
     },
+    // Don't override storage key - let Supabase use default
+    // This ensures cookies match what middleware expects
   }
 );
 

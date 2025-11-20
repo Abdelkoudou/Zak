@@ -98,10 +98,12 @@ export async function middleware(req: NextRequest) {
 // Protect these routes
 export const config = {
   matcher: [
+    '/',
     '/questions/:path*',
     '/resources/:path*',
     '/modules/:path*',
     '/history/:path*',
+    '/export/:path*',
     // Add other admin routes here
   ],
 };
