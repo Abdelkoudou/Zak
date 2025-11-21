@@ -85,11 +85,23 @@ export async function middleware(req: NextRequest) {
     .eq('id', session.user.id)
     .single();
 
-  if (!user || !['owner', 'admin', 'manager'].includes(user.role)) {
-    // User is authenticated but not admin - redirect to login with error
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('error', 'insufficient_permissions');
-    return NextResponse.redirect(loginUrl);
+  // Check if route requires owner role
+  const isContributionsRoute = req.nextUrl.pathname.startsWith('/contributions');
+  
+  if (isContributionsRoute) {
+    // Only owner can access contributions
+    if (!user || user.role !== 'owner') {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('error', 'owner_only');
+      return NextResponse.redirect(loginUrl);
+    }
+  } else {
+    // Other routes require admin, manager, or owner
+    if (!user || !['owner', 'admin', 'manager'].includes(user.role)) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('error', 'insufficient_permissions');
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   return response;
@@ -104,6 +116,7 @@ export const config = {
     '/modules/:path*',
     '/history/:path*',
     '/export/:path*',
+    '/contributions/:path*',
     // Add other admin routes here
   ],
 };

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: '📊' },
@@ -12,9 +13,33 @@ const navigation = [
   { name: 'Ressources', href: '/resources', icon: '📁' },
 ];
 
+const ownerOnlyNavigation = [
+  { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (user) {
+          setUserRole(user.role);
+        }
+      }
+    };
+
+    fetchUserRole();
+  }, []);
 
   return (
     <>
@@ -105,6 +130,38 @@ export default function Sidebar() {
               </Link>
             );
           })}
+
+          {/* Owner-only navigation */}
+          {userRole === 'owner' && (
+            <>
+              <div className="border-t border-gray-700 my-4"></div>
+              {ownerOnlyNavigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center justify-between px-4 py-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{item.icon}</span>
+                      <span className="font-medium">{item.name}</span>
+                    </div>
+                    {item.badge && (
+                      <span className="text-xs px-2 py-1 bg-purple-700 rounded">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
       </div>
     </>
