@@ -107,6 +107,7 @@ export default function QuestionsPage() {
       module_name: formData.moduleId, // moduleId is actually the module name
       sub_discipline: formData.subDisciplineId || undefined,
       exam_type: formData.examType,
+      exam_year: formData.examYear || undefined,
       number: formData.number,
       question_text: formData.questionText,
       speciality: formData.speciality || undefined,
@@ -431,6 +432,34 @@ export default function QuestionsPage() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Année de l'Examen (Promo) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Année de l&apos;Examen (Promo)
+                  </label>
+                  <select
+                    value={formData.examYear || ''}
+                    onChange={(e) => setFormData({ ...formData, examYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Sélectionner l&apos;année</option>
+                    {formData.year === '1' && Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                    {formData.year === '2' && Array.from({ length: 7 }, (_, i) => 2024 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                    {formData.year === '3' && Array.from({ length: 6 }, (_, i) => 2023 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.year === '1' && '1ère année: 2018-2025'}
+                    {formData.year === '2' && '2ème année: 2018-2024'}
+                    {formData.year === '3' && '3ème année: 2018-2023'}
+                  </p>
                 </div>
 
                 {/* Numéro de la Question */}

@@ -55,6 +55,7 @@ export interface Question {
   subDisciplineId?: string;
   chapterId?: string;
   examType: ExamType;
+  examYear?: number;  // Year when exam was taken (promo year)
   number: number;
   questionText: string;
   // New fields
@@ -113,6 +114,7 @@ export interface QuestionFormData {
   subDisciplineId?: string;
   chapterId?: string;
   examType: ExamType;
+  examYear?: number;  // Year when exam was taken (promo year)
   number: number;
   questionText: string;
   // New fields
