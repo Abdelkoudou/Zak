@@ -12,6 +12,10 @@ export type ExamType =
   | 'EMD'           // For semestrial modules and standalone
   | 'EMD1'          // For annual modules
   | 'EMD2'          // For annual modules
+  | 'M1'            // For UEI modules (2nd/3rd year)
+  | 'M2'            // For UEI modules (2nd/3rd year)
+  | 'M3'            // For UEI modules (2nd/3rd year)
+  | 'M4'            // For UEI modules (2nd/3rd year)
   | 'Rattrapage'    // For all
          
 
