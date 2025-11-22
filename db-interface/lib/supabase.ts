@@ -17,11 +17,24 @@ if (!isConfigured) {
   console.warn('📝 Copy .env.local.example to .env.local and add your credentials');
 }
 
-// Create Supabase client for browser
-// Using 'any' for Database type to avoid strict type checking issues during build
+// Create Supabase client for browser with session management
 export const supabase = createBrowserClient(
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  {
+    auth: {
+      // Auto-refresh tokens before expiry
+      autoRefreshToken: true,
+      // Persist session in local storage
+      persistSession: true,
+      // Detect session in URL (for email confirmations, etc.)
+      detectSessionInUrl: true,
+      // Flow type
+      flowType: 'pkce',
+    },
+    // Don't override storage key - let Supabase use default
+    // This ensures cookies match what middleware expects
+  }
 );
 
 // Export configuration status

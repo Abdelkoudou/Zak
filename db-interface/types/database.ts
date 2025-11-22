@@ -12,11 +12,14 @@ export type ExamType =
   | 'EMD'           // For semestrial modules and standalone
   | 'EMD1'          // For annual modules
   | 'EMD2'          // For annual modules
+  | 'M1'            // For UEI modules (2nd/3rd year)
+  | 'M2'            // For UEI modules (2nd/3rd year)
+  | 'M3'            // For UEI modules (2nd/3rd year)
+  | 'M4'            // For UEI modules (2nd/3rd year)
   | 'Rattrapage'    // For all
-  | 'M1'            // For U.E.I sub-disciplines
-  | 'M2'            // For U.E.I sub-disciplines
-  | 'M3'            // For U.E.I sub-disciplines
-  | 'M4';           // For U.E.I sub-disciplines
+         
+
+export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire';
 
 export interface Module {
   id: string;
@@ -56,9 +59,16 @@ export interface Question {
   subDisciplineId?: string;
   chapterId?: string;
   examType: ExamType;
+  examYear?: number;  // Year when exam was taken (promo year)
   number: number;
   questionText: string;
-  explanation?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType: ModuleType;
+  createdBy?: string;
+  // Removed: explanation
   answers: Answer[];
   createdAt: Date;
   updatedAt: Date;
@@ -82,6 +92,12 @@ export interface CourseResource {
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
   url: string;
   description?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
+  createdBy?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -102,9 +118,15 @@ export interface QuestionFormData {
   subDisciplineId?: string;
   chapterId?: string;
   examType: ExamType;
+  examYear?: number;  // Year when exam was taken (promo year)
   number: number;
   questionText: string;
-  explanation?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
+  // Removed: explanation
   answers: {
     optionLabel: string;
     answerText: string;
@@ -120,4 +142,9 @@ export interface CourseResourceFormData {
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
   url: string;
   description?: string;
+  // New fields
+  speciality?: Speciality;
+  cours?: string[];
+  unityName?: string;
+  moduleType?: ModuleType;
 }

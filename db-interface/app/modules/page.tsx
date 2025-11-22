@@ -193,12 +193,18 @@ export default function ModulesPage() {
                     </div>
                     
                     <div className="flex flex-col gap-2 ml-4">
-                      <button className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap">
+                      <a
+                        href={`/history?year=${module.year}&module=${encodeURIComponent(module.name)}`}
+                        className="px-4 py-2 text-sm text-center bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+                      >
                         📝 Voir Questions
-                      </button>
-                      <button className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap">
+                      </a>
+                      <a
+                        href={`/resources?year=${module.year}&module=${encodeURIComponent(module.name)}`}
+                        className="px-4 py-2 text-sm text-center bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
+                      >
                         📁 Voir Ressources
-                      </button>
+                      </a>
                     </div>
                   </div>
                 </div>

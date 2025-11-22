@@ -1,26 +1,23 @@
-// API route for questions CRUD operations
+// API route for resources CRUD operations
 // Uses service role key to bypass RLS (server-side only)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, verifyAdminUser } from '@/lib/supabase-admin';
 import { supabase } from '@/lib/supabase';
 
-// GET /api/questions - List all questions
+// GET /api/resources - List all resources
 export async function GET(request: NextRequest) {
   try {
-    const { data: questions, error } = await supabaseAdmin
-      .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `)
+    const { data: resources, error } = await supabaseAdmin
+      .from('course_resources')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data: questions });
+    return NextResponse.json({ success: true, data: resources });
   } catch (error: any) {
-    console.error('Error fetching questions:', error);
+    console.error('Error fetching resources:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -28,7 +25,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/questions - Create new question
+// POST /api/resources - Create new resource
 export async function POST(request: NextRequest) {
   try {
     // Get user session
@@ -55,71 +52,45 @@ export async function POST(request: NextRequest) {
     const { isAdmin, role } = await verifyAdminUser(user.id);
     if (!isAdmin) {
       return NextResponse.json(
-        { success: false, error: `Forbidden - Role '${role}' cannot create questions` },
+        { success: false, error: `Forbidden - Role '${role}' cannot create resources` },
         { status: 403 }
       );
     }
 
     // Parse request body
     const body = await request.json();
-    const { question, answers } = body;
+    const { resource } = body;
 
-    // Insert question using admin client (bypasses RLS)
-    const questionData = {
-      year: question.year,
-      module_name: question.module_name,
-      sub_discipline: question.sub_discipline || null,
-      exam_type: question.exam_type,
-      number: question.number,
-      question_text: question.question_text,
-      speciality: question.speciality || null,
-      cours: question.cours || null,
-      unity_name: question.unity_name || null,
-      module_type: question.module_type,
-      created_by: user.id, // Track who created the question
+    // Insert resource using admin client (bypasses RLS)
+    const resourceData = {
+      year: resource.year,
+      module_name: resource.module_name,
+      sub_discipline: resource.sub_discipline || null,
+      title: resource.title,
+      type: resource.type,
+      url: resource.url,
+      description: resource.description || null,
+      speciality: resource.speciality || null,
+      cours: resource.cours || null,
+      unity_name: resource.unity_name || null,
+      module_type: resource.module_type,
+      created_by: user.id,
     };
 
-    const { data: newQuestion, error: questionError } = await supabaseAdmin
-      .from('questions')
-      .insert(questionData as any)
+    const { data: newResource, error: resourceError } = await supabaseAdmin
+      .from('course_resources')
+      .insert(resourceData as any)
       .select()
       .single();
 
-    if (questionError) throw questionError;
-    if (!newQuestion) throw new Error('Failed to create question');
-
-    // Type assertion for newQuestion
-    const questionRecord = newQuestion as any;
-
-    // Insert answers
-    const answersToInsert = answers.map((answer: any) => ({
-      question_id: questionRecord.id,
-      option_label: answer.option_label,
-      answer_text: answer.answer_text,
-      is_correct: answer.is_correct,
-      display_order: answer.display_order,
-    }));
-
-    const { data: newAnswers, error: answersError } = await supabaseAdmin
-      .from('answers')
-      .insert(answersToInsert as any)
-      .select();
-
-    if (answersError) {
-      // Rollback: delete the question
-      await supabaseAdmin.from('questions').delete().eq('id', questionRecord.id);
-      throw answersError;
-    }
+    if (resourceError) throw resourceError;
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...questionRecord,
-        answers: newAnswers || [],
-      },
+      data: newResource,
     });
   } catch (error: any) {
-    console.error('Error creating question:', error);
+    console.error('Error creating resource:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -127,7 +98,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/questions/:id - Delete question
+// DELETE /api/resources - Delete resource
 export async function DELETE(request: NextRequest) {
   try {
     // Get user session
@@ -158,20 +129,20 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Get question ID from URL
+    // Get resource ID from URL
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
 
     if (!id) {
       return NextResponse.json(
-        { success: false, error: 'Question ID required' },
+        { success: false, error: 'Resource ID required' },
         { status: 400 }
       );
     }
 
-    // Delete question (answers will cascade delete)
+    // Delete resource
     const { error } = await supabaseAdmin
-      .from('questions')
+      .from('course_resources')
       .delete()
       .eq('id', id);
 
@@ -179,7 +150,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Error deleting question:', error);
+    console.error('Error deleting resource:', error);
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }

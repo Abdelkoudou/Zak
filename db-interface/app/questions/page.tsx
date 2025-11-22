@@ -21,6 +21,8 @@ export default function QuestionsPage() {
     examType: 'EMD',
     number: 1,
     questionText: '',
+    speciality: 'Médecine',
+    cours: [''],
     answers: [
       { optionLabel: 'A', answerText: '', isCorrect: false },
       { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -91,15 +93,27 @@ export default function QuestionsPage() {
       return;
     }
 
+    // Validate cours
+    const validCours = (formData.cours || []).filter(c => c.trim());
+    if (validCours.length === 0) {
+      setError('Veuillez fournir au moins un cours.');
+      setSaving(false);
+      return;
+    }
+
     // Prepare data for Supabase
     const questionData = {
       year: formData.year,
       module_name: formData.moduleId, // moduleId is actually the module name
       sub_discipline: formData.subDisciplineId || undefined,
       exam_type: formData.examType,
+      exam_year: formData.examYear || undefined,
       number: formData.number,
       question_text: formData.questionText,
-      explanation: formData.explanation || undefined,
+      speciality: formData.speciality || undefined,
+      cours: validCours,
+      unity_name: formData.unityName || undefined,
+      module_type: formData.moduleType || selectedModule?.type,
       answers: validAnswers.map((answer, idx) => ({
         option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
         answer_text: answer.answerText,
@@ -137,6 +151,8 @@ export default function QuestionsPage() {
       examType: 'EMD',
       number: 1,
       questionText: '',
+      speciality: 'Médecine',
+      cours: [''],
       answers: [
         { optionLabel: 'A', answerText: '', isCorrect: false },
         { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -145,6 +161,22 @@ export default function QuestionsPage() {
         { optionLabel: 'E', answerText: '', isCorrect: false },
       ],
     });
+  };
+
+  // Helper functions for cours management
+  const addCoursInput = () => {
+    setFormData({ ...formData, cours: [...(formData.cours || []), ''] });
+  };
+
+  const removeCoursInput = (index: number) => {
+    const newCours = (formData.cours || []).filter((_, i) => i !== index);
+    setFormData({ ...formData, cours: newCours.length > 0 ? newCours : [''] });
+  };
+
+  const updateCoursInput = (index: number, value: string) => {
+    const newCours = [...(formData.cours || [])];
+    newCours[index] = value;
+    setFormData({ ...formData, cours: newCours });
   };
 
   const updateAnswer = (index: number, field: 'answerText' | 'isCorrect', value: any) => {
@@ -275,6 +307,22 @@ export default function QuestionsPage() {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {/* Spécialité */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Spécialité *
+                  </label>
+                  <select
+                    value={formData.speciality || 'Médecine'}
+                    onChange={(e) => setFormData({ ...formData, speciality: e.target.value as any })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="Médecine">Médecine</option>
+                    
+                  </select>
+                </div>
+
                 {/* Année */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -287,7 +335,9 @@ export default function QuestionsPage() {
                       year: e.target.value as any,
                       moduleId: '',
                       subDisciplineId: undefined,
-                      examType: 'EMD'
+                      examType: 'EMD',
+                      unityName: undefined,
+                      moduleType: undefined
                     })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
@@ -301,28 +351,45 @@ export default function QuestionsPage() {
                 </div>
 
                 {/* Module */}
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Module *
+                    Module / Unité *
                   </label>
                   <select
                     value={formData.moduleId}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      moduleId: e.target.value,
-                      subDisciplineId: undefined,
-                      examType: availableExamTypes[0] || 'EMD'
-                    })}
+                    onChange={(e) => {
+                      const selectedMod = availableModules.find(m => m.name === e.target.value);
+                      setFormData({ 
+                        ...formData, 
+                        moduleId: e.target.value,
+                        subDisciplineId: undefined,
+                        examType: availableExamTypes[0] || 'EMD',
+                        unityName: selectedMod?.type === 'uei' ? e.target.value : undefined,
+                        moduleType: selectedMod?.type
+                      });
+                    }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="">Sélectionner un module</option>
                     {availableModules.map((module) => (
                       <option key={module.name} value={module.name}>
+                        {module.type === 'uei' && '🟢 UEI: '}
+                        {module.type === 'standalone' && '🟡 '}
+                        {module.type === 'annual' && '🔵 '}
+                        {module.type === 'semestrial' && '🔵 '}
                         {module.name}
                       </option>
                     ))}
                   </select>
+                  {selectedModule && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedModule.type === 'uei' && '🟢 Unité d\'Enseignement Intégré (UEI)'}
+                      {selectedModule.type === 'standalone' && '🟡 Module Autonome'}
+                      {selectedModule.type === 'annual' && '🔵 Module Annuel'}
+                      {selectedModule.type === 'semestrial' && '🔵 Module Semestriel'}
+                    </p>
+                  )}
                 </div>
 
                 {/* Sub-discipline (if applicable) */}
@@ -367,6 +434,34 @@ export default function QuestionsPage() {
                   </select>
                 </div>
 
+                {/* Année de l'Examen (Promo) */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Année de l&apos;Examen (Promo)
+                  </label>
+                  <select
+                    value={formData.examYear || ''}
+                    onChange={(e) => setFormData({ ...formData, examYear: e.target.value ? parseInt(e.target.value) : undefined })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Sélectionner l&apos;année</option>
+                    {formData.year === '1' && Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                    {formData.year === '2' && Array.from({ length: 7 }, (_, i) => 2024 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                    {formData.year === '3' && Array.from({ length: 6 }, (_, i) => 2023 - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.year === '1' && '1ère année: 2018-2025'}
+                    {formData.year === '2' && '2ème année: 2018-2024'}
+                    {formData.year === '3' && '3ème année: 2018-2023'}
+                  </p>
+                </div>
+
                 {/* Numéro de la Question */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -383,6 +478,47 @@ export default function QuestionsPage() {
                 </div>
               </div>
 
+              {/* Cours (Multiple) */}
+              <div className="mt-4 md:mt-6">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                  Cours *
+                </label>
+                <div className="space-y-2">
+                  {(formData.cours || ['']).map((cours, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={cours}
+                        onChange={(e) => updateCoursInput(index, e.target.value)}
+                        className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                        placeholder="Nom du cours"
+                        required
+                      />
+                      {index === (formData.cours || []).length - 1 ? (
+                        <button
+                          type="button"
+                          onClick={addCoursInput}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+                        >
+                          +
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => removeCoursInput(index)}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold"
+                        >
+                          −
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Vous pouvez ajouter plusieurs cours en cliquant sur le bouton +
+                </p>
+              </div>
+
               {/* Question Text */}
               <div className="mt-4 md:mt-6">
                 <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
@@ -395,20 +531,6 @@ export default function QuestionsPage() {
                   rows={4}
                   placeholder="Entrez votre question ici..."
                   required
-                />
-              </div>
-
-              {/* Explanation (optional) */}
-              <div className="mt-3 md:mt-4">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  Explication (optionnel)
-                </label>
-                <textarea
-                  value={formData.explanation || ''}
-                  onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                  rows={3}
-                  placeholder="Explication de la réponse correcte..."
                 />
               </div>
             </div>
@@ -514,13 +636,33 @@ export default function QuestionsPage() {
                       {groupQuestions.map((question) => (
                         <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-white">
                           <div className="flex justify-between items-start mb-3">
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
                                 Q{question.number}
                               </span>
+                              {question.speciality && (
+                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded">
+                                  {question.speciality}
+                                </span>
+                              )}
+                              {question.module_type === 'uei' && (
+                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                                  🟢 UEI
+                                </span>
+                              )}
+                              {question.module_type === 'standalone' && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">
+                                  🟡 Autonome
+                                </span>
+                              )}
                               {question.sub_discipline && (
                                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
                                   {question.sub_discipline}
+                                </span>
+                              )}
+                              {question.cours && question.cours.length > 0 && (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                  📚 {question.cours.join(', ')}
                                 </span>
                               )}
                             </div>
@@ -552,14 +694,6 @@ export default function QuestionsPage() {
                               </div>
                             ))}
                           </div>
-
-                          {question.explanation && (
-                            <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
-                              <p className="text-sm text-gray-700">
-                                <span className="font-medium">💡 Explication:</span> {question.explanation}
-                              </p>
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
