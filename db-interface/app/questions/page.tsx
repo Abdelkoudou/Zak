@@ -4,12 +4,13 @@ import { useState, useMemo, useEffect } from 'react';
 import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
 import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
-import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI } from '@/lib/api/questions';
+import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion } from '@/lib/api/questions';
 import { getModules } from '@/lib/api/modules';
 import { supabaseConfigured } from '@/lib/supabase';
 
 export default function QuestionsPage() {
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -122,23 +123,28 @@ export default function QuestionsPage() {
       })),
     };
 
-    // Save to Supabase
-    const result = await createQuestion(questionData);
+    // Save or update to Supabase
+    const result = editingId 
+      ? await updateQuestion(editingId, questionData)
+      : await createQuestion(questionData);
 
     if (result.success) {
-      setSuccess('✅ Question ajoutée avec succès!');
+      setSuccess(editingId ? '✅ Question modifiée avec succès!' : '✅ Question ajoutée avec succès!');
       setShowForm(false);
+      setEditingId(null);
       
       // Reload questions
       await loadQuestions();
       
-      // Auto-increment question number
-      setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+      // Auto-increment question number only for new questions
+      if (!editingId) {
+        setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+      }
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } else {
-      setError(result.error || 'Erreur lors de l\'ajout de la question');
+      setError(result.error || `Erreur lors de ${editingId ? 'la modification' : 'l\'ajout'} de la question`);
     }
 
     setSaving(false);
@@ -161,6 +167,33 @@ export default function QuestionsPage() {
         { optionLabel: 'E', answerText: '', isCorrect: false },
       ],
     });
+    setEditingId(null);
+  };
+
+  const editQuestion = (question: any) => {
+    // Populate form with question data
+    setFormData({
+      year: question.year,
+      moduleId: question.module_name,
+      subDisciplineId: question.sub_discipline || undefined,
+      examType: question.exam_type,
+      examYear: question.exam_year || undefined,
+      number: question.number,
+      questionText: question.question_text,
+      speciality: question.speciality || 'Médecine',
+      cours: question.cours && question.cours.length > 0 ? question.cours : [''],
+      unityName: question.unity_name || undefined,
+      moduleType: question.module_type,
+      answers: question.answers.map((a: any) => ({
+        optionLabel: a.option_label,
+        answerText: a.answer_text,
+        isCorrect: a.is_correct,
+      })),
+    });
+    setEditingId(question.id);
+    setShowForm(true);
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Helper functions for cours management
@@ -229,7 +262,14 @@ export default function QuestionsPage() {
             📤 Exporter JSON
           </a>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                resetForm();
+              } else {
+                setShowForm(true);
+              }
+            }}
             className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
           >
             {showForm ? 'Annuler' : '➕ Nouvelle Question'}
@@ -298,7 +338,9 @@ export default function QuestionsPage() {
 
       {showForm && (
         <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 md:mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Ajouter une Question</h2>
+          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">
+            {editingId ? '✏️ Modifier la Question' : 'Ajouter une Question'}
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Section 1: Détails de la Question */}
             <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
@@ -590,7 +632,7 @@ export default function QuestionsPage() {
                 disabled={saving}
                 className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
               >
-                {saving ? '⏳ Enregistrement...' : '✅ Enregistrer la Question'}
+                {saving ? '⏳ Enregistrement...' : editingId ? '✅ Modifier la Question' : '✅ Enregistrer la Question'}
               </button>
               <button
                 type="button"
@@ -666,12 +708,20 @@ export default function QuestionsPage() {
                                 </span>
                               )}
                             </div>
-                            <button
-                              onClick={() => deleteQuestion(question.id)}
-                              className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
-                            >
-                              ✕ Supprimer
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => editQuestion(question)}
+                                className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                              >
+                                ✏️ Modifier
+                              </button>
+                              <button
+                                onClick={() => deleteQuestion(question.id)}
+                                className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                              >
+                                ✕ Supprimer
+                              </button>
+                            </div>
                           </div>
 
                           <p className="text-gray-900 mb-3 font-medium">{question.question_text}</p>

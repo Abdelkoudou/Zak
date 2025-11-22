@@ -16,6 +16,7 @@ export interface CreateQuestionData {
   module_name: string;
   sub_discipline?: string;
   exam_type: string;
+  exam_year?: number;
   number: number;
   question_text: string;
   // New fields
@@ -157,44 +158,48 @@ export async function getQuestionById(id: string) {
 // Update a question
 export async function updateQuestion(
   id: string,
-  data: Partial<CreateQuestionData>
+  data: CreateQuestionData
 ) {
   try {
-    const updateData: any = {
-      question_text: data.question_text,
-      // Note: year, module, exam_type, number should not be changed
-    };
-
-    const { data: question, error } = await supabase
-      .from('questions')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Update answers if provided
-    if (data.answers) {
-      // Delete old answers
-      await supabase.from('answers').delete().eq('question_id', id);
-
-      // Insert new answers
-      const answersToInsert: AnswerInsert[] = data.answers.map((answer) => ({
-        question_id: id,
-        option_label: answer.option_label,
-        answer_text: answer.answer_text,
-        is_correct: answer.is_correct,
-        display_order: answer.display_order,
-      }));
-
-      await supabase.from('answers').insert(answersToInsert);
+    // Get auth token
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('Not authenticated');
     }
 
-    return {
-      success: true,
-      data: question,
-    };
+    // Call API route (server-side with service role key)
+    const response = await fetch('/api/questions', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        id,
+        question: {
+          year: data.year,
+          module_name: data.module_name,
+          sub_discipline: data.sub_discipline || null,
+          exam_type: data.exam_type,
+          exam_year: data.exam_year || null,
+          number: data.number,
+          question_text: data.question_text,
+          speciality: data.speciality || null,
+          cours: data.cours || null,
+          unity_name: data.unity_name || null,
+          module_type: data.module_type,
+        },
+        answers: data.answers,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to update question');
+    }
+
+    return result;
   } catch (error: any) {
     console.error('Error updating question:', error);
     return {
