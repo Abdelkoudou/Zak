@@ -39,6 +39,8 @@ export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'ot
 // DATABASE TYPES
 // ============================================================================
 
+export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire'
+
 export interface Database {
   public: {
     Tables: {
@@ -50,6 +52,9 @@ export interface Database {
           role: UserRole
           is_paid: boolean
           subscription_expires_at: string | null
+          speciality: Speciality | null
+          year_of_study: YearLevel | null
+          region: string | null
           created_at: string
           updated_at: string
         }
@@ -60,6 +65,9 @@ export interface Database {
           role?: UserRole
           is_paid?: boolean
           subscription_expires_at?: string | null
+          speciality?: Speciality | null
+          year_of_study?: YearLevel | null
+          region?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -70,6 +78,9 @@ export interface Database {
           role?: UserRole
           is_paid?: boolean
           subscription_expires_at?: string | null
+          speciality?: Speciality | null
+          year_of_study?: YearLevel | null
+          region?: string | null
           created_at?: string
           updated_at?: string
         }
