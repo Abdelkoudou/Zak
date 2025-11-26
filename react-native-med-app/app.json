@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "MCQ Study App",
+    "slug": "mcq-study-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "mcqstudyapp",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "backgroundColor": "#3B82F6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mcqstudyapp.mobile"
+    },
+    "android": {
+      "package": "com.mcqstudyapp.mobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
