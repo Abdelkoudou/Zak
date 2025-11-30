@@ -10,7 +10,19 @@ import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 import expo.modules.ReactActivityDelegateWrapper
 
+/**
+ * Main entry point for the React Native application.
+ * This activity is responsible for initializing the React Native runtime and loading the JS bundle.
+ */
 class MainActivity : ReactActivity() {
+
+  /**
+   * Called when the activity is starting.
+   *
+   * @param savedInstanceState If the activity is being re-initialized after
+   *     previously being shut down then this Bundle contains the data it most
+   *     recently supplied in [onSaveInstanceState].  <b><i>Note: Otherwise it is null.</i></b>
+   */
   override fun onCreate(savedInstanceState: Bundle?) {
     // Set the theme to AppTheme BEFORE onCreate to support
     // coloring the background, status bar, and navigation bar.
