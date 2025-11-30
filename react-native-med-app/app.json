@@ -17,7 +17,11 @@
       "bundleIdentifier": "com.mcqstudyapp.mobile"
     },
     "android": {
-      "package": "com.mcqstudyapp.mobile"
+      "package": "com.mcqstudyapp.mobile",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#3B82F6"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -29,6 +33,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "672f6566-b5f9-4629-a0ef-cec5968ef4e6"
+      }
     }
   }
 }

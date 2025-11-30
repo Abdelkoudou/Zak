@@ -21,15 +21,27 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   const loadData = useCallback(async () => {
-    if (!user?.year_of_study) return
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
 
     try {
-      // Load modules for user's year
-      const { modules: modulesData } = await getModulesWithCounts(user.year_of_study)
+      // Load modules for user's year (default to year 1 if not set)
+      const yearToLoad = user.year_of_study || '1'
+      const { modules: modulesData, error: modulesError } = await getModulesWithCounts(yearToLoad)
+      
+      if (modulesError) {
+        console.error('Error loading modules:', modulesError)
+      }
       setModules(modulesData)
 
       // Load user statistics
-      const { stats: statsData } = await getUserStatistics(user.id)
+      const { stats: statsData, error: statsError } = await getUserStatistics(user.id)
+      
+      if (statsError) {
+        console.error('Error loading stats:', statsError)
+      }
       setStats(statsData)
     } catch (error) {
       console.error('Error loading data:', error)
