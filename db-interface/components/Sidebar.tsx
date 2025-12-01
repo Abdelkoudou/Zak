@@ -14,6 +14,7 @@ const navigation = [
 ];
 
 const ownerOnlyNavigation = [
+  { name: 'Codes d\'Activation', href: '/activation-codes', icon: '🔑', badge: 'Owner' },
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
 ];
 

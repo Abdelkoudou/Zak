@@ -148,3 +148,118 @@ export interface CourseResourceFormData {
   unityName?: string;
   moduleType?: ModuleType;
 }
+
+// ============================================================================
+// Activation Keys System Types
+// ============================================================================
+
+export interface Faculty {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  specialities: Speciality[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SalesPoint {
+  id: string;
+  code: string;
+  name: string;
+  location?: string;
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  isActive: boolean;
+  commissionRate: number;
+  notes?: string;
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// User info for activation key (when used)
+export interface ActivationKeyUser {
+  id: string;
+  email: string;
+  fullName?: string;
+  speciality?: Speciality;
+  yearOfStudy?: YearLevel;
+  region?: string;
+}
+
+export interface ActivationKey {
+  id: string;
+  keyCode: string;
+  durationDays: number;
+  isUsed: boolean;
+  usedBy?: string;
+  usedByUser?: ActivationKeyUser;  // User details when code is used
+  usedAt?: Date;
+  createdBy?: string;
+  createdAt: Date;
+  // Extended fields
+  year?: YearLevel;
+  facultyId?: string;
+  faculty?: Faculty;
+  salesPointId?: string;
+  salesPoint?: SalesPoint;
+  expiresAt?: Date;
+  batchId?: string;
+  notes?: string;
+  pricePaid?: number;
+  generationParams?: {
+    algorithm: string;
+    timestamp: number;
+    checksum: string;
+  };
+}
+
+export interface ActivationKeyFormData {
+  year: YearLevel;
+  facultyId: string;
+  salesPointId: string;
+  durationDays: number;
+  expiresAt?: Date;
+  notes?: string;
+  pricePaid?: number;
+  quantity: number;  // For batch generation
+}
+
+export interface SalesPointStats {
+  id: string;
+  code: string;
+  name: string;
+  location?: string;
+  totalCodes: number;
+  usedCodes: number;
+  activeCodes: number;
+  expiredCodes: number;
+  totalRevenue: number;
+  lastSaleAt?: Date;
+}
+
+export interface FacultyStats {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  totalCodes: number;
+  usedCodes: number;
+  year1Codes: number;
+  year2Codes: number;
+  year3Codes: number;
+}
+
+export interface ActivationCodesDashboard {
+  totalCodes: number;
+  activeCodes: number;
+  usedCodes: number;
+  expiredCodes: number;
+  totalRevenue: number;
+  salesPointStats: SalesPointStats[];
+  facultyStats: FacultyStats[];
+  recentCodes: ActivationKey[];
+}
