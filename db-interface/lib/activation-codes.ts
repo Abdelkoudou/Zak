@@ -57,17 +57,15 @@ function generateChecksum(baseCode: string, salt: Uint8Array): string {
 /**
  * Generate a single secure activation code
  * 
- * Format: {YEAR}{FACULTY_CODE}{POINT_CODE}-{RANDOM_6}-{CHECKSUM_2}
- * Example: 1MA01-X7K9P2-4F
+ * Format: {POINT_CODE}-{RANDOM_8}-{CHECKSUM_2}
+ * Example: ALG-X7K9P2AB-4F
  * 
- * This format allows:
- * - Visual identification of year, faculty, and sales point
+ * Simplified format (year/faculty removed - user fills these during registration):
+ * - Sales point code for tracking
  * - Cryptographically secure random segment
  * - Checksum for validation
  */
 export function generateSecureCode(params: {
-  year: YearLevel;
-  facultyCode: string;
   salesPointCode: string;
 }): { code: string; checksum: string; timestamp: number } {
   const timestamp = Date.now();
@@ -75,19 +73,18 @@ export function generateSecureCode(params: {
   // Generate 32 random bytes for maximum entropy
   const randomBytes = getSecureRandomBytes(32);
   
-  // Create 6-character random segment
+  // Create 8-character random segment (longer since we removed year/faculty)
   let randomPart = '';
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     randomPart += CODE_CHARS[randomBytes[i] % CODE_CHARS.length];
   }
   
-  // Build base code: YEAR + FACULTY(2) + POINT(2) + RANDOM(6)
-  const facultyShort = params.facultyCode.substring(0, 2).toUpperCase();
-  const pointShort = params.salesPointCode.substring(0, 2).toUpperCase();
-  const baseCode = `${params.year}${facultyShort}${pointShort}-${randomPart}`;
+  // Build base code: POINT(3) + RANDOM(8)
+  const pointShort = params.salesPointCode.substring(0, 3).toUpperCase();
+  const baseCode = `${pointShort}-${randomPart}`;
   
   // Generate checksum using remaining random bytes as salt
-  const checksum = generateChecksum(baseCode, randomBytes.slice(6, 14));
+  const checksum = generateChecksum(baseCode, randomBytes.slice(8, 16));
   
   // Final code format
   const code = `${baseCode}-${checksum}`;
@@ -112,11 +109,22 @@ export function validateCodeChecksum(code: string): boolean {
 }
 
 /**
+ * Simplified form data for code generation (year/faculty removed)
+ */
+interface SimplifiedCodeFormData {
+  salesPointId: string;
+  durationDays: number;
+  notes?: string;
+  pricePaid?: number;
+  quantity: number;
+}
+
+/**
  * Generate multiple codes in a batch
+ * Simplified - no year/faculty (user fills these during registration)
  */
 export async function generateBatchCodes(
-  params: ActivationKeyFormData,
-  facultyCode: string,
+  params: SimplifiedCodeFormData,
   salesPointCode: string,
   createdBy: string
 ): Promise<{ codes: string[]; batchId: string; error?: string }> {
@@ -127,10 +135,7 @@ export async function generateBatchCodes(
   const keysToInsert: Array<{
     key_code: string;
     duration_days: number;
-    year: YearLevel;
-    faculty_id: string;
     sales_point_id: string;
-    expires_at: string | null;
     batch_id: string;
     notes: string | null;
     price_paid: number | null;
@@ -140,8 +145,6 @@ export async function generateBatchCodes(
   
   for (let i = 0; i < params.quantity; i++) {
     const { code, checksum, timestamp } = generateSecureCode({
-      year: params.year,
-      facultyCode,
       salesPointCode,
     });
     
@@ -149,16 +152,13 @@ export async function generateBatchCodes(
     keysToInsert.push({
       key_code: code,
       duration_days: params.durationDays,
-      year: params.year,
-      faculty_id: params.facultyId,
       sales_point_id: params.salesPointId,
-      expires_at: params.expiresAt ? new Date(params.expiresAt).toISOString() : null,
       batch_id: batchId,
       notes: params.notes || null,
       price_paid: params.pricePaid || null,
       created_by: createdBy,
       generation_params: {
-        algorithm: 'secure-random-v1',
+        algorithm: 'secure-random-v2',
         timestamp,
         checksum,
         batchIndex: i,

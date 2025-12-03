@@ -50,10 +50,8 @@ export default function ActivationCodesPage() {
     search: '',
   });
 
-  // Form state
+  // Form state (simplified - year/faculty removed as user fills these during registration)
   const [generateForm, setGenerateForm] = useState({
-    year: '1' as YearLevel,
-    facultyId: '',
     salesPointId: '',
     durationDays: 365,
     quantity: 1,
@@ -129,34 +127,30 @@ export default function ActivationCodesPage() {
     }
   }, [userRole, loadData]);
 
-  // Generate codes
+  // Generate codes (simplified - no year/faculty, user fills these during registration)
   const handleGenerate = async () => {
-    if (!userId || !generateForm.facultyId || !generateForm.salesPointId) {
-      alert('Veuillez remplir tous les champs obligatoires');
+    if (!userId || !generateForm.salesPointId) {
+      alert('Veuillez sélectionner un point de vente');
       return;
     }
 
     setGenerating(true);
-    const faculty = faculties.find(f => f.id === generateForm.facultyId);
     const salesPoint = salesPoints.find(sp => sp.id === generateForm.salesPointId);
 
-    if (!faculty || !salesPoint) {
-      alert('Faculté ou point de vente invalide');
+    if (!salesPoint) {
+      alert('Point de vente invalide');
       setGenerating(false);
       return;
     }
 
     const result = await generateBatchCodes(
       {
-        year: generateForm.year,
-        facultyId: generateForm.facultyId,
         salesPointId: generateForm.salesPointId,
         durationDays: generateForm.durationDays,
         notes: generateForm.notes,
         pricePaid: generateForm.pricePaid,
         quantity: generateForm.quantity,
       },
-      faculty.code,
       salesPoint.code,
       userId
     );
@@ -343,35 +337,11 @@ export default function ActivationCodesPage() {
           {/* Generation Form */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">🔐 Générer des Codes</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              L&apos;année et la faculté seront renseignées par l&apos;utilisateur lors de son inscription.
+            </p>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Année *</label>
-                <select
-                  value={generateForm.year}
-                  onChange={e => setGenerateForm({ ...generateForm, year: e.target.value as YearLevel })}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  <option value="1">1ère Année</option>
-                  <option value="2">2ème Année</option>
-                  <option value="3">3ème Année</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Faculté *</label>
-                <select
-                  value={generateForm.facultyId}
-                  onChange={e => setGenerateForm({ ...generateForm, facultyId: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  <option value="">Sélectionner une faculté</option>
-                  {faculties.map(f => (
-                    <option key={f.id} value={f.id}>{f.name} ({f.city})</option>
-                  ))}
-                </select>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Point de Vente *</label>
                 <select
@@ -438,7 +408,7 @@ export default function ActivationCodesPage() {
 
               <button
                 onClick={handleGenerate}
-                disabled={generating || !generateForm.facultyId || !generateForm.salesPointId}
+                disabled={generating || !generateForm.salesPointId}
                 className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {generating ? '⏳ Génération...' : `🔑 Générer ${generateForm.quantity} Code(s)`}
