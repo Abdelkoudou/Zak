@@ -26,24 +26,26 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: 'Failed to create user' }
     }
 
-    // 2. Create user profile
-    const { error: profileError } = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: data.email,
-        full_name: data.full_name,
-        speciality: data.speciality,
-        year_of_study: data.year_of_study,
-        region: data.region,
-        role: 'student',
-        is_paid: false,
+    // 2. Create user profile using RPC function (bypasses RLS issues)
+    const { data: profileResult, error: profileError } = await supabase
+      .rpc('create_user_profile', {
+        p_user_id: authData.user.id,
+        p_email: data.email,
+        p_full_name: data.full_name,
+        p_speciality: data.speciality,
+        p_year_of_study: data.year_of_study,
+        p_region: data.region,
       })
+      .single()
 
     if (profileError) {
-      // Rollback: delete auth user if profile creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id)
       return { user: null, error: profileError.message }
+    }
+
+    // Check if profile creation was successful
+    const result = profileResult as { success: boolean; message: string } | null
+    if (result && !result.success) {
+      return { user: null, error: result.message || 'Failed to create profile' }
     }
 
     // 3. Activate subscription with code

@@ -55,14 +55,8 @@ CREATE POLICY "System can update activation keys"
 -- VERIFICATION
 -- ============================================================================
 
-DO $
-BEGIN
-  RAISE NOTICE '✅ User registration RLS policies fixed';
-  RAISE NOTICE 'Users can now:';
-  RAISE NOTICE '  - Create their own profile during registration';
-  RAISE NOTICE '  - Check activation keys during registration';
-  RAISE NOTICE '  - Activate their subscription';
-END $;
+-- Check policies were created
+SELECT 'User registration RLS policies fixed' AS status;
 
 -- ============================================================================
 -- END OF MIGRATION
