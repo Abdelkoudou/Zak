@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  signUp: (data: RegisterFormData) => Promise<{ error: string | null }>
+  signUp: (data: RegisterFormData) => Promise<{ error: string | null; needsEmailVerification?: boolean }>
   signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<{ error: string | null }>
   updateProfile: (data: ProfileUpdateData) => Promise<{ error: string | null }>
@@ -86,13 +86,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Sign up
-  const signUp = async (data: RegisterFormData): Promise<{ error: string | null }> => {
+  const signUp = async (data: RegisterFormData): Promise<{ error: string | null; needsEmailVerification?: boolean }> => {
     try {
       setIsLoading(true)
-      const { user: newUser, error } = await authService.signUp(data)
+      const { user: newUser, error, needsEmailVerification } = await authService.signUp(data)
       
       if (error) {
         return { error }
+      }
+
+      if (needsEmailVerification) {
+        return { error: null, needsEmailVerification: true }
       }
 
       setUser(newUser)

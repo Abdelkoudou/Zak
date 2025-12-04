@@ -29,6 +29,7 @@ export default function RegisterScreen() {
   const [showSpeciality, setShowSpeciality] = useState(false)
   const [showYear, setShowYear] = useState(false)
   const [showRegion, setShowRegion] = useState(false)
+  const [showEmailVerification, setShowEmailVerification] = useState(false)
 
   const handleRegister = async () => {
     // Validation
@@ -78,13 +79,59 @@ export default function RegisterScreen() {
       activation_code: activationCode.trim().toUpperCase(),
     }
 
-    const { error: registerError } = await signUp(formData)
+    const { error: registerError, needsEmailVerification } = await signUp(formData)
     
     if (registerError) {
       setError(registerError)
+    } else if (needsEmailVerification) {
+      setShowEmailVerification(true)
     } else {
       router.replace('/(tabs)')
     }
+  }
+
+  // Email verification success screen
+  if (showEmailVerification) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 px-6 py-8 justify-center items-center">
+          <View className="bg-green-100 rounded-full p-6 mb-6">
+            <Text className="text-5xl">✉️</Text>
+          </View>
+          
+          <Text className="text-2xl font-bold text-gray-900 mb-4 text-center">
+            Vérifiez votre email
+          </Text>
+          
+          <Text className="text-gray-600 text-center mb-2">
+            Un email de confirmation a été envoyé à :
+          </Text>
+          
+          <Text className="text-primary-500 font-semibold text-lg mb-6">
+            {email}
+          </Text>
+          
+          <View className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 w-full">
+            <Text className="text-blue-800 text-center">
+              Cliquez sur le lien dans l'email pour activer votre compte, puis connectez-vous.
+            </Text>
+          </View>
+          
+          <TouchableOpacity 
+            className="bg-primary-500 py-4 px-8 rounded-xl w-full"
+            onPress={() => router.replace('/(auth)/login')}
+          >
+            <Text className="text-white text-center font-semibold text-lg">
+              Aller à la connexion
+            </Text>
+          </TouchableOpacity>
+          
+          <Text className="text-gray-400 text-sm mt-4 text-center">
+            Vous n'avez pas reçu l'email ? Vérifiez vos spams.
+          </Text>
+        </View>
+      </SafeAreaView>
+    )
   }
 
   return (

@@ -10,7 +10,7 @@ import { User, RegisterFormData, ProfileUpdateData, ActivationResponse } from '@
 // Sign Up
 // ============================================================================
 
-export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null }> {
+export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
     // 1. Create auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -36,13 +36,12 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
         p_year_of_study: data.year_of_study,
         p_region: data.region,
       })
-      .single()
 
     if (profileError) {
       return { user: null, error: profileError.message }
     }
 
-    // Check if profile creation was successful
+    // Check if profile creation was successful (RPC returns JSON object)
     const result = profileResult as { success: boolean; message: string } | null
     if (result && !result.success) {
       return { user: null, error: result.message || 'Failed to create profile' }
@@ -55,10 +54,21 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: activationResult.message }
     }
 
-    // 4. Register device
+    // 4. Check if email confirmation is required
+    // If user identity is not confirmed, they need to verify email
+    if (authData.user.identities && authData.user.identities.length === 0) {
+      return { user: null, error: null, needsEmailVerification: true }
+    }
+
+    // Check if session exists (no session = email not confirmed yet)
+    if (!authData.session) {
+      return { user: null, error: null, needsEmailVerification: true }
+    }
+
+    // 5. Register device
     await registerDevice(authData.user.id)
 
-    // 5. Fetch complete user profile
+    // 6. Fetch complete user profile
     const { data: userProfile, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -66,7 +76,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       .single()
 
     if (fetchError) {
-      return { user: null, error: fetchError.message }
+      // Profile created but can't fetch - likely needs email verification
+      return { user: null, error: null, needsEmailVerification: true }
     }
 
     return { user: userProfile as User, error: null }
