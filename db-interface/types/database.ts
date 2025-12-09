@@ -21,6 +21,9 @@ export type ExamType =
 
 export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire';
 
+// Faculty source: where the question comes from
+export type FacultySource = 'fac_mere' | 'annexe';
+
 export interface Module {
   id: string;
   name: string;
@@ -67,6 +70,7 @@ export interface Question {
   cours?: string[];
   unityName?: string;
   moduleType: ModuleType;
+  facultySource?: FacultySource;  // fac_mere = Faculté Mère Constantine, annexe = Annexes
   createdBy?: string;
   // Removed: explanation
   answers: Answer[];
@@ -126,6 +130,7 @@ export interface QuestionFormData {
   cours?: string[];
   unityName?: string;
   moduleType?: ModuleType;
+  facultySource?: FacultySource;  // fac_mere = Faculté Mère Constantine, annexe = Annexes
   // Removed: explanation
   answers: {
     optionLabel: string;

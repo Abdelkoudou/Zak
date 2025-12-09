@@ -24,6 +24,7 @@ export default function QuestionsPage() {
     questionText: '',
     speciality: 'Médecine',
     cours: [''],
+    facultySource: undefined,
     answers: [
       { optionLabel: 'A', answerText: '', isCorrect: false },
       { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -115,6 +116,7 @@ export default function QuestionsPage() {
       cours: validCours,
       unity_name: formData.unityName || undefined,
       module_type: formData.moduleType || selectedModule?.type,
+      faculty_source: formData.facultySource || undefined,
       answers: validAnswers.map((answer, idx) => ({
         option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
         answer_text: answer.answerText,
@@ -159,6 +161,7 @@ export default function QuestionsPage() {
       questionText: '',
       speciality: 'Médecine',
       cours: [''],
+      facultySource: undefined,
       answers: [
         { optionLabel: 'A', answerText: '', isCorrect: false },
         { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -184,6 +187,7 @@ export default function QuestionsPage() {
       cours: question.cours && question.cours.length > 0 ? question.cours : [''],
       unityName: question.unity_name || undefined,
       moduleType: question.module_type,
+      facultySource: question.faculty_source || undefined,
       answers: question.answers.map((a: any) => ({
         optionLabel: a.option_label,
         answerText: a.answer_text,
@@ -518,6 +522,25 @@ export default function QuestionsPage() {
                     required
                   />
                 </div>
+
+                {/* Source de la Faculté */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Source de la Question
+                  </label>
+                  <select
+                    value={formData.facultySource || ''}
+                    onChange={(e) => setFormData({ ...formData, facultySource: e.target.value as any || undefined })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Non spécifié</option>
+                    <option value="fac_mere">🏛️ Faculté Mère (Constantine)</option>
+                    <option value="annexe">🏫 Annexes (Facultés satellites)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Indiquez si cette question provient de la Faculté Mère de Constantine ou des Annexes
+                  </p>
+                </div>
               </div>
 
               {/* Cours (Multiple) */}
@@ -705,6 +728,15 @@ export default function QuestionsPage() {
                               {question.cours && question.cours.length > 0 && (
                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
                                   📚 {question.cours.join(', ')}
+                                </span>
+                              )}
+                              {question.faculty_source && (
+                                <span className={`px-2 py-1 text-xs rounded ${
+                                  question.faculty_source === 'fac_mere' 
+                                    ? 'bg-orange-100 text-orange-700' 
+                                    : 'bg-teal-100 text-teal-700'
+                                }`}>
+                                  {question.faculty_source === 'fac_mere' ? '🏛️ Fac Mère' : '🏫 Annexe'}
                                 </span>
                               )}
                             </div>

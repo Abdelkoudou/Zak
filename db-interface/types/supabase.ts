@@ -35,6 +35,8 @@ export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 
 export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other'
 
+export type FacultySource = 'fac_mere' | 'annexe'
+
 // ============================================================================
 // DATABASE TYPES
 // ============================================================================
@@ -119,6 +121,7 @@ export interface Database {
           number: number
           question_text: string
           explanation: string | null
+          faculty_source: FacultySource | null
           created_at: string
           updated_at: string
         }
@@ -131,6 +134,7 @@ export interface Database {
           number: number
           question_text: string
           explanation?: string | null
+          faculty_source?: FacultySource | null
           created_at?: string
           updated_at?: string
         }
@@ -143,6 +147,7 @@ export interface Database {
           number?: number
           question_text?: string
           explanation?: string | null
+          faculty_source?: FacultySource | null
           created_at?: string
           updated_at?: string
         }

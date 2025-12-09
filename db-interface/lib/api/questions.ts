@@ -24,6 +24,7 @@ export interface CreateQuestionData {
   cours?: string[];
   unity_name?: string;
   module_type?: string;
+  faculty_source?: 'fac_mere' | 'annexe';  // Source: Faculté Mère ou Annexes
   answers: {
     option_label: 'A' | 'B' | 'C' | 'D' | 'E';
     answer_text: string;
@@ -60,6 +61,7 @@ export async function createQuestion(data: CreateQuestionData) {
           cours: data.cours || null,
           unity_name: data.unity_name || null,
           module_type: data.module_type,
+          faculty_source: data.faculty_source || null,
         },
         answers: data.answers,
       }),
@@ -188,6 +190,7 @@ export async function updateQuestion(
           cours: data.cours || null,
           unity_name: data.unity_name || null,
           module_type: data.module_type,
+          faculty_source: data.faculty_source || null,
         },
         answers: data.answers,
       }),
