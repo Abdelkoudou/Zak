@@ -65,6 +65,12 @@ export default function PracticeScreen() {
   const currentQuestion = questions[currentIndex]
   const isSubmitted = currentQuestion ? submittedQuestions.has(currentQuestion.id) : false
   const currentAnswers = currentQuestion ? selectedAnswers[currentQuestion.id] || [] : []
+  
+  // Count how many correct answers this question has
+  const correctAnswersCount = currentQuestion 
+    ? currentQuestion.answers.filter(a => a.is_correct).length 
+    : 0
+  const isMultipleChoice = correctAnswersCount > 1
 
   const selectAnswer = (label: OptionLabel) => {
     if (isSubmitted || !currentQuestion) return
@@ -73,10 +79,25 @@ export default function PracticeScreen() {
       const current = prev[currentQuestion.id] || []
       const isSelected = current.includes(label)
       
-      // For now, single selection only
-      return {
-        ...prev,
-        [currentQuestion.id]: isSelected ? [] : [label]
+      if (isMultipleChoice) {
+        // Multiple selection mode - toggle the answer
+        if (isSelected) {
+          return {
+            ...prev,
+            [currentQuestion.id]: current.filter(l => l !== label)
+          }
+        } else {
+          return {
+            ...prev,
+            [currentQuestion.id]: [...current, label]
+          }
+        }
+      } else {
+        // Single selection mode - replace the answer
+        return {
+          ...prev,
+          [currentQuestion.id]: isSelected ? [] : [label]
+        }
       }
     })
   }
@@ -256,11 +277,22 @@ export default function PracticeScreen() {
           </View>
 
           {/* Question Text */}
-          <View className="bg-white rounded-2xl p-4 mb-6">
+          <View className="bg-white rounded-2xl p-4 mb-4">
             <Text className="text-gray-900 text-lg leading-relaxed">
               {currentQuestion.question_text}
             </Text>
           </View>
+
+          {/* Multiple Choice Indicator */}
+          {isMultipleChoice && (
+            <View className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex-row items-center">
+              <Text className="text-amber-600 mr-2">⚠️</Text>
+              <Text className="text-amber-700 flex-1">
+                Cette question a {correctAnswersCount} réponses correctes. 
+                {!isSubmitted && ` (${currentAnswers.length}/${correctAnswersCount} sélectionnées)`}
+              </Text>
+            </View>
+          )}
 
           {/* Answer Options */}
           <View className="space-y-3">
@@ -296,7 +328,7 @@ export default function PracticeScreen() {
                   disabled={isSubmitted}
                 >
                   <View className="flex-row items-start">
-                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${
+                    <View className={`w-8 h-8 ${isMultipleChoice ? 'rounded-lg' : 'rounded-full'} items-center justify-center mr-3 ${
                       isSelected ? 'bg-primary-500' : 'bg-gray-100'
                     }`}>
                       <Text className={`font-bold ${isSelected ? 'text-white' : 'text-gray-600'}`}>

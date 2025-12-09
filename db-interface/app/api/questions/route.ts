@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       cours: question.cours || null,
       unity_name: question.unity_name || null,
       module_type: question.module_type,
+      faculty_source: question.faculty_source || null,
       created_by: user.id, // Track who created the question
     };
 
@@ -182,6 +183,7 @@ export async function PUT(request: NextRequest) {
       cours: question.cours || null,
       unity_name: question.unity_name || null,
       module_type: question.module_type,
+      faculty_source: question.faculty_source || null,
     };
 
     const { data: updatedQuestion, error: questionError } = await supabaseAdmin
