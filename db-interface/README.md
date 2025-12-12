@@ -11,7 +11,7 @@ A secure web interface for managing medical exam questions.
 - ✅ **Question Management** - Add, edit, delete questions
 - ✅ **Module Management** - Organize by year, module, exam type
 - ✅ **Resource Management** - Add course resources
-- ✅ **Production Ready** - Deploy to Vercel/Netlify
+
 
 ---
 
