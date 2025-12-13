@@ -15,29 +15,7 @@ A secure web interface for managing medical exam questions.
 
 ---
 
-## 🚀 Quick Start
 
-### For Local Development (Testing)
-
-1. **Install dependencies:**
-```bash
-npm install
-```
-
-2. **Configure Supabase:**
-```bash
-cp .env.local.example .env.local
-# Add your Supabase credentials
-```
-
-3. **Run development server:**
-```bash
-npm run dev
-```
-
-4. **Open:** http://localhost:3001
-
----
 
 ## 🔐 For Production Hosting
 
