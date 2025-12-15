@@ -492,13 +492,13 @@ export default function QuestionsPage() {
                   >
                     <option value="">Sélectionner l&apos;année</option>
                     {formData.year === '1' && Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
+                      <option key={year} value={year}>M{year-2000}</option>
                     ))}
                     {formData.year === '2' && Array.from({ length: 7 }, (_, i) => 2024 - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
+                      <option key={year} value={year}>M{year-2000}</option>
                     ))}
                     {formData.year === '3' && Array.from({ length: 6 }, (_, i) => 2023 - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
+                      <option key={year} value={year}>M{year-2000}</option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
