@@ -255,8 +255,12 @@ export default function QuestionsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Questions MCQ</h1>
-          <p className="text-sm md:text-base text-gray-600">Ajouter et gérer les questions à choix multiples</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">
+            Questions MCQ
+          </h1>
+          <p className="text-sm md:text-base text-gray-600">
+            Ajouter et gérer les questions à choix multiples
+          </p>
         </div>
         <div className="flex gap-2">
           <a
@@ -276,7 +280,7 @@ export default function QuestionsPage() {
             }}
             className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
           >
-            {showForm ? 'Annuler' : '➕ Nouvelle Question'}
+            {showForm ? "Annuler" : "➕ Nouvelle Question"}
           </button>
         </div>
       </div>
@@ -291,17 +295,51 @@ export default function QuestionsPage() {
                 Configuration Supabase Requise
               </h3>
               <p className="text-yellow-800 mb-3">
-                Supabase n&apos;est pas configuré. Pour utiliser cette interface, vous devez:
+                Supabase n&apos;est pas configuré. Pour utiliser cette
+                interface, vous devez:
               </p>
               <ol className="list-decimal list-inside space-y-2 text-yellow-800 mb-4">
-                <li>Créer un projet Supabase sur <a href="https://supabase.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">supabase.com</a></li>
-                <li>Exécuter les fichiers SQL dans <code className="bg-yellow-100 px-2 py-1 rounded">supabase/</code></li>
-                <li>Copier <code className="bg-yellow-100 px-2 py-1 rounded">.env.local.example</code> vers <code className="bg-yellow-100 px-2 py-1 rounded">.env.local</code></li>
-                <li>Ajouter vos identifiants Supabase dans <code className="bg-yellow-100 px-2 py-1 rounded">.env.local</code></li>
+                <li>
+                  Créer un projet Supabase sur{" "}
+                  <a
+                    href="https://supabase.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    supabase.com
+                  </a>
+                </li>
+                <li>
+                  Exécuter les fichiers SQL dans{" "}
+                  <code className="bg-yellow-100 px-2 py-1 rounded">
+                    supabase/
+                  </code>
+                </li>
+                <li>
+                  Copier{" "}
+                  <code className="bg-yellow-100 px-2 py-1 rounded">
+                    .env.local.example
+                  </code>{" "}
+                  vers{" "}
+                  <code className="bg-yellow-100 px-2 py-1 rounded">
+                    .env.local
+                  </code>
+                </li>
+                <li>
+                  Ajouter vos identifiants Supabase dans{" "}
+                  <code className="bg-yellow-100 px-2 py-1 rounded">
+                    .env.local
+                  </code>
+                </li>
                 <li>Redémarrer le serveur de développement</li>
               </ol>
               <p className="text-sm text-yellow-700">
-                📖 Consultez <code className="bg-yellow-100 px-2 py-1 rounded">SUPABASE_SETUP.md</code> pour les instructions détaillées
+                📖 Consultez{" "}
+                <code className="bg-yellow-100 px-2 py-1 rounded">
+                  SUPABASE_SETUP.md
+                </code>{" "}
+                pour les instructions détaillées
               </p>
             </div>
           </div>
@@ -324,18 +362,22 @@ export default function QuestionsPage() {
       <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 md:mb-8">
         <div className="bg-white rounded-lg shadow p-3 md:p-6">
           <p className="text-gray-500 text-xs md:text-sm">Total Questions</p>
-          <p className="text-xl md:text-3xl font-bold text-gray-900">{questions.length}</p>
+          <p className="text-xl md:text-3xl font-bold text-gray-900">
+            {questions.length}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow p-3 md:p-6">
           <p className="text-gray-500 text-xs md:text-sm">Modules Couverts</p>
           <p className="text-xl md:text-3xl font-bold text-blue-600">
-            {new Set(questions.map(q => q.module_name)).size}
+            {new Set(questions.map((q) => q.module_name)).size}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Types d&apos;Examens</p>
+          <p className="text-gray-500 text-xs md:text-sm">
+            Types d&apos;Examens
+          </p>
           <p className="text-xl md:text-3xl font-bold text-green-600">
-            {new Set(questions.map(q => q.exam_type)).size}
+            {new Set(questions.map((q) => q.exam_type)).size}
           </p>
         </div>
       </div>
@@ -343,7 +385,7 @@ export default function QuestionsPage() {
       {showForm && (
         <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 md:mb-8">
           <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">
-            {editingId ? '✏️ Modifier la Question' : 'Ajouter une Question'}
+            {editingId ? "✏️ Modifier la Question" : "Ajouter une Question"}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
             {/* Section 1: Détails de la Question */}
@@ -359,13 +401,17 @@ export default function QuestionsPage() {
                     Spécialité *
                   </label>
                   <select
-                    value={formData.speciality || 'Médecine'}
-                    onChange={(e) => setFormData({ ...formData, speciality: e.target.value as any })}
+                    value={formData.speciality || "Médecine"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        speciality: e.target.value as any,
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
                     <option value="Médecine">Médecine</option>
-                    
                   </select>
                 </div>
 
@@ -376,15 +422,17 @@ export default function QuestionsPage() {
                   </label>
                   <select
                     value={formData.year}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      year: e.target.value as any,
-                      moduleId: '',
-                      subDisciplineId: undefined,
-                      examType: 'EMD',
-                      unityName: undefined,
-                      moduleType: undefined
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        year: e.target.value as any,
+                        moduleId: "",
+                        subDisciplineId: undefined,
+                        examType: "EMD",
+                        unityName: undefined,
+                        moduleType: undefined,
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
@@ -404,14 +452,19 @@ export default function QuestionsPage() {
                   <select
                     value={formData.moduleId}
                     onChange={(e) => {
-                      const selectedMod = availableModules.find(m => m.name === e.target.value);
-                      setFormData({ 
-                        ...formData, 
+                      const selectedMod = availableModules.find(
+                        (m) => m.name === e.target.value
+                      );
+                      setFormData({
+                        ...formData,
                         moduleId: e.target.value,
                         subDisciplineId: undefined,
-                        examType: availableExamTypes[0] || 'EMD',
-                        unityName: selectedMod?.type === 'uei' ? e.target.value : undefined,
-                        moduleType: selectedMod?.type
+                        examType: availableExamTypes[0] || "EMD",
+                        unityName:
+                          selectedMod?.type === "uei"
+                            ? e.target.value
+                            : undefined,
+                        moduleType: selectedMod?.type,
                       });
                     }}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -420,20 +473,23 @@ export default function QuestionsPage() {
                     <option value="">Sélectionner un module</option>
                     {availableModules.map((module) => (
                       <option key={module.name} value={module.name}>
-                        {module.type === 'uei' && '🟢 UEI: '}
-                        {module.type === 'standalone' && '🟡 '}
-                        {module.type === 'annual' && '🔵 '}
-                        {module.type === 'semestrial' && '🔵 '}
+                        {module.type === "uei" && "🟢 UEI: "}
+                        {module.type === "standalone" && "🟡 "}
+                        {module.type === "annual" && "🔵 "}
+                        {module.type === "semestrial" && "🔵 "}
                         {module.name}
                       </option>
                     ))}
                   </select>
                   {selectedModule && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {selectedModule.type === 'uei' && '🟢 Unité d\'Enseignement Intégré (UEI)'}
-                      {selectedModule.type === 'standalone' && '🟡 Module Autonome'}
-                      {selectedModule.type === 'annual' && '🔵 Module Annuel'}
-                      {selectedModule.type === 'semestrial' && '🔵 Module Semestriel'}
+                      {selectedModule.type === "uei" &&
+                        "🟢 Unité d'Enseignement Intégré (UEI)"}
+                      {selectedModule.type === "standalone" &&
+                        "🟡 Module Autonome"}
+                      {selectedModule.type === "annual" && "🔵 Module Annuel"}
+                      {selectedModule.type === "semestrial" &&
+                        "🔵 Module Semestriel"}
                     </p>
                   )}
                 </div>
@@ -445,8 +501,13 @@ export default function QuestionsPage() {
                       Sous-discipline
                     </label>
                     <select
-                      value={formData.subDisciplineId || ''}
-                      onChange={(e) => setFormData({ ...formData, subDisciplineId: e.target.value || undefined })}
+                      value={formData.subDisciplineId || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          subDisciplineId: e.target.value || undefined,
+                        })
+                      }
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">Aucune (optionnel)</option>
@@ -458,89 +519,129 @@ export default function QuestionsPage() {
                     </select>
                   </div>
                 )}
-
-                {/* Type d'Examen */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type d&apos;Examen *
-                  </label>
-                  <select
-                    value={formData.examType}
-                    onChange={(e) => setFormData({ ...formData, examType: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                    disabled={!formData.moduleId}
-                  >
-                    <option value="">Sélectionner le type</option>
-                    {availableExamTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Année de l'Examen (Promo) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Année de l&apos;Examen (Promo)
-                  </label>
-                  <select
-                    value={formData.examYear || ''}
-                    onChange={(e) => setFormData({ ...formData, examYear: e.target.value ? parseInt(e.target.value) : undefined })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Sélectionner l&apos;année</option>
-                    {formData.year === '1' && Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => (
-                      <option key={year} value={year}>M{year-2000}</option>
-                    ))}
-                    {formData.year === '2' && Array.from({ length: 7 }, (_, i) => 2024 - i).map(year => (
-                      <option key={year} value={year}>M{year-2000}</option>
-                    ))}
-                    {formData.year === '3' && Array.from({ length: 6 }, (_, i) => 2023 - i).map(year => (
-                      <option key={year} value={year}>M{year-2000}</option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {formData.year === '1' && '1ère année: 2018-2025'}
-                    {formData.year === '2' && '2ème année: 2018-2024'}
-                    {formData.year === '3' && '3ème année: 2018-2023'}
-                  </p>
-                </div>
-
-                {/* Numéro de la Question */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Numéro de la Question *
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.number}
-                    onChange={(e) => setFormData({ ...formData, number: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    min="1"
-                    required
-                  />
-                </div>
-
                 {/* Source de la Faculté */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Source de la Question
                   </label>
                   <select
-                    value={formData.facultySource || ''}
-                    onChange={(e) => setFormData({ ...formData, facultySource: e.target.value as any || undefined })}
+                    value={formData.facultySource || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        facultySource: (e.target.value as any) || undefined,
+                      })
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Non spécifié</option>
-                    <option value="fac_mere">🏛️ Faculté Mère (Constantine)</option>
-                    <option value="annexe">🏫 Annexes (Facultés satellites)</option>
+                    <option value="fac_mere">Faculté de Constantine</option>
+                    <option value="annexe">Annexe de Biskra</option>
+                    <option value="annexe">Annexe dOum El Bouaghi</option>
+                    <option value="annexe">Annexe de Khenchela</option>
+                    <option value="annexe">Annexe de Souk Ahras</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Indiquez si cette question provient de la Faculté Mère de Constantine ou des Annexes
+                    Indiquez si cette question provient de la Faculté Mère de
+                    Constantine ou des Annexes
                   </p>
                 </div>
+              </div>
+
+              {/* Type d'Examen */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type d&apos;Examen *
+                </label>
+                <select
+                  value={formData.examType}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      examType: e.target.value as any,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={!formData.moduleId}
+                >
+                  <option value="">Sélectionner le type</option>
+                  {availableExamTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Année de l'Examen (Promo) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Année de l&apos;Examen (Promo)
+                </label>
+                <select
+                  value={formData.examYear || ""}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      examYear: e.target.value
+                        ? parseInt(e.target.value)
+                        : undefined,
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Sélectionner l&apos;année</option>
+                  {formData.year === "1" &&
+                    Array.from({ length: 8 }, (_, i) => 2025 - i).map(
+                      (year) => (
+                        <option key={year} value={year}>
+                          M{year - 2000}
+                        </option>
+                      )
+                    )}
+                  {formData.year === "2" &&
+                    Array.from({ length: 7 }, (_, i) => 2024 - i).map(
+                      (year) => (
+                        <option key={year} value={year}>
+                          M{year - 2000}
+                        </option>
+                      )
+                    )}
+                  {formData.year === "3" &&
+                    Array.from({ length: 6 }, (_, i) => 2023 - i).map(
+                      (year) => (
+                        <option key={year} value={year}>
+                          M{year - 2000}
+                        </option>
+                      )
+                    )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.year === "1" && "1ère année: 2018-2025"}
+                  {formData.year === "2" && "2ème année: 2018-2024"}
+                  {formData.year === "3" && "3ème année: 2018-2023"}
+                </p>
+              </div>
+
+              {/* Numéro de la Question */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Numéro de la Question *
+                </label>
+                <input
+                  type="number"
+                  value={formData.number}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      number: parseInt(e.target.value),
+                    })
+                  }
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min="1"
+                  required
+                />
               </div>
 
               {/* Cours (Multiple) */}
@@ -549,12 +650,14 @@ export default function QuestionsPage() {
                   Cours *
                 </label>
                 <div className="space-y-2">
-                  {(formData.cours || ['']).map((cours, index) => (
+                  {(formData.cours || [""]).map((cours, index) => (
                     <div key={index} className="flex gap-2">
                       <input
                         type="text"
                         value={cours}
-                        onChange={(e) => updateCoursInput(index, e.target.value)}
+                        onChange={(e) =>
+                          updateCoursInput(index, e.target.value)
+                        }
                         className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                         placeholder="Nom du cours"
                         required
@@ -580,7 +683,8 @@ export default function QuestionsPage() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Vous pouvez ajouter plusieurs cours en cliquant sur le bouton +
+                  Vous pouvez ajouter plusieurs cours en cliquant sur le bouton
+                  +
                 </p>
               </div>
 
@@ -591,7 +695,9 @@ export default function QuestionsPage() {
                 </label>
                 <textarea
                   value={formData.questionText}
-                  onChange={(e) => setFormData({ ...formData, questionText: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, questionText: e.target.value })
+                  }
                   className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                   rows={4}
                   placeholder="Entrez votre question ici..."
@@ -606,12 +712,16 @@ export default function QuestionsPage() {
                 ✅ Options de Réponse
               </h3>
               <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                Entrez les options de réponse (A-E) et cochez les bonnes réponses. Vous pouvez avoir plusieurs bonnes réponses.
+                Entrez les options de réponse (A-E) et cochez les bonnes
+                réponses. Vous pouvez avoir plusieurs bonnes réponses.
               </p>
 
               <div className="space-y-3 md:space-y-4">
                 {formData.answers.map((answer, index) => (
-                  <div key={answer.optionLabel} className="border border-gray-300 rounded-lg p-3 md:p-4 bg-white">
+                  <div
+                    key={answer.optionLabel}
+                    className="border border-gray-300 rounded-lg p-3 md:p-4 bg-white"
+                  >
                     <div className="flex items-start gap-2 md:gap-4">
                       <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-base md:text-lg">
                         {answer.optionLabel}
@@ -621,7 +731,9 @@ export default function QuestionsPage() {
                         <input
                           type="text"
                           value={answer.answerText}
-                          onChange={(e) => updateAnswer(index, 'answerText', e.target.value)}
+                          onChange={(e) =>
+                            updateAnswer(index, "answerText", e.target.value)
+                          }
                           className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
                           placeholder={`Texte de la réponse ${answer.optionLabel}...`}
                         />
@@ -630,7 +742,9 @@ export default function QuestionsPage() {
                           <input
                             type="checkbox"
                             checked={answer.isCorrect}
-                            onChange={(e) => updateAnswer(index, 'isCorrect', e.target.checked)}
+                            onChange={(e) =>
+                              updateAnswer(index, "isCorrect", e.target.checked)
+                            }
                             className="w-4 h-4 md:w-5 md:h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
                           />
                           <span className="text-xs md:text-sm font-medium text-gray-700">
@@ -655,7 +769,11 @@ export default function QuestionsPage() {
                 disabled={saving}
                 className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
               >
-                {saving ? '⏳ Enregistrement...' : editingId ? '✅ Modifier la Question' : '✅ Enregistrer la Question'}
+                {saving
+                  ? "⏳ Enregistrement..."
+                  : editingId
+                  ? "✅ Modifier la Question"
+                  : "✅ Enregistrer la Question"}
               </button>
               <button
                 type="button"
@@ -686,20 +804,28 @@ export default function QuestionsPage() {
             </p>
           ) : questions.length === 0 ? (
             <p className="text-gray-500 text-center py-8">
-              Aucune question ajoutée. Cliquez sur &quot;Nouvelle Question&quot; pour commencer.
+              Aucune question ajoutée. Cliquez sur &quot;Nouvelle Question&quot;
+              pour commencer.
             </p>
           ) : (
             <div className="space-y-6">
               {Object.entries(groupedQuestions).map(([key, groupQuestions]) => {
-                const [year, moduleName, examType] = key.split('-');
+                const [year, moduleName, examType] = key.split("-");
                 return (
-                  <div key={key} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div
+                    key={key}
+                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
+                  >
                     <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                      {YEARS.find(y => y.value === year)?.label} - {moduleName} ({examType})
+                      {YEARS.find((y) => y.value === year)?.label} -{" "}
+                      {moduleName} ({examType})
                     </h3>
                     <div className="space-y-4">
                       {groupQuestions.map((question) => (
-                        <div key={question.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div
+                          key={question.id}
+                          className="border border-gray-200 rounded-lg p-4 bg-white"
+                        >
                           <div className="flex justify-between items-start mb-3">
                             <div className="flex flex-wrap gap-2">
                               <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
@@ -710,12 +836,12 @@ export default function QuestionsPage() {
                                   {question.speciality}
                                 </span>
                               )}
-                              {question.module_type === 'uei' && (
+                              {question.module_type === "uei" && (
                                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
                                   🟢 UEI
                                 </span>
                               )}
-                              {question.module_type === 'standalone' && (
+                              {question.module_type === "standalone" && (
                                 <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">
                                   🟡 Autonome
                                 </span>
@@ -727,16 +853,20 @@ export default function QuestionsPage() {
                               )}
                               {question.cours && question.cours.length > 0 && (
                                 <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                  📚 {question.cours.join(', ')}
+                                  📚 {question.cours.join(", ")}
                                 </span>
                               )}
                               {question.faculty_source && (
-                                <span className={`px-2 py-1 text-xs rounded ${
-                                  question.faculty_source === 'fac_mere' 
-                                    ? 'bg-orange-100 text-orange-700' 
-                                    : 'bg-teal-100 text-teal-700'
-                                }`}>
-                                  {question.faculty_source === 'fac_mere' ? '🏛️ Fac Mère' : '🏫 Annexe'}
+                                <span
+                                  className={`px-2 py-1 text-xs rounded ${
+                                    question.faculty_source === "fac_mere"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : "bg-teal-100 text-teal-700"
+                                  }`}
+                                >
+                                  {question.faculty_source === "fac_mere"
+                                    ? "🏛️ Fac Mère"
+                                    : "🏫 Annexe"}
                                 </span>
                               )}
                             </div>
@@ -756,22 +886,30 @@ export default function QuestionsPage() {
                             </div>
                           </div>
 
-                          <p className="text-gray-900 mb-3 font-medium">{question.question_text}</p>
+                          <p className="text-gray-900 mb-3 font-medium">
+                            {question.question_text}
+                          </p>
 
                           <div className="space-y-2">
                             {question.answers.map((answer: any) => (
                               <div
                                 key={answer.id}
                                 className={`flex items-start gap-3 p-2 rounded ${
-                                  answer.is_correct ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                                  answer.is_correct
+                                    ? "bg-green-50 border border-green-200"
+                                    : "bg-gray-50"
                                 }`}
                               >
                                 <span className="font-bold text-sm min-w-[24px]">
                                   {answer.option_label.toUpperCase()}.
                                 </span>
-                                <span className="text-sm flex-1">{answer.answer_text}</span>
+                                <span className="text-sm flex-1">
+                                  {answer.answer_text}
+                                </span>
                                 {answer.is_correct && (
-                                  <span className="text-green-600 text-sm font-medium">✓ Correct</span>
+                                  <span className="text-green-600 text-sm font-medium">
+                                    ✓ Correct
+                                  </span>
                                 )}
                               </div>
                             ))}
