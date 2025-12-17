@@ -5,7 +5,7 @@
 // Enums
 export type YearLevel = '1' | '2' | '3'
 export type ModuleType = 'annual' | 'semestrial' | 'uei' | 'standalone'
-export type ExamType = 'EMD' | 'EMD1' | 'EMD2' | 'Rattrapage' | 'M1' | 'M2' | 'M3' | 'M4'
+export type ExamType = 'EMD' | 'EMD1' | 'EMD2' | 'Rattrapage' 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other'
 export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire'

@@ -44,16 +44,13 @@ export const EXAM_TYPES: { value: ExamType; label: string }[] = [
   { value: 'EMD1', label: 'EMD1' },
   { value: 'EMD2', label: 'EMD2' },
   { value: 'Rattrapage', label: 'Rattrapage' },
-  { value: 'M1', label: 'M1' },
-  { value: 'M2', label: 'M2' },
-  { value: 'M3', label: 'M3' },
-  { value: 'M4', label: 'M4' },
+ 
 ]
 
 export const EXAM_TYPES_BY_MODULE_TYPE: Record<ModuleType, ExamType[]> = {
   annual: ['EMD1', 'EMD2', 'Rattrapage'],
   semestrial: ['EMD', 'Rattrapage'],
-  uei: ['M1', 'M2', 'M3', 'M4', 'EMD', 'Rattrapage'],
+  uei: [ 'EMD', 'Rattrapage'],
   standalone: ['EMD', 'Rattrapage'],
 }
 
