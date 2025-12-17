@@ -19,7 +19,7 @@ export default function ModulesPage() {
             id: `subdiscipline-${index}-${subIndex}`,
             moduleId: `module-${index}`,
             name: subName,
-            examTypes: ['M1', 'M2', 'M3', 'M4'],
+            examTypes: ['EMD1', 'EMD2', 'Rattrapage'],
             createdAt: new Date(),
             updatedAt: new Date(),
           }))

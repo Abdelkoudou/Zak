@@ -398,7 +398,7 @@ export default function QuestionsPage() {
                 {/* Spécialité */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Spécialité *
+                    Spécialité 
                   </label>
                   <select
                     value={formData.speciality || "Médecine"}
@@ -418,7 +418,7 @@ export default function QuestionsPage() {
                 {/* Année */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Année d&apos;Étude *
+                    Année d&apos;Étude 
                   </label>
                   <select
                     value={formData.year}
@@ -447,7 +447,7 @@ export default function QuestionsPage() {
                 {/* Module */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Module / Unité *
+                    Module / Unité 
                   </label>
                   <select
                     value={formData.moduleId}
@@ -470,7 +470,7 @@ export default function QuestionsPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     required
                   >
-                    <option value="">Sélectionner un module</option>
+                    <option value="">Sélectionner un module/ Unité</option>
                     {availableModules.map((module) => (
                       <option key={module.name} value={module.name}>
                         {module.type === "uei" && "🟢 UEI: "}
@@ -535,15 +535,17 @@ export default function QuestionsPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Non spécifié</option>
-                    <option value="fac_mere">Faculté de Constantine</option>
-                    <option value="annexe">Annexe de Biskra</option>
-                    <option value="annexe">Annexe dOum El Bouaghi</option>
-                    <option value="annexe">Annexe de Khenchela</option>
-                    <option value="annexe">Annexe de Souk Ahras</option>
+                    <option value="fac_mere">🏛️ Faculté de Constantine (Fac Mère)</option>
+                    <option value="annexe_biskra">🏫 Annexe de Biskra</option>
+                    <option value="annexe_oum_el_bouaghi">🏫 Annexe d&apos;Oum El Bouaghi</option>
+                    <option value="annexe_khenchela">🏫 Annexe de Khenchela</option>
+                    <option value="annexe_souk_ahras">🏫 Annexe de Souk Ahras</option>
+                    <option value="annexe_bechar">🏫 Annexe de Bechar</option>
+                    <option value="annexe_laghouat">🏫 Annexe de Laghouat</option>
+                    <option value="annexe_ouargla">🏫 Annexe de Ouargla</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
-                    Indiquez si cette question provient de la Faculté Mère de
-                    Constantine ou des Annexes
+                    Indiquez la source exacte de la question (Fac Mère ou Annexe spécifique)
                   </p>
                 </div>
               </div>
@@ -591,7 +593,7 @@ export default function QuestionsPage() {
                   }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Sélectionner l&apos;année</option>
+                  <option value="">Sélectionner la promo</option>
                   {formData.year === "1" &&
                     Array.from({ length: 8 }, (_, i) => 2025 - i).map(
                       (year) => (
@@ -864,9 +866,16 @@ export default function QuestionsPage() {
                                       : "bg-teal-100 text-teal-700"
                                   }`}
                                 >
-                                  {question.faculty_source === "fac_mere"
-                                    ? "🏛️ Fac Mère"
-                                    : "🏫 Annexe"}
+                                  {question.faculty_source === "fac_mere" && "🏛️ Fac Mère"}
+                                  {question.faculty_source === "annexe_biskra" && "🏫 Annexe Biskra"}
+                                  {question.faculty_source === "annexe_oum_el_bouaghi" && "🏫 Annexe O.E.B"}
+                                  {question.faculty_source === "annexe_khenchela" && "🏫 Annexe Khenchela"}
+                                  {question.faculty_source === "annexe_souk_ahras" && "🏫 Annexe Souk Ahras"}
+                                  {question.faculty_source === "annexe_bechar" && "🏫 Annexe Bechar"}
+                                  {question.faculty_source === "annexe_laghouat" && "🏫 Annexe Laghouat"}
+                                  {question.faculty_source === "annexe_ouargla" && "� Annexe Ouargla"}
+                                  {/* Fallback for old/generic data */}
+                                  {(question.faculty_source === "annexe" as any) && "🏫 Annexe"}
                                 </span>
                               )}
                             </div>

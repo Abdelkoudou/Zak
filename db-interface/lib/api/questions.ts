@@ -1,6 +1,7 @@
 // API functions for questions
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import type { FacultySource } from '@/types/database';
 
 type Question = Database['public']['Tables']['questions']['Row'];
 type QuestionInsert = Database['public']['Tables']['questions']['Insert'];
@@ -24,7 +25,7 @@ export interface CreateQuestionData {
   cours?: string[];
   unity_name?: string;
   module_type?: string;
-  faculty_source?: 'fac_mere' | 'annexe';  // Source: Faculté Mère ou Annexes
+  faculty_source?: FacultySource;  // Source: Faculté Mère ou Annexes
   answers: {
     option_label: 'A' | 'B' | 'C' | 'D' | 'E';
     answer_text: string;

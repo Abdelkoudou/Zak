@@ -110,7 +110,7 @@ export default function ResourcesScreen() {
 
       {/* Resources List */}
       <ScrollView
-        className="flex-1"
+        className="flex"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

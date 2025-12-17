@@ -2,27 +2,31 @@
 
 export type YearLevel = '1' | '2' | '3';
 
-export type ModuleType = 
+export type ModuleType =
   | 'annual'        // Modules Annuels (1st year)
   | 'semestrial'    // Modules Semestriels (1st year)
   | 'uei'           // U.E.I (2nd/3rd year)
   | 'standalone';   // Standalone modules (Génétique, Immunologie, etc.)
 
-export type ExamType = 
+export type ExamType =
   | 'EMD'           // For semestrial modules and standalone
   | 'EMD1'          // For annual modules
   | 'EMD2'          // For annual modules
-  | 'M1'            // For UEI modules (2nd/3rd year)
-  | 'M2'            // For UEI modules (2nd/3rd year)
-  | 'M3'            // For UEI modules (2nd/3rd year)
-  | 'M4'            // For UEI modules (2nd/3rd year)
   | 'Rattrapage'    // For all
-         
+
 
 export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire';
 
 // Faculty source: where the question comes from
-export type FacultySource = 'fac_mere' | 'annexe';
+export type FacultySource =
+  | 'fac_mere'
+  | 'annexe_biskra'
+  | 'annexe_oum_el_bouaghi'
+  | 'annexe_khenchela'
+  | 'annexe_souk_ahras'
+  | 'annexe_bechar'
+  | 'annexe_laghouat'
+  | 'annexe_ouargla';
 
 export interface Module {
   id: string;

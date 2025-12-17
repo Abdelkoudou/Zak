@@ -26,10 +26,7 @@ export type ExamType =
   | 'EMD1' 
   | 'EMD2' 
   | 'Rattrapage'
-  | 'M1' 
-  | 'M2' 
-  | 'M3' 
-  | 'M4'
+
 
 export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 
