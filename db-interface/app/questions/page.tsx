@@ -132,15 +132,29 @@ export default function QuestionsPage() {
 
     if (result.success) {
       setSuccess(editingId ? '✅ Question modifiée avec succès!' : '✅ Question ajoutée avec succès!');
-      setShowForm(false);
-      setEditingId(null);
-      
       // Reload questions
       await loadQuestions();
-      
-      // Auto-increment question number only for new questions
-      if (!editingId) {
-        setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+
+      if (editingId) {
+        setShowForm(false);
+        setEditingId(null);
+      } else {
+        // Keep form open for faster entry
+        // Preserve context (Speciality -> Exam Year), increment number, clear content
+        setFormData(prev => ({
+          ...prev,
+          number: prev.number + 1,
+          questionText: '',
+          cours: [''],
+          answers: [
+            { optionLabel: 'A', answerText: '', isCorrect: false },
+            { optionLabel: 'B', answerText: '', isCorrect: false },
+            { optionLabel: 'C', answerText: '', isCorrect: false },
+            { optionLabel: 'D', answerText: '', isCorrect: false },
+            { optionLabel: 'E', answerText: '', isCorrect: false },
+          ],
+        }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       
       // Clear success message after 3 seconds
