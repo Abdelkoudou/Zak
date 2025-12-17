@@ -249,6 +249,22 @@ export default function HistoryPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+         {/* Speciality Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Spécialité
+            </label>
+            <select
+              value={filters.speciality}
+              onChange={(e) => setFilters({ ...filters, speciality: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Toutes les spécialités</option>
+              <option value="Médecine">Médecine</option>
+              <option value="Pharmacie">Pharmacie</option>
+              <option value="Dentaire">Dentaire</option>
+            </select>
+          </div>
           {/* Year Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -287,22 +303,7 @@ export default function HistoryPage() {
             </select>
           </div>
 
-          {/* Speciality Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Spécialité
-            </label>
-            <select
-              value={filters.speciality}
-              onChange={(e) => setFilters({ ...filters, speciality: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Toutes les spécialités</option>
-              <option value="Médecine">Médecine</option>
-              <option value="Pharmacie">Pharmacie</option>
-              <option value="Dentaire">Dentaire</option>
-            </select>
-          </div>
+         
 
           {/* Exam Type Filter */}
           <div>
