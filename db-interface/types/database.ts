@@ -23,10 +23,7 @@ export type FacultySource =
   | 'annexe_biskra'
   | 'annexe_oum_el_bouaghi'
   | 'annexe_khenchela'
-  | 'annexe_souk_ahras'
-  | 'annexe_bechar'
-  | 'annexe_laghouat'
-  | 'annexe_ouargla';
+  | 'annexe_souk_ahras';
 
 export interface Module {
   id: string;

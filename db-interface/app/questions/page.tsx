@@ -132,15 +132,29 @@ export default function QuestionsPage() {
 
     if (result.success) {
       setSuccess(editingId ? '✅ Question modifiée avec succès!' : '✅ Question ajoutée avec succès!');
-      setShowForm(false);
-      setEditingId(null);
-      
       // Reload questions
       await loadQuestions();
-      
-      // Auto-increment question number only for new questions
-      if (!editingId) {
-        setFormData(prev => ({ ...prev, number: prev.number + 1 }));
+
+      if (editingId) {
+        setShowForm(false);
+        setEditingId(null);
+      } else {
+        // Keep form open for faster entry
+        // Preserve context (Speciality -> Exam Year), increment number, clear content
+        setFormData(prev => ({
+          ...prev,
+          number: prev.number + 1,
+          questionText: '',
+          cours: [''],
+          answers: [
+            { optionLabel: 'A', answerText: '', isCorrect: false },
+            { optionLabel: 'B', answerText: '', isCorrect: false },
+            { optionLabel: 'C', answerText: '', isCorrect: false },
+            { optionLabel: 'D', answerText: '', isCorrect: false },
+            { optionLabel: 'E', answerText: '', isCorrect: false },
+          ],
+        }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       
       // Clear success message after 3 seconds
@@ -498,7 +512,7 @@ export default function QuestionsPage() {
                 {availableSubDisciplines.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sous-discipline
+                      Module  
                     </label>
                     <select
                       value={formData.subDisciplineId || ""}
@@ -540,9 +554,6 @@ export default function QuestionsPage() {
                     <option value="annexe_oum_el_bouaghi">🏫 Annexe d&apos;Oum El Bouaghi</option>
                     <option value="annexe_khenchela">🏫 Annexe de Khenchela</option>
                     <option value="annexe_souk_ahras">🏫 Annexe de Souk Ahras</option>
-                    <option value="annexe_bechar">🏫 Annexe de Bechar</option>
-                    <option value="annexe_laghouat">🏫 Annexe de Laghouat</option>
-                    <option value="annexe_ouargla">🏫 Annexe de Ouargla</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     Indiquez la source exacte de la question (Fac Mère ou Annexe spécifique)
