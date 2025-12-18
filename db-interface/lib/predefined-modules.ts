@@ -170,13 +170,6 @@ export const PREDEFINED_MODULES: Omit<Module, 'id' | 'createdAt' | 'updatedAt'>[
     hasSubDisciplines: false,
   },
   {
-    name: 'Immunologie',
-    year: '3',
-    type: 'standalone',
-    examTypes: ['EMD', 'Rattrapage'],
-    hasSubDisciplines: false,
-  },
-  {
     name: 'Pharmacologie',
     year: '3',
     type: 'standalone',

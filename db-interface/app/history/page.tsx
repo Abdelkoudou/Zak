@@ -186,11 +186,29 @@ export default function HistoryPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Get available modules for selected year
+  // Get available modules for selected year and specialty
   const availableModules = useMemo(() => {
-    if (!filters.year) return PREDEFINED_MODULES;
-    return PREDEFINED_MODULES.filter(m => m.year === filters.year);
-  }, [filters.year]);
+    let modules = PREDEFINED_MODULES;
+    
+    // Filter by year if selected
+    if (filters.year) {
+      modules = modules.filter(m => m.year === filters.year);
+    }
+    
+    // Filter by specialty if selected (non-Médecine specialties should not see Médecine modules)
+    if (filters.speciality && filters.speciality !== 'Médecine') {
+      // For Pharmacie and Dentaire, only show modules that exist in the database for that specialty
+      // Since PREDEFINED_MODULES are for Médecine, we need to check actual questions
+      const specialityModules = new Set(
+        questions
+          .filter(q => q.speciality === filters.speciality)
+          .map(q => q.module_name)
+      );
+      modules = modules.filter(m => specialityModules.has(m.name));
+    }
+    
+    return modules;
+  }, [filters.year, filters.speciality, questions]);
 
   // Get available exam types for selected module
   const availableExamTypes = useMemo(() => {
@@ -248,15 +266,15 @@ export default function HistoryPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-         {/* Speciality Filter */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+          {/* Speciality Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Spécialité
             </label>
             <select
               value={filters.speciality}
-              onChange={(e) => setFilters({ ...filters, speciality: e.target.value })}
+              onChange={(e) => setFilters({ ...filters, speciality: e.target.value, moduleId: '' })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Toutes les spécialités</option>
@@ -265,6 +283,7 @@ export default function HistoryPage() {
               <option value="Dentaire">Dentaire</option>
             </select>
           </div>
+          
           {/* Year Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -302,8 +321,6 @@ export default function HistoryPage() {
               ))}
             </select>
           </div>
-
-         
 
           {/* Exam Type Filter */}
           <div>
