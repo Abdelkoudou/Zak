@@ -512,7 +512,7 @@ export default function QuestionsPage() {
                 {availableSubDisciplines.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Sous-discipline
+                      Module  
                     </label>
                     <select
                       value={formData.subDisciplineId || ""}
@@ -554,9 +554,6 @@ export default function QuestionsPage() {
                     <option value="annexe_oum_el_bouaghi">🏫 Annexe d&apos;Oum El Bouaghi</option>
                     <option value="annexe_khenchela">🏫 Annexe de Khenchela</option>
                     <option value="annexe_souk_ahras">🏫 Annexe de Souk Ahras</option>
-                    <option value="annexe_bechar">🏫 Annexe de Bechar</option>
-                    <option value="annexe_laghouat">🏫 Annexe de Laghouat</option>
-                    <option value="annexe_ouargla">🏫 Annexe de Ouargla</option>
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     Indiquez la source exacte de la question (Fac Mère ou Annexe spécifique)
