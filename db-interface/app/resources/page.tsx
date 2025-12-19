@@ -47,6 +47,25 @@ export default function ResourcesPage() {
     speciality: 'Médecine',
     cours: [''],
   });
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (user) {
+          setUserRole(user.role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   // Get modules for selected year
   const availableModules = useMemo(() => {
@@ -892,12 +911,14 @@ export default function ResourcesPage() {
                       >
                         Ouvrir
                       </a>
-                      <button
-                        onClick={() => deleteResourceHandler(resource.id)}
-                        className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
-                      >
-                        ✕
-                      </button>
+                      {(userRole === 'owner' || userRole === 'admin') && (
+                        <button
+                          onClick={() => deleteResourceHandler(resource.id)}
+                          className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

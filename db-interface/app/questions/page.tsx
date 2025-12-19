@@ -7,7 +7,7 @@ import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-
 import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion } from '@/lib/api/questions';
 import { getCourses, createCourse } from '@/lib/api/courses';
 import { getModules } from '@/lib/api/modules';
-import { supabaseConfigured } from '@/lib/supabase';
+import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 export default function QuestionsPage() {
   const [showForm, setShowForm] = useState(false);
@@ -37,6 +37,25 @@ export default function QuestionsPage() {
       { optionLabel: 'E', answerText: '', isCorrect: false },
     ],
   });
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: user } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (user) {
+          setUserRole(user.role);
+        }
+      }
+    };
+    fetchUserRole();
+  }, []);
 
   // Get modules for selected year
   const availableModules = useMemo(() => {
@@ -1069,12 +1088,14 @@ export default function QuestionsPage() {
                               >
                                 ✏️ Modifier
                               </button>
-                              <button
-                                onClick={() => deleteQuestion(question.id)}
-                                className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
-                              >
-                                ✕ Supprimer
-                              </button>
+                              {(userRole === 'owner' || userRole === 'admin') && (
+                                <button
+                                  onClick={() => deleteQuestion(question.id)}
+                                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                                >
+                                  ✕ Supprimer
+                                </button>
+                              )}
                             </div>
                           </div>
 
