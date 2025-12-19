@@ -5,6 +5,7 @@ import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
 import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
 import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion } from '@/lib/api/questions';
+import { getCourses, createCourse } from '@/lib/api/courses';
 import { getModules } from '@/lib/api/modules';
 import { supabaseConfigured } from '@/lib/supabase';
 
@@ -12,6 +13,9 @@ export default function QuestionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<string[]>([]);
+  const [fetchingCourses, setFetchingCourses] = useState(false);
+  const [activeCourseInputIndex, setActiveCourseInputIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,15 +61,80 @@ export default function QuestionsPage() {
     return selectedModule?.examTypes || [];
   }, [selectedModule]);
 
+  const [listFilters, setListFilters] = useState({
+    year: '',
+    moduleId: '', // module_name
+    cours: '',
+    examType: ''
+  });
+
+  const [filterCourses, setFilterCourses] = useState<string[]>([]);
+  
+  // Get modules for filter
+  const filterModules = useMemo(() => {
+    if (!listFilters.year) return [];
+    return PREDEFINED_MODULES.filter(m => m.year === listFilters.year);
+  }, [listFilters.year]);
+
+  // Fetch courses for filter
+  useEffect(() => {
+    const fetchFilterCourses = async () => {
+      if (listFilters.year && listFilters.moduleId) {
+        // We can pass speciality if we had it in filters, but generic fetch is okay or assume Médecine
+        // Ideally we should add speciality to filters too. 
+        // For now let's try to fetch all courses for this module regardless of speciality 
+        // OR add speciality to filter. Let's add speciality to filter for completeness.
+        const result = await getCourses(
+          listFilters.year, 
+          'Médecine', // Defaulting to Médecine for now as it's the main one
+          listFilters.moduleId
+        );
+        if (result.success) {
+          setFilterCourses(result.data.map((c: any) => c.name));
+        }
+      } else {
+        setFilterCourses([]);
+      }
+    };
+    fetchFilterCourses();
+  }, [listFilters.year, listFilters.moduleId]);
+
   // Load questions on mount
+
   useEffect(() => {
     loadQuestions();
   }, []);
 
+  // Fetch courses when dependencies change
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (formData.year && formData.speciality && formData.moduleId) {
+        setFetchingCourses(true);
+        const result = await getCourses(
+          formData.year,
+          formData.speciality,
+          formData.moduleId
+        );
+        if (result.success) {
+          setAvailableCourses(result.data.map((c: any) => c.name));
+        }
+        setFetchingCourses(false);
+      } else {
+        setAvailableCourses([]);
+      }
+    };
+    fetchCourses();
+  }, [formData.year, formData.speciality, formData.moduleId]);
+
   const loadQuestions = async () => {
     setLoading(true);
     setError(null);
-    const result = await getQuestions();
+    const result = await getQuestions({
+        year: listFilters.year || undefined,
+        module_name: listFilters.moduleId || undefined,
+        exam_type: listFilters.examType || undefined,
+        cours: listFilters.cours || undefined
+    });
     if (result.success) {
       setQuestions(result.data);
     } else {
@@ -73,6 +142,11 @@ export default function QuestionsPage() {
     }
     setLoading(false);
   };
+
+  // Reload when filters change
+  useEffect(() => {
+    loadQuestions();
+  }, [listFilters]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,11 +170,21 @@ export default function QuestionsPage() {
     }
 
     // Validate cours
-    const validCours = (formData.cours || []).filter(c => c.trim());
+    const validCours = (formData.cours || []).map(c => c.trim()).filter(c => c);
     if (validCours.length === 0) {
       setError('Veuillez fournir au moins un cours.');
       setSaving(false);
       return;
+    }
+
+    // Register new courses
+    for (const coursName of validCours) {
+        await createCourse({
+            name: coursName,
+            year: formData.year,
+            speciality: formData.speciality || 'Médecine',
+            module_name: formData.moduleId
+        });
     }
 
     // Prepare data for Supabase
@@ -664,17 +748,73 @@ export default function QuestionsPage() {
                 </label>
                 <div className="space-y-2">
                   {(formData.cours || [""]).map((cours, index) => (
-                    <div key={index} className="flex gap-2">
-                      <input
-                        type="text"
-                        value={cours}
-                        onChange={(e) =>
-                          updateCoursInput(index, e.target.value)
-                        }
-                        className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                        placeholder="Nom du cours"
-                        required
-                      />
+                    <div key={index} className="flex gap-2 relative">
+                        <div className="flex-1 relative">
+                            <input
+                            type="text"
+                            value={cours}
+                            onFocus={() => setActiveCourseInputIndex(index)}
+                            onChange={(e) =>
+                                updateCoursInput(index, e.target.value)
+                            }
+                            className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base pr-8"
+                            placeholder={fetchingCourses ? "Chargement..." : "Nom du cours"}
+                            required
+                            />
+                            {fetchingCourses && (
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                                </div>
+                            )}
+                            
+                            {/* Custom Dropdown */}
+                            {activeCourseInputIndex === index && availableCourses.length > 0 && (
+                                <>
+                                    <div 
+                                        className="fixed inset-0 z-10" 
+                                        onClick={() => setActiveCourseInputIndex(null)}
+                                        aria-hidden="true"
+                                    ></div>
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        <div className="sticky top-0 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-500 border-b flex justify-between items-center">
+                                            <span>Cours disponibles</span>
+                                            <button 
+                                                type="button" 
+                                                className="text-gray-400 hover:text-gray-600"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveCourseInputIndex(null);
+                                                }}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                        {availableCourses
+                                            .filter(c => c.toLowerCase().includes(cours.toLowerCase()))
+                                            .map((c) => (
+                                            <button
+                                                key={c}
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    updateCoursInput(index, c);
+                                                    setActiveCourseInputIndex(null);
+                                                }}
+                                                className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm border-b border-gray-50 last:border-0"
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                        {availableCourses.filter(c => c.toLowerCase().includes(cours.toLowerCase())).length === 0 && (
+                                            <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                                Nouveau cours sera créé...
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
                       {index === (formData.cours || []).length - 1 ? (
                         <button
                           type="button"
@@ -805,10 +945,42 @@ export default function QuestionsPage() {
 
       {/* Questions List */}
       <div className="bg-white rounded-lg shadow">
-        <div className="p-4 md:p-6 border-b">
+        <div className="p-4 md:p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <h2 className="text-lg md:text-xl font-semibold">
             Liste des Questions ({questions.length})
           </h2>
+          
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            <select
+                value={listFilters.year}
+                onChange={e => setListFilters(prev => ({ ...prev, year: e.target.value, moduleId: '', cours: '' }))}
+                className="px-3 py-2 border rounded-lg text-sm"
+            >
+                <option value="">Toutes les années</option>
+                {YEARS.map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
+            </select>
+
+            <select
+                value={listFilters.moduleId}
+                onChange={e => setListFilters(prev => ({ ...prev, moduleId: e.target.value, cours: '' }))}
+                className="px-3 py-2 border rounded-lg text-sm max-w-[200px]"
+                disabled={!listFilters.year}
+            >
+                <option value="">Tous les modules</option>
+                {filterModules.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
+            </select>
+
+             <select
+                value={listFilters.cours}
+                onChange={e => setListFilters(prev => ({ ...prev, cours: e.target.value }))}
+                className="px-3 py-2 border rounded-lg text-sm max-w-[200px]"
+                disabled={!listFilters.moduleId}
+            >
+                <option value="">Tous les cours</option>
+                {filterCourses.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
         </div>
         <div className="p-4 md:p-6">
           {loading ? (

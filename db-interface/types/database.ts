@@ -25,6 +25,15 @@ export type FacultySource =
   | 'annexe_khenchela'
   | 'annexe_souk_ahras';
 
+export interface Course {
+  id: string;
+  name: string;
+  year: string;
+  speciality: string;
+  module_name: string;
+  createdAt: Date;
+}
+
 export interface Module {
   id: string;
   name: string;

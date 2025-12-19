@@ -90,6 +90,7 @@ export async function getQuestions(filters?: {
   module_name?: string;
   sub_discipline?: string;
   exam_type?: string;
+  cours?: string;
 }) {
   try {
     let query = supabase
@@ -111,6 +112,9 @@ export async function getQuestions(filters?: {
     }
     if (filters?.exam_type) {
       query = query.eq('exam_type', filters.exam_type);
+    }
+    if (filters?.cours) {
+      query = query.contains('cours', [filters.cours]);
     }
 
     const { data, error } = await query;
