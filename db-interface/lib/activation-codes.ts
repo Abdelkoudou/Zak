@@ -6,11 +6,11 @@
  */
 
 import { supabase } from './supabase';
-import type { 
+import type {
   ActivationKey,
   ActivationKeyUser,
-  ActivationKeyFormData, 
-  SalesPoint, 
+  ActivationKeyFormData,
+  SalesPoint,
   Faculty,
   SalesPointStats,
   FacultyStats,
@@ -47,10 +47,10 @@ function generateChecksum(baseCode: string, salt: Uint8Array): string {
     sum = (sum * 31 + baseCode.charCodeAt(i) * (i + 1)) ^ salt[i % salt.length];
     sum = sum >>> 0; // Keep as unsigned 32-bit
   }
-  
+
   // Generate 2-character checksum
   const c1 = CODE_CHARS[sum % CODE_CHARS.length];
-  const c2 = CODE_CHARS[(sum >> 8) % CODE_CHARS.length];
+  const c2 = CODE_CHARS[(sum >>> 8) % CODE_CHARS.length];
   return c1 + c2;
 }
 
@@ -69,26 +69,26 @@ export function generateSecureCode(params: {
   salesPointCode: string;
 }): { code: string; checksum: string; timestamp: number } {
   const timestamp = Date.now();
-  
+
   // Generate 32 random bytes for maximum entropy
   const randomBytes = getSecureRandomBytes(32);
-  
+
   // Create 8-character random segment (longer since we removed year/faculty)
   let randomPart = '';
   for (let i = 0; i < 8; i++) {
     randomPart += CODE_CHARS[randomBytes[i] % CODE_CHARS.length];
   }
-  
+
   // Build base code: POINT(3) + RANDOM(8)
   const pointShort = params.salesPointCode.substring(0, 3).toUpperCase();
   const baseCode = `${pointShort}-${randomPart}`;
-  
+
   // Generate checksum using remaining random bytes as salt
   const checksum = generateChecksum(baseCode, randomBytes.slice(8, 16));
-  
+
   // Final code format
   const code = `${baseCode}-${checksum}`;
-  
+
   return { code, checksum, timestamp };
 }
 
@@ -98,14 +98,14 @@ export function generateSecureCode(params: {
 export function validateCodeChecksum(code: string): boolean {
   const parts = code.split('-');
   if (parts.length !== 3) return false;
-  
+
   const baseCode = `${parts[0]}-${parts[1]}`;
   const providedChecksum = parts[2];
-  
+
   // We can't fully validate without the original salt,
   // but we can check format and basic structure
-  return providedChecksum.length === 2 && 
-         /^[A-Z0-9]{2}$/.test(providedChecksum);
+  return providedChecksum.length === 2 &&
+    /^[A-Z0-9]{2}$/.test(providedChecksum);
 }
 
 /**
@@ -128,9 +128,9 @@ export async function generateBatchCodes(
   salesPointCode: string,
   createdBy: string
 ): Promise<{ codes: string[]; batchId: string; error?: string }> {
-  const batchId = crypto.randomUUID ? crypto.randomUUID() : 
+  const batchId = crypto.randomUUID ? crypto.randomUUID() :
     `batch-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
+
   const codes: string[] = [];
   const keysToInsert: Array<{
     key_code: string;
@@ -142,12 +142,12 @@ export async function generateBatchCodes(
     created_by: string;
     generation_params: object;
   }> = [];
-  
+
   for (let i = 0; i < params.quantity; i++) {
     const { code, checksum, timestamp } = generateSecureCode({
       salesPointCode,
     });
-    
+
     codes.push(code);
     keysToInsert.push({
       key_code: code,
@@ -165,16 +165,16 @@ export async function generateBatchCodes(
       },
     });
   }
-  
+
   // Insert all codes in a single transaction
   const { error } = await supabase
     .from('activation_keys')
     .insert(keysToInsert);
-  
+
   if (error) {
     return { codes: [], batchId, error: error.message };
   }
-  
+
   return { codes, batchId };
 }
 
@@ -203,7 +203,7 @@ export async function fetchActivationKeys(filters?: {
       sales_point:sales_points(*)
     `)
     .order('created_at', { ascending: false });
-  
+
   if (filters?.year) {
     query = query.eq('year', filters.year);
   }
@@ -222,18 +222,18 @@ export async function fetchActivationKeys(filters?: {
   if (filters?.search) {
     query = query.ilike('key_code', `%${filters.search}%`);
   }
-  
+
   const { data, error } = await query;
-  
+
   if (error) {
     return { data: [], error: error.message };
   }
-  
+
   // Get unique user IDs from used codes
   const usedByIds = (data || [])
     .filter((row: Record<string, unknown>) => row.used_by)
     .map((row: Record<string, unknown>) => row.used_by as string);
-  
+
   // Fetch user data for used codes
   let usersMap: Record<string, ActivationKeyUser> = {};
   if (usedByIds.length > 0) {
@@ -241,7 +241,7 @@ export async function fetchActivationKeys(filters?: {
       .from('users')
       .select('id, email, full_name, speciality, year_of_study, region')
       .in('id', usedByIds);
-    
+
     if (usersData) {
       usersMap = usersData.reduce((acc: Record<string, ActivationKeyUser>, user: Record<string, unknown>) => {
         acc[user.id as string] = transformUser(user);
@@ -249,7 +249,7 @@ export async function fetchActivationKeys(filters?: {
       }, {});
     }
   }
-  
+
   // Transform to camelCase
   const transformed: ActivationKey[] = (data || []).map((row: Record<string, unknown>) => ({
     id: row.id as string,
@@ -272,7 +272,7 @@ export async function fetchActivationKeys(filters?: {
     pricePaid: row.price_paid as number | undefined,
     generationParams: row.generation_params as ActivationKey['generationParams'],
   }));
-  
+
   return { data: transformed };
 }
 
@@ -285,13 +285,13 @@ export async function fetchFaculties(): Promise<{ data: Faculty[]; error?: strin
     .select('*')
     .eq('is_active', true)
     .order('name');
-  
+
   if (error) {
     return { data: [], error: error.message };
   }
-  
-  return { 
-    data: (data || []).map((row: Record<string, unknown>) => transformFaculty(row)) 
+
+  return {
+    data: (data || []).map((row: Record<string, unknown>) => transformFaculty(row))
   };
 }
 
@@ -303,13 +303,13 @@ export async function fetchSalesPoints(): Promise<{ data: SalesPoint[]; error?: 
     .from('sales_points')
     .select('*')
     .order('name');
-  
+
   if (error) {
     return { data: [], error: error.message };
   }
-  
-  return { 
-    data: (data || []).map((row: Record<string, unknown>) => transformSalesPoint(row)) 
+
+  return {
+    data: (data || []).map((row: Record<string, unknown>) => transformSalesPoint(row))
   };
 }
 
@@ -336,11 +336,11 @@ export async function createSalesPoint(
     })
     .select()
     .single();
-  
+
   if (error) {
     return { error: error.message };
   }
-  
+
   return { data: transformSalesPoint(data) };
 }
 
@@ -365,7 +365,7 @@ export async function updateSalesPoint(
       notes: updates.notes,
     })
     .eq('id', id);
-  
+
   return { error: error?.message };
 }
 
@@ -377,7 +377,7 @@ export async function deleteSalesPoint(id: string): Promise<{ error?: string }> 
     .from('sales_points')
     .delete()
     .eq('id', id);
-  
+
   return { error: error?.message };
 }
 
@@ -397,7 +397,7 @@ export async function fetchDashboardStats(): Promise<{
   error?: string;
 }> {
   const now = new Date().toISOString();
-  
+
   // Get all counts in parallel
   const [totalResult, usedResult, expiredResult, revenueResult] = await Promise.all([
     supabase.from('activation_keys').select('id', { count: 'exact', head: true }),
@@ -406,17 +406,17 @@ export async function fetchDashboardStats(): Promise<{
       .eq('is_used', false).lt('expires_at', now),
     supabase.from('activation_keys').select('price_paid').eq('is_used', true),
   ]);
-  
+
   const totalCodes = totalResult.count || 0;
   const usedCodes = usedResult.count || 0;
   const expiredCodes = expiredResult.count || 0;
   const activeCodes = totalCodes - usedCodes - expiredCodes;
-  
+
   const totalRevenue = (revenueResult.data || []).reduce(
-    (sum: number, row: { price_paid: number | null }) => sum + (row.price_paid || 0), 
+    (sum: number, row: { price_paid: number | null }) => sum + (row.price_paid || 0),
     0
   );
-  
+
   return { totalCodes, activeCodes, usedCodes, expiredCodes, totalRevenue };
 }
 
@@ -427,11 +427,11 @@ export async function fetchSalesPointStats(): Promise<{ data: SalesPointStats[];
   const { data, error } = await supabase
     .from('sales_point_stats')
     .select('*');
-  
+
   if (error) {
     return { data: [], error: error.message };
   }
-  
+
   return {
     data: (data || []).map((row: Record<string, unknown>) => ({
       id: row.id as string,
@@ -455,11 +455,11 @@ export async function fetchFacultyStats(): Promise<{ data: FacultyStats[]; error
   const { data, error } = await supabase
     .from('faculty_stats')
     .select('*');
-  
+
   if (error) {
     return { data: [], error: error.message };
   }
-  
+
   return {
     data: (data || []).map((row: Record<string, unknown>) => ({
       id: row.id as string,
@@ -530,7 +530,7 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
     .delete()
     .eq('id', id)
     .eq('is_used', false); // Can only revoke unused keys
-  
+
   return { error: error?.message };
 }
 
@@ -561,6 +561,6 @@ export function exportToCsv(codes: ActivationKey[]): string {
       new Date(code.createdAt).toLocaleDateString('fr-FR'),
     ];
   });
-  
+
   return [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
 }
