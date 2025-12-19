@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = cookies();
-    
+
     // Create Supabase client with service role for admin operations
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,15 +25,15 @@ export async function GET(req: NextRequest) {
     );
 
     // Verify user is authenticated and is owner
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError || !authUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data: user } = await supabase
       .from('users')
       .select('role')
-      .eq('id', session.user.id)
+      .eq('id', authUser.id)
       .single();
 
     if (!user || user.role !== 'owner') {
@@ -62,6 +62,20 @@ export async function GET(req: NextRequest) {
 
       if (error) {
         console.error('Error fetching contribution details:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json(data);
+    }
+
+    // Check for payment mode
+    const mode = searchParams.get('mode');
+
+    if (mode === 'payable') {
+      const { data, error } = await supabase.rpc('get_admin_payable_stats');
+
+      if (error) {
+        console.error('Error fetching payable stats:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
       }
 
