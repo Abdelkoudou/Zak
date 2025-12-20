@@ -326,7 +326,7 @@ export default function ExportPage() {
             </div>
             <div className="ml-3 flex-1 md:flex md:justify-between">
               <p className="text-sm text-blue-700">
-                <strong>How it works:</strong> Clicking "Run Full Export" will convert all questions in the SQL database into optimized JSON files (grouped by module) and upload them to the <code>questions</code> bucket. The mobile app checks <code>version.json</code> on launch to download updates.
+                <strong>How it works:</strong> Clicking &quot;Run Full Export&quot; will convert all questions in the SQL database into optimized JSON files (grouped by module) and upload them to the <code>questions</code> bucket. The mobile app checks <code>version.json</code> on launch to download updates.
               </p>
             </div>
           </div>
