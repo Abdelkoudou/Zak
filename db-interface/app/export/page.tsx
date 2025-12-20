@@ -63,7 +63,7 @@ export default function ExportPage() {
       setIsOwner(true);
 
       // 2. Fetch Export Status
-      const response = await fetch('/api/export/status');
+      const response = await fetch('/api/export');
       if (!response.ok) throw new Error('Failed to fetch export status');
       
       const result = await response.json();

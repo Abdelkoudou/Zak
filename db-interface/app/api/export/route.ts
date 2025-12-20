@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
             number: q.number,
             question_text: q.question_text,
             explanation: q.explanation,
+            image_url: q.image_url || null,
             answers: q.answers
               .sort((a: any, b: any) => a.display_order - b.display_order)
               .map((a: any) => ({

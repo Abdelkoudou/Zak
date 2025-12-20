@@ -1219,6 +1219,16 @@ export default function QuestionsPage() {
                             {question.question_text}
                           </p>
 
+                          {/* Question Image */}
+                          {question.image_url && (
+                            <div className="mb-3">
+                              <img 
+                                src={question.image_url} 
+                                alt="Question image" 
+                                className="max-w-full max-h-48 rounded-lg border border-gray-200 object-contain"
+                              />
+                            </div>
+                          )}
                           <div className="space-y-2">
                             {question.answers.map((answer: any) => (
                               <div
