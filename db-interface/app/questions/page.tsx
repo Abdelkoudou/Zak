@@ -20,6 +20,7 @@ export default function QuestionsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<QuestionFormData>({
     year: '1',
     moduleId: '',
@@ -29,6 +30,7 @@ export default function QuestionsPage() {
     speciality: 'Médecine',
     cours: [''],
     facultySource: undefined,
+    imageUrl: undefined,
     answers: [
       { optionLabel: 'A', answerText: '', isCorrect: false },
       { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -220,6 +222,7 @@ export default function QuestionsPage() {
       unity_name: formData.unityName || undefined,
       module_type: formData.moduleType || selectedModule?.type,
       faculty_source: formData.facultySource || undefined,
+      image_url: formData.imageUrl || undefined,
       answers: validAnswers.map((answer, idx) => ({
         option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
         answer_text: answer.answerText,
@@ -249,6 +252,7 @@ export default function QuestionsPage() {
           number: prev.number + 1,
           questionText: '',
           cours: [''],
+          imageUrl: undefined,
           answers: [
             { optionLabel: 'A', answerText: '', isCorrect: false },
             { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -279,6 +283,7 @@ export default function QuestionsPage() {
       speciality: 'Médecine',
       cours: [''],
       facultySource: undefined,
+      imageUrl: undefined,
       answers: [
         { optionLabel: 'A', answerText: '', isCorrect: false },
         { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -305,6 +310,7 @@ export default function QuestionsPage() {
       unityName: question.unity_name || undefined,
       moduleType: question.module_type,
       facultySource: question.faculty_source || undefined,
+      imageUrl: question.image_url || undefined,
       answers: question.answers.map((a: any) => ({
         optionLabel: a.option_label,
         answerText: a.answer_text,
@@ -338,6 +344,62 @@ export default function QuestionsPage() {
       i === index ? { ...answer, [field]: value } : answer
     );
     setFormData({ ...formData, answers: newAnswers });
+  };
+
+  // Handle image upload to Supabase Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Type de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('L\'image est trop grande. Taille maximum: 5MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `questions/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('question-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('question-images')
+        .getPublicUrl(filePath);
+
+      // Update form data with image URL
+      setFormData({ ...formData, imageUrl: publicUrl });
+      setSuccess('✅ Image téléchargée avec succès!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      setError(err.message || 'Erreur lors du téléchargement de l\'image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove uploaded image
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, imageUrl: undefined });
   };
 
   const deleteQuestion = async (id: string) => {
@@ -380,12 +442,14 @@ export default function QuestionsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <a
-            href="/export"
-            className="px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base whitespace-nowrap"
-          >
-            📤 Exporter JSON
-          </a>
+{userRole === 'owner' && (
+            <a
+              href="/export"
+              className="px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base whitespace-nowrap"
+            >
+              📤 Exporter JSON
+            </a>
+          )}
           <button
             onClick={() => {
               if (showForm) {
@@ -875,6 +939,58 @@ export default function QuestionsPage() {
                   placeholder="Entrez votre question ici..."
                   required
                 />
+              </div>
+
+              {/* Image Upload */}
+              <div className="mt-4 md:mt-6">
+                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                  📷 Image (optionnelle)
+                </label>
+                
+                {formData.imageUrl ? (
+                  <div className="relative inline-block">
+                    <img 
+                      src={formData.imageUrl} 
+                      alt="Question image" 
+                      className="max-w-full max-h-64 rounded-lg border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-700 shadow-lg"
+                      title="Supprimer l'image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <label className="cursor-pointer">
+                      <div className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+                        {uploadingImage ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></div>
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            📤 Télécharger une image
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-xs text-gray-500">
+                      JPG, PNG, GIF ou WebP (max 5MB)
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

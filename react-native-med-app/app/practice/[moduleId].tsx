@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -281,6 +281,15 @@ export default function PracticeScreen() {
             <Text className="text-gray-900 text-lg leading-relaxed">
               {currentQuestion.question_text}
             </Text>
+            
+            {/* Question Image */}
+            {currentQuestion.image_url && (
+              <Image 
+                source={{ uri: currentQuestion.image_url }}
+                className="w-full h-48 mt-4 rounded-lg"
+                resizeMode="contain"
+              />
+            )}
           </View>
 
           {/* Multiple Choice Indicator */}

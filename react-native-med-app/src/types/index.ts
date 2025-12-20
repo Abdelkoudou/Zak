@@ -5,7 +5,7 @@
 // Enums
 export type YearLevel = '1' | '2' | '3'
 export type ModuleType = 'annual' | 'semestrial' | 'uei' | 'standalone'
-export type ExamType = 'EMD' | 'EMD1' | 'EMD2' | 'Rattrapage' 
+export type ExamType = 'EMD' | 'EMD1' | 'EMD2' | 'Rattrapage'
 export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other'
 export type Speciality = 'Médecine' | 'Pharmacie' | 'Dentaire'
@@ -57,6 +57,7 @@ export interface Question {
   cours: string[] | null
   unity_name: string | null
   module_type: ModuleType | null
+  image_url: string | null  // URL to question image
   created_at: string
   updated_at: string
 }

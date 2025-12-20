@@ -26,6 +26,7 @@ export interface CreateQuestionData {
   unity_name?: string;
   module_type?: string;
   faculty_source?: FacultySource;  // Source: Faculté Mère ou Annexes
+  image_url?: string;  // URL to uploaded image
   answers: {
     option_label: 'A' | 'B' | 'C' | 'D' | 'E';
     answer_text: string;
@@ -63,6 +64,7 @@ export async function createQuestion(data: CreateQuestionData) {
           unity_name: data.unity_name || null,
           module_type: data.module_type,
           faculty_source: data.faculty_source || null,
+          image_url: data.image_url || null,
         },
         answers: data.answers,
       }),
@@ -196,6 +198,7 @@ export async function updateQuestion(
           unity_name: data.unity_name || null,
           module_type: data.module_type,
           faculty_source: data.faculty_source || null,
+          image_url: data.image_url || null,
         },
         answers: data.answers,
       }),

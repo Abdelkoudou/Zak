@@ -80,7 +80,8 @@ export interface Question {
   cours?: string[];
   unityName?: string;
   moduleType: ModuleType;
-  facultySource?: FacultySource;  // fac_mere = Faculté Mère Constantine, annexe = Annexes
+  facultySource?: FacultySource;
+  imageUrl?: string;  // URL to the image in storage
   createdBy?: string;
   // Removed: explanation
   answers: Answer[];
@@ -140,7 +141,8 @@ export interface QuestionFormData {
   cours?: string[];
   unityName?: string;
   moduleType?: ModuleType;
-  facultySource?: FacultySource;  // fac_mere = Faculté Mère Constantine, annexe = Annexes
+  facultySource?: FacultySource;
+  imageUrl?: string;
   // Removed: explanation
   answers: {
     optionLabel: string;

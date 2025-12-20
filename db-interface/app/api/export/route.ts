@@ -1,6 +1,6 @@
 // API route to export questions from database to JSON and upload to Supabase Storage
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, verifyAdminUser } from '@/lib/supabase-admin';
+import { supabaseAdmin, verifyOwner } from '@/lib/supabase-admin';
 import { supabase } from '@/lib/supabase';
 
 interface ModuleQuestions {
@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { isAdmin } = await verifyAdminUser(user.id);
-    if (!isAdmin) {
+    const { isOwner } = await verifyOwner(user.id);
+    if (!isOwner) {
       return NextResponse.json(
-        { success: false, error: 'Forbidden - Admin access required' },
+        { success: false, error: 'Forbidden - Owner access required' },
         { status: 403 }
       );
     }
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 
         // Upload to Supabase Storage
         const filePath = `${yearKey}/${moduleName}.json`;
-        
+
         const { error: uploadError } = await supabaseAdmin.storage
           .from('questions')
           .upload(filePath, blob, {
