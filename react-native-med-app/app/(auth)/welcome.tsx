@@ -1,92 +1,158 @@
 // ============================================================================
-// Welcome Screen
+// Welcome Screen - Light Sea Green Brand
 // ============================================================================
 
-import { View, Text, Image, TouchableOpacity } from 'react-native'
-import { Link } from 'expo-router'
+import { View, Text, ScrollView } from 'react-native'
+import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Button, Card } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function WelcomeScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 px-6 py-8">
-        {/* Logo & Title */}
-        <View className="flex-1 items-center justify-center">
-          <View className="w-24 h-24 bg-primary-500 rounded-3xl items-center justify-center mb-6">
-            <Text className="text-white text-4xl">📚</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
+          {/* Logo & Title */}
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+            {/* Brand Logo */}
+            <View style={{
+              width: 100,
+              height: 100,
+              backgroundColor: BRAND_THEME.colors.primary[500],
+              borderRadius: 28,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 24,
+              ...BRAND_THEME.shadows.lg
+            }}>
+              <Text style={{ color: '#ffffff', fontSize: 48 }}>🩺</Text>
+            </View>
+            
+            <Text style={{
+              fontSize: 32,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              textAlign: 'center',
+              marginBottom: 8
+            }}>
+              MCQ Study App
+            </Text>
+            
+            <Text style={{
+              fontSize: 18,
+              color: BRAND_THEME.colors.gray[600],
+              textAlign: 'center',
+              marginBottom: 32
+            }}>
+              Préparez vos examens médicaux
+            </Text>
+
+            <Text style={{
+              fontSize: 16,
+              color: BRAND_THEME.colors.primary[700],
+              textAlign: 'center',
+              marginBottom: 32,
+              fontWeight: '500'
+            }}>
+              Curriculum français • Étudiants algériens
+            </Text>
+
+            {/* Features */}
+            <View style={{ width: '100%', gap: 16, marginBottom: 32 }}>
+              <FeatureItem 
+                icon="📝" 
+                title="QCM par module" 
+                description="Questions organisées par année et module d'étude"
+              />
+              <FeatureItem 
+                icon="📊" 
+                title="Suivi de progression" 
+                description="Statistiques détaillées de vos performances"
+              />
+              <FeatureItem 
+                icon="💾" 
+                title="Questions sauvegardées" 
+                description="Révisez les questions difficiles plus tard"
+              />
+              <FeatureItem 
+                icon="📁" 
+                title="Ressources pédagogiques" 
+                description="Accédez aux cours et documents complémentaires"
+              />
+            </View>
           </View>
-          
-          <Text className="text-3xl font-bold text-gray-900 text-center mb-2">
-            MCQ Study App
-          </Text>
-          
-          <Text className="text-lg text-gray-500 text-center mb-8">
-            Préparez vos examens médicaux
-          </Text>
 
-          {/* Features */}
-          <View className="w-full space-y-4 mb-8">
-            <FeatureItem 
-              icon="📝" 
-              title="QCM par module" 
-              description="Questions organisées par année et module"
+          {/* Action Buttons */}
+          <View style={{ gap: 12 }}>
+            <Button 
+              title="Créer un compte" 
+              onPress={() => router.push('/(auth)/register')}
+              variant="primary"
+              size="lg"
             />
-            <FeatureItem 
-              icon="📊" 
-              title="Suivi de progression" 
-              description="Statistiques détaillées de vos performances"
-            />
-            <FeatureItem 
-              icon="💾" 
-              title="Questions sauvegardées" 
-              description="Révisez les questions difficiles"
-            />
-            <FeatureItem 
-              icon="📁" 
-              title="Ressources" 
-              description="Accédez aux cours et documents"
+            
+            <Button 
+              title="Se connecter" 
+              onPress={() => router.push('/(auth)/login')}
+              variant="secondary"
+              size="lg"
             />
           </View>
-        </View>
 
-        {/* Buttons */}
-        <View className="space-y-3">
-          <Link href="/(auth)/register" asChild>
-            <TouchableOpacity className="bg-primary-500 py-4 rounded-xl">
-              <Text className="text-white text-center font-semibold text-lg">
-                Créer un compte
-              </Text>
-            </TouchableOpacity>
-          </Link>
-
-          <Link href="/(auth)/login" asChild>
-            <TouchableOpacity className="bg-gray-100 py-4 rounded-xl">
-              <Text className="text-gray-700 text-center font-semibold text-lg">
-                Se connecter
-              </Text>
-            </TouchableOpacity>
-          </Link>
+          {/* Footer */}
+          <Text style={{
+            fontSize: 14,
+            color: BRAND_THEME.colors.gray[500],
+            textAlign: 'center',
+            marginTop: 24
+          }}>
+            Plateforme dédiée aux étudiants en médecine
+          </Text>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Feature Item Component
+// Enhanced Feature Item Component
 function FeatureItem({ icon, title, description }: { 
   icon: string
   title: string
   description: string 
 }) {
   return (
-    <View className="flex-row items-center bg-gray-50 p-4 rounded-xl">
-      <View className="w-12 h-12 bg-primary-100 rounded-xl items-center justify-center mr-4">
-        <Text className="text-2xl">{icon}</Text>
+    <Card variant="default" padding="md" style={{ backgroundColor: BRAND_THEME.colors.primary[50] }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{
+          width: 48,
+          height: 48,
+          backgroundColor: BRAND_THEME.colors.primary[100],
+          borderRadius: 12,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginRight: 16
+        }}>
+          <Text style={{ fontSize: 24 }}>{icon}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: BRAND_THEME.colors.primary[800],
+            marginBottom: 4
+          }}>
+            {title}
+          </Text>
+          <Text style={{
+            fontSize: 14,
+            color: BRAND_THEME.colors.primary[600],
+            lineHeight: 20
+          }}>
+            {description}
+          </Text>
+        </View>
       </View>
-      <View className="flex-1">
-        <Text className="text-gray-900 font-semibold">{title}</Text>
-        <Text className="text-gray-500 text-sm">{description}</Text>
-      </View>
-    </View>
+    </Card>
   )
 }

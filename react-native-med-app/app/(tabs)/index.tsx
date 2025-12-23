@@ -1,9 +1,9 @@
 // ============================================================================
-// Home Screen - Modules List
+// Home Screen - Light Sea Green Brand
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -11,6 +11,8 @@ import { getModulesWithCounts } from '@/lib/modules'
 import { getUserStatistics } from '@/lib/stats'
 import { Module, UserStatistics } from '@/types'
 import { MODULE_TYPES, MODULE_TYPE_COLORS } from '@/constants'
+import { Card, Badge, LoadingSpinner } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function HomeScreen() {
   const { user } = useAuth()
@@ -71,75 +73,126 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement de vos modules..." />
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={BRAND_THEME.colors.primary[500]}
+          />
         }
       >
-        {/* Header */}
-        <View className="bg-primary-500 px-6 py-8 rounded-b-3xl">
-          <Text className="text-white text-lg opacity-80">Bienvenue,</Text>
-          <Text className="text-white text-2xl font-bold mb-4">
-            {user?.full_name || 'Étudiant'}
-          </Text>
+        {/* Enhanced Header */}
+        <View style={{
+          backgroundColor: BRAND_THEME.colors.primary[500],
+          paddingHorizontal: 24,
+          paddingTop: 32,
+          paddingBottom: 40,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          ...BRAND_THEME.shadows.lg
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{
+              width: 48,
+              height: 48,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              borderRadius: 12,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 12
+            }}>
+              <Text style={{ fontSize: 24 }}>🩺</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ 
+                color: 'rgba(255, 255, 255, 0.8)', 
+                fontSize: 16 
+              }}>
+                Bienvenue,
+              </Text>
+              <Text style={{
+                color: '#ffffff',
+                fontSize: 20,
+                fontWeight: 'bold'
+              }}>
+                {user?.full_name || 'Étudiant'}
+              </Text>
+            </View>
+          </View>
           
-          <View className="flex-row items-center">
-            <View className="bg-white/20 px-3 py-1 rounded-full mr-2">
-              <Text className="text-white font-medium">{getYearLabel()}</Text>
-            </View>
-            <View className="bg-white/20 px-3 py-1 rounded-full">
-              <Text className="text-white font-medium">{user?.speciality}</Text>
-            </View>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Badge 
+              label={getYearLabel()} 
+              variant="secondary"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+            />
+            <Badge 
+              label={user?.speciality || ''} 
+              variant="secondary"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+            />
           </View>
         </View>
 
         {/* Quick Stats */}
         {stats && (
-          <View className="px-6 -mt-6">
-            <View className="bg-white rounded-2xl p-4 shadow-sm flex-row">
-              <StatItem 
-                label="Questions" 
-                value={stats.total_questions_attempted.toString()} 
-                icon="📝"
-              />
-              <StatItem 
-                label="Précision" 
-                value={`${Math.round(stats.average_score)}%`} 
-                icon="🎯"
-              />
-              <StatItem 
-                label="Sauvegardées" 
-                value={stats.saved_questions_count.toString()} 
-                icon="💾"
-              />
-            </View>
+          <View style={{ paddingHorizontal: 24, marginTop: -20 }}>
+            <Card variant="elevated" padding="md">
+              <View style={{ flexDirection: 'row' }}>
+                <StatItem 
+                  label="Questions" 
+                  value={stats.total_questions_attempted.toString()} 
+                  icon="📝"
+                />
+                <StatItem 
+                  label="Précision" 
+                  value={`${Math.round(stats.average_score)}%`} 
+                  icon="🎯"
+                />
+                <StatItem 
+                  label="Sauvegardées" 
+                  value={stats.saved_questions_count.toString()} 
+                  icon="💾"
+                />
+              </View>
+            </Card>
           </View>
         )}
 
         {/* Modules Section */}
-        <View className="px-6 mt-6">
-          <Text className="text-xl font-bold text-gray-900 mb-4">
+        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <Text style={{
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 16
+          }}>
             Vos Modules
           </Text>
 
           {modules.length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center">
-              <Text className="text-4xl mb-4">📚</Text>
-              <Text className="text-gray-500 text-center">
+            <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                textAlign: 'center',
+                fontSize: 16
+              }}>
                 Aucun module disponible pour votre année
               </Text>
-            </View>
+            </Card>
           ) : (
-            <View className="space-y-3">
+            <View style={{ gap: 12 }}>
               {modules.map((module) => (
                 <ModuleCard 
                   key={module.id} 
@@ -152,24 +205,36 @@ export default function HomeScreen() {
         </View>
 
         {/* Bottom Spacing */}
-        <View className="h-8" />
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Stat Item Component
+// Enhanced Stat Item Component
 function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <View className="flex-1 items-center">
-      <Text className="text-2xl mb-1">{icon}</Text>
-      <Text className="text-xl font-bold text-gray-900">{value}</Text>
-      <Text className="text-gray-500 text-sm">{label}</Text>
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
+      <Text style={{
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: BRAND_THEME.colors.gray[900],
+        marginBottom: 2
+      }}>
+        {value}
+      </Text>
+      <Text style={{
+        color: BRAND_THEME.colors.gray[600],
+        fontSize: 12
+      }}>
+        {label}
+      </Text>
     </View>
   )
 }
 
-// Module Card Component
+// Enhanced Module Card Component
 function ModuleCard({ 
   module, 
   onPress 
@@ -178,40 +243,55 @@ function ModuleCard({
   onPress: () => void 
 }) {
   const moduleType = MODULE_TYPES.find(t => t.value === module.type)
-  const colors = MODULE_TYPE_COLORS[module.type]
 
   return (
-    <TouchableOpacity 
-      className="bg-white rounded-2xl p-4 shadow-sm"
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 mr-4">
-          <Text className="text-lg font-semibold text-gray-900" numberOfLines={2}>
-            {module.name}
-          </Text>
-        </View>
-        <View className={`px-2 py-1 rounded-full ${colors.bg}`}>
-          <Text className={`text-xs font-medium ${colors.text}`}>
-            {moduleType?.icon} {moduleType?.label}
-          </Text>
-        </View>
-      </View>
-
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <Text className="text-gray-500 text-sm">
-            {module.question_count} questions
-          </Text>
-          {module.has_sub_disciplines && (
-            <Text className="text-gray-400 text-sm ml-2">
-              • {module.sub_disciplines?.length || 0} sous-disciplines
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Card variant="default" padding="md">
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+          <View style={{ flex: 1, marginRight: 16 }}>
+            <Text style={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 4
+            }} numberOfLines={2}>
+              {module.name}
             </Text>
-          )}
+          </View>
+          <Badge 
+            label={`${moduleType?.icon} ${moduleType?.label}`}
+            variant="primary"
+            size="sm"
+          />
         </View>
-        <Text className="text-primary-500 font-medium">Pratiquer →</Text>
-      </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[600],
+              fontSize: 14
+            }}>
+              {module.question_count} questions
+            </Text>
+            {module.has_sub_disciplines && (
+              <Text style={{
+                color: BRAND_THEME.colors.gray[500],
+                fontSize: 14,
+                marginLeft: 8
+              }}>
+                • {module.sub_disciplines?.length || 0} sous-disciplines
+              </Text>
+            )}
+          </View>
+          <Text style={{
+            color: BRAND_THEME.colors.primary[600],
+            fontWeight: '500',
+            fontSize: 14
+          }}>
+            Pratiquer →
+          </Text>
+        </View>
+      </Card>
     </TouchableOpacity>
   )
 }
