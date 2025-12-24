@@ -370,7 +370,7 @@ export default function ModuleDetailScreen() {
                         <Badge 
                           variant="secondary" 
                           size="sm"
-                          text={`${count} QCM`}
+                          label={`${count} QCM`}
                         />
                         {selectedExamType === type && (
                           <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
@@ -431,7 +431,7 @@ export default function ModuleDetailScreen() {
                         <Badge 
                           variant="secondary" 
                           size="sm"
-                          text={`${count} QCM`}
+                          label={`${count} QCM`}
                         />
                         {selectedCours === name && (
                           <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>

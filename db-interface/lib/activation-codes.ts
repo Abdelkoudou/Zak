@@ -535,6 +535,38 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
 }
 
 /**
+ * Fetch connected devices for a user
+ */
+export async function fetchUserDevices(userId: string): Promise<{ data: any[]; error?: string }> {
+  // Note: using 'any' because DeviceSession type might not be fully available in the supabase client types yet
+  // Using supabaseAdmin to bypass RLS if needed, though client might work depending on policies
+  // Ideally, use the admin client for owner operations
+  const { data, error } = await supabase
+    .from('device_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_active_at', { ascending: false });
+
+  if (error) {
+    return { data: [], error: error.message };
+  }
+
+  return { data: data || [] };
+}
+
+/**
+ * Delete a user device
+ */
+export async function deleteUserDevice(sessionId: string): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from('device_sessions')
+    .delete()
+    .eq('id', sessionId);
+
+  return { error: error?.message };
+}
+
+/**
  * Export codes to CSV format with user information
  */
 export function exportToCsv(codes: ActivationKey[]): string {

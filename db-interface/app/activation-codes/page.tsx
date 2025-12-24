@@ -21,6 +21,7 @@ import type {
   SalesPointStats,
   YearLevel 
 } from '@/types/database';
+import DeviceManagerModal from '@/components/DeviceManagerModal';
 
 export default function ActivationCodesPage() {
   // Auth state
@@ -78,6 +79,9 @@ export default function ActivationCodesPage() {
 
   // Code detail modal
   const [selectedCode, setSelectedCode] = useState<ActivationKey | null>(null);
+
+  // Device manager modal
+  const [deviceManagerUser, setDeviceManagerUser] = useState<{ id: string; name: string } | null>(null);
 
   // Check user role
   useEffect(() => {
@@ -648,6 +652,16 @@ export default function ActivationCodesPage() {
                                 <div className="text-sm font-bold text-slate-900 dark:text-white">{user.fullName || 'User'}</div>
                                 <div className="text-[10px] text-slate-500 font-medium">{user.email}</div>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeviceManagerUser({ id: user.id, name: user.fullName || 'User' });
+                                }}
+                                className="ml-2 p-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Gérer les appareils"
+                              >
+                                📱
+                              </button>
                             </div>
                           ) : (
                             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Disponible</span>
@@ -964,6 +978,15 @@ export default function ActivationCodesPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Device Manager Modal */}
+      {deviceManagerUser && (
+        <DeviceManagerModal
+          userId={deviceManagerUser.id}
+          userName={deviceManagerUser.name}
+          onClose={() => setDeviceManagerUser(null)}
+        />
       )}
     </div>
   );
