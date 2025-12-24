@@ -135,14 +135,14 @@ export default function QuestionsListScreen() {
               <Badge 
                 variant="secondary" 
                 size="sm"
-                text={question.exam_type}
+                label={question.exam_type}
               />
             )}
             {question.year && (
               <Badge 
-                variant="outline" 
+                variant="gray" 
                 size="sm"
-                text={`${question.year}ère Année`}
+                label={`${question.year}ère Année`}
               />
             )}
           </View>
@@ -159,9 +159,9 @@ export default function QuestionsListScreen() {
 
         {question.sub_discipline && (
           <Badge 
-            variant="outline" 
+            variant="gray" 
             size="sm"
-            text={question.sub_discipline}
+            label={question.sub_discipline}
             style={{ alignSelf: 'flex-start', marginBottom: 8 }}
           />
         )}
@@ -307,20 +307,19 @@ export default function QuestionsListScreen() {
         </Text>
         
         {totalCount > 0 && (
-          <Button
-            variant="primary"
+          <Button 
+            variant="outline"
             size="sm"
+            title="Commencer la Pratique"
             onPress={startPracticeWithFilters}
-          >
-            Commencer la Pratique
-          </Button>
+          />
         )}
       </View>
     </View>
   )
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.background }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <Stack.Screen 
         options={{ 
           title: `Questions - ${moduleName}`,
@@ -376,10 +375,9 @@ export default function QuestionsListScreen() {
               ) : (
                 <Button
                   variant="outline"
+                  title="Charger Plus"
                   onPress={loadMore}
-                >
-                  Charger Plus
-                </Button>
+                />
               )}
             </View>
           ) : null
