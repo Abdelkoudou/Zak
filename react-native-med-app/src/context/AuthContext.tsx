@@ -16,13 +16,12 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   signUp: (data: RegisterFormData) => Promise<{ error: string | null; needsEmailVerification?: boolean }>
-  signIn: (email: string, password: string) => Promise<{ error: string | null; deviceLimitWarning?: boolean }>
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>
   signOut: () => Promise<{ error: string | null }>
   updateProfile: (data: ProfileUpdateData) => Promise<{ error: string | null }>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   refreshUser: () => Promise<void>
   getDeviceSessions: () => Promise<{ sessions: any[]; error: string | null }>
-  removeDevice: (sessionId: string) => Promise<{ error: string | null }>
 }
 
 // ============================================================================
@@ -111,17 +110,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // Sign in
-  const signIn = async (email: string, password: string): Promise<{ error: string | null; deviceLimitWarning?: boolean }> => {
+  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
       setIsLoading(true)
-      const { user: loggedInUser, error, deviceLimitWarning } = await authService.signIn(email, password)
+      const { user: loggedInUser, error } = await authService.signIn(email, password)
       
       if (error) {
         return { error }
       }
 
       setUser(loggedInUser)
-      return { error: null, deviceLimitWarning }
+      return { error: null }
     } catch (error) {
       return { error: 'An unexpected error occurred' }
     } finally {
@@ -181,11 +180,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return authService.getDeviceSessions(user.id)
   }
 
-  // Remove device
-  const removeDevice = async (sessionId: string): Promise<{ error: string | null }> => {
-    return authService.removeDevice(sessionId)
-  }
-
   // Context value
   const value: AuthContextType = {
     user,
@@ -198,7 +192,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resetPassword,
     refreshUser,
     getDeviceSessions,
-    removeDevice,
   }
 
   return (

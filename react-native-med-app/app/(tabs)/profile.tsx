@@ -14,7 +14,7 @@ import { Card, Badge, LoadingSpinner } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 
 export default function ProfileScreen() {
-  const { user, signOut, isLoading: authLoading, getDeviceSessions, removeDevice } = useAuth()
+  const { user, signOut, isLoading: authLoading, getDeviceSessions } = useAuth()
   
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [moduleStats, setModuleStats] = useState<ModuleStatistics[]>([])
@@ -52,47 +52,6 @@ export default function ProfileScreen() {
     setRefreshing(true)
     loadData()
   }, [loadData])
-
-  const handleRemoveDevice = (session: DeviceSession) => {
-    Alert.alert(
-      'Supprimer l\'appareil',
-      `Êtes-vous sûr de vouloir supprimer "${session.device_name}" ?`,
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { 
-          text: 'Supprimer', 
-          style: 'destructive',
-          onPress: async () => {
-            const { error } = await removeDevice(session.id)
-            if (error) {
-              Alert.alert('Erreur', 'Impossible de supprimer l\'appareil')
-            } else {
-              // Refresh device sessions
-              const { sessions } = await getDeviceSessions()
-              setDeviceSessions(sessions)
-            }
-          }
-        },
-      ]
-    )
-  }
-
-  const formatLastActive = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 1) return 'À l\'instant'
-    if (diffInHours < 24) return `Il y a ${diffInHours}h`
-    
-    const diffInDays = Math.floor(diffInHours / 24)
-    if (diffInDays < 7) return `Il y a ${diffInDays}j`
-    
-    return date.toLocaleDateString('fr-FR', { 
-      day: 'numeric', 
-      month: 'short' 
-    })
-  }
 
   const handleSignOut = () => {
     Alert.alert(
@@ -246,7 +205,7 @@ export default function ProfileScreen() {
           </Card>
         </View>
 
-        {/* Device Management - New Section */}
+        {/* Device Management - View Only (No Deletion) */}
         <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
           <Text style={{
             fontSize: 18,
@@ -272,12 +231,28 @@ export default function ProfileScreen() {
                   <DeviceSessionCard 
                     key={session.id} 
                     session={session} 
-                    onRemove={() => handleRemoveDevice(session)}
                     isLast={index === deviceSessions.length - 1}
                   />
                 ))}
               </View>
             )}
+            
+            {/* Info Message */}
+            <View style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTopWidth: 1,
+              borderTopColor: BRAND_THEME.colors.gray[100]
+            }}>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                fontSize: 12,
+                textAlign: 'center',
+                lineHeight: 18
+              }}>
+                ℹ️ Vous pouvez utiliser l'application sur 2 appareils maximum. La connexion depuis un 3ème appareil sera bloquée.
+              </Text>
+            </View>
           </Card>
         </View>
 
@@ -488,13 +463,12 @@ function ModuleProgressCard({ stat }: { stat: ModuleStatistics }) {
 }
 
 // Device Session Card - New Component
+// Device Session Card - View Only (No Delete Button)
 function DeviceSessionCard({ 
   session, 
-  onRemove, 
   isLast 
 }: { 
   session: DeviceSession; 
-  onRemove: () => void; 
   isLast: boolean;
 }) {
   const formatLastActive = (dateString: string) => {
@@ -518,8 +492,7 @@ function DeviceSessionCard({
     <View>
       <View style={{ 
         flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingVertical: 8
       }}>
         <View style={{ flex: 1 }}>
@@ -540,25 +513,6 @@ function DeviceSessionCard({
             Dernière activité: {formatLastActive(session.last_active_at)}
           </Text>
         </View>
-        
-        <TouchableOpacity
-          onPress={onRemove}
-          style={{
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-            backgroundColor: BRAND_THEME.colors.error[50],
-            borderRadius: 6,
-            marginLeft: 12
-          }}
-        >
-          <Text style={{
-            color: BRAND_THEME.colors.error[600],
-            fontSize: 12,
-            fontWeight: '500'
-          }}>
-            Supprimer
-          </Text>
-        </TouchableOpacity>
       </View>
       
       {!isLast && (

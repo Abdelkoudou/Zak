@@ -90,7 +90,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 // Sign In
 // ============================================================================
 
-export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null; deviceLimitWarning?: boolean }> {
+export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -110,9 +110,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     const currentDeviceId = await getDeviceId()
     const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
     
-    let deviceLimitWarning = false
+    // If this is a new device and user already has 2 devices, block login
     if (!isCurrentDeviceRegistered && sessions.length >= 2) {
-      deviceLimitWarning = true
+      // Sign out the user immediately
+      await supabase.auth.signOut()
+      return { 
+        user: null, 
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.' 
+      }
     }
 
     // Register/update device session
@@ -129,7 +134,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: fetchError.message }
     }
 
-    return { user: userProfile as User, error: null, deviceLimitWarning }
+    return { user: userProfile as User, error: null }
   } catch (error) {
     return { user: null, error: 'An unexpected error occurred' }
   }

@@ -32,19 +32,11 @@ export default function LoginScreen() {
     }
 
     setError(null)
-    const { error: loginError, deviceLimitWarning } = await signIn(email.trim(), password)
+    const { error: loginError } = await signIn(email.trim(), password)
     
     if (loginError) {
       setError(loginError)
     } else {
-      // Show device limit warning if applicable
-      if (deviceLimitWarning) {
-        Alert.alert(
-          'Limite d\'appareils atteinte',
-          'Vous avez atteint la limite de 2 appareils. L\'appareil le moins récemment utilisé a été déconnecté automatiquement.',
-          [{ text: 'Compris', style: 'default' }]
-        )
-      }
       router.replace('/(tabs)')
     }
   }
