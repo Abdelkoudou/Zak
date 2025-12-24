@@ -4,6 +4,9 @@
 
 import { YearLevel, ModuleType, ExamType, Speciality, ResourceType } from '@/types'
 
+// Export theme
+export * from './theme'
+
 // ============================================================================
 // Years
 // ============================================================================
@@ -73,22 +76,24 @@ export const RESOURCE_TYPES: { value: ResourceType; label: string; icon: string 
 export const OPTION_LABELS = ['A', 'B', 'C', 'D', 'E'] as const
 
 // ============================================================================
-// Theme Colors
+// Brand Colors - Light Sea Green Palette
 // ============================================================================
 
-export const COLORS = {
+export const BRAND_COLORS = {
+  // Primary Light Sea Green palette
   primary: {
-    50: '#eff6ff',
-    100: '#dbeafe',
-    200: '#bfdbfe',
-    300: '#93c5fd',
-    400: '#60a5fa',
-    500: '#3b82f6',
-    600: '#2563eb',
-    700: '#1d4ed8',
-    800: '#1e40af',
-    900: '#1e3a8a',
+    50: '#f0fdfa',    // Very light tint
+    100: '#ccfbf1',   // Light tint
+    200: '#99f6e4',   // Lighter
+    300: '#5eead4',   // Light
+    400: '#2dd4bf',   // Medium light
+    500: '#14b8a6',   // Base (#0fb2ac from palette)
+    600: '#0d9488',   // Medium dark (#0fa3db from palette)
+    700: '#0f766e',   // Dark (#07b17d from palette)
+    800: '#115e59',   // Darker (#04514e from palette)
+    900: '#134e4a',   // Darkest (#02201f from palette)
   },
+  // Semantic colors
   success: {
     50: '#f0fdf4',
     100: '#dcfce7',
@@ -121,13 +126,16 @@ export const COLORS = {
   },
 }
 
+// Legacy COLORS export for backward compatibility
+export const COLORS = BRAND_COLORS
+
 // ============================================================================
-// Module Type Colors
+// Module Type Colors - Updated with brand colors
 // ============================================================================
 
 export const MODULE_TYPE_COLORS: Record<ModuleType, { bg: string; text: string }> = {
-  annual: { bg: 'bg-blue-100', text: 'text-blue-700' },
-  semestrial: { bg: 'bg-purple-100', text: 'text-purple-700' },
-  uei: { bg: 'bg-green-100', text: 'text-green-700' },
-  standalone: { bg: 'bg-orange-100', text: 'text-orange-700' },
+  annual: { bg: 'bg-primary-100', text: 'text-primary-700' },
+  semestrial: { bg: 'bg-primary-200', text: 'text-primary-800' },
+  uei: { bg: 'bg-primary-300', text: 'text-primary-900' },
+  standalone: { bg: 'bg-primary-400', text: 'text-white' },
 }

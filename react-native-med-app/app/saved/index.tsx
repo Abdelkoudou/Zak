@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -168,6 +168,15 @@ function SavedQuestionCard({
       {/* Expanded Content */}
       {isExpanded && (
         <View className="border-t border-gray-100 p-4">
+          {/* Question Image */}
+          {question.image_url && (
+            <Image 
+              source={{ uri: question.image_url }}
+              className="w-full h-48 mb-4 rounded-lg"
+              resizeMode="contain"
+            />
+          )}
+          
           <Text className="text-gray-500 text-sm mb-3">Réponses:</Text>
           <View className="space-y-2">
             {question.answers.map((answer) => (

@@ -20,6 +20,7 @@ export default function QuestionsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<QuestionFormData>({
     year: '1',
     moduleId: '',
@@ -29,6 +30,7 @@ export default function QuestionsPage() {
     speciality: 'Médecine',
     cours: [''],
     facultySource: undefined,
+    imageUrl: undefined,
     answers: [
       { optionLabel: 'A', answerText: '', isCorrect: false },
       { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -220,6 +222,7 @@ export default function QuestionsPage() {
       unity_name: formData.unityName || undefined,
       module_type: formData.moduleType || selectedModule?.type,
       faculty_source: formData.facultySource || undefined,
+      image_url: formData.imageUrl || undefined,
       answers: validAnswers.map((answer, idx) => ({
         option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
         answer_text: answer.answerText,
@@ -249,6 +252,7 @@ export default function QuestionsPage() {
           number: prev.number + 1,
           questionText: '',
           cours: [''],
+          imageUrl: undefined,
           answers: [
             { optionLabel: 'A', answerText: '', isCorrect: false },
             { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -279,6 +283,7 @@ export default function QuestionsPage() {
       speciality: 'Médecine',
       cours: [''],
       facultySource: undefined,
+      imageUrl: undefined,
       answers: [
         { optionLabel: 'A', answerText: '', isCorrect: false },
         { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -305,6 +310,7 @@ export default function QuestionsPage() {
       unityName: question.unity_name || undefined,
       moduleType: question.module_type,
       facultySource: question.faculty_source || undefined,
+      imageUrl: question.image_url || undefined,
       answers: question.answers.map((a: any) => ({
         optionLabel: a.option_label,
         answerText: a.answer_text,
@@ -340,6 +346,62 @@ export default function QuestionsPage() {
     setFormData({ ...formData, answers: newAnswers });
   };
 
+  // Handle image upload to Supabase Storage
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Type de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('L\'image est trop grande. Taille maximum: 5MB.');
+      return;
+    }
+
+    setUploadingImage(true);
+    setError(null);
+
+    try {
+      // Generate unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `questions/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('question-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('question-images')
+        .getPublicUrl(filePath);
+
+      // Update form data with image URL
+      setFormData({ ...formData, imageUrl: publicUrl });
+      setSuccess('✅ Image téléchargée avec succès!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      setError(err.message || 'Erreur lors du téléchargement de l\'image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove uploaded image
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, imageUrl: undefined });
+  };
+
   const deleteQuestion = async (id: string) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette question ?')) {
       const result = await deleteQuestionAPI(id);
@@ -369,23 +431,25 @@ export default function QuestionsPage() {
   }, [questions]);
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
             Questions MCQ
           </h1>
-          <p className="text-sm md:text-base text-gray-600">
-            Ajouter et gérer les questions à choix multiples
+          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+            Gestion du catalogue • QCM Med
           </p>
         </div>
-        <div className="flex gap-2">
-          <a
-            href="/export"
-            className="px-4 md:px-6 py-2 md:py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm md:text-base whitespace-nowrap"
-          >
-            📤 Exporter JSON
-          </a>
+        <div className="flex gap-3">
+          {userRole === 'owner' && (
+            <a
+              href="/export"
+              className="px-5 py-3 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-2xl hover:bg-slate-50 dark:hover:bg-white/5 transition-all text-sm font-bold shadow-sm flex items-center gap-2"
+            >
+              <span>📤</span> Exporter JSON
+            </a>
+          )}
           <button
             onClick={() => {
               if (showForm) {
@@ -395,9 +459,13 @@ export default function QuestionsPage() {
                 setShowForm(true);
               }
             }}
-            className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
+            className={`px-6 py-3 rounded-2xl transition-all text-sm font-bold shadow-lg flex items-center gap-2 ${
+              showForm 
+                ? "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 shadow-none" 
+                : "bg-primary-600 text-white hover:bg-primary-700 shadow-primary-500/20 active:scale-[0.98]"
+            }`}
           >
-            {showForm ? "Annuler" : "➕ Nouvelle Question"}
+            {showForm ? "Annuler" : <><span>➕</span> Nouvelle Question</>}
           </button>
         </div>
       </div>
@@ -476,45 +544,45 @@ export default function QuestionsPage() {
       )}
 
       {/* Statistics */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 md:mb-8">
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Total Questions</p>
-          <p className="text-xl md:text-3xl font-bold text-gray-900">
-            {questions.length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Modules Couverts</p>
-          <p className="text-xl md:text-3xl font-bold text-blue-600">
-            {new Set(questions.map((q) => q.module_name)).size}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">
-            Types d&apos;Examens
-          </p>
-          <p className="text-xl md:text-3xl font-bold text-green-600">
-            {new Set(questions.map((q) => q.exam_type)).size}
-          </p>
-        </div>
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Total Questions', value: questions.length, icon: '❓', color: 'primary' },
+          { label: 'Modules', value: new Set(questions.map((q) => q.module_name)).size, icon: '📚', color: 'blue' },
+          { label: 'Exam Types', value: new Set(questions.map((q) => q.exam_type)).size, icon: '📝', color: 'green' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+            <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{item.label}</p>
+            <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
+              {item.value}
+            </p>
+          </div>
+        ))}
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 md:mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">
-            {editingId ? "✏️ Modifier la Question" : "Ajouter une Question"}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-white/5 shadow-2xl p-6 md:p-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary-500 to-transparent opacity-50"></div>
+          
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-3">
+            <span className="w-10 h-10 flex items-center justify-center bg-primary-50 dark:bg-primary-900/20 rounded-xl text-primary-600">
+              {editingId ? "✏️" : "✨"}
+            </span>
+            {editingId ? "Modifier la Question" : "Ajouter une Question"}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+          
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Détails de la Question */}
-            <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
-              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-700 border-b pb-2">
-                📖 Détails de la Question
+            <div className="space-y-6">
+              <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-3">
+                <span className="flex-1 h-px bg-slate-100 dark:bg-white/5"></span>
+                Détails Académiques
+                <span className="flex-1 h-px bg-slate-100 dark:bg-white/5"></span>
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Spécialité */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Spécialité 
                   </label>
                   <select
@@ -525,7 +593,7 @@ export default function QuestionsPage() {
                         speciality: e.target.value as any,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                     required
                   >
                     <option value="Médecine">Médecine</option>
@@ -534,7 +602,7 @@ export default function QuestionsPage() {
 
                 {/* Année */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Année d&apos;Étude 
                   </label>
                   <select
@@ -550,7 +618,7 @@ export default function QuestionsPage() {
                         moduleType: undefined,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                     required
                   >
                     {YEARS.map((year) => (
@@ -563,7 +631,7 @@ export default function QuestionsPage() {
 
                 {/* Module */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Module / Unité 
                   </label>
                   <select
@@ -584,7 +652,7 @@ export default function QuestionsPage() {
                         moduleType: selectedMod?.type,
                       });
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                     required
                   >
                     <option value="">Sélectionner un module/ Unité</option>
@@ -599,7 +667,7 @@ export default function QuestionsPage() {
                     ))}
                   </select>
                   {selectedModule && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
                       {selectedModule.type === "uei" &&
                         "🟢 Unité d'Enseignement Intégré (UEI)"}
                       {selectedModule.type === "standalone" &&
@@ -638,7 +706,7 @@ export default function QuestionsPage() {
                 )}
                 {/* Source de la Faculté */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Source de la Question
                   </label>
                   <select
@@ -649,7 +717,7 @@ export default function QuestionsPage() {
                         facultySource: (e.target.value as any) || undefined,
                       })
                     }
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                   >
                     <option value="">Non spécifié</option>
                     <option value="fac_mere">🏛️ Faculté de Constantine (Fac Mère)</option>
@@ -658,8 +726,8 @@ export default function QuestionsPage() {
                     <option value="annexe_khenchela">🏫 Annexe de Khenchela</option>
                     <option value="annexe_souk_ahras">🏫 Annexe de Souk Ahras</option>
                   </select>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Indiquez la source exacte de la question (Fac Mère ou Annexe spécifique)
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
+                    Indiquez la source exacte (Fac Mère ou Annexe)
                   </p>
                 </div>
               </div>
@@ -742,7 +810,7 @@ export default function QuestionsPage() {
 
               {/* Numéro de la Question */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Numéro de la Question *
                 </label>
                 <input
@@ -754,7 +822,7 @@ export default function QuestionsPage() {
                       number: parseInt(e.target.value),
                     })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                   min="1"
                   required
                 />
@@ -762,12 +830,12 @@ export default function QuestionsPage() {
 
               {/* Cours (Multiple) */}
               <div className="mt-4 md:mt-6">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Cours *
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {(formData.cours || [""]).map((cours, index) => (
-                    <div key={index} className="flex gap-2 relative">
+                    <div key={index} className="flex gap-3 relative">
                         <div className="flex-1 relative">
                             <input
                             type="text"
@@ -776,13 +844,13 @@ export default function QuestionsPage() {
                             onChange={(e) =>
                                 updateCoursInput(index, e.target.value)
                             }
-                            className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base pr-8"
+                            className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all pr-10"
                             placeholder={fetchingCourses ? "Chargement..." : "Nom du cours"}
                             required
                             />
                             {fetchingCourses && (
                                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <div className="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+                                    <div className="animate-spin h-4 w-4 border-2 border-primary-500 rounded-full border-t-transparent"></div>
                                 </div>
                             )}
                             
@@ -794,12 +862,12 @@ export default function QuestionsPage() {
                                         onClick={() => setActiveCourseInputIndex(null)}
                                         aria-hidden="true"
                                     ></div>
-                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                        <div className="sticky top-0 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-500 border-b flex justify-between items-center">
-                                            <span>Cours disponibles</span>
+                                    <div className="absolute z-20 w-full mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
+                                        <div className="sticky top-0 bg-slate-50 dark:bg-slate-950 px-4 py-2 text-[10px] font-black text-slate-400 dark:text-slate-500 border-b border-slate-100 dark:border-white/5 flex justify-between items-center z-10">
+                                            <span className="uppercase tracking-[0.15em]">Cours disponibles</span>
                                             <button 
                                                 type="button" 
-                                                className="text-gray-400 hover:text-gray-600"
+                                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     setActiveCourseInputIndex(null);
@@ -819,13 +887,13 @@ export default function QuestionsPage() {
                                                     updateCoursInput(index, c);
                                                     setActiveCourseInputIndex(null);
                                                 }}
-                                                className="w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm border-b border-gray-50 last:border-0"
+                                                className="w-full text-left px-5 py-3 hover:bg-slate-50 dark:hover:bg-white/5 focus:bg-slate-50 dark:focus:bg-white/5 focus:outline-none text-sm border-b border-slate-100 dark:border-white/5 last:border-0 text-slate-700 dark:text-slate-300 transition-colors"
                                             >
                                                 {c}
                                             </button>
                                         ))}
                                         {availableCourses.filter(c => c.toLowerCase().includes(cours.toLowerCase())).length === 0 && (
-                                            <div className="px-4 py-2 text-sm text-gray-500 italic">
+                                            <div className="px-5 py-3 text-xs text-slate-400 dark:text-slate-500 italic">
                                                 Nouveau cours sera créé...
                                             </div>
                                         )}
@@ -838,7 +906,7 @@ export default function QuestionsPage() {
                         <button
                           type="button"
                           onClick={addCoursInput}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+                          className="px-5 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-black shadow-lg shadow-primary-500/20 active:scale-[0.95] transition-all"
                         >
                           +
                         </button>
@@ -846,7 +914,7 @@ export default function QuestionsPage() {
                         <button
                           type="button"
                           onClick={() => removeCoursInput(index)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold"
+                          className="px-5 py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 font-black transition-all"
                         >
                           −
                         </button>
@@ -862,7 +930,7 @@ export default function QuestionsPage() {
 
               {/* Question Text */}
               <div className="mt-4 md:mt-6">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Texte de la Question *
                 </label>
                 <textarea
@@ -870,56 +938,109 @@ export default function QuestionsPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, questionText: e.target.value })
                   }
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                   rows={4}
                   placeholder="Entrez votre question ici..."
                   required
                 />
               </div>
+
+              {/* Image Upload */}
+              <div className="mt-4 md:mt-6">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  📷 Image (optionnelle)
+                </label>
+                
+                {formData.imageUrl ? (
+                  <div className="relative inline-block group">
+                    <img 
+                      src={formData.imageUrl} 
+                      alt="Question image" 
+                      className="max-w-full max-h-64 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg transition-transform hover:scale-[1.02]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="absolute top-3 right-3 bg-red-600 text-white rounded-xl w-10 h-10 flex items-center justify-center hover:bg-red-700 shadow-xl opacity-0 group-hover:opacity-100 transition-all active:scale-90"
+                      title="Supprimer l'image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <label className="cursor-pointer group">
+                      <div className="px-5 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-primary-600 hover:text-white transition-all flex items-center gap-2 font-bold shadow-sm active:scale-95">
+                        {uploadingImage ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-current rounded-full border-t-transparent"></div>
+                            Téléchargement...
+                          </>
+                        ) : (
+                          <>
+                            <span>📤</span> Télécharger une image
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                        className="hidden"
+                      />
+                    </label>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                      JPG, PNG, GIF, WebP • Max 5MB
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Section 2: Options de Réponse */}
-            <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
-              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-700 border-b pb-2">
-                ✅ Options de Réponse
+            <div className="space-y-6">
+              <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] flex items-center gap-3">
+                <span className="flex-1 h-px bg-slate-100 dark:bg-white/5"></span>
+                Options de Réponse
+                <span className="flex-1 h-px bg-slate-100 dark:bg-white/5"></span>
               </h3>
-              <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">
-                Entrez les options de réponse (A-E) et cochez les bonnes
-                réponses. Vous pouvez avoir plusieurs bonnes réponses.
+              <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center">
+                Cochez les bonnes réponses (Choix multiples supportés)
               </p>
 
-              <div className="space-y-3 md:space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {formData.answers.map((answer, index) => (
                   <div
                     key={answer.optionLabel}
-                    className="border border-gray-300 rounded-lg p-3 md:p-4 bg-white"
+                    className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl transition-all hover:border-primary-500/30"
                   >
-                    <div className="flex items-start gap-2 md:gap-4">
-                      <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-base md:text-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-10 h-10 bg-primary-600 text-white rounded-xl flex items-center justify-center font-black shadow-lg shadow-primary-500/20">
                         {answer.optionLabel}
                       </div>
 
-                      <div className="flex-1 space-y-2 md:space-y-3">
+                      <div className="flex-1 space-y-3">
                         <input
                           type="text"
                           value={answer.answerText}
                           onChange={(e) =>
                             updateAnswer(index, "answerText", e.target.value)
                           }
-                          className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                          placeholder={`Texte de la réponse ${answer.optionLabel}...`}
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all text-sm"
+                          placeholder={`Option ${answer.optionLabel}...`}
                         />
 
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-3 cursor-pointer group/correct">
                           <input
                             type="checkbox"
                             checked={answer.isCorrect}
                             onChange={(e) =>
                               updateAnswer(index, "isCorrect", e.target.checked)
                             }
-                            className="w-4 h-4 md:w-5 md:h-5 text-green-600 rounded focus:ring-2 focus:ring-green-500"
+                            className="w-5 h-5 text-green-600 rounded-lg border-slate-300 dark:border-white/10 focus:ring-green-500 dark:bg-slate-900 transition-all"
                           />
-                          <span className="text-xs md:text-sm font-medium text-gray-700">
+                          <span className="text-[10px] font-bold text-slate-400 group-hover/correct:text-green-500 dark:text-slate-500 uppercase tracking-widest transition-colors">
                             Réponse correcte
                           </span>
                         </label>
@@ -935,17 +1056,17 @@ export default function QuestionsPage() {
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 dark:border-white/5">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
+                className="flex-1 px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-black shadow-xl shadow-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm uppercase tracking-widest active:scale-[0.98]"
               >
                 {saving
                   ? "⏳ Enregistrement..."
                   : editingId
-                  ? "✅ Modifier la Question"
-                  : "✅ Enregistrer la Question"}
+                  ? "Modifier la Question"
+                  : "Enregistrer la Question"}
               </button>
               <button
                 type="button"
@@ -953,7 +1074,7 @@ export default function QuestionsPage() {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="px-4 md:px-6 py-2 md:py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm md:text-base"
+                className="px-8 py-4 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all font-black text-sm uppercase tracking-widest"
               >
                 Annuler
               </button>
@@ -963,18 +1084,23 @@ export default function QuestionsPage() {
       )}
 
       {/* Questions List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 md:p-6 border-b flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h2 className="text-lg md:text-xl font-semibold">
-            Liste des Questions ({questions.length})
-          </h2>
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-sm overflow-hidden">
+        <div className="px-6 md:px-8 py-6 border-b border-slate-100 dark:border-white/5 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-50/50 dark:bg-slate-950/20">
+          <div>
+            <h2 className="text-xl font-black text-slate-900 dark:text-white">
+              Catalogue des Questions
+            </h2>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+              {questions.length} questions indexées
+            </p>
+          </div>
           
           {/* Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <select
                 value={listFilters.year}
                 onChange={e => setListFilters(prev => ({ ...prev, year: e.target.value, moduleId: '', cours: '' }))}
-                className="px-3 py-2 border rounded-lg text-sm"
+                className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
             >
                 <option value="">Toutes les années</option>
                 {YEARS.map(y => <option key={y.value} value={y.value}>{y.label}</option>)}
@@ -983,7 +1109,7 @@ export default function QuestionsPage() {
             <select
                 value={listFilters.moduleId}
                 onChange={e => setListFilters(prev => ({ ...prev, moduleId: e.target.value, cours: '' }))}
-                className="px-3 py-2 border rounded-lg text-sm max-w-[200px]"
+                className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all max-w-[180px]"
                 disabled={!listFilters.year}
             >
                 <option value="">Tous les modules</option>
@@ -993,7 +1119,7 @@ export default function QuestionsPage() {
              <select
                 value={listFilters.cours}
                 onChange={e => setListFilters(prev => ({ ...prev, cours: e.target.value }))}
-                className="px-3 py-2 border rounded-lg text-sm max-w-[200px]"
+                className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all max-w-[180px]"
                 disabled={!listFilters.moduleId}
             >
                 <option value="">Tous les cours</option>
@@ -1001,131 +1127,150 @@ export default function QuestionsPage() {
             </select>
           </div>
         </div>
-        <div className="p-4 md:p-6">
+        <div className="p-6 md:p-8">
           {loading ? (
-            <p className="text-gray-500 text-center py-8">
-              ⏳ Chargement des questions...
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 pointer-events-none opacity-50">
+              <div className="animate-spin h-10 w-10 border-4 border-primary-500 rounded-full border-t-transparent mb-4"></div>
+              <p className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+                Chargement du catalogue...
+              </p>
+            </div>
           ) : questions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              Aucune question ajoutée. Cliquez sur &quot;Nouvelle Question&quot;
-              pour commencer.
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 bg-slate-50 dark:bg-slate-950 rounded-2xl flex items-center justify-center text-3xl mb-4 grayscale opacity-50">
+                📂
+              </div>
+              <p className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Aucune question trouvée
+              </p>
+              <p className="text-xs text-slate-400 dark:text-slate-600 mt-2">
+                Ajustez vos filtres ou créez une nouvelle question
+              </p>
+            </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-12">
               {Object.entries(groupedQuestions).map(([key, groupQuestions]) => {
                 const [year, moduleName, examType] = key.split("-");
                 return (
-                  <div
-                    key={key}
-                    className="border border-gray-200 rounded-lg p-4 bg-gray-50"
-                  >
-                    <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                      {YEARS.find((y) => y.value === year)?.label} -{" "}
-                      {moduleName} ({examType})
-                    </h3>
-                    <div className="space-y-4">
+                  <div key={key} className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-px flex-1 bg-slate-100 dark:bg-white/5"></div>
+                      <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] bg-white dark:bg-slate-900 px-4 py-1.5 border border-slate-100 dark:border-white/5 rounded-full">
+                        {YEARS.find((y) => y.value === year)?.label} • {moduleName} • {examType}
+                      </h3>
+                      <div className="h-px flex-1 bg-slate-100 dark:bg-white/5"></div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-6">
                       {groupQuestions.map((question) => (
                         <div
                           key={question.id}
-                          className="border border-gray-200 rounded-lg p-4 bg-white"
+                          className="group bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-white/5 rounded-3xl p-6 transition-all hover:shadow-xl hover:shadow-primary-500/5 hover:border-primary-500/20"
                         >
-                          <div className="flex justify-between items-start mb-3">
+                          <div className="flex justify-between items-start mb-6">
                             <div className="flex flex-wrap gap-2">
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
+                              <span className="px-3 py-1 bg-primary-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-primary-500/20">
                                 Q{question.number}
                               </span>
                               {question.speciality && (
-                                <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded">
+                                <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-black rounded-lg uppercase tracking-widest">
                                   {question.speciality}
                                 </span>
                               )}
                               {question.module_type === "uei" && (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
-                                  🟢 UEI
-                                </span>
-                              )}
-                              {question.module_type === "standalone" && (
-                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">
-                                  🟡 Autonome
+                                <span className="px-3 py-1 bg-green-500/10 text-green-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-green-500/20">
+                                  UEI
                                 </span>
                               )}
                               {question.sub_discipline && (
-                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                                <span className="px-3 py-1 bg-purple-500/10 text-purple-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-purple-500/20">
                                   {question.sub_discipline}
                                 </span>
                               )}
-                              {question.cours && question.cours.length > 0 && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                  📚 {question.cours.join(", ")}
-                                </span>
-                              )}
                               {question.faculty_source && (
-                                <span
-                                  className={`px-2 py-1 text-xs rounded ${
-                                    question.faculty_source === "fac_mere"
-                                      ? "bg-orange-100 text-orange-700"
-                                      : "bg-teal-100 text-teal-700"
-                                  }`}
-                                >
-                                  {question.faculty_source === "fac_mere" && "🏛️ Fac Mère"}
-                                  {question.faculty_source === "annexe_biskra" && "🏫 Annexe Biskra"}
-                                  {question.faculty_source === "annexe_oum_el_bouaghi" && "🏫 Annexe O.E.B"}
-                                  {question.faculty_source === "annexe_khenchela" && "🏫 Annexe Khenchela"}
-                                  {question.faculty_source === "annexe_souk_ahras" && "🏫 Annexe Souk Ahras"}
-                                  {question.faculty_source === "annexe_bechar" && "🏫 Annexe Bechar"}
-                                  {question.faculty_source === "annexe_laghouat" && "🏫 Annexe Laghouat"}
-                                  {question.faculty_source === "annexe_ouargla" && "� Annexe Ouargla"}
-                                  {/* Fallback for old/generic data */}
-                                  {(question.faculty_source === "annexe" as any) && "🏫 Annexe"}
+                                <span className="px-3 py-1 bg-amber-500/10 text-amber-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-amber-500/20">
+                                  {question.faculty_source.replace('annexe_', '').replace('_', ' ')}
                                 </span>
                               )}
                             </div>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => editQuestion(question)}
-                                className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                                className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-xl transition-all"
+                                title="Modifier"
                               >
-                                ✏️ Modifier
+                                ✏️
                               </button>
                               {(userRole === 'owner' || userRole === 'admin') && (
                                 <button
                                   onClick={() => deleteQuestion(question.id)}
-                                  className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                                  className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+                                  title="Supprimer"
                                 >
-                                  ✕ Supprimer
+                                  ✕
                                 </button>
                               )}
                             </div>
                           </div>
 
-                          <p className="text-gray-900 mb-3 font-medium">
-                            {question.question_text}
-                          </p>
+                          <div className="space-y-6">
+                            <p className="text-slate-900 dark:text-slate-100 font-bold leading-relaxed">
+                              {question.question_text}
+                            </p>
 
-                          <div className="space-y-2">
-                            {question.answers.map((answer: any) => (
-                              <div
-                                key={answer.id}
-                                className={`flex items-start gap-3 p-2 rounded ${
-                                  answer.is_correct
-                                    ? "bg-green-50 border border-green-200"
-                                    : "bg-gray-50"
-                                }`}
-                              >
-                                <span className="font-bold text-sm min-w-[24px]">
-                                  {answer.option_label.toUpperCase()}.
-                                </span>
-                                <span className="text-sm flex-1">
-                                  {answer.answer_text}
-                                </span>
-                                {answer.is_correct && (
-                                  <span className="text-green-600 text-sm font-medium">
-                                    ✓ Correct
-                                  </span>
-                                )}
+                            {question.image_url && (
+                              <div className="relative inline-block overflow-hidden rounded-2xl border border-slate-100 dark:border-white/5">
+                                <img 
+                                  src={question.image_url} 
+                                  alt="Question illustration" 
+                                  className="max-w-full max-h-64 object-contain transition-transform hover:scale-105"
+                                />
                               </div>
-                            ))}
+                            )}
+
+                            <div className="grid grid-cols-1 gap-3">
+                              {question.answers.map((answer: any) => (
+                                <div
+                                  key={answer.id}
+                                  className={`flex items-start gap-4 p-4 rounded-2xl border transition-all ${
+                                    answer.is_correct
+                                      ? "bg-green-50/50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 shadow-sm"
+                                      : "bg-slate-50/50 dark:bg-slate-900/50 border-slate-100 dark:border-white/5"
+                                  }`}
+                                >
+                                  <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs font-black shrink-0 ${
+                                    answer.is_correct
+                                      ? "bg-green-600 text-white"
+                                      : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                                  }`}>
+                                    {answer.option_label.toUpperCase()}
+                                  </span>
+                                  <span className={`text-sm py-1.5 flex-1 ${
+                                    answer.is_correct ? "text-slate-900 dark:text-white font-bold" : "text-slate-600 dark:text-slate-400"
+                                  }`}>
+                                    {answer.answer_text}
+                                  </span>
+                                  {answer.is_correct && (
+                                    <span className="text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-widest mt-2">
+                                      ✓ Correct
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+
+                            {question.cours && question.cours.length > 0 && (
+                              <div className="pt-4 border-t border-slate-100 dark:border-white/5 flex items-center gap-3">
+                                <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Cours associés:</span>
+                                <div className="flex flex-wrap gap-2">
+                                  {question.cours.map((c: string, idx: number) => (
+                                    <span key={idx} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md">
+                                      {c}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

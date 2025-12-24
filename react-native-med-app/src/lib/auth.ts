@@ -4,7 +4,7 @@
 
 import { supabase } from './supabase'
 import * as Device from 'expo-device'
-import { User, RegisterFormData, ProfileUpdateData, ActivationResponse } from '@/types'
+import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 
 // ============================================================================
 // Sign Up
@@ -90,7 +90,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 // Sign In
 // ============================================================================
 
-export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null; deviceLimitWarning?: boolean }> {
   try {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -103,6 +103,16 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
     if (!authData.user) {
       return { user: null, error: 'Failed to sign in' }
+    }
+
+    // Check device count before registering new device
+    const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
+    const currentDeviceId = await getDeviceId()
+    const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
+    
+    let deviceLimitWarning = false
+    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+      deviceLimitWarning = true
     }
 
     // Register/update device session
@@ -119,7 +129,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: fetchError.message }
     }
 
-    return { user: userProfile as User, error: null }
+    return { user: userProfile as User, error: null, deviceLimitWarning }
   } catch (error) {
     return { user: null, error: 'An unexpected error occurred' }
   }
@@ -297,7 +307,7 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
   }
 }
 
-export async function getDeviceSessions(userId: string): Promise<{ sessions: any[]; error: string | null }> {
+export async function getDeviceSessions(userId: string): Promise<{ sessions: DeviceSession[]; error: string | null }> {
   try {
     const { data, error } = await supabase
       .from('device_sessions')

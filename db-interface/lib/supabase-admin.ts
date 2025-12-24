@@ -42,3 +42,18 @@ export async function verifyAdminUser(userId: string) {
   const isAdmin = ['owner', 'admin', 'manager'].includes(user.role);
   return { isAdmin, role: user.role };
 }
+
+// Helper to verify user is strictly owner
+export async function verifyOwner(userId: string) {
+  const { data: user, error } = await supabaseAdmin
+    .from('users')
+    .select('role')
+    .eq('id', userId)
+    .single();
+
+  if (error || !user) {
+    return { isOwner: false, role: null };
+  }
+
+  return { isOwner: user.role === 'owner', role: user.role };
+}

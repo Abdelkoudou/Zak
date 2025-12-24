@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       unity_name: question.unity_name || null,
       module_type: question.module_type,
       faculty_source: question.faculty_source || null,
+      image_url: question.image_url || null,
       created_by: user.id, // Track who created the question
     };
 
@@ -184,6 +185,7 @@ export async function PUT(request: NextRequest) {
       unity_name: question.unity_name || null,
       module_type: question.module_type,
       faculty_source: question.faculty_source || null,
+      image_url: question.image_url || null,
     };
 
     const { data: updatedQuestion, error: questionError } = await supabaseAdmin
@@ -274,6 +276,36 @@ export async function DELETE(request: NextRequest) {
         { success: false, error: 'Question ID required' },
         { status: 400 }
       );
+    }
+
+    // First, get the question to check for image_url
+    const { data: question, error: fetchError } = await supabaseAdmin
+      .from('questions')
+      .select('image_url')
+      .eq('id', id)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      // PGRST116 = no rows returned, which is fine
+      throw fetchError;
+    }
+
+    // If question has an image, delete it from storage
+    if (question?.image_url) {
+      try {
+        // Extract file path from URL
+        // URL format: https://xxx.supabase.co/storage/v1/object/public/question-images/questions/filename.ext
+        const urlParts = question.image_url.split('/question-images/');
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1];
+          await supabaseAdmin.storage
+            .from('question-images')
+            .remove([filePath]);
+        }
+      } catch (storageError) {
+        // Log but don't fail the delete if image cleanup fails
+        console.error('Error deleting image from storage:', storageError);
+      }
     }
 
     // Delete question (answers will cascade delete)

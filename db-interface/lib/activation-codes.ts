@@ -79,9 +79,9 @@ export function generateSecureCode(params: {
     randomPart += CODE_CHARS[randomBytes[i] % CODE_CHARS.length];
   }
 
-  // Build base code: POINT(3) + RANDOM(8)
-  const pointShort = params.salesPointCode.substring(0, 3).toUpperCase();
-  const baseCode = `${pointShort}-${randomPart}`;
+  // Build base code: POINT + RANDOM(8)
+  const pointCode = params.salesPointCode.toUpperCase();
+  const baseCode = `${pointCode}-${randomPart}`;
 
   // Generate checksum using remaining random bytes as salt
   const checksum = generateChecksum(baseCode, randomBytes.slice(8, 16));

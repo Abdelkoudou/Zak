@@ -1,15 +1,17 @@
 // ============================================================================
-// Module Detail Screen
+// Module Detail Screen - Light Sea Green Brand (Matching Design)
 // ============================================================================
 
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
 import { getQuestionCount } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
-import { MODULE_TYPES, MODULE_TYPE_COLORS, EXAM_TYPES } from '@/constants'
+import { EXAM_TYPES, EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
+import { Card, Badge, LoadingSpinner, Button } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function ModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -18,10 +20,12 @@ export default function ModuleDetailScreen() {
   const [cours, setCours] = useState<string[]>([])
   const [questionCount, setQuestionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours' | null>(null)
+  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours' | null>('exam')
   const [selectedExamType, setSelectedExamType] = useState<ExamType | null>(null)
   const [selectedSubDiscipline, setSelectedSubDiscipline] = useState<string | null>(null)
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
+  const [availableExamTypes, setAvailableExamTypes] = useState<{ type: ExamType; count: number }[]>([])
+  const [coursWithCounts, setCoursWithCounts] = useState<{ name: string; count: number }[]>([])
 
   useEffect(() => {
     loadModule()
@@ -40,11 +44,59 @@ export default function ModuleDetailScreen() {
 
         const { cours: coursData } = await getModuleCours(moduleData.name)
         setCours(coursData)
+
+        // Load available exam types with counts
+        await loadExamTypesWithCounts(moduleData)
+        
+        // Load cours with counts
+        await loadCoursWithCounts(moduleData.name, coursData)
       }
     } catch (error) {
       console.error('Error loading module:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadExamTypesWithCounts = async (moduleData: Module) => {
+    try {
+      // Get valid exam types for this module type
+      const validExamTypes = EXAM_TYPES_BY_MODULE_TYPE[moduleData.type] || []
+      
+      const examTypesWithCounts = await Promise.all(
+        validExamTypes.map(async (examType) => {
+          const { count } = await getQuestionCount({
+            module_name: moduleData.name,
+            exam_type: examType,
+            year: moduleData.year
+          })
+          return { type: examType, count }
+        })
+      )
+
+      // Only show exam types that have questions
+      setAvailableExamTypes(examTypesWithCounts.filter(item => item.count > 0))
+    } catch (error) {
+      console.error('Error loading exam types:', error)
+    }
+  }
+
+  const loadCoursWithCounts = async (moduleName: string, coursData: string[]) => {
+    try {
+      const coursWithCounts = await Promise.all(
+        coursData.map(async (coursName) => {
+          const { count } = await getQuestionCount({
+            module_name: moduleName,
+            cours: coursName
+          })
+          return { name: coursName, count }
+        })
+      )
+
+      // Only show cours that have questions
+      setCoursWithCounts(coursWithCounts.filter(item => item.count > 0))
+    } catch (error) {
+      console.error('Error loading cours counts:', error)
     }
   }
 
@@ -97,217 +149,349 @@ export default function ModuleDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement du module..." />
       </SafeAreaView>
     )
   }
 
   if (!module) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <Text className="text-gray-500">Module non trouvé</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: BRAND_THEME.colors.gray[600] }}>Module non trouvé</Text>
+        </View>
       </SafeAreaView>
     )
   }
 
-  const moduleType = MODULE_TYPES.find(t => t.value === module.type)
-  const colors = MODULE_TYPE_COLORS[module.type]
-
   return (
     <>
-      <Stack.Screen options={{ title: module.name }} />
+      <Stack.Screen 
+        options={{ 
+          title: module.name,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={{ color: BRAND_THEME.colors.primary[600], fontSize: 16 }}>←</Text>
+            </TouchableOpacity>
+          )
+        }} 
+      />
       
-      <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
-        <ScrollView className="flex-1">
-          {/* Module Header */}
-          <View className="bg-white px-6 py-6 border-b border-gray-100">
-            <View className={`self-start px-3 py-1 rounded-full mb-3 ${colors.bg}`}>
-              <Text className={`text-sm font-medium ${colors.text}`}>
-                {moduleType?.icon} {moduleType?.label}
-              </Text>
-            </View>
-            <Text className="text-2xl font-bold text-gray-900 mb-2">
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
+        <ScrollView style={{ flex: 1 }}>
+          {/* Module Header - Matching Design */}
+          <View style={{
+            backgroundColor: '#ffffff',
+            paddingHorizontal: 24,
+            paddingVertical: 24,
+            borderBottomWidth: 1,
+            borderBottomColor: BRAND_THEME.colors.gray[100]
+          }}>
+            <Text style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 8
+            }}>
               {module.name}
             </Text>
-            <Text className="text-gray-500">
-              {questionCount} questions disponibles
+            <Text style={{
+              color: BRAND_THEME.colors.gray[600],
+              fontSize: 14
+            }}>
+              {questionCount} Questions
             </Text>
           </View>
 
-          {/* Practice Mode Selection */}
-          <View className="px-6 mt-6">
-            <Text className="text-lg font-bold text-gray-900 mb-3">
+          {/* Practice Mode Selection - Matching Design */}
+          <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 12
+            }}>
               Mode de pratique
             </Text>
 
-            {/* Exam Mode */}
+            {/* Exam Mode - Matching Design */}
             <TouchableOpacity
-              className={`bg-white rounded-xl p-4 mb-3 border-2 ${
-                selectedMode === 'exam' ? 'border-primary-500' : 'border-transparent'
-              }`}
               onPress={() => {
                 setSelectedMode('exam')
                 setSelectedCours(null)
               }}
+              activeOpacity={0.7}
             >
-              <View className="flex-row items-center">
-                <View className="w-12 h-12 bg-blue-50 rounded-xl items-center justify-center mr-4">
-                  <Text className="text-2xl">📝</Text>
+              <Card 
+                variant="default" 
+                padding="md" 
+                style={{
+                  marginBottom: 12,
+                  borderWidth: 2,
+                  borderColor: selectedMode === 'exam' ? BRAND_THEME.colors.primary[500] : 'transparent'
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{
+                    width: 48,
+                    height: 48,
+                    backgroundColor: BRAND_THEME.colors.gray[900],
+                    borderRadius: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 16
+                  }}>
+                    <Text style={{ color: '#ffffff', fontSize: 20 }}>📝</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{
+                      color: BRAND_THEME.colors.gray[900],
+                      fontWeight: '600',
+                      fontSize: 16,
+                      marginBottom: 2
+                    }}>
+                      QCM d'examen
+                    </Text>
+                    <Text style={{
+                      color: BRAND_THEME.colors.gray[600],
+                      fontSize: 14
+                    }}>
+                      Questions mélangées par type d'examen
+                    </Text>
+                  </View>
+                  {selectedMode === 'exam' && (
+                    <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
+                  )}
                 </View>
-                <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold">QCM d'examen</Text>
-                  <Text className="text-gray-500 text-sm">
-                    Questions mélangées par type d'examen
-                  </Text>
-                </View>
-                {selectedMode === 'exam' && (
-                  <Text className="text-primary-500 text-xl">✓</Text>
-                )}
-              </View>
+              </Card>
             </TouchableOpacity>
 
-            {/* Cours Mode */}
+            {/* Cours Mode - Matching Design */}
             {cours.length > 0 && (
               <TouchableOpacity
-                className={`bg-white rounded-xl p-4 border-2 ${
-                  selectedMode === 'cours' ? 'border-primary-500' : 'border-transparent'
-                }`}
                 onPress={() => {
                   setSelectedMode('cours')
                   setSelectedExamType(null)
                   setSelectedSubDiscipline(null)
                 }}
+                activeOpacity={0.7}
               >
-                <View className="flex-row items-center">
-                  <View className="w-12 h-12 bg-green-50 rounded-xl items-center justify-center mr-4">
-                    <Text className="text-2xl">📖</Text>
+                <Card 
+                  variant="default" 
+                  padding="md"
+                  style={{
+                    borderWidth: 2,
+                    borderColor: selectedMode === 'cours' ? BRAND_THEME.colors.primary[500] : 'transparent'
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{
+                      width: 48,
+                      height: 48,
+                      backgroundColor: BRAND_THEME.colors.gray[900],
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 16
+                    }}>
+                      <Text style={{ color: '#ffffff', fontSize: 20 }}>📖</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{
+                        color: BRAND_THEME.colors.gray[900],
+                        fontWeight: '600',
+                        fontSize: 16,
+                        marginBottom: 2
+                      }}>
+                        Par cours
+                      </Text>
+                      <Text style={{
+                        color: BRAND_THEME.colors.gray[600],
+                        fontSize: 14
+                      }}>
+                        Questions d'un cours spécifique
+                      </Text>
+                    </View>
+                    {selectedMode === 'cours' && (
+                      <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
+                    )}
                   </View>
-                  <View className="flex-1">
-                    <Text className="text-gray-900 font-semibold">Par cours</Text>
-                    <Text className="text-gray-500 text-sm">
-                      Questions d'un cours spécifique
-                    </Text>
-                  </View>
-                  {selectedMode === 'cours' && (
-                    <Text className="text-primary-500 text-xl">✓</Text>
-                  )}
-                </View>
+                </Card>
               </TouchableOpacity>
             )}
           </View>
 
-          {/* Exam Type Selection */}
-          {selectedMode === 'exam' && (
-            <View className="px-6 mt-6">
-              <Text className="text-lg font-bold text-gray-900 mb-3">
-                Type d'examen
+          {/* Exam Types List - Inline Display */}
+          {selectedMode === 'exam' && availableExamTypes.length > 0 && (
+            <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 12
+              }}>
+                Types d'examen disponibles
               </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {module.exam_types.map((examType) => (
-                  <TouchableOpacity
-                    key={examType}
-                    className={`px-4 py-2 rounded-full ${
-                      selectedExamType === examType 
-                        ? 'bg-primary-500' 
-                        : 'bg-white border border-gray-200'
-                    }`}
-                    onPress={() => setSelectedExamType(examType)}
-                  >
-                    <Text className={`font-medium ${
-                      selectedExamType === examType ? 'text-white' : 'text-gray-700'
-                    }`}>
-                      {examType}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Sub-discipline Selection (for UEI) */}
-          {selectedMode === 'exam' && module.has_sub_disciplines && module.sub_disciplines && (
-            <View className="px-6 mt-6">
-              <Text className="text-lg font-bold text-gray-900 mb-3">
-                Sous-discipline (optionnel)
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
+              
+              {availableExamTypes.map(({ type, count }) => (
                 <TouchableOpacity
-                  className={`px-4 py-2 rounded-full ${
-                    selectedSubDiscipline === null 
-                      ? 'bg-primary-500' 
-                      : 'bg-white border border-gray-200'
-                  }`}
-                  onPress={() => setSelectedSubDiscipline(null)}
+                  key={type}
+                  onPress={() => setSelectedExamType(type)}
+                  activeOpacity={0.7}
+                  style={{ marginBottom: 8 }}
                 >
-                  <Text className={`font-medium ${
-                    selectedSubDiscipline === null ? 'text-white' : 'text-gray-700'
-                  }`}>
-                    Toutes
-                  </Text>
-                </TouchableOpacity>
-                {module.sub_disciplines.map((sub) => (
-                  <TouchableOpacity
-                    key={sub.name}
-                    className={`px-4 py-2 rounded-full ${
-                      selectedSubDiscipline === sub.name 
-                        ? 'bg-primary-500' 
-                        : 'bg-white border border-gray-200'
-                    }`}
-                    onPress={() => setSelectedSubDiscipline(sub.name)}
+                  <Card 
+                    variant="default" 
+                    padding="md"
+                    style={{
+                      borderWidth: 2,
+                      borderColor: selectedExamType === type ? BRAND_THEME.colors.primary[500] : 'transparent'
+                    }}
                   >
-                    <Text className={`font-medium ${
-                      selectedSubDiscipline === sub.name ? 'text-white' : 'text-gray-700'
-                    }`}>
-                      {sub.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View>
+                        <Text style={{
+                          color: BRAND_THEME.colors.gray[900],
+                          fontWeight: '600',
+                          fontSize: 16,
+                          marginBottom: 2
+                        }}>
+                          {type}
+                        </Text>
+                        <Text style={{
+                          color: BRAND_THEME.colors.gray[600],
+                          fontSize: 14
+                        }}>
+                          {count} question{count !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Badge 
+                          variant="secondary" 
+                          size="sm"
+                          text={`${count} QCM`}
+                        />
+                        {selectedExamType === type && (
+                          <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
+                        )}
+                      </View>
+                    </View>
+                  </Card>
+                </TouchableOpacity>
+              ))}
             </View>
           )}
 
-          {/* Cours Selection */}
-          {selectedMode === 'cours' && (
-            <View className="px-6 mt-6">
-              <Text className="text-lg font-bold text-gray-900 mb-3">
-                Sélectionner un cours
+          {/* Cours List - Inline Display */}
+          {selectedMode === 'cours' && coursWithCounts.length > 0 && (
+            <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 12
+              }}>
+                Cours disponibles
               </Text>
-              <View className="space-y-2">
-                {cours.map((c) => (
-                  <TouchableOpacity
-                    key={c}
-                    className={`bg-white rounded-xl p-4 border-2 ${
-                      selectedCours === c ? 'border-primary-500' : 'border-transparent'
-                    }`}
-                    onPress={() => setSelectedCours(c)}
+              
+              {coursWithCounts.map(({ name, count }) => (
+                <TouchableOpacity
+                  key={name}
+                  onPress={() => setSelectedCours(name)}
+                  activeOpacity={0.7}
+                  style={{ marginBottom: 8 }}
+                >
+                  <Card 
+                    variant="default" 
+                    padding="md"
+                    style={{
+                      borderWidth: 2,
+                      borderColor: selectedCours === name ? BRAND_THEME.colors.primary[500] : 'transparent'
+                    }}
                   >
-                    <Text className="text-gray-900">{c}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{
+                          color: BRAND_THEME.colors.gray[900],
+                          fontWeight: '600',
+                          fontSize: 16,
+                          marginBottom: 2
+                        }} numberOfLines={2}>
+                          {name}
+                        </Text>
+                        <Text style={{
+                          color: BRAND_THEME.colors.gray[600],
+                          fontSize: 14
+                        }}>
+                          {count} question{count !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Badge 
+                          variant="secondary" 
+                          size="sm"
+                          text={`${count} QCM`}
+                        />
+                        {selectedCours === name && (
+                          <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
+                        )}
+                      </View>
+                    </View>
+                  </Card>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Empty State Messages */}
+          {selectedMode === 'exam' && availableExamTypes.length === 0 && !isLoading && (
+            <View style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[500],
+                fontSize: 16,
+                textAlign: 'center'
+              }}>
+                Aucun examen disponible pour ce module
+              </Text>
+            </View>
+          )}
+
+          {selectedMode === 'cours' && coursWithCounts.length === 0 && !isLoading && (
+            <View style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[500],
+                fontSize: 16,
+                textAlign: 'center'
+              }}>
+                Aucun cours disponible pour ce module
+              </Text>
             </View>
           )}
 
           {/* Bottom Spacing */}
-          <View className="h-24" />
+          <View style={{ height: 120 }} />
         </ScrollView>
 
-        {/* Start Button */}
-        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4">
-          <TouchableOpacity
-            className={`py-4 rounded-xl ${
-              canStartPractice() ? 'bg-primary-500' : 'bg-gray-200'
-            }`}
+        {/* Start Button - Matching Design */}
+        <View style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: BRAND_THEME.colors.gray[100],
+          paddingHorizontal: 24,
+          paddingVertical: 16
+        }}>
+          <Button
+            title="Commencer la pratique"
             onPress={startPractice}
             disabled={!canStartPractice()}
-          >
-            <Text className={`text-center font-semibold text-lg ${
-              canStartPractice() ? 'text-white' : 'text-gray-400'
-            }`}>
-              Commencer la pratique
-            </Text>
-          </TouchableOpacity>
+            variant="primary"
+            size="lg"
+          />
         </View>
       </SafeAreaView>
     </>

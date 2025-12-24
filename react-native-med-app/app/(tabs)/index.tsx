@@ -1,9 +1,9 @@
 // ============================================================================
-// Home Screen - Modules List
+// Home Screen - Light Sea Green Brand
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -11,14 +11,27 @@ import { getModulesWithCounts } from '@/lib/modules'
 import { getUserStatistics } from '@/lib/stats'
 import { Module, UserStatistics } from '@/types'
 import { MODULE_TYPES, MODULE_TYPE_COLORS } from '@/constants'
+import { Card, Badge, LoadingSpinner } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
+
+// Brand Logo
+const Logo = require('@/assets/images/logo.png')
 
 export default function HomeScreen() {
   const { user } = useAuth()
+  const { width } = useWindowDimensions()
   
   const [modules, setModules] = useState<(Module & { question_count: number })[]>([])
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Responsive constants
+  const isDesktop = width >= 1024
+  const isTablet = width >= 768 && width < 1024
+  const contentMaxWidth = 1200
+  const statsMaxWidth = 800
+  const columnCount = isDesktop ? 3 : isTablet ? 2 : 1
 
   const loadData = useCallback(async () => {
     if (!user) {
@@ -71,105 +84,185 @@ export default function HomeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement de vos modules..." />
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
+        contentContainerStyle={{ alignItems: 'center' }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={BRAND_THEME.colors.primary[500]}
+          />
         }
       >
-        {/* Header */}
-        <View className="bg-primary-500 px-6 py-8 rounded-b-3xl">
-          <Text className="text-white text-lg opacity-80">Bienvenue,</Text>
-          <Text className="text-white text-2xl font-bold mb-4">
-            {user?.full_name || 'Étudiant'}
-          </Text>
-          
-          <View className="flex-row items-center">
-            <View className="bg-white/20 px-3 py-1 rounded-full mr-2">
-              <Text className="text-white font-medium">{getYearLabel()}</Text>
+        {/* Enhanced Header */}
+        <View style={{
+          backgroundColor: '#09B2AD',
+          width: '100%',
+          alignItems: 'center',
+          borderBottomLeftRadius: 40,
+          borderBottomRightRadius: 40,
+          paddingTop: 48,
+          paddingBottom: 80,
+        }}>
+          <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24 }}>
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ 
+                color: 'rgba(255, 255, 255, 0.8)', 
+                fontSize: 16,
+                fontWeight: '500',
+                marginBottom: 4
+              }}>
+                Bienvenue
+              </Text>
+              <Text style={{
+                color: '#ffffff',
+                fontSize: isDesktop ? 32 : 24,
+                fontWeight: 'bold'
+              }}>
+                {user?.full_name || 'Étudiant'}
+              </Text>
             </View>
-            <View className="bg-white/20 px-3 py-1 rounded-full">
-              <Text className="text-white font-medium">{user?.speciality}</Text>
+            
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Badge 
+                label={getYearLabel()} 
+                variant="secondary"
+                style={{ 
+                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                  borderRadius: 15,
+                  paddingHorizontal: 12
+                }}
+              />
+              {user?.speciality && (
+                <Badge 
+                  label={user.speciality} 
+                  variant="secondary"
+                  style={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                    borderRadius: 15,
+                    paddingHorizontal: 12
+                  }}
+                />
+              )}
             </View>
           </View>
         </View>
 
-        {/* Quick Stats */}
-        {stats && (
-          <View className="px-6 -mt-6">
-            <View className="bg-white rounded-2xl p-4 shadow-sm flex-row">
-              <StatItem 
-                label="Questions" 
-                value={stats.total_questions_attempted.toString()} 
-                icon="📝"
-              />
-              <StatItem 
-                label="Précision" 
-                value={`${Math.round(stats.average_score)}%`} 
-                icon="🎯"
-              />
-              <StatItem 
-                label="Sauvegardées" 
-                value={stats.saved_questions_count.toString()} 
-                icon="💾"
-              />
-            </View>
-          </View>
-        )}
-
-        {/* Modules Section */}
-        <View className="px-6 mt-6">
-          <Text className="text-xl font-bold text-gray-900 mb-4">
-            Vos Modules
-          </Text>
-
-          {modules.length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center">
-              <Text className="text-4xl mb-4">📚</Text>
-              <Text className="text-gray-500 text-center">
-                Aucun module disponible pour votre année
-              </Text>
-            </View>
-          ) : (
-            <View className="space-y-3">
-              {modules.map((module) => (
-                <ModuleCard 
-                  key={module.id} 
-                  module={module}
-                  onPress={() => router.push(`/module/${module.id}`)}
-                />
-              ))}
+        {/* content wrapper */}
+        <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24 }}>
+          {/* Quick Stats */}
+          {stats && (
+            <View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: -40 }}>
+              <Card variant="elevated" padding="md" style={{ borderRadius: 17, borderWidth: 0 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                  <StatItem 
+                    label="Questions" 
+                    value={stats.total_questions_attempted.toString()} 
+                    icon="📝"
+                  />
+                  <StatItem 
+                    label="précision" 
+                    value={`${Math.round(stats.average_score)}%`} 
+                    icon="🎯"
+                  />
+                  <StatItem 
+                    label="sauvegardées" 
+                    value={stats.saved_questions_count.toString()} 
+                    icon="💾"
+                  />
+                </View>
+              </Card>
             </View>
           )}
+
+          {/* Modules Section */}
+          <View style={{ marginTop: 24, width: '100%' }}>
+            <Text style={{
+              fontSize: 20,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 16
+            }}>
+              Vos Modules
+            </Text>
+
+            {modules.length === 0 ? (
+              <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[600],
+                  textAlign: 'center',
+                  fontSize: 16
+                }}>
+                  Aucun module disponible pour votre année
+                </Text>
+              </Card>
+            ) : (
+              <View style={{ 
+                flexDirection: 'row', 
+                flexWrap: 'wrap', 
+                marginHorizontal: -6, // Account for gap
+              }}>
+                {modules.map((module) => (
+                  <View 
+                    key={module.id} 
+                    style={{ 
+                      width: `${100 / columnCount}%`, 
+                      padding: 6 
+                    }}
+                  >
+                    <ModuleCard 
+                      module={module}
+                      onPress={() => router.push(`/module/${module.id}`)}
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Bottom Spacing */}
-        <View className="h-8" />
+        <View style={{ height: isDesktop ? 100 : 32 }} />
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Stat Item Component
+// Enhanced Stat Item Component
 function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
   return (
-    <View className="flex-1 items-center">
-      <Text className="text-2xl mb-1">{icon}</Text>
-      <Text className="text-xl font-bold text-gray-900">{value}</Text>
-      <Text className="text-gray-500 text-sm">{label}</Text>
+    <View style={{ alignItems: 'center' }}>
+      <Text style={{ fontSize: 32, marginBottom: 8 }}>{icon}</Text>
+      <Text style={{
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#000000',
+        marginBottom: 2
+      }}>
+        {value}
+      </Text>
+      <Text style={{
+        color: 'rgba(0, 0, 0, 0.6)',
+        fontSize: 12,
+        fontWeight: '500'
+      }}>
+        {label}
+      </Text>
     </View>
   )
 }
 
-// Module Card Component
+// Enhanced Module Card Component
 function ModuleCard({ 
   module, 
   onPress 
@@ -177,41 +270,49 @@ function ModuleCard({
   module: Module & { question_count: number }
   onPress: () => void 
 }) {
-  const moduleType = MODULE_TYPES.find(t => t.value === module.type)
-  const colors = MODULE_TYPE_COLORS[module.type]
-
   return (
-    <TouchableOpacity 
-      className="bg-white rounded-2xl p-4 shadow-sm"
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 mr-4">
-          <Text className="text-lg font-semibold text-gray-900" numberOfLines={2}>
-            {module.name}
-          </Text>
-        </View>
-        <View className={`px-2 py-1 rounded-full ${colors.bg}`}>
-          <Text className={`text-xs font-medium ${colors.text}`}>
-            {moduleType?.icon} {moduleType?.label}
-          </Text>
-        </View>
-      </View>
-
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center">
-          <Text className="text-gray-500 text-sm">
-            {module.question_count} questions
-          </Text>
-          {module.has_sub_disciplines && (
-            <Text className="text-gray-400 text-sm ml-2">
-              • {module.sub_disciplines?.length || 0} sous-disciplines
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <Card variant="default" padding="none" style={{ borderRadius: 17, borderWidth: 0, shadowOpacity: 0.1 }}>
+        <View style={{ 
+          flexDirection: 'row', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          padding: 20
+        }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: '#000000',
+              marginBottom: 6
+            }}>
+              {module.name}
             </Text>
-          )}
+            <Text style={{
+              color: 'rgba(0, 0, 0, 0.4)',
+              fontSize: 14,
+              fontWeight: '500'
+            }}>
+              {module.question_count} Questions
+            </Text>
+          </View>
+
+          <View style={{
+            backgroundColor: 'rgba(12, 227, 220, 0.3)',
+            paddingHorizontal: 20,
+            paddingVertical: 10,
+            borderRadius: 15,
+          }}>
+            <Text style={{
+              color: '#09B2AD',
+              fontWeight: '700',
+              fontSize: 16
+            }}>
+              Pratiquer
+            </Text>
+          </View>
         </View>
-        <Text className="text-primary-500 font-medium">Pratiquer →</Text>
-      </View>
+      </Card>
     </TouchableOpacity>
   )
 }

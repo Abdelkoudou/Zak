@@ -36,3 +36,7 @@ yarn-error.*
 
 # Expo generated
 expo-env.d.ts
+
+
+
+brandID/

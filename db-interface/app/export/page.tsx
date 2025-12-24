@@ -1,26 +1,91 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+
+interface ExportStatus {
+  files: Array<{
+    name: string;
+    size: number;
+    updated: string;
+  }>;
+  version: {
+    version: string;
+    last_updated: string;
+    total_questions: number;
+    total_modules: number;
+    modules: any;
+    changelog: any[];
+  } | null;
+  storage_url: string;
+}
 
 export default function ExportPage() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [data, setData] = useState<ExportStatus | null>(null);
   const [error, setError] = useState('');
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
-  const handleExport = async () => {
-    setLoading(true);
-    setError('');
-    setResult(null);
+  useEffect(() => {
+    checkAccessAndFetchStatus();
+  }, []);
 
+  const checkAccessAndFetchStatus = async () => {
     try {
-      // Get auth token
+      setLoading(true);
+      // 1. Check User Role
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        throw new Error('Not authenticated');
+        router.push('/login');
+        return;
       }
 
-      // Call export API
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError || !user) throw new Error('Failed to fetch user profile');
+
+      const role = user.role;
+      setUserRole(role);
+
+      if (role !== 'owner') {
+        setLoading(false);
+        return; // Stop here, rendering will show "Access Denied"
+      }
+
+      setIsOwner(true);
+
+      // 2. Fetch Export Status
+      const response = await fetch('/api/export');
+      if (!response.ok) throw new Error('Failed to fetch export status');
+      
+      const result = await response.json();
+      if (result.success) {
+        setData(result.data);
+      }
+    } catch (err: any) {
+      console.error('Error:', err);
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    setExporting(true);
+    setError('');
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Not authenticated');
+
       const response = await fetch('/api/export', {
         method: 'POST',
         headers: {
@@ -28,141 +93,237 @@ export default function ExportPage() {
         },
       });
 
-      // Check if response is OK before parsing JSON
+      const result = await response.json();
+
       if (!response.ok) {
-        // Try to parse error message
-        let errorMessage = 'Export failed';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch {
-          // If JSON parsing fails, use status text
-          errorMessage = `Export failed: ${response.status} ${response.statusText}`;
-        }
-        throw new Error(errorMessage);
+        throw new Error(result.error || 'Export failed');
       }
 
-      const data = await response.json();
-      setResult(data);
+      // Refresh status
+      await checkAccessAndFetchStatus();
+      alert('✅ Export completed successfully!');
+
     } catch (err: any) {
       console.error('Export error:', err);
       setError(err.message || 'Failed to export');
     } finally {
-      setLoading(false);
+      setExporting(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Export Questions to JSON
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Export all questions from the database to JSON files and upload them to Supabase Storage.
-            The mobile app will automatically download these files.
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mb-6"></div>
+          <p className="text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest animate-pulse">Vérification des accès...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isOwner) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center p-6 transition-colors">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-10 text-center border border-slate-200 dark:border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-red-500/50"></div>
+          <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-3xl bg-red-50 dark:bg-red-500/10 mb-8 transform group-hover:scale-110 transition-transform">
+            <span className="text-3xl">🚫</span>
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-3">Accès Restreint</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
+            Cette zone est strictement réservée au rôle <strong>Propriétaire</strong>.
+            <br />
+            Votre rôle actuel : <span className="inline-block mt-2 bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">{userRole || 'Inconnu'}</span>
           </p>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="text-blue-900 font-semibold mb-2">📱 How it works:</h3>
-            <ol className="list-decimal list-inside space-y-1 text-blue-800 text-sm">
-              <li>Questions are exported from database to JSON format</li>
-              <li>JSON files are uploaded to Supabase Storage (questions bucket)</li>
-              <li>Mobile app checks for updates on launch</li>
-              <li>Students get new questions instantly - no app update needed!</li>
-            </ol>
-          </div>
-
-          {/* Export Button */}
-          <button
-            onClick={handleExport}
-            disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          <button 
+            onClick={() => router.push('/')}
+            className="w-full py-4 px-6 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
           >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Exporting...
-              </span>
-            ) : (
-              '🚀 Export & Upload to Storage'
-            )}
+            Retour au Dashboard
           </button>
+        </div>
+      </div>
+    );
+  }
 
-          {/* Error Message */}
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="text-red-900 font-semibold mb-1">❌ Error</h3>
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
-          )}
-
-          {/* Success Result */}
-          {result && result.success && (
-            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-              <h3 className="text-green-900 font-semibold mb-2">✅ Export Successful!</h3>
-              <div className="space-y-2 text-sm text-green-800">
-                <p><strong>Total Questions:</strong> {result.data.total_questions}</p>
-                <p><strong>Total Modules:</strong> {result.data.total_modules}</p>
-                <p><strong>Version:</strong> {result.data.version}</p>
-                
-                <div className="mt-3">
-                  <p className="font-semibold mb-1">Exported Modules:</p>
-                  <ul className="list-disc list-inside space-y-1 ml-2">
-                    {result.data.modules.map((module: string) => (
-                      <li key={module}>{module}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-green-300">
-                  <p className="text-green-900 font-medium">
-                    📱 Mobile app users will receive these updates on next launch!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions */}
-          <div className="mt-8 border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">📝 When to Export</h3>
-            <ul className="space-y-2 text-gray-700 text-sm">
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>After adding new questions</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>After editing existing questions</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Before a new exam period</span>
-              </li>
-              <li className="flex items-start">
-                <span className="text-blue-600 mr-2">•</span>
-                <span>Whenever you want students to get updates</span>
-              </li>
-            </ul>
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+      <div className="max-w-7xl mx-auto space-y-12">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+              Export Control Center
+            </h1>
+            <p className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+              Synchronisation des données • Application Mobile
+            </p>
           </div>
-
-          {/* Storage Info */}
-          <div className="mt-6 bg-gray-50 rounded-lg p-4">
-            <h3 className="text-gray-900 font-semibold mb-2">💾 Storage Location</h3>
-            <p className="text-gray-700 text-sm mb-2">
-              Files are uploaded to: <code className="bg-gray-200 px-2 py-1 rounded">Supabase Storage → questions bucket</code>
-            </p>
-            <p className="text-gray-600 text-xs">
-              You can view uploaded files in your Supabase Dashboard → Storage → questions
-            </p>
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm">
+            <span className="text-xl">👑</span>
+            <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest">
+              Accès Propriétaire
+            </span>
           </div>
         </div>
+
+        {error && (
+          <div className="rounded-[2rem] bg-red-50 dark:bg-red-500/10 p-6 border border-red-200 dark:border-red-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-start gap-4">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h3 className="text-sm font-black text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Erreur d&apos;Export</h3>
+                <p className="text-sm text-red-600 dark:text-red-300 font-medium">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          
+          {/* Status Card */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm overflow-hidden group transition-all hover:shadow-xl hover:shadow-primary-500/5">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center text-xl">
+                  🚀
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest leading-tight">État du Cloud</h3>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Status de synchronisation en temps réel</p>
+                </div>
+              </div>
+              
+              <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl p-8 mb-8">
+                 <div className="grid grid-cols-2 gap-8 text-center">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Total Questions</p>
+                      <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                        {data?.version?.total_questions || '0'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Total Modules</p>
+                      <p className="text-4xl font-black text-primary-600 dark:text-primary-400 tracking-tight">
+                        {data?.version?.total_modules || '0'}
+                      </p>
+                    </div>
+                 </div>
+                 <div className="mt-8 pt-6 border-t border-slate-200/50 dark:border-white/5 space-y-3">
+                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400 dark:text-slate-500">Dernière Mise à jour</span>
+                      <span className="text-slate-900 dark:text-slate-300">
+                        {data?.version?.last_updated ? new Date(data.version.last_updated).toLocaleString('fr-FR') : 'Jamais'}
+                      </span>
+                   </div>
+                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400 dark:text-slate-500">Version du Master</span>
+                      <span className="bg-slate-200 dark:bg-white/5 px-2 py-0.5 rounded text-slate-900 dark:text-white font-mono">
+                        {data?.version?.version || 'N/A'}
+                      </span>
+                   </div>
+                 </div>
+              </div>
+
+              <div>
+                <button
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className={`w-full group flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] text-white transition-all shadow-xl shadow-primary-500/20 active:scale-95 ${
+                    exporting 
+                      ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed' 
+                      : 'bg-primary-600 hover:bg-primary-700'
+                  }`}
+                >
+                  {exporting ? (
+                     <>
+                       <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                       Exportation en cours...
+                     </>
+                  ) : (
+                    <>
+                      🚀 Lancer l&apos;Exportation & Synchro
+                    </>
+                  )}
+                </button>
+                <p className="mt-4 text-[10px] font-black text-slate-400 dark:text-slate-500 text-center uppercase tracking-widest leading-relaxed">
+                  Cette action écrasera les anciens fichiers du Cloud<br/>avec les données actuelles.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recently Uploaded Files */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm flex flex-col h-[600px] overflow-hidden group transition-all hover:shadow-xl hover:shadow-primary-500/5">
+             <div className="p-8 border-b border-slate-100 dark:border-white/5">
+                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-lg">
+                      📦
+                    </div>
+                    Fichiers Stockés ({data?.files?.length || 0})
+                 </h3>
+             </div>
+             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                {data?.files ? (
+                  <div className="space-y-2">
+                    {data.files.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()).map((file) => (
+                      <div key={file.name} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/50 border border-transparent hover:border-primary-500/20 rounded-2xl transition-all group/file">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center text-lg shadow-sm group-hover/file:scale-110 transition-transform">
+                            📄
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-slate-900 dark:text-white truncate uppercase tracking-widest">{file.name}</p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                              {new Date(file.updated).toLocaleString('fr-FR')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 family-mono">
+                           {(file.size / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 gap-4">
+                    <div className="text-4xl animate-bounce">📂</div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Aucun fichier trouvé</p>
+                  </div>
+                )}
+             </div>
+             <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-white/5 text-center">
+                <a 
+                   href={data?.storage_url ? `${data.storage_url}version.json` : '#'}
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors ${!data?.storage_url ? 'pointer-events-none opacity-50' : ''}`}
+                >
+                  Télécharger master version.json <span>&rarr;</span>
+                </a>
+             </div>
+          </div>
+
+        </div>
+
+        {/* Instructions Block */}
+        <div className="bg-primary-500/5 dark:bg-primary-500/5 rounded-[2rem] p-8 border border-primary-500/10 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform"></div>
+          <div className="flex items-start gap-6 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-primary-500/20 flex items-center justify-center text-2xl shadow-sm">
+              💡
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-3 px-1">Fonctionnement</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                Le clic sur <strong>&quot;Lancer l&apos;Exportation&quot;</strong> convertira toutes les questions de la base de données SQL en fichiers JSON optimisés regroupés par module. Ces fichiers seront téléchargés dans le bucket <code>questions</code>. L&apos;application mobile interroge <code>version.json</code> à chaque lancement pour détecter et télécharger les mises à jour.
+              </p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   );

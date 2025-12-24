@@ -1,14 +1,16 @@
 // ============================================================================
-// Resources Screen
+// Resources Screen - Light Sea Green Brand (Matching Design)
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
 import { getResources } from '@/lib/resources'
 import { CourseResource, ResourceType } from '@/types'
-import { RESOURCE_TYPES } from '@/constants'
+
+import { Card, LoadingSpinner } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function ResourcesScreen() {
   const { user } = useAuth()
@@ -16,20 +18,33 @@ export default function ResourcesScreen() {
   const [resources, setResources] = useState<CourseResource[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<ResourceType | 'all'>('all')
 
   const loadResources = useCallback(async () => {
-    if (!user?.year_of_study) return
+    if (!user?.year_of_study) {
+      setIsLoading(false)
+      return
+    }
 
     try {
+      setError(null)
       const filters = selectedType === 'all' 
         ? { year: user.year_of_study }
         : { year: user.year_of_study, type: selectedType }
       
-      const { resources: data } = await getResources(filters)
-      setResources(data)
+      const { resources: data, error: apiError } = await getResources(filters)
+      
+      if (apiError) {
+        setError(apiError)
+        setResources([])
+      } else {
+        setResources(data)
+      }
     } catch (error) {
       console.error('Error loading resources:', error)
+      setError('Erreur lors du chargement des ressources')
+      setResources([])
     } finally {
       setIsLoading(false)
       setRefreshing(false)
@@ -50,108 +65,218 @@ export default function ResourcesScreen() {
       const canOpen = await Linking.canOpenURL(url)
       if (canOpen) {
         await Linking.openURL(url)
+      } else {
+        setError('Impossible d\'ouvrir ce lien')
       }
     } catch (error) {
       console.error('Error opening URL:', error)
+      setError('Erreur lors de l\'ouverture du lien')
     }
   }
 
-  const getResourceIcon = (type: ResourceType) => {
-    return RESOURCE_TYPES.find(t => t.value === type)?.icon || '🔗'
-  }
-
-  // Group resources by module
-  const groupedResources = resources.reduce((acc, resource) => {
-    const key = resource.module_name
-    if (!acc[key]) {
-      acc[key] = []
-    }
-    acc[key].push(resource)
-    return acc
-  }, {} as Record<string, CourseResource[]>)
-
+  // Show loading state
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement des ressources..." />
       </SafeAreaView>
     )
   }
 
+  // Show message if user is not authenticated or doesn't have year_of_study
+  if (!user || !user.year_of_study) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>🎓</Text>
+          <Text style={{
+            color: BRAND_THEME.colors.gray[600],
+            textAlign: 'center',
+            fontSize: 16,
+            marginBottom: 8
+          }}>
+            Veuillez vous connecter et compléter votre profil
+          </Text>
+          <Text style={{
+            color: BRAND_THEME.colors.gray[500],
+            textAlign: 'center',
+            fontSize: 14
+          }}>
+            pour accéder aux ressources de votre année d'étude
+          </Text>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  // Filter resources based on selected type
+  const filteredResources = selectedType === 'all' ? resources : resources.filter(r => r.type === selectedType)
+
+  // Get type label for display
+  const getTypeLabel = (type: ResourceType) => {
+    switch (type) {
+      case 'google_drive':
+        return 'Drive'
+      case 'telegram':
+        return 'Telegram'
+      case 'youtube':
+        return 'YouTube'
+      case 'pdf':
+        return 'PDF'
+      default:
+        return 'Autre'
+    }
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-100">
-        <Text className="text-2xl font-bold text-gray-900">Ressources</Text>
-        <Text className="text-gray-500">Cours et documents pour vos études</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+      {/* Header - Matching Design */}
+      <View style={{
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: BRAND_THEME.colors.gray[100]
+      }}>
+        <Text style={{
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: BRAND_THEME.colors.gray[900],
+          marginBottom: 4
+        }}>
+          Resources
+        </Text>
+        <Text style={{
+          color: BRAND_THEME.colors.gray[600],
+          fontSize: 14
+        }}>
+          Cours Et Documents Pour Vos Etudes
+        </Text>
       </View>
 
-      {/* Type Filter */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        className="bg-white border-b border-gray-100"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
-      >
-        <FilterChip 
-          label="Tout" 
-          isSelected={selectedType === 'all'}
-          onPress={() => setSelectedType('all')}
-        />
-        {RESOURCE_TYPES.map((type) => (
+      {/* Type Filter - Matching Design */}
+      <View style={{
+        backgroundColor: '#ffffff',
+        borderBottomWidth: 1,
+        borderBottomColor: BRAND_THEME.colors.gray[100]
+      }}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
+        >
           <FilterChip 
-            key={type.value}
-            label={`${type.icon} ${type.label}`}
-            isSelected={selectedType === type.value}
-            onPress={() => setSelectedType(type.value)}
+            label="Tous" 
+            isSelected={selectedType === 'all'}
+            onPress={() => setSelectedType('all')}
           />
-        ))}
-      </ScrollView>
+          <FilterChip 
+            label="Drive" 
+            isSelected={selectedType === 'google_drive'}
+            onPress={() => setSelectedType('google_drive')}
+          />
+          <FilterChip 
+            label="Telegram" 
+            isSelected={selectedType === 'telegram'}
+            onPress={() => setSelectedType('telegram')}
+          />
+          <FilterChip 
+            label="YouTube" 
+            isSelected={selectedType === 'youtube'}
+            onPress={() => setSelectedType('youtube')}
+          />
+          <FilterChip 
+            label="PDF" 
+            isSelected={selectedType === 'pdf'}
+            onPress={() => setSelectedType('pdf')}
+          />
+        </ScrollView>
+      </View>
 
-      {/* Resources List */}
+      {/* Resources List - Matching Design */}
       <ScrollView
-        className="flex"
+        style={{ flex: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={BRAND_THEME.colors.primary[500]}
+          />
         }
       >
-        <View className="px-6 py-4">
-          {resources.length === 0 ? (
-            <View className="bg-white rounded-2xl p-8 items-center">
-              <Text className="text-4xl mb-4">📁</Text>
-              <Text className="text-gray-500 text-center">
+        <View style={{ paddingHorizontal: 24, paddingVertical: 16 }}>
+          {error ? (
+            <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>⚠️</Text>
+              <Text style={{
+                color: BRAND_THEME.colors.error[600],
+                textAlign: 'center',
+                fontSize: 16,
+                marginBottom: 8
+              }}>
+                {error}
+              </Text>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: BRAND_THEME.colors.primary[500],
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  marginTop: 8
+                }}
+                onPress={() => {
+                  setError(null)
+                  loadResources()
+                }}
+              >
+                <Text style={{ color: 'white', fontWeight: '500' }}>
+                  Réessayer
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          ) : filteredResources.length === 0 ? (
+            <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 48, marginBottom: 16 }}>📁</Text>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                textAlign: 'center',
+                fontSize: 16
+              }}>
                 Aucune ressource disponible
               </Text>
-            </View>
-          ) : (
-            Object.entries(groupedResources).map(([moduleName, moduleResources]) => (
-              <View key={moduleName} className="mb-6">
-                <Text className="text-lg font-semibold text-gray-900 mb-3">
-                  {moduleName}
+              {user?.year_of_study && (
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[500],
+                  textAlign: 'center',
+                  fontSize: 14,
+                  marginTop: 8
+                }}>
+                  pour la {user.year_of_study}ère année
+                  {selectedType !== 'all' && ` (${getTypeLabel(selectedType)})`}
                 </Text>
-                <View className="space-y-2">
-                  {moduleResources.map((resource) => (
-                    <ResourceCard 
-                      key={resource.id}
-                      resource={resource}
-                      icon={getResourceIcon(resource.type)}
-                      onPress={() => openResource(resource.url)}
-                    />
-                  ))}
-                </View>
-              </View>
-            ))
+              )}
+            </Card>
+          ) : (
+            <View style={{ gap: 12 }}>
+              {filteredResources.map((resource) => (
+                <ResourceCard 
+                  key={resource.id}
+                  resource={resource}
+                  onPress={() => openResource(resource.url)}
+                />
+              ))}
+            </View>
           )}
         </View>
 
         {/* Bottom Spacing */}
-        <View className="h-8" />
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Filter Chip Component
+// Filter Chip Component - Matching Design
 function FilterChip({ 
   label, 
   isSelected, 
@@ -163,48 +288,83 @@ function FilterChip({
 }) {
   return (
     <TouchableOpacity
-      className={`px-4 py-2 rounded-full mr-2 ${
-        isSelected ? 'bg-primary-500' : 'bg-gray-100'
-      }`}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 20,
+        marginRight: 8,
+        backgroundColor: isSelected ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100]
+      }}
       onPress={onPress}
     >
-      <Text className={`font-medium ${isSelected ? 'text-white' : 'text-gray-700'}`}>
+      <Text style={{
+        fontWeight: '500',
+        color: isSelected ? BRAND_THEME.colors.primary[700] : BRAND_THEME.colors.gray[700]
+      }}>
         {label}
       </Text>
     </TouchableOpacity>
   )
 }
 
-// Resource Card Component
+// Resource Card Component - Matching Design
 function ResourceCard({ 
   resource, 
-  icon,
   onPress 
 }: { 
   resource: CourseResource
-  icon: string
   onPress: () => void 
 }) {
+  const getResourceIcon = (type: ResourceType) => {
+    switch (type) {
+      case 'google_drive':
+        return '📁'
+      case 'telegram':
+        return '💬'
+      case 'youtube':
+        return '📺'
+      case 'pdf':
+        return '📄'
+      default:
+        return '📋'
+    }
+  }
+
   return (
-    <TouchableOpacity 
-      className="bg-white rounded-xl p-4 flex-row items-center"
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <View className="w-12 h-12 bg-primary-50 rounded-xl items-center justify-center mr-4">
-        <Text className="text-2xl">{icon}</Text>
-      </View>
-      <View className="flex-1">
-        <Text className="text-gray-900 font-medium" numberOfLines={2}>
-          {resource.title}
-        </Text>
-        {resource.description && (
-          <Text className="text-gray-500 text-sm mt-1" numberOfLines={1}>
-            {resource.description}
-          </Text>
-        )}
-      </View>
-      <Text className="text-primary-500 text-xl">→</Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+      <Card variant="default" padding="md">
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{
+            width: 40,
+            height: 40,
+            backgroundColor: BRAND_THEME.colors.gray[100],
+            borderRadius: 8,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 12
+          }}>
+            <Text style={{ fontSize: 20 }}>{getResourceIcon(resource.type)}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[900],
+              fontWeight: '500',
+              fontSize: 16
+            }} numberOfLines={2}>
+              {resource.title}
+            </Text>
+            {resource.description && (
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                fontSize: 14,
+                marginTop: 4
+              }} numberOfLines={1}>
+                {resource.description}
+              </Text>
+            )}
+          </View>
+        </View>
+      </Card>
     </TouchableOpacity>
   )
 }
