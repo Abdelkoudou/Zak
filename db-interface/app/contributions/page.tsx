@@ -202,9 +202,12 @@ export default function ContributionsPage() {
 
   if (loading && contributions.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <p className="text-gray-600">Loading contributions...</p>
+      <div className="max-w-7xl mx-auto py-20">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin"></div>
+          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            Chargement des contributions...
+          </p>
         </div>
       </div>
     );
@@ -212,200 +215,164 @@ export default function ContributionsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{error}</p>
-            <button
-              onClick={() => router.push('/')}
-              className="mt-4 text-blue-600 hover:underline"
-            >
-              Go to Dashboard
-            </button>
-          </div>
+      <div className="max-w-7xl mx-auto py-20">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-8 text-center">
+          <span className="text-4xl mb-4 block">🚫</span>
+          <p className="text-red-600 dark:text-red-400 font-bold mb-4">{error}</p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all active:scale-95"
+          >
+            Retour au Dashboard
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-end">
+    <div className="max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+            Suivi des Contributions
+          </h1>
+          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+            Analytique & Paiements • QCM Med
+          </p>
+        </div>
+        
+        {/* Mode Toggle */}
+        <div className="flex bg-slate-100 dark:bg-white/5 rounded-2xl p-1.5 border border-slate-200 dark:border-white/5 transition-all">
+          <button
+            onClick={() => setPaymentMode(false)}
+            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              !paymentMode 
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg' 
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Analytics
+          </button>
+          <button
+            onClick={() => setPaymentMode(true)}
+            className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+              paymentMode 
+                ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' 
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            Paiements
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 mb-8 shadow-sm">
+        <h2 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6 px-1">
+          {paymentMode ? 'Configuration des Prix' : 'Filtres & Configuration'}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {!paymentMode && (
+            <>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Date de début
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Date de fin
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                />
+              </div>
+            </>
+          )}
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Admin Contribution Tracking
-            </h1>
-            <p className="text-gray-600">
-              Track questions and resources added by each admin
-            </p>
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+              Prix par QCM (DA)
+            </label>
+            <input
+              type="number"
+              value={pricePerQuestion}
+              onChange={(e) => setPricePerQuestion(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+            />
           </div>
-          
-          {/* Mode Toggle */}
-          <div className="flex bg-white rounded-lg p-1 shadow border border-gray-200">
-            <button
-              onClick={() => setPaymentMode(false)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                !paymentMode 
-                  ? 'bg-blue-100 text-blue-800' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Analytics Mode
-            </button>
-            <button
-              onClick={() => setPaymentMode(true)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                paymentMode 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Payment Mode
-            </button>
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+              Prix par Ressource (DA)
+            </label>
+            <input
+              type="number"
+              value={pricePerResource}
+              onChange={(e) => setPricePerResource(Number(e.target.value))}
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+            />
           </div>
         </div>
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100 dark:border-white/5">
+          {!paymentMode && (
+            <button
+              onClick={fetchContributions}
+              className="flex-1 px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
+            >
+              Appliquer les Filtres
+            </button>
+          )}
+          <button
+            onClick={exportToCSV}
+            className="flex-1 px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95 text-center"
+          >
+            📊 Exporter CSV
+          </button>
+        </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-4">
-            {paymentMode ? 'Pricing Settings' : 'Filters & Pricing'}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {!paymentMode && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-              </>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price per QCM (DA)
-              </label>
-              <input
-                type="number"
-                value={pricePerQuestion}
-                onChange={(e) => setPricePerQuestion(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Contributeurs', value: contributions.length, icon: '👥', color: 'primary' },
+          { label: paymentMode ? 'QCM à Payer' : 'Total QCM', value: contributions.reduce((sum, c) => sum + (paymentMode ? (c.payable_questions || 0) : c.questions_added), 0), icon: '❓', color: 'blue' },
+          { label: paymentMode ? 'Ressources à Payer' : 'Total Ressources', value: contributions.reduce((sum, c) => sum + (paymentMode ? (c.payable_resources || 0) : c.resources_added), 0), icon: '📚', color: 'green' },
+          { label: paymentMode ? 'Total Dû' : 'Total Paiements', value: `${calculateTotalPayment()} DA`, icon: '💰', color: 'purple' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xl">{item.icon}</span>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Price per Resource (DA)
-              </label>
-              <input
-                type="number"
-                value={pricePerResource}
-                onChange={(e) => setPricePerResource(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
+            <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white truncate">{item.value}</p>
           </div>
-          <div className="mt-4 flex gap-3">
-            {!paymentMode && (
-              <button
-                onClick={fetchContributions}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Apply Filters
-              </button>
-            )}
-            <button
-              onClick={exportToCSV}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Export to CSV
-            </button>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">Total Contributors</p>
-            <p className="text-3xl font-bold text-gray-900">{contributions.length}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">
-              {paymentMode ? 'Payable Questions' : 'Total Questions'}
-            </p>
-            <p className="text-3xl font-bold text-blue-600">
-              {contributions.reduce((sum, c) => 
-                sum + (paymentMode ? (c.payable_questions || 0) : c.questions_added), 0
-              )}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">
-               {paymentMode ? 'Payable Resources' : 'Total Resources'}
-            </p>
-            <p className="text-3xl font-bold text-green-600">
-              {contributions.reduce((sum, c) => 
-                sum + (paymentMode ? (c.payable_resources || 0) : c.resources_added), 0
-              )}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600 mb-1">
-              {paymentMode ? 'Total Amount Due' : 'Total Payments'}
-            </p>
-            <p className="text-3xl font-bold text-purple-600">{calculateTotalPayment()} DA</p>
-          </div>
-        </div>
-
-        {/* Contributions Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Admin
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  {paymentMode ? 'Payable Q' : 'Questions'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                   {paymentMode ? 'Payable R' : 'Resources'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  {paymentMode ? 'Amount Due' : 'Payment (DA)'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  {paymentMode ? 'Last Payment' : 'Last Activity'}
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-100 dark:divide-white/5">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-950/50">
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Contributeur</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Rôle</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{paymentMode ? 'Q. Dû' : 'Questions'}</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{paymentMode ? 'R. Dû' : 'Resources'}</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{paymentMode ? 'Montant Dû' : 'Paiement (DA)'}</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{paymentMode ? 'Dernier Paiement' : 'Dernière Act.'}</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-100 dark:divide-white/5">
               {contributions.map((contrib) => {
                 const q = paymentMode ? (contrib.payable_questions || 0) : contrib.questions_added;
                 const r = paymentMode ? (contrib.payable_resources || 0) : contrib.resources_added;
@@ -413,52 +380,59 @@ export default function ContributionsPage() {
                 const amount = calculatePayment(q, r);
                 
                 return (
-                  <tr key={contrib.user_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {contrib.full_name || 'N/A'}
-                        </p>
-                        <p className="text-sm text-gray-500">{contrib.email}</p>
+                  <tr key={contrib.user_id} className="group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary-500/10 rounded-full flex items-center justify-center text-primary-600 font-bold">
+                          {(contrib.full_name || contrib.email)[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">
+                            {contrib.full_name || 'Contributeur'}
+                          </p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{contrib.email}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                    <td className="px-6 py-5">
+                      <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                         {contrib.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
+                    <td className="px-6 py-5 text-sm font-bold text-slate-700 dark:text-slate-300">
                       {q}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
+                    <td className="px-6 py-5 text-sm font-bold text-slate-700 dark:text-slate-300">
                       {r}
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                    <td className="px-6 py-5 text-sm font-black text-slate-900 dark:text-white">
                       {total}
                     </td>
-                    <td className="px-6 py-4 text-sm font-bold text-purple-600">
-                      {amount} DA
+                    <td className="px-6 py-5">
+                      <span className="text-sm font-black text-primary-600 dark:text-primary-400">
+                        {amount} DA
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className="px-6 py-5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                       {paymentMode 
-                        ? (contrib.last_payment_date ? new Date(contrib.last_payment_date).toLocaleDateString() : 'Never')
-                        : new Date(contrib.last_contribution_date).toLocaleDateString()
+                        ? (contrib.last_payment_date ? new Date(contrib.last_payment_date).toLocaleDateString('fr-FR') : 'Jamais')
+                        : new Date(contrib.last_contribution_date).toLocaleDateString('fr-FR')
                       }
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-3">
+                    <td className="px-6 py-5">
+                      <div className="flex gap-2">
                         <button
                           onClick={() => fetchDetails(contrib.user_id)}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
                         >
-                          Details
+                          Détails
                         </button>
                         {paymentMode && amount > 0 && (
                           <button
                             onClick={() => setPayingUser(contrib)}
-                            className="text-green-600 hover:text-green-800 text-sm font-medium"
+                            className="px-3 py-1.5 bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 active:scale-95 text-center"
                           >
-                            Mark Paid
+                            Payer
                           </button>
                         )}
                       </div>
@@ -472,70 +446,53 @@ export default function ContributionsPage() {
 
         {/* Details Modal */}
         {selectedUserId && details.length > 0 && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Contribution Details
-                  </h3>
-                  <button
-                    onClick={() => {
-                      setSelectedUserId(null);
-                      setDetails([]);
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden border border-slate-200 dark:border-white/10">
+              <div className="p-8 border-b border-slate-100 dark:border-white/5 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📊</span>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Détails des Contributions</h3>
                 </div>
+                <button
+                  onClick={() => {
+                    setSelectedUserId(null);
+                    setDetails([]);
+                  }}
+                  className="w-12 h-12 flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-2xl transition-all active:scale-95"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className="p-6 overflow-y-auto max-h-[60vh]">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+              <div className="p-0 overflow-y-auto max-h-[60vh]">
+                <table className="min-w-full divide-y divide-slate-100 dark:divide-white/5">
+                  <thead className="bg-slate-50 dark:bg-slate-950/50 sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Type
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Year
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Module
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Count
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Last Added
-                      </th>
+                      <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Type</th>
+                      <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Année</th>
+                      <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Module</th>
+                      <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Nombre</th>
+                      <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Dernier Ajout</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                     {details.map((detail, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-950/50 transition-colors">
+                        <td className="px-8 py-4">
+                          <span className={`${
                             detail.content_type === 'question'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}>
+                              ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                              : 'bg-green-500/10 text-green-600 dark:text-green-400'
+                          } px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-widest`}>
                             {detail.content_type}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {detail.year}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {detail.module_name}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {detail.count}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {new Date(detail.created_at).toLocaleDateString()}
+                        <td className="px-8 py-4 text-sm font-bold text-slate-900 dark:text-white">{detail.year}</td>
+                        <td className="px-8 py-4 text-sm font-bold text-slate-900 dark:text-white">{detail.module_name}</td>
+                        <td className="px-8 py-4 text-sm font-black text-slate-900 dark:text-white">{detail.count}</td>
+                        <td className="px-8 py-4 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {new Date(detail.created_at).toLocaleDateString('fr-FR')}
                         </td>
                       </tr>
                     ))}
@@ -548,54 +505,49 @@ export default function ContributionsPage() {
 
         {/* Payment Confirmation Modal */}
         {payingUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-              <div className="p-6 border-b border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Confirm Payment
-                </h3>
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-all">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-white/10">
+              <div className="p-8 border-b border-slate-100 dark:border-white/5">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight text-center">Confirmer le Paiement</h3>
               </div>
-              <div className="p-6">
-                <p className="mb-4 text-gray-600">
-                  Are you sure you want to mark this admin as paid?
+              <div className="p-8">
+                <p className="text-center text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
+                  Êtes-vous sûr de vouloir marquer ce contributeur comme payé ? Cette action est irréversible.
                 </p>
-                <div className="bg-gray-50 p-4 rounded-md mb-4">
-                  <p className="text-sm text-gray-500">Admin</p>
-                  <p className="font-medium">{payingUser.full_name}</p>
-                  <div className="mt-2 flex justify-between">
+                <div className="bg-slate-50 dark:bg-slate-950/50 p-6 rounded-3xl border border-slate-100 dark:border-white/5 mb-6">
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Contributeur</p>
+                  <p className="font-bold text-slate-900 dark:text-white mb-4">{payingUser.full_name}</p>
+                  <div className="flex justify-between items-end">
                     <div>
-                      <p className="text-sm text-gray-500">Items</p>
-                      <p className="font-medium">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Articles</p>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
                         {payingUser.payable_questions || 0} Q + {payingUser.payable_resources || 0} R
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-500">Amount</p>
-                      <p className="font-bold text-lg text-purple-600">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Montant Total</p>
+                      <p className="text-2xl font-black text-primary-600">
                         {calculatePayment(payingUser.payable_questions || 0, payingUser.payable_resources || 0)} DA
                       </p>
                     </div>
                   </div>
                 </div>
-                <p className="text-xs text-gray-500">
-                  This will record a payment and reset the payable count for this admin.
-                </p>
-              </div>
-              <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-                <button
-                  onClick={() => setPayingUser(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-                  disabled={processingPayment}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleMarkAsPaid}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                  disabled={processingPayment}
-                >
-                  {processingPayment ? 'Processing...' : 'Confirm Payment'}
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleMarkAsPaid}
+                    className="w-full px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50"
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? '⏳ Traitement...' : '✅ Confirmer le Paiement'}
+                  </button>
+                  <button
+                    onClick={() => setPayingUser(null)}
+                    className="w-full px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95 disabled:opacity-50"
+                    disabled={processingPayment}
+                  >
+                    Annuler
+                  </button>
+                </div>
               </div>
             </div>
           </div>

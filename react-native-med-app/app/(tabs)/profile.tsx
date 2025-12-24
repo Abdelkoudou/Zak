@@ -1,22 +1,24 @@
 // ============================================================================
-// Profile Screen
+// Profile Screen - Light Sea Green Brand (Matching Design)
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getUserStatistics, getAllModuleStatistics } from '@/lib/stats'
-import { getSavedQuestionsCount } from '@/lib/saved'
-import { UserStatistics, ModuleStatistics } from '@/types'
-import { YEARS, SPECIALITIES } from '@/constants'
+import { UserStatistics, ModuleStatistics, DeviceSession } from '@/types'
+import { YEARS } from '@/constants'
+import { Card, Badge, LoadingSpinner } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function ProfileScreen() {
-  const { user, signOut, isLoading: authLoading } = useAuth()
+  const { user, signOut, isLoading: authLoading, getDeviceSessions, removeDevice } = useAuth()
   
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [moduleStats, setModuleStats] = useState<ModuleStatistics[]>([])
+  const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -29,13 +31,18 @@ export default function ProfileScreen() {
 
       const { stats: modStats } = await getAllModuleStatistics(user.id)
       setModuleStats(modStats)
+
+      const { sessions, error: sessionsError } = await getDeviceSessions()
+      if (!sessionsError) {
+        setDeviceSessions(sessions)
+      }
     } catch (error) {
       console.error('Error loading profile data:', error)
     } finally {
       setIsLoading(false)
       setRefreshing(false)
     }
-  }, [user])
+  }, [user, getDeviceSessions])
 
   useEffect(() => {
     loadData()
@@ -45,6 +52,47 @@ export default function ProfileScreen() {
     setRefreshing(true)
     loadData()
   }, [loadData])
+
+  const handleRemoveDevice = (session: DeviceSession) => {
+    Alert.alert(
+      'Supprimer l\'appareil',
+      `Êtes-vous sûr de vouloir supprimer "${session.device_name}" ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Supprimer', 
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await removeDevice(session.id)
+            if (error) {
+              Alert.alert('Erreur', 'Impossible de supprimer l\'appareil')
+            } else {
+              // Refresh device sessions
+              const { sessions } = await getDeviceSessions()
+              setDeviceSessions(sessions)
+            }
+          }
+        },
+      ]
+    )
+  }
+
+  const formatLastActive = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return 'À l\'instant'
+    if (diffInHours < 24) return `Il y a ${diffInHours}h`
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `Il y a ${diffInDays}j`
+    
+    return date.toLocaleDateString('fr-FR', { 
+      day: 'numeric', 
+      month: 'short' 
+    })
+  }
 
   const handleSignOut = () => {
     Alert.alert(
@@ -79,29 +127,29 @@ export default function ProfileScreen() {
   }
 
   const getSubscriptionStatus = () => {
-    if (!user?.is_paid) return { label: 'Non actif', color: 'text-red-500', bg: 'bg-red-50' }
-    if (!user.subscription_expires_at) return { label: 'Actif', color: 'text-green-500', bg: 'bg-green-50' }
+    if (!user?.is_paid) return { label: 'Non actif', color: 'error' }
+    if (!user.subscription_expires_at) return { label: 'Actif', color: 'success' }
     
     const expiryDate = new Date(user.subscription_expires_at)
     const now = new Date()
     
     if (expiryDate < now) {
-      return { label: 'Expiré', color: 'text-red-500', bg: 'bg-red-50' }
+      return { label: 'Expiré', color: 'error' }
     }
     
     const daysLeft = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     
     if (daysLeft <= 7) {
-      return { label: `Expire dans ${daysLeft}j`, color: 'text-orange-500', bg: 'bg-orange-50' }
+      return { label: `Expire dans ${daysLeft}j`, color: 'warning' }
     }
     
-    return { label: 'Actif', color: 'text-green-500', bg: 'bg-green-50' }
+    return { label: 'Actif', color: 'success' }
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement du profil..." />
       </SafeAreaView>
     )
   }
@@ -109,190 +157,417 @@ export default function ProfileScreen() {
   const subscriptionStatus = getSubscriptionStatus()
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50">
+    <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <ScrollView
-        className="flex-1"
+        style={{ flex: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={BRAND_THEME.colors.primary[500]}
+          />
         }
       >
-        {/* Profile Header */}
-        <View className="bg-white px-6 py-6 border-b border-gray-100">
-          <View className="flex-row items-center mb-4">
-            <View className="w-16 h-16 bg-primary-100 rounded-full items-center justify-center mr-4">
-              <Text className="text-3xl">👤</Text>
+        {/* Profile Header - Matching Design */}
+        <View style={{
+          backgroundColor: '#ffffff',
+          paddingHorizontal: 24,
+          paddingVertical: 24,
+          borderBottomWidth: 1,
+          borderBottomColor: BRAND_THEME.colors.gray[100]
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <View style={{
+              width: 48,
+              height: 48,
+              backgroundColor: BRAND_THEME.colors.gray[900],
+              borderRadius: 24,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: 16
+            }}>
+              <Text style={{ color: '#ffffff', fontSize: 20 }}>👤</Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-xl font-bold text-gray-900">
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                fontSize: 20,
+                fontWeight: 'bold',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 4
+              }}>
                 {user?.full_name || 'Utilisateur'}
               </Text>
-              <Text className="text-gray-500">{user?.email}</Text>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                fontSize: 14
+              }}>
+                {user?.email}
+              </Text>
             </View>
           </View>
 
-          {/* User Info Badges */}
-          <View className="flex-row flex-wrap gap-2">
-            <View className="bg-primary-50 px-3 py-1 rounded-full">
-              <Text className="text-primary-700 font-medium">{getYearLabel()}</Text>
+          {/* Year Badge - Matching Design */}
+          <Badge 
+            label={getYearLabel()}
+            variant="primary"
+            style={{
+              backgroundColor: BRAND_THEME.colors.primary[100],
+              alignSelf: 'flex-start'
+            }}
+          />
+        </View>
+
+        {/* Subscription Status - Matching Design */}
+        <View style={{ paddingHorizontal: 24, marginTop: 16 }}>
+          <Card variant="default" padding="md">
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View>
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[700],
+                  fontSize: 14,
+                  marginBottom: 4
+                }}>
+                  Abonnement
+                </Text>
+                <Badge 
+                  label={subscriptionStatus.label}
+                  variant={subscriptionStatus.color as any}
+                />
+              </View>
+              {user?.subscription_expires_at && (
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[500],
+                  fontSize: 12
+                }}>
+                  Expire le {formatDate(user.subscription_expires_at)}
+                </Text>
+              )}
             </View>
-            <View className="bg-purple-50 px-3 py-1 rounded-full">
-              <Text className="text-purple-700 font-medium">{user?.speciality}</Text>
-            </View>
-            {user?.region && (
-              <View className="bg-gray-100 px-3 py-1 rounded-full">
-                <Text className="text-gray-700 font-medium">{user.region}</Text>
+          </Card>
+        </View>
+
+        {/* Device Management - New Section */}
+        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <Text style={{
+            fontSize: 18,
+            fontWeight: 'bold',
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 12
+          }}>
+            Appareils connectés ({deviceSessions.length}/2)
+          </Text>
+          
+          <Card variant="default" padding="md">
+            {deviceSessions.length === 0 ? (
+              <Text style={{
+                color: BRAND_THEME.colors.gray[500],
+                textAlign: 'center',
+                fontStyle: 'italic'
+              }}>
+                Aucun appareil connecté
+              </Text>
+            ) : (
+              <View style={{ gap: 12 }}>
+                {deviceSessions.map((session, index) => (
+                  <DeviceSessionCard 
+                    key={session.id} 
+                    session={session} 
+                    onRemove={() => handleRemoveDevice(session)}
+                    isLast={index === deviceSessions.length - 1}
+                  />
+                ))}
               </View>
             )}
-          </View>
+          </Card>
         </View>
 
-        {/* Subscription Status */}
-        <View className="px-6 mt-4">
-          <View className={`${subscriptionStatus.bg} rounded-xl p-4 flex-row items-center justify-between`}>
-            <View>
-              <Text className="text-gray-700 font-medium">Abonnement</Text>
-              <Text className={`${subscriptionStatus.color} font-semibold`}>
-                {subscriptionStatus.label}
-              </Text>
-            </View>
-            {user?.subscription_expires_at && (
-              <Text className="text-gray-500 text-sm">
-                Expire le {formatDate(user.subscription_expires_at)}
-              </Text>
-            )}
-          </View>
+        {/* Saved Questions - New Section */}
+        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <TouchableOpacity 
+            onPress={() => router.push('/saved')}
+            activeOpacity={0.7}
+          >
+            <Card variant="default" padding="md">
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{
+                    width: 40,
+                    height: 40,
+                    backgroundColor: BRAND_THEME.colors.primary[50],
+                    borderRadius: 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 16
+                  }}>
+                    <Text style={{ fontSize: 20 }}>💾</Text>
+                  </View>
+                  <View>
+                    <Text style={{
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      color: BRAND_THEME.colors.gray[900]
+                    }}>
+                      Questions sauvegardées
+                    </Text>
+                    <Text style={{
+                      color: BRAND_THEME.colors.gray[500],
+                      fontSize: 14
+                    }}>
+                      {stats?.saved_questions_count || 0} question{(stats?.saved_questions_count || 0) > 1 ? 's' : ''}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ color: BRAND_THEME.colors.gray[400], fontSize: 18 }}>→</Text>
+              </View>
+            </Card>
+          </TouchableOpacity>
         </View>
 
-        {/* Statistics */}
+        {/* Statistics - Matching Design */}
         {stats && (
-          <View className="px-6 mt-6">
-            <Text className="text-lg font-bold text-gray-900 mb-3">Statistiques</Text>
-            <View className="bg-white rounded-2xl p-4">
-              <View className="flex-row flex-wrap">
-                <StatBox label="Questions" value={stats.total_questions_attempted} icon="📝" />
-                <StatBox label="Correctes" value={stats.total_correct_answers} icon="✅" />
-                <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon="🎯" />
-                <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon="⏱️" />
-                <StatBox label="Sessions" value={stats.test_attempts_count} icon="📊" />
-                <StatBox label="Modules" value={stats.modules_practiced} icon="📚" />
+          <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 12
+            }}>
+              Statistiques
+            </Text>
+            
+            <Card variant="default" padding="md">
+              {/* First Row */}
+              <View style={{ flexDirection: 'row', marginBottom: 24 }}>
+                <StatBox 
+                  label="Total" 
+                  value={stats.total_questions_attempted} 
+                  icon="📝"
+                />
+                <StatBox 
+                  label="Correctes" 
+                  value={stats.total_correct_answers} 
+                  icon="✅"
+                />
+                <StatBox 
+                  label="Incorrectes" 
+                  value={stats.total_questions_attempted - stats.total_correct_answers} 
+                  icon="❌"
+                />
               </View>
-              
+
+              {/* Second Row */}
+              <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+                <StatBox 
+                  label="Temps" 
+                  value={`${stats.total_time_spent_minutes}m`} 
+                  icon="⏱️"
+                />
+                <StatBox 
+                  label="Correctes" 
+                  value={Math.round(stats.average_score)} 
+                  icon="📊"
+                />
+                <StatBox 
+                  label="Modules" 
+                  value={stats.modules_practiced} 
+                  icon="📚"
+                />
+              </View>
+
+              {/* Last Practice Date */}
               {stats.last_practice_date && (
-                <View className="mt-4 pt-4 border-t border-gray-100">
-                  <Text className="text-gray-500 text-sm text-center">
-                    Dernière pratique: {formatDate(stats.last_practice_date)}
+                <View style={{
+                  paddingTop: 16,
+                  borderTopWidth: 1,
+                  borderTopColor: BRAND_THEME.colors.gray[100]
+                }}>
+                  <Text style={{
+                    color: BRAND_THEME.colors.gray[500],
+                    fontSize: 12,
+                    textAlign: 'center'
+                  }}>
+                    Dernière pratique : {formatDate(stats.last_practice_date)}
                   </Text>
                 </View>
               )}
-            </View>
+            </Card>
           </View>
         )}
 
-        {/* Module Progress */}
+        {/* Module Progress - Matching Design */}
         {moduleStats.length > 0 && (
-          <View className="px-6 mt-6">
-            <Text className="text-lg font-bold text-gray-900 mb-3">Progression par module</Text>
-            <View className="space-y-2">
-              {moduleStats.map((stat) => (
+          <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+            <Text style={{
+              fontSize: 18,
+              fontWeight: 'bold',
+              color: BRAND_THEME.colors.gray[900],
+              marginBottom: 12
+            }}>
+              Progression par module
+            </Text>
+            
+            <View style={{ gap: 8 }}>
+              {moduleStats.slice(0, 2).map((stat) => (
                 <ModuleProgressCard key={stat.module_name} stat={stat} />
               ))}
             </View>
           </View>
         )}
 
-        {/* Quick Actions */}
-        <View className="px-6 mt-6">
-          <Text className="text-lg font-bold text-gray-900 mb-3">Actions</Text>
-          <View className="space-y-2">
-            <ActionButton 
-              icon="💾" 
-              label="Questions sauvegardées" 
-              sublabel={`${stats?.saved_questions_count || 0} questions`}
-              onPress={() => router.push('/saved')}
-            />
-          </View>
-        </View>
-
-        {/* Sign Out */}
-        <View className="px-6 mt-8 mb-8">
-          <TouchableOpacity 
-            className="bg-red-50 py-4 rounded-xl"
-            onPress={handleSignOut}
-            disabled={authLoading}
-          >
-            <Text className="text-red-500 text-center font-semibold">
-              Se déconnecter
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* Bottom Spacing */}
+        <View style={{ height: 32 }} />
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Stat Box Component
+// Stat Box Component - Matching Design
 function StatBox({ label, value, icon }: { label: string; value: number | string; icon: string }) {
   return (
-    <View className="w-1/3 items-center py-3">
-      <Text className="text-2xl mb-1">{icon}</Text>
-      <Text className="text-xl font-bold text-gray-900">{value}</Text>
-      <Text className="text-gray-500 text-xs">{label}</Text>
+    <View style={{ flex: 1, alignItems: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
+      <Text style={{
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: BRAND_THEME.colors.gray[900],
+        marginBottom: 2
+      }}>
+        {typeof value === 'number' && label === 'Correctes' ? `${value}%` : value}
+      </Text>
+      <Text style={{
+        color: BRAND_THEME.colors.gray[600],
+        fontSize: 12
+      }}>
+        {label}
+      </Text>
     </View>
   )
 }
 
-// Module Progress Card
+// Module Progress Card - Matching Design
 function ModuleProgressCard({ stat }: { stat: ModuleStatistics }) {
   const progress = stat.questions_attempted > 0 
     ? Math.round(stat.average_score) 
     : 0
 
   return (
-    <View className="bg-white rounded-xl p-4">
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-gray-900 font-medium flex-1" numberOfLines={1}>
+    <Card variant="default" padding="md">
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <Text style={{
+          color: BRAND_THEME.colors.gray[900],
+          fontWeight: '500',
+          flex: 1
+        }} numberOfLines={1}>
           {stat.module_name}
         </Text>
-        <Text className="text-primary-500 font-semibold">{progress}%</Text>
       </View>
-      <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <View 
-          className="h-full bg-primary-500 rounded-full"
-          style={{ width: `${progress}%` }}
-        />
+      
+      <View style={{
+        height: 8,
+        backgroundColor: BRAND_THEME.colors.gray[100],
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginBottom: 8
+      }}>
+        <View style={{
+          height: '100%',
+          backgroundColor: BRAND_THEME.colors.primary[500],
+          borderRadius: 4,
+          width: `${progress}%`
+        }} />
       </View>
-      <Text className="text-gray-400 text-xs mt-2">
-        {stat.questions_attempted} questions • {stat.attempts_count} sessions
+      
+      <Text style={{
+        color: BRAND_THEME.colors.gray[500],
+        fontSize: 12
+      }}>
+        {stat.questions_attempted} question • {stat.attempts_count} sessions
       </Text>
-    </View>
+    </Card>
   )
 }
 
-// Action Button Component
-function ActionButton({ 
-  icon, 
-  label, 
-  sublabel,
-  onPress 
+// Device Session Card - New Component
+function DeviceSessionCard({ 
+  session, 
+  onRemove, 
+  isLast 
 }: { 
-  icon: string
-  label: string
-  sublabel?: string
-  onPress: () => void 
+  session: DeviceSession; 
+  onRemove: () => void; 
+  isLast: boolean;
 }) {
+  const formatLastActive = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return 'À l\'instant'
+    if (diffInHours < 24) return `Il y a ${diffInHours}h`
+    
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 7) return `Il y a ${diffInDays}j`
+    
+    return date.toLocaleDateString('fr-FR', { 
+      day: 'numeric', 
+      month: 'short' 
+    })
+  }
+
   return (
-    <TouchableOpacity 
-      className="bg-white rounded-xl p-4 flex-row items-center"
-      onPress={onPress}
-    >
-      <View className="w-12 h-12 bg-primary-50 rounded-xl items-center justify-center mr-4">
-        <Text className="text-2xl">{icon}</Text>
+    <View>
+      <View style={{ 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        paddingVertical: 8
+      }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Text style={{ fontSize: 18, marginRight: 8 }}>📱</Text>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[900],
+              fontWeight: '500',
+              flex: 1
+            }} numberOfLines={1}>
+              {session.device_name || 'Appareil inconnu'}
+            </Text>
+          </View>
+          <Text style={{
+            color: BRAND_THEME.colors.gray[500],
+            fontSize: 12
+          }}>
+            Dernière activité: {formatLastActive(session.last_active_at)}
+          </Text>
+        </View>
+        
+        <TouchableOpacity
+          onPress={onRemove}
+          style={{
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: BRAND_THEME.colors.error[50],
+            borderRadius: 6,
+            marginLeft: 12
+          }}
+        >
+          <Text style={{
+            color: BRAND_THEME.colors.error[600],
+            fontSize: 12,
+            fontWeight: '500'
+          }}>
+            Supprimer
+          </Text>
+        </TouchableOpacity>
       </View>
-      <View className="flex-1">
-        <Text className="text-gray-900 font-medium">{label}</Text>
-        {sublabel && <Text className="text-gray-500 text-sm">{sublabel}</Text>}
-      </View>
-      <Text className="text-gray-400 text-xl">→</Text>
-    </TouchableOpacity>
+      
+      {!isLast && (
+        <View style={{
+          height: 1,
+          backgroundColor: BRAND_THEME.colors.gray[100],
+          marginVertical: 8
+        }} />
+      )}
+    </View>
   )
 }

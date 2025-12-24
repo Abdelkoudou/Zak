@@ -113,10 +113,10 @@ export default function ExportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center transition-colors">
         <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Verifying access & loading status...</p>
+          <div className="w-16 h-16 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin mb-6"></div>
+          <p className="text-sm font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest animate-pulse">Vérification des accès...</p>
         </div>
       </div>
     );
@@ -124,24 +124,23 @@ export default function ExportPage() {
 
   if (!isOwner) {
     return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center border-t-4 border-red-500">
-          <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-6">
-            <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0 0v2m0-2h2m-2 0H10m-1-5v-2m5 2v-2m2 8v-2a2 2 0 100-4v-2M8 12V8a2 2 0 100-4v2m4 5h-1a2 2 0 00-2 2v1a2 2 0 002 2h1a1 1 0 001-1v-2a1 1 0 00-1-1z" />
-            </svg>
+      <div className="min-h-screen bg-white dark:bg-slate-950 flex items-center justify-center p-6 transition-colors">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-10 text-center border border-slate-200 dark:border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 left-0 w-full h-[3px] bg-red-500/50"></div>
+          <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-3xl bg-red-50 dark:bg-red-500/10 mb-8 transform group-hover:scale-110 transition-transform">
+            <span className="text-3xl">🚫</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-          <p className="text-gray-600 mb-6">
-            This area is restricted to <strong>Owner</strong> role only. 
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-3">Accès Restreint</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
+            Cette zone est strictement réservée au rôle <strong>Propriétaire</strong>.
             <br />
-            Your current role is: <span className="bg-gray-100 px-2 py-1 rounded font-mono text-sm">{userRole || 'Unknown'}</span>
+            Votre rôle actuel : <span className="inline-block mt-2 bg-slate-100 dark:bg-white/5 px-3 py-1 rounded-lg font-black text-[10px] uppercase tracking-widest text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">{userRole || 'Inconnu'}</span>
           </p>
           <button 
             onClick={() => router.push('/')}
-            className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition"
+            className="w-full py-4 px-6 bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
           >
-            Return to Dashboard
+            Retour au Dashboard
           </button>
         </div>
       </div>
@@ -149,39 +148,34 @@ export default function ExportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 transition-colors">
+      <div className="max-w-7xl mx-auto space-y-12">
         
         {/* Header */}
-        <div className="md:flex md:items-center md:justify-between mb-8">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              🔄 Export Control Center
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage database exports to Supabase Storage for mobile app synchronization.
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+              Export Control Center
+            </h1>
+            <p className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+              Synchronisation des données • Application Mobile
             </p>
           </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
-            <span className="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-              👑 Owner Access
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-white/5 shadow-sm">
+            <span className="text-xl">👑</span>
+            <span className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest">
+              Accès Propriétaire
             </span>
           </div>
         </div>
 
         {error && (
-          <div className="rounded-md bg-red-50 p-4 mb-8 border border-red-200">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">Error</h3>
-                <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
-                </div>
+          <div className="rounded-[2rem] bg-red-50 dark:bg-red-500/10 p-6 border border-red-200 dark:border-red-500/20 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-start gap-4">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h3 className="text-sm font-black text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Erreur d'Export</h3>
+                <p className="text-sm text-red-600 dark:text-red-300 font-medium">{error}</p>
               </div>
             </div>
           </div>
@@ -190,40 +184,43 @@ export default function ExportPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           
           {/* Status Card */}
-          <div className="bg-white overflow-hidden shadow rounded-xl border border-gray-100">
-            <div className="p-6">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4 flex items-center">
-                <span className="bg-blue-100 p-2 rounded-lg text-blue-600 mr-3">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                </span>
-                Current Cloud Status
-              </h3>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm overflow-hidden group transition-all hover:shadow-xl hover:shadow-primary-500/5">
+            <div className="p-8">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center text-xl">
+                  🚀
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest leading-tight">État du Cloud</h3>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Status de synchronisation en temps réel</p>
+                </div>
+              </div>
               
-              <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                 <div className="grid grid-cols-2 gap-4 text-center">
+              <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl p-8 mb-8">
+                 <div className="grid grid-cols-2 gap-8 text-center">
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Questions</p>
-                      <p className="mt-1 text-3xl font-extrabold text-gray-900">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Total Questions</p>
+                      <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                         {data?.version?.total_questions || '0'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Modules</p>
-                      <p className="mt-1 text-3xl font-extrabold text-blue-600">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Total Modules</p>
+                      <p className="text-4xl font-black text-primary-600 dark:text-primary-400 tracking-tight">
                         {data?.version?.total_modules || '0'}
                       </p>
                     </div>
                  </div>
-                 <div className="mt-6 pt-6 border-t border-gray-200">
-                   <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Last Updated</span>
-                      <span className="font-medium text-gray-900">
-                        {data?.version?.last_updated ? new Date(data.version.last_updated).toLocaleString() : 'Never'}
+                 <div className="mt-8 pt-6 border-t border-slate-200/50 dark:border-white/5 space-y-3">
+                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400 dark:text-slate-500">Dernière Mise à jour</span>
+                      <span className="text-slate-900 dark:text-slate-300">
+                        {data?.version?.last_updated ? new Date(data.version.last_updated).toLocaleString('fr-FR') : 'Jamais'}
                       </span>
                    </div>
-                   <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-500">Version</span>
-                      <span className="font-mono bg-gray-200 px-2 rounded text-xs py-0.5 text-gray-700">
+                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                      <span className="text-slate-400 dark:text-slate-500">Version du Master</span>
+                      <span className="bg-slate-200 dark:bg-white/5 px-2 py-0.5 rounded text-slate-900 dark:text-white font-mono">
                         {data?.version?.version || 'N/A'}
                       </span>
                    </div>
@@ -231,85 +228,80 @@ export default function ExportPage() {
               </div>
 
               <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Export Actions</h4>
                 <button
                   onClick={handleExport}
                   disabled={exporting}
-                  className={`w-full flex items-center justify-center px-4 py-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white transition-all ${
+                  className={`w-full group flex items-center justify-center gap-3 px-8 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-[0.2em] text-white transition-all shadow-xl shadow-primary-500/20 active:scale-95 ${
                     exporting 
-                      ? 'bg-blue-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transform hover:-translate-y-0.5'
+                      ? 'bg-slate-400 dark:bg-slate-700 cursor-not-allowed' 
+                      : 'bg-primary-600 hover:bg-primary-700'
                   }`}
                 >
                   {exporting ? (
                      <>
-                       <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                       </svg>
-                       Processing Export...
+                       <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                       Exportation en cours...
                      </>
                   ) : (
                     <>
-                      🚀 Run Full Export & Sync
+                      🚀 Lancer l'Exportation & Synchro
                     </>
                   )}
                 </button>
-                <p className="mt-2 text-xs text-gray-500 text-center">
-                  This will overwrite existing files in Supabase Storage with current database content.
+                <p className="mt-4 text-[10px] font-black text-slate-400 dark:text-slate-500 text-center uppercase tracking-widest leading-relaxed">
+                  Cette action écrasera les anciens fichiers du Cloud<br/>avec les données actuelles.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Recently Uploaded Files */}
-          <div className="bg-white shadow rounded-xl border border-gray-100 flex flex-col h-[500px]">
-             <div className="p-6 border-b border-gray-100 bg-gray-50 rounded-t-xl">
-                 <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
-                    <span className="bg-indigo-100 p-2 rounded-lg text-indigo-600 mr-3">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                    </span>
-                    Stored Files ({data?.files?.length || 0})
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm flex flex-col h-[600px] overflow-hidden group transition-all hover:shadow-xl hover:shadow-primary-500/5">
+             <div className="p-8 border-b border-slate-100 dark:border-white/5">
+                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-lg">
+                      📦
+                    </div>
+                    Fichiers Stockés ({data?.files?.length || 0})
                  </h3>
              </div>
-             <div className="flex-1 overflow-y-auto p-2">
+             <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {data?.files ? (
-                  <ul className="divide-y divide-gray-100">
+                  <div className="space-y-2">
                     {data.files.sort((a, b) => new Date(b.updated).getTime() - new Date(a.updated).getTime()).map((file) => (
-                      <li key={file.name} className="p-3 hover:bg-gray-50 rounded transition-colors group">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center min-w-0">
-                            <span className="bg-gray-100 text-gray-500 p-2 rounded mr-3">
-                              📄
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(file.updated).toLocaleString()}
-                              </p>
-                            </div>
+                      <div key={file.name} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/50 border border-transparent hover:border-primary-500/20 rounded-2xl transition-all group/file">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 flex items-center justify-center text-lg shadow-sm group-hover/file:scale-110 transition-transform">
+                            📄
                           </div>
-                          <div className="text-xs text-gray-400 font-mono">
-                             {(file.size / 1024).toFixed(1)} KB
+                          <div className="min-w-0">
+                            <p className="text-xs font-black text-slate-900 dark:text-white truncate uppercase tracking-widest">{file.name}</p>
+                            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                              {new Date(file.updated).toLocaleString('fr-FR')}
+                            </p>
                           </div>
                         </div>
-                      </li>
+                        <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 family-mono">
+                           {(file.size / 1024).toFixed(1)} KB
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                    <p>No files found</p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-600 gap-4">
+                    <div className="text-4xl animate-bounce">📂</div>
+                    <p className="text-[10px] font-black uppercase tracking-widest">Aucun fichier trouvé</p>
                   </div>
                 )}
              </div>
-             <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-xl text-center">
+             <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-white/5 text-center">
                 <a 
                    href={data?.storage_url ? `${data.storage_url}version.json` : '#'}
                    target="_blank"
                    rel="noopener noreferrer"
-                   className={`text-sm text-indigo-600 hover:text-indigo-800 font-medium ${!data?.storage_url ? 'pointer-events-none opacity-50' : ''}`}
+                   className={`inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors ${!data?.storage_url ? 'pointer-events-none opacity-50' : ''}`}
                 >
-                  Download Master version.json &rarr;
+                  Télécharger master version.json <span>&rarr;</span>
                 </a>
              </div>
           </div>
@@ -317,16 +309,16 @@ export default function ExportPage() {
         </div>
 
         {/* Instructions Block */}
-        <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-100">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
+        <div className="bg-primary-500/5 dark:bg-primary-500/5 rounded-[2rem] p-8 border border-primary-500/10 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform"></div>
+          <div className="flex items-start gap-6 relative z-10">
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-primary-500/20 flex items-center justify-center text-2xl shadow-sm">
+              💡
             </div>
-            <div className="ml-3 flex-1 md:flex md:justify-between">
-              <p className="text-sm text-blue-700">
-                <strong>How it works:</strong> Clicking &quot;Run Full Export&quot; will convert all questions in the SQL database into optimized JSON files (grouped by module) and upload them to the <code>questions</code> bucket. The mobile app checks <code>version.json</code> on launch to download updates.
+            <div className="flex-1">
+              <h4 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest mb-3 px-1">Fonctionnement</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                Le clic sur <strong>&quot;Lancer l&apos;Exportation&quot;</strong> convertira toutes les questions de la base de données SQL en fichiers JSON optimisés regroupés par module. Ces fichiers seront téléchargés dans le bucket <code>questions</code>. L&apos;application mobile interroge <code>version.json</code> à chaque lancement pour détecter et télécharger les mises à jour.
               </p>
             </div>
           </div>

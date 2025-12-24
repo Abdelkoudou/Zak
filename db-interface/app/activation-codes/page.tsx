@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import {
   fetchActivationKeys,
@@ -39,6 +40,7 @@ export default function ActivationCodesPage() {
     expiredCodes: 0,
     totalRevenue: 0,
   });
+  const router = useRouter();
 
   // UI state
   const [activeTab, setActiveTab] = useState<'dashboard' | 'generate' | 'codes' | 'points'>('dashboard');
@@ -221,8 +223,13 @@ export default function ActivationCodesPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="max-w-7xl mx-auto py-20">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin"></div>
+          <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            Chargement des données...
+          </p>
+        </div>
       </div>
     );
   }
@@ -230,10 +237,18 @@ export default function ActivationCodesPage() {
   // Access denied
   if (userRole !== 'owner') {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <div className="text-6xl mb-4">🔒</div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Accès Refusé</h1>
-        <p className="text-gray-600">Cette page est réservée au propriétaire.</p>
+      <div className="max-w-7xl mx-auto py-20">
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-12 text-center shadow-sm">
+          <span className="text-6xl mb-6 block">🔒</span>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Accès Réservé</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">Cette page est exclusivement réservée aux propriétaires du système.</p>
+          <button
+            onClick={() => router.push('/')}
+            className="mt-8 px-8 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
+          >
+            Retour au Dashboard
+          </button>
+        </div>
       </div>
     );
   }
@@ -241,32 +256,35 @@ export default function ActivationCodesPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800 flex items-center gap-2">
-          🔑 Gestion des Codes d&apos;Activation
-        </h1>
-        <p className="text-gray-600 mt-1">Générez et gérez les codes d&apos;activation pour les étudiants</p>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+            Codes d'Activation
+          </h1>
+          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+            Génération & Gestion de Licences • QCM Med
+          </p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 border-b">
+      <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-white/5 p-1.5 rounded-[1.5rem] border border-slate-200 dark:border-white/5">
         {[
-          { id: 'dashboard', label: '📊 Dashboard', color: 'blue' },
-          { id: 'generate', label: '➕ Générer', color: 'green' },
-          { id: 'codes', label: '📋 Codes', color: 'purple' },
-          { id: 'points', label: '🏪 Points de Vente', color: 'orange' },
+          { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+          { id: 'generate', label: 'Générer', icon: '🔑' },
+          { id: 'codes', label: 'Liste des Codes', icon: '📋' },
+          { id: 'points', label: 'Points de Vente', icon: '🏪' },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
+            className={`flex-1 px-4 py-3 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
               activeTab === tab.id
-                ? `bg-${tab.color}-600 text-white`
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             }`}
           >
-            {tab.label}
+            <span>{tab.icon}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -275,132 +293,167 @@ export default function ActivationCodesPage() {
       {activeTab === 'dashboard' && (
         <div className="space-y-6">
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <StatCard title="Total Codes" value={stats.totalCodes} icon="📊" color="blue" />
-            <StatCard title="Actifs" value={stats.activeCodes} icon="✅" color="green" />
-            <StatCard title="Utilisés" value={stats.usedCodes} icon="👤" color="purple" />
-            <StatCard title="Expirés" value={stats.expiredCodes} icon="⏰" color="red" />
-            <StatCard title="Revenus" value={`${stats.totalRevenue.toLocaleString()} DA`} icon="💰" color="yellow" />
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { label: 'Total Codes', value: stats.totalCodes, icon: '📊', color: 'primary' },
+              { label: 'Actifs', value: stats.activeCodes, icon: '✅', color: 'blue' },
+              { label: 'Utilisés', value: stats.usedCodes, icon: '👤', color: 'purple' },
+              { label: 'Expirés', value: stats.expiredCodes, icon: '⏰', color: 'red' },
+              { label: 'Revenus', value: `${stats.totalRevenue.toLocaleString()} DA`, icon: '💰', color: 'green' },
+            ].map((item, idx) => (
+              <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-xl">{item.icon}</span>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+                </div>
+                <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white truncate">{item.value}</p>
+              </div>
+            ))}
           </div>
 
-          {/* Sales Points Performance */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">🏆 Performance des Points de Vente</h2>
-            {salesPointStats.length === 0 ? (
-              <p className="text-gray-500">Aucun point de vente configuré</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Point de Vente</th>
-                      <th className="px-4 py-2 text-center">Total</th>
-                      <th className="px-4 py-2 text-center">Vendus</th>
-                      <th className="px-4 py-2 text-center">Actifs</th>
-                      <th className="px-4 py-2 text-center">Taux</th>
-                      <th className="px-4 py-2 text-right">Revenus</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesPointStats.sort((a, b) => b.usedCodes - a.usedCodes).map(sp => (
-                      <tr key={sp.id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{sp.name}</div>
-                          <div className="text-sm text-gray-500">{sp.location}</div>
-                        </td>
-                        <td className="px-4 py-3 text-center">{sp.totalCodes}</td>
-                        <td className="px-4 py-3 text-center text-green-600 font-medium">{sp.usedCodes}</td>
-                        <td className="px-4 py-3 text-center">{sp.activeCodes}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-1 rounded text-sm ${
-                            sp.totalCodes > 0 && (sp.usedCodes / sp.totalCodes) > 0.5 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {sp.totalCodes > 0 ? Math.round((sp.usedCodes / sp.totalCodes) * 100) : 0}%
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium">{sp.totalRevenue.toLocaleString()} DA</td>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] shadow-sm overflow-hidden mb-12">
+            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                🏆 Performance des Points de Vente
+              </h2>
+            </div>
+            <div className="p-6 md:p-8">
+              {salesPointStats.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
+                  <span className="text-4xl mb-4">🏪</span>
+                  <p className="font-medium">Aucun point de vente configuré</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-950/50">
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Vendus</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Actifs</th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Taux</th>
+                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Revenus</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                      {salesPointStats.sort((a, b) => b.usedCodes - a.usedCodes).map(sp => (
+                        <tr key={sp.id} className="group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
+                          <td className="px-6 py-5">
+                            <div className="font-bold text-slate-900 dark:text-white">{sp.name}</div>
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">{sp.location}</div>
+                          </td>
+                          <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">{sp.totalCodes}</td>
+                          <td className="px-6 py-5 text-center">
+                            <span className="text-sm font-black text-primary-600 dark:text-primary-400">{sp.usedCodes}</span>
+                          </td>
+                          <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">{sp.activeCodes}</td>
+                          <td className="px-6 py-5 text-center">
+                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                              sp.totalCodes > 0 && (sp.usedCodes / sp.totalCodes) > 0.5 
+                                ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' 
+                                : 'bg-slate-100 dark:bg-white/5 text-slate-500'
+                            }`}>
+                              {sp.totalCodes > 0 ? Math.round((sp.usedCodes / sp.totalCodes) * 100) : 0}%
+                            </span>
+                          </td>
+                          <td className="px-6 py-5 text-right font-black text-slate-900 dark:text-white">
+                            {sp.totalRevenue.toLocaleString()} DA
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Generate Tab */}
       {activeTab === 'generate' && (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-8">
           {/* Generation Form */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">🔐 Générer des Codes</h2>
-            <p className="text-sm text-gray-500 mb-4">
-              L&apos;année et la faculté seront renseignées par l&apos;utilisateur lors de son inscription.
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-2xl">🔐</span>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Générer des Codes</h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
+              L'année et la faculté seront renseignées par l'utilisateur lors de son inscription. 
+              Ces codes sont valides pour n'importe quelle année/faculté.
             </p>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Point de Vente *</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Point de Vente *
+                </label>
                 <select
                   value={generateForm.salesPointId}
                   onChange={e => setGenerateForm({ ...generateForm, salesPointId: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                 >
-                  <option value="">Sélectionner un point de vente</option>
+                  <option value="" className="bg-white dark:bg-slate-900">Sélectionner un point de vente</option>
                   {salesPoints.filter(sp => sp.isActive).map(sp => (
-                    <option key={sp.id} value={sp.id}>{sp.name} - {sp.location}</option>
+                    <option key={sp.id} value={sp.id} className="bg-white dark:bg-slate-900">{sp.name} - {sp.location}</option>
                   ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Durée (jours)</label>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    Durée
+                  </label>
                   <select
                     value={generateForm.durationDays}
                     onChange={e => setGenerateForm({ ...generateForm, durationDays: Number(e.target.value) })}
-                    className="w-full border rounded-lg px-3 py-2"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                   >
-                    <option value={30}>30 jours</option>
-                    <option value={90}>90 jours</option>
-                    <option value={180}>180 jours</option>
-                    <option value={365}>1 an</option>
+                    <option value={30} className="bg-white dark:bg-slate-900">30 jours</option>
+                    <option value={90} className="bg-white dark:bg-slate-900">90 jours</option>
+                    <option value={180} className="bg-white dark:bg-slate-900">180 jours</option>
+                    <option value={365} className="bg-white dark:bg-slate-900">1 an</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Quantité</label>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    Quantité
+                  </label>
                   <input
                     type="number"
                     min={1}
                     max={100}
                     value={generateForm.quantity}
                     onChange={e => setGenerateForm({ ...generateForm, quantity: Number(e.target.value) })}
-                    className="w-full border rounded-lg px-3 py-2"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prix (DA)</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Prix par code (DA)
+                </label>
                 <input
                   type="number"
                   min={0}
                   value={generateForm.pricePaid}
                   onChange={e => setGenerateForm({ ...generateForm, pricePaid: Number(e.target.value) })}
-                  className="w-full border rounded-lg px-3 py-2"
-                  placeholder="Prix par code"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                  placeholder="Prix de vente..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Notes
+                </label>
                 <textarea
                   value={generateForm.notes}
                   onChange={e => setGenerateForm({ ...generateForm, notes: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                   rows={2}
                   placeholder="Notes optionnelles..."
                 />
@@ -409,7 +462,7 @@ export default function ActivationCodesPage() {
               <button
                 onClick={handleGenerate}
                 disabled={generating || !generateForm.salesPointId}
-                className="w-full bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50"
               >
                 {generating ? '⏳ Génération...' : `🔑 Générer ${generateForm.quantity} Code(s)`}
               </button>
@@ -417,43 +470,49 @@ export default function ActivationCodesPage() {
           </div>
 
           {/* Generated Codes */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">✨ Codes Générés</h2>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 shadow-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">✨</span>
+                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Codes Générés</h2>
+              </div>
+              {generatedCodes.length > 0 && (
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedCodes.join('\n'));
+                    alert('Codes copiés!');
+                  }}
+                  className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                >
+                  📋 Copier tout
+                </button>
+              )}
+            </div>
             
             {generatedCodes.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">
-                <div className="text-4xl mb-2">🔑</div>
-                <p>Les codes générés apparaîtront ici</p>
+              <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-950/30 rounded-3xl border border-dashed border-slate-200 dark:border-white/5 text-center px-6">
+                <span className="text-4xl mb-4">🔑</span>
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2">Prêt à générer</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  Les nouveaux codes apparaîtront ici après la génération.
+                </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-sm text-gray-600">{generatedCodes.length} code(s) générés</span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(generatedCodes.join('\n'));
-                      alert('Codes copiés!');
-                    }}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    📋 Copier tout
-                  </button>
-                </div>
-                <div className="max-h-96 overflow-y-auto space-y-2">
-                  {generatedCodes.map((code, i) => (
-                    <div key={i} className="flex items-center justify-between bg-gray-50 px-4 py-2 rounded font-mono text-sm">
-                      <span>{code}</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(code);
-                        }}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        📋
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                {generatedCodes.map((code, i) => (
+                  <div key={i} className="group flex items-center justify-between bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 px-6 py-4 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-slate-950">
+                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white tracking-widest">{code}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(code);
+                        alert('Code copié!');
+                      }}
+                      className="text-slate-400 hover:text-primary-500 transition-colors"
+                    >
+                      📋
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -461,87 +520,86 @@ export default function ActivationCodesPage() {
       )}
 
 
-      {/* Codes Tab */}
       {activeTab === 'codes' && (
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm overflow-hidden">
           {/* Filters */}
-          <div className="p-4 border-b">
-            <div className="flex flex-wrap gap-3">
-              <input
-                type="text"
-                placeholder="🔍 Rechercher un code..."
-                value={filters.search}
-                onChange={e => setFilters({ ...filters, search: e.target.value })}
-                className="border rounded-lg px-3 py-2 w-48"
-              />
+          <div className="p-6 border-b border-slate-100 dark:border-white/5">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Rechercher un code..."
+                  value={filters.search}
+                  onChange={e => setFilters({ ...filters, search: e.target.value })}
+                  className="pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none md:w-64"
+                />
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+              </div>
+              
               <select
                 value={filters.year}
                 onChange={e => setFilters({ ...filters, year: e.target.value as YearLevel | '' })}
-                className="border rounded-lg px-3 py-2"
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
               >
-                <option value="">Toutes les années</option>
-                <option value="1">1ère Année</option>
-                <option value="2">2ème Année</option>
-                <option value="3">3ème Année</option>
+                <option value="" className="bg-white dark:bg-slate-900">Toutes les années</option>
+                <option value="1" className="bg-white dark:bg-slate-900">1ère Année</option>
+                <option value="2" className="bg-white dark:bg-slate-900">2ème Année</option>
+                <option value="3" className="bg-white dark:bg-slate-900">3ème Année</option>
               </select>
+
               <select
                 value={filters.facultyId}
                 onChange={e => setFilters({ ...filters, facultyId: e.target.value })}
-                className="border rounded-lg px-3 py-2"
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
               >
-                <option value="">Toutes les facultés</option>
+                <option value="" className="bg-white dark:bg-slate-900">Toutes les facultés</option>
                 {faculties.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
+                  <option key={f.id} value={f.id} className="bg-white dark:bg-slate-900">{f.name}</option>
                 ))}
               </select>
-              <select
-                value={filters.salesPointId}
-                onChange={e => setFilters({ ...filters, salesPointId: e.target.value })}
-                className="border rounded-lg px-3 py-2"
-              >
-                <option value="">Tous les points</option>
-                {salesPoints.map(sp => (
-                  <option key={sp.id} value={sp.id}>{sp.name}</option>
-                ))}
-              </select>
+
               <select
                 value={filters.status}
                 onChange={e => setFilters({ ...filters, status: e.target.value as typeof filters.status })}
-                className="border rounded-lg px-3 py-2"
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
               >
-                <option value="">Tous les statuts</option>
-                <option value="active">Actifs</option>
-                <option value="used">Utilisés</option>
-                <option value="expired">Expirés</option>
+                <option value="" className="bg-white dark:bg-slate-900">Tous les statuts</option>
+                <option value="active" className="bg-white dark:bg-slate-900">✅ Actifs</option>
+                <option value="used" className="bg-white dark:bg-slate-900">👤 Utilisés</option>
+                <option value="expired" className="bg-white dark:bg-slate-900">⏰ Expirés</option>
               </select>
+
               <button
                 onClick={handleExport}
-                className="ml-auto bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+                className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
               >
-                📥 Exporter CSV
+                <span>📥</span> Exporter CSV
               </button>
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Code</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Année</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Point de Vente</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Statut</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Utilisateur</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Créé le</th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-600">Actions</th>
+            <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-950/50">
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Code</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Année</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Statut</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Utilisateur</th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Création</th>
+                  <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                 {codes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                      Aucun code trouvé
+                    <td colSpan={7} className="px-6 py-20 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <span className="text-3xl">📭</span>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold">Aucun code trouvé</p>
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Essayez de modifier vos filtres.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -553,77 +611,70 @@ export default function ActivationCodesPage() {
                     return (
                       <tr 
                         key={code.id} 
-                        className={`border-t hover:bg-gray-50 cursor-pointer ${code.isUsed ? 'bg-purple-50/30' : ''}`}
+                        className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${code.isUsed ? 'bg-primary-500/5' : ''}`}
                         onClick={() => setSelectedCode(code)}
                       >
-                        <td className="px-4 py-3">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+                        <td className="px-6 py-5">
+                          <code className="bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg text-xs font-black font-mono text-slate-900 dark:text-white tracking-widest group-hover:bg-primary-500/10 group-hover:text-primary-600 transition-colors">
                             {code.keyCode}
                           </code>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                        <td className="px-6 py-5 text-center">
+                          <span className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md text-[10px] font-black uppercase tracking-widest">
                             {code.year}ère
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm">{code.salesPoint?.name || '-'}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            status === 'active' ? 'bg-green-100 text-green-800' :
-                            status === 'used' ? 'bg-purple-100 text-purple-800' :
-                            'bg-red-100 text-red-800'
+                        <td className="px-6 py-5">
+                          <div className="font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
+                            {code.salesPoint?.name || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
+                            status === 'active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                            status === 'used' ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' :
+                            'bg-red-500/10 text-red-600 dark:text-red-400'
                           }`}>
                             {status === 'active' ? '✅ Actif' : status === 'used' ? '👤 Utilisé' : '⏰ Expiré'}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-5">
                           {user ? (
-                            <div className="space-y-1">
-                              <div className="font-medium text-sm text-gray-900">{user.fullName || 'Sans nom'}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {user.speciality && (
-                                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                                    {user.speciality}
-                                  </span>
-                                )}
-                                {user.yearOfStudy && (
-                                  <span className="px-1.5 py-0.5 bg-green-50 text-green-700 rounded text-xs">
-                                    {user.yearOfStudy}ère année
-                                  </span>
-                                )}
-                                {user.region && (
-                                  <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 rounded text-xs">
-                                    {user.region}
-                                  </span>
-                                )}
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 uppercase">
+                                {user.fullName?.split(' ').map(n => n[0]).join('') || '?'}
+                              </div>
+                              <div>
+                                <div className="text-sm font-bold text-slate-900 dark:text-white">{user.fullName || 'User'}</div>
+                                <div className="text-[10px] text-slate-500 font-medium">{user.email}</div>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-gray-400 text-sm italic">Non utilisé</span>
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Disponible</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
+                        <td className="px-6 py-5 text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">
                           <div>{new Date(code.createdAt).toLocaleDateString('fr-FR')}</div>
                           {code.usedAt && (
-                            <div className="text-xs text-purple-600">
+                            <div className="text-primary-600 dark:text-primary-400 mt-0.5">
                               Utilisé: {new Date(code.usedAt).toLocaleDateString('fr-FR')}
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          {!code.isUsed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRevoke(code.id, code.keyCode);
-                              }}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                              title="Révoquer"
-                            >
-                              🗑️
-                            </button>
-                          )}
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {!code.isUsed && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRevoke(code.id, code.keyCode);
+                                }}
+                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -633,44 +684,60 @@ export default function ActivationCodesPage() {
             </table>
           </div>
           
-          {/* Pagination info */}
-          <div className="p-4 border-t text-sm text-gray-600">
-            {codes.length} code(s) affiché(s)
+          <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-white/5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+            Affichage de {codes.length} code(s) actif(s)
           </div>
         </div>
       )}
 
-      {/* Sales Points Tab */}
       {activeTab === 'points' && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Add button */}
           <div className="flex justify-end">
             <button
               onClick={() => setShowSalesPointForm(true)}
-              className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700"
+              className="px-8 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
             >
               ➕ Nouveau Point de Vente
             </button>
           </div>
 
           {/* Sales Points List */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {salesPoints.map(sp => (
-              <div key={sp.id} className={`bg-white rounded-lg shadow p-4 ${!sp.isActive ? 'opacity-60' : ''}`}>
-                <div className="flex items-start justify-between mb-2">
+              <div key={sp.id} className={`group bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-primary-500/5 ${!sp.isActive ? 'opacity-50 grayscale' : ''}`}>
+                <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="font-semibold">{sp.name}</h3>
-                    <p className="text-sm text-gray-500">{sp.location}</p>
+                    <h3 className="font-black text-slate-900 dark:text-white tracking-tight group-hover:text-primary-600 transition-colors">{sp.name}</h3>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">{sp.location}</p>
                   </div>
-                  <span className={`px-2 py-1 rounded text-xs ${sp.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sp.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
                     {sp.isActive ? 'Actif' : 'Inactif'}
                   </span>
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p><strong>Code:</strong> {sp.code}</p>
-                  {sp.contactName && <p><strong>Contact:</strong> {sp.contactName}</p>}
-                  {sp.contactPhone && <p><strong>Tél:</strong> {sp.contactPhone}</p>}
-                  {sp.commissionRate > 0 && <p><strong>Commission:</strong> {sp.commissionRate}%</p>}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <span>Code</span>
+                    <span className="bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded font-mono text-slate-900 dark:text-white">{sp.code}</span>
+                  </div>
+                  {sp.contactName && (
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      <span>Contact</span>
+                      <span className="text-slate-700 dark:text-slate-300">{sp.contactName}</span>
+                    </div>
+                  )}
+                  {sp.contactPhone && (
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      <span>Tél</span>
+                      <span className="text-slate-700 dark:text-slate-300">{sp.contactPhone}</span>
+                    </div>
+                  )}
+                  {sp.commissionRate > 0 && (
+                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                      <span>Commission</span>
+                      <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-md">{sp.commissionRate}%</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -678,90 +745,93 @@ export default function ActivationCodesPage() {
 
           {/* Add Sales Point Modal */}
           {showSalesPointForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-                <h2 className="text-lg font-semibold mb-4">🏪 Nouveau Point de Vente</h2>
+            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md animate-in fade-in zoom-in duration-200">
+                <div className="flex items-center gap-3 mb-8">
+                  <span className="text-2xl">🏪</span>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Nouveau Point de Vente</h2>
+                </div>
                 
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Code *</label>
                       <input
                         type="text"
                         value={salesPointForm.code}
                         onChange={e => setSalesPointForm({ ...salesPointForm, code: e.target.value.toUpperCase() })}
-                        className="w-full border rounded-lg px-3 py-2"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                         placeholder="ALG01"
                         maxLength={10}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Commission %</label>
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Commission %</label>
                       <input
                         type="number"
                         min={0}
                         max={100}
                         value={salesPointForm.commissionRate}
                         onChange={e => setSalesPointForm({ ...salesPointForm, commissionRate: Number(e.target.value) })}
-                        className="w-full border rounded-lg px-3 py-2"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Nom *</label>
                     <input
                       type="text"
                       value={salesPointForm.name}
                       onChange={e => setSalesPointForm({ ...salesPointForm, name: e.target.value })}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="Librairie El Ilm"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Localisation</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Localisation</label>
                     <input
                       type="text"
                       value={salesPointForm.location}
                       onChange={e => setSalesPointForm({ ...salesPointForm, location: e.target.value })}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="Alger Centre"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Nom du Contact</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Nom du Contact</label>
                     <input
                       type="text"
                       value={salesPointForm.contactName}
                       onChange={e => setSalesPointForm({ ...salesPointForm, contactName: e.target.value })}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Téléphone</label>
                     <input
                       type="tel"
                       value={salesPointForm.contactPhone}
                       onChange={e => setSalesPointForm({ ...salesPointForm, contactPhone: e.target.value })}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="0555 XX XX XX"
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-4 mt-10">
                   <button
                     onClick={() => setShowSalesPointForm(false)}
-                    className="flex-1 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200"
+                    className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleCreateSalesPoint}
-                    className="flex-1 bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700"
+                    className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
                   >
                     Créer
                   </button>
@@ -774,96 +844,121 @@ export default function ActivationCodesPage() {
 
       {/* Code Detail Modal */}
       {selectedCode && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">🔑 Détails du Code</h2>
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-lg animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">🔑 Détails du Code</h2>
               <button
                 onClick={() => setSelectedCode(null)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
+                className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold"
               >
                 ×
               </button>
             </div>
             
             {/* Code Info */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <code className="text-lg font-mono font-bold text-purple-600">{selectedCode.keyCode}</code>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  selectedCode.isUsed ? 'bg-purple-100 text-purple-800' :
-                  (selectedCode.expiresAt && new Date(selectedCode.expiresAt) < new Date()) ? 'bg-red-100 text-red-800' :
-                  'bg-green-100 text-green-800'
+            <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl p-6 mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <code className="text-2xl font-black font-mono text-primary-600 dark:text-primary-400 tracking-[0.2em]">
+                  {selectedCode.keyCode}
+                </code>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  selectedCode.isUsed ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' :
+                  (selectedCode.expiresAt && new Date(selectedCode.expiresAt) < new Date()) ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
+                  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                 }`}>
                   {selectedCode.isUsed ? '👤 Utilisé' : 
                    (selectedCode.expiresAt && new Date(selectedCode.expiresAt) < new Date()) ? '⏰ Expiré' : '✅ Actif'}
                 </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
+                  {new Date(selectedCode.createdAt).toLocaleDateString('fr-FR')}
+                </span>
+                <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
+                  {selectedCode.durationDays} Jours
+                </span>
                 {selectedCode.year && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">{selectedCode.year}ère Année</span>
+                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[10px] font-black uppercase tracking-widest">
+                    {selectedCode.year}ère Année
+                  </span>
                 )}
               </div>
             </div>
 
             {/* Code Details */}
-            <div className="space-y-3 mb-4">
+            <div className="space-y-4 mb-8">
               <DetailRow label="Faculté" value={selectedCode.faculty?.name || '-'} />
               <DetailRow label="Point de Vente" value={selectedCode.salesPoint?.name || '-'} />
-              <DetailRow label="Durée" value={`${selectedCode.durationDays} jours`} />
-              <DetailRow label="Prix" value={selectedCode.pricePaid ? `${selectedCode.pricePaid} DA` : '-'} />
-              <DetailRow label="Créé le" value={new Date(selectedCode.createdAt).toLocaleDateString('fr-FR')} />
+              <DetailRow label="Prix Payé" value={selectedCode.pricePaid ? `${selectedCode.pricePaid.toLocaleString()} DA` : '-'} />
               {selectedCode.expiresAt && (
-                <DetailRow label="Expire le" value={new Date(selectedCode.expiresAt).toLocaleDateString('fr-FR')} />
+                <DetailRow label="Date d'Expiration" value={new Date(selectedCode.expiresAt).toLocaleDateString('fr-FR')} />
               )}
               {selectedCode.notes && (
-                <DetailRow label="Notes" value={selectedCode.notes} />
+                <div className="pt-2">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 px-1">Notes</span>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl text-xs text-slate-700 dark:text-slate-300 italic">
+                    "{selectedCode.notes}"
+                  </div>
+                </div>
               )}
             </div>
 
             {/* User Info (if used) */}
             {selectedCode.usedByUser ? (
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  👤 Utilisateur Inscrit
+              <div className="pt-8 border-t border-slate-100 dark:border-white/5">
+                <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span>👤</span> Utilisateur Inscrit
                 </h3>
-                <div className="bg-purple-50 rounded-lg p-4 space-y-2">
-                  <div className="font-medium text-lg">{selectedCode.usedByUser.fullName || 'Sans nom'}</div>
-                  <div className="text-gray-600">{selectedCode.usedByUser.email}</div>
-                  <div className="flex flex-wrap gap-2 mt-2">
+                <div className="bg-primary-500/5 border border-primary-500/10 rounded-3xl p-6">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-sm font-black text-primary-600 uppercase">
+                      {selectedCode.usedByUser.fullName?.split(' ').map(n => n[0]).join('') || '?'}
+                    </div>
+                    <div>
+                      <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{selectedCode.usedByUser.fullName || 'Sans nom'}</div>
+                      <div className="text-xs text-slate-500 font-medium">{selectedCode.usedByUser.email}</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mt-4">
                     {selectedCode.usedByUser.speciality && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
                         🎓 {selectedCode.usedByUser.speciality}
                       </span>
                     )}
                     {selectedCode.usedByUser.yearOfStudy && (
-                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
                         📚 {selectedCode.usedByUser.yearOfStudy}ère année
                       </span>
                     )}
                     {selectedCode.usedByUser.region && (
-                      <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
                         📍 {selectedCode.usedByUser.region}
                       </span>
                     )}
                   </div>
+                  
                   {selectedCode.usedAt && (
-                    <div className="text-sm text-gray-500 mt-2">
-                      Inscrit le {new Date(selectedCode.usedAt).toLocaleDateString('fr-FR')}
+                    <div className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest mt-6">
+                      Activé le {new Date(selectedCode.usedAt).toLocaleDateString('fr-FR')}
                     </div>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="border-t pt-4">
-                <div className="text-center py-6 text-gray-400">
-                  <div className="text-3xl mb-2">🔒</div>
-                  <p>Ce code n&apos;a pas encore été utilisé</p>
+              <div className="pt-8 border-t border-slate-100 dark:border-white/5 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-full mb-4">
+                  <span className="text-2xl">🔒</span>
                 </div>
+                <p className="text-sm font-bold text-slate-500">Code non encore activé</p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Disponible pour une nouvelle inscription.</p>
               </div>
             )}
 
             <button
               onClick={() => setSelectedCode(null)}
-              className="w-full mt-4 bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200"
+              className="w-full mt-10 px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
             >
               Fermer
             </button>
@@ -877,9 +972,9 @@ export default function ActivationCodesPage() {
 // Detail Row Component
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between">
-      <span className="text-gray-500 text-sm">{label}</span>
-      <span className="text-gray-900 text-sm font-medium">{value}</span>
+    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5 last:border-0">
+      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</span>
+      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{value}</span>
     </div>
   );
 }

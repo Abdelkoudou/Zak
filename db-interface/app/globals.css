@@ -1,3 +1,68 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --font-heading: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --bg-main: theme('colors.slate.50');
+    --bg-card: theme('colors.white');
+    --border-color: theme('colors.slate.200');
+    --text-main: theme('colors.slate.900');
+    --text-muted: theme('colors.slate.500');
+  }
+
+  .dark {
+    --bg-main: theme('colors.slate.950');
+    --bg-card: theme('colors.slate.900');
+    --border-color: theme('colors.slate.800');
+    --text-main: theme('colors.slate.100');
+    --text-muted: theme('colors.slate.400');
+  }
+
+  html {
+    font-size: 110%; /* Increase base font size slightly */
+  }
+
+  body {
+    @apply font-body text-slate-900 bg-slate-50 dark:text-slate-100 dark:bg-slate-950 antialiased;
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+
+  /* Snappier transitions for themed elements */
+  body, 
+  div, 
+  nav, 
+  aside, 
+  main, 
+  section, 
+  header, 
+  footer, 
+  button, 
+  input, 
+  select, 
+  textarea, 
+  a, 
+  span, 
+  p, 
+  h1, h2, h3, h4, h5, h6 {
+    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Specific exclusion for animations and transforms to avoid clashing */
+  .animate-spin, .animate-pulse, .transition-transform {
+    transition: none !important;
+  }
+}

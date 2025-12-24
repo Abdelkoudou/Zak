@@ -222,147 +222,78 @@ export default function HistoryPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">📚 Historique des Questions</h1>
-        <p className="text-gray-600">
-          Recherchez et filtrez toutes les questions ajoutées au système
-        </p>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+            Historique des Questions
+          </h1>
+          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+            Recherche globale • QCM Med
+          </p>
+        </div>
       </div>
 
-      {/* Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-gray-500 text-sm">Total Questions</p>
-          <p className="text-3xl font-bold text-gray-900">{questions.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-gray-500 text-sm">Résultats Filtrés</p>
-          <p className="text-3xl font-bold text-blue-600">{filteredQuestions.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-gray-500 text-sm">Modules Uniques</p>
-          <p className="text-3xl font-bold text-green-600">
-            {new Set(filteredQuestions.map(q => q.module_name)).size}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <p className="text-gray-500 text-sm">Page Actuelle</p>
-          <p className="text-3xl font-bold text-purple-600">
-            {currentPage} / {totalPages || 1}
-          </p>
-        </div>
+        {[
+          { label: 'Total Questions', value: questions.length, icon: '❓', color: 'primary' },
+          { label: 'Résultats Filtrés', value: filteredQuestions.length, icon: '🔍', color: 'primary' },
+          { label: 'Modules Uniques', value: new Set(filteredQuestions.map(q => q.module_name)).size, icon: '🧩', color: 'green' },
+          { label: 'Page Actuelle', value: `${currentPage} / ${totalPages || 1}`, icon: '📄', color: 'purple' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xl">{item.icon}</span>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">🔍 Filtres</h2>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 mb-8 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔍</span>
+            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Filtres</h2>
+          </div>
           <button
             onClick={clearFilters}
-            className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary-500 transition-colors"
           >
             Réinitialiser
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          {/* Speciality Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Spécialité
-            </label>
-            <select
-              value={filters.speciality}
-              onChange={(e) => setFilters({ ...filters, speciality: e.target.value, moduleId: '' })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Toutes les spécialités</option>
-              <option value="Médecine">Médecine</option>
-              <option value="Pharmacie">Pharmacie</option>
-              <option value="Dentaire">Dentaire</option>
-            </select>
-          </div>
-          
-          {/* Year Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Année
-            </label>
-            <select
-              value={filters.year}
-              onChange={(e) => setFilters({ ...filters, year: e.target.value, moduleId: '' })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Toutes les années</option>
-              {YEARS.map((year) => (
-                <option key={year.value} value={year.value}>
-                  {year.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Module Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Module
-            </label>
-            <select
-              value={filters.moduleId}
-              onChange={(e) => setFilters({ ...filters, moduleId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les modules</option>
-              {availableModules.map((module) => (
-                <option key={module.name} value={module.name}>
-                  {module.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Exam Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type d&apos;Examen
-            </label>
-            <select
-              value={filters.examType}
-              onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les types</option>
-              {availableExamTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Created By Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ajouté par
-            </label>
-            <select
-              value={filters.createdBy}
-              onChange={(e) => setFilters({ ...filters, createdBy: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les utilisateurs</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.full_name || user.email}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[
+            { label: 'Spécialité', value: filters.speciality, onChange: (v: string) => setFilters({ ...filters, speciality: v, moduleId: '' }), placeholder: 'Toutes les spécialités', options: [{ value: 'Médecine', label: 'Médecine' }, { value: 'Pharmacie', label: 'Pharmacie' }, { value: 'Dentaire', label: 'Dentaire' }] },
+            { label: 'Année', value: filters.year, onChange: (v: string) => setFilters({ ...filters, year: v, moduleId: '' }), placeholder: 'Toutes les années', options: YEARS.map(y => ({ value: y.value, label: y.label })) },
+            { label: 'Module', value: filters.moduleId, onChange: (v: string) => setFilters({ ...filters, moduleId: v }), placeholder: 'Tous les modules', options: availableModules.map(m => ({ value: m.name, label: m.name })) },
+            { label: 'Type d\'Examen', value: filters.examType, onChange: (v: string) => setFilters({ ...filters, examType: v }), placeholder: 'Tous les types', options: availableExamTypes.map(t => ({ value: t, label: t })) },
+            { label: 'Ajouté par', value: filters.createdBy, onChange: (v: string) => setFilters({ ...filters, createdBy: v }), placeholder: 'Tous les utilisateurs', options: users.map(u => ({ value: u.id, label: u.full_name || u.email })) },
+          ].map((item, idx) => (
+            <div key={idx}>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                {item.label}
+              </label>
+              <select
+                value={item.value}
+                onChange={(e) => item.onChange(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
+              >
+                <option value="">{item.placeholder}</option>
+                {item.options.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
 
           {/* Search Text */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Rechercher
             </label>
             <input
@@ -370,128 +301,139 @@ export default function HistoryPage() {
               value={filters.searchText}
               onChange={(e) => setFilters({ ...filters, searchText: e.target.value })}
               placeholder="Texte de la question..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
 
-          {/* Date From */}
+          {/* Date range */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Date de début
             </label>
             <input
               type="date"
               value={filters.dateFrom}
               onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
 
-          {/* Date To */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Date de fin
             </label>
             <input
               type="date"
               value={filters.dateTo}
               onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
         </div>
 
         {/* Export Buttons */}
-        <div className="flex gap-2 pt-4 border-t">
+        <div className="flex gap-4 pt-6 border-t border-slate-100 dark:border-white/5">
           <button
             onClick={exportToJSON}
             disabled={filteredQuestions.length === 0}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
           >
             📄 Exporter JSON
           </button>
           <button
             onClick={exportToCSV}
             disabled={filteredQuestions.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
           >
             📊 Exporter CSV
           </button>
         </div>
       </div>
 
-      {/* Questions List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold">
-            Questions ({filteredQuestions.length})
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] shadow-sm overflow-hidden mb-12">
+        <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 flex justify-between items-center">
+          <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+            Questions <span className="text-primary-500 ml-2">({filteredQuestions.length})</span>
           </h2>
         </div>
-        <div className="p-6">
+        <div className="p-6 md:p-8">
           {loading ? (
-            <p className="text-gray-500 text-center py-8">
-              ⏳ Chargement des questions...
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin"></div>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Chargement des questions...
+              </p>
+            </div>
           ) : filteredQuestions.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              Aucune question trouvée avec ces filtres.
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-950/30 rounded-3xl border border-dashed border-slate-200 dark:border-white/5">
+              <span className="text-4xl mb-4">📭</span>
+              <p className="text-slate-500 dark:text-slate-400 font-bold">
+                Aucune question trouvée.
+              </p>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2">
+                Essayez d'ajuster vos filtres.
+              </p>
+            </div>
           ) : (
             <>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {paginatedQuestions.map((question) => (
-                  <div key={question.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
+                  <div key={question.id} className="group bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-white/5 rounded-3xl p-6 transition-all hover:bg-slate-50 dark:hover:bg-slate-950/60">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                       <div className="flex flex-wrap gap-2">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium">
+                        <span className="px-2 py-0.5 bg-primary-600 text-white text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                           Q{question.number}
                         </span>
-                        <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
                           {YEARS.find(y => y.value === question.year)?.label}
                         </span>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
                           {question.module_name}
                         </span>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                        <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
                           {question.exam_type}
                         </span>
                         {question.speciality && (
-                          <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded">
+                          <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                             {question.speciality}
                           </span>
                         )}
                         {question.module_type === 'uei' && (
-                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
+                          <span className="px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                             🟢 UEI
                           </span>
                         )}
-                        {question.module_type === 'standalone' && (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">
-                            🟡 Autonome
-                          </span>
-                        )}
                       </div>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                         {new Date(question.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
 
-                    <p className="text-gray-900 mb-2 font-medium">{question.question_text}</p>
+                    <p className="text-slate-900 dark:text-white mb-4 font-bold leading-relaxed">{question.question_text}</p>
 
                     {question.cours && question.cours.length > 0 && (
-                      <p className="text-xs text-gray-600 mb-2">
-                        📚 Cours: {question.cours.join(', ')}
-                      </p>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {question.cours.map((c: string, i: number) => (
+                          <span key={i} className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-medium rounded-md">
+                            📚 {c}
+                          </span>
+                        ))}
+                      </div>
                     )}
 
-                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                      <span>
-                        {question.answers?.filter((a: any) => a.is_correct).length} réponse(s) correcte(s)
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {question.answers?.length} options
-                      </span>
+                    <div className="flex items-center gap-4 pt-4 border-t border-slate-100 dark:border-white/5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {question.answers?.filter((a: any) => a.is_correct).length} Correcte(s)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {question.answers?.length} Options
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -499,23 +441,23 @@ export default function HistoryPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-4 mt-10">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl text-slate-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    ← Précédent
+                    ←
                   </button>
-                  <span className="text-gray-700">
-                    Page {currentPage} sur {totalPages}
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Page <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}
                   </span>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl text-slate-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    Suivant →
+                    →
                   </button>
                 </div>
               )}

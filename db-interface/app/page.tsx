@@ -129,101 +129,80 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
-        Tableau de Bord
-      </h1>
-      <p className="text-sm md:text-base text-gray-600 mb-6 md:mb-8">
-        Interface d&apos;administration pour l&apos;application MCQ Study
-      </p>
+    <div className="max-w-7xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+          Tableau de Bord
+        </h1>
+        <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+          Interface d&apos;administration • QCM Med
+        </p>
+      </div>
 
       {/* Main Statistics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
-            <div>
-              <p className="text-gray-500 text-xs md:text-sm">Total Modules</p>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                {loading ? '...' : stats.totalModules}
-              </p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {[
+          { label: 'Total Modules', value: stats.totalModules, icon: '📚' },
+          { label: 'Total Questions', value: stats.totalQuestions, icon: '❓' },
+          { label: 'Ressources', value: stats.totalResources, icon: '📁' },
+          { label: 'Chapitres', value: stats.totalChapters, icon: '📖' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-slate-400 dark:text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">{item.label}</p>
+                <p className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                  {loading ? '...' : item.value}
+                </p>
+              </div>
+              <div className="text-2xl md:text-4xl filter drop-shadow-sm">{item.icon}</div>
             </div>
-            <div className="text-2xl md:text-4xl">📚</div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
-            <div>
-              <p className="text-gray-500 text-xs md:text-sm">Total Questions</p>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                {loading ? '...' : stats.totalQuestions}
-              </p>
-            </div>
-            <div className="text-2xl md:text-4xl">❓</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
-            <div>
-              <p className="text-gray-500 text-xs md:text-sm">Ressources</p>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                {loading ? '...' : stats.totalResources}
-              </p>
-            </div>
-            <div className="text-2xl md:text-4xl">📁</div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center md:justify-between gap-2">
-            <div>
-              <p className="text-gray-500 text-xs md:text-sm">Chapitres</p>
-              <p className="text-2xl md:text-3xl font-bold text-gray-900">
-                {loading ? '...' : stats.totalChapters}
-              </p>
-            </div>
-            <div className="text-2xl md:text-4xl">📖</div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Detailed Statistics */}
       {!loading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Questions by Year */}
-          <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Questions par Année</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+              <span className="w-2 h-6 bg-primary-500 rounded-full"></span>
+              Questions par Année
+            </h2>
             {stats.questionsByYear.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {stats.questionsByYear.map(({ year, count }) => (
-                  <div key={year} className="flex justify-between items-center">
-                    <span className="text-gray-700">
+                  <div key={year} className="flex justify-between items-center group">
+                    <span className="text-slate-600 dark:text-slate-400 font-semibold group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                       {year === '1' ? '1ère Année' : year === '2' ? '2ème Année' : '3ème Année'}
                     </span>
-                    <span className="font-bold text-blue-600">{count}</span>
+                    <span className="font-black text-slate-900 dark:text-white px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-white/5">{count}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Aucune question ajoutée</p>
+              <p className="text-slate-500 text-sm italic">Aucune question ajoutée</p>
             )}
           </div>
 
           {/* Resources by Type */}
-          <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Ressources par Type</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+              <span className="w-2 h-6 bg-green-500 rounded-full"></span>
+              Ressources par Type
+            </h2>
             {stats.resourcesByType.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {stats.resourcesByType.map(({ type, count }) => (
-                  <div key={type} className="flex justify-between items-center">
-                    <span className="text-gray-700">{getResourceTypeLabel(type)}</span>
-                    <span className="font-bold text-green-600">{count}</span>
+                  <div key={type} className="flex justify-between items-center group">
+                    <span className="text-slate-600 dark:text-slate-400 font-semibold group-hover:text-green-600 transition-colors">{getResourceTypeLabel(type)}</span>
+                    <span className="font-black text-slate-900 dark:text-white px-3 py-1 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-white/5">{count}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Aucune ressource ajoutée</p>
+              <p className="text-slate-500 text-sm italic">Aucune ressource ajoutée</p>
             )}
           </div>
         </div>
@@ -231,141 +210,106 @@ export default function Home() {
 
       {/* Recent Activity */}
       {!loading && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Recent Questions */}
-          <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Questions Récentes</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 flex items-center justify-center bg-blue-50 dark:bg-blue-900/20 rounded-lg text-blue-600">❓</span>
+              Questions Récentes
+            </h2>
             {stats.recentQuestions.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {stats.recentQuestions.map((q) => (
-                  <div key={q.id} className="border-l-4 border-blue-500 pl-3 py-2">
-                    <p className="text-sm font-medium text-gray-900 line-clamp-2">
+                  <div key={q.id} className="group p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-transparent hover:border-blue-500/30 transition-all">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-200 line-clamp-2 leading-relaxed">
                       {q.question_text}
                     </p>
-                    <div className="flex gap-2 mt-1">
-                      <span className="text-xs text-gray-500">
-                        {q.year === '1' ? '1ère' : q.year === '2' ? '2ème' : '3ème'} Année
-                      </span>
-                      <span className="text-xs text-gray-500">•</span>
-                      <span className="text-xs text-gray-500">{q.module_name}</span>
+                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <span>{q.year === '1' ? '1ère' : q.year === '2' ? '2ème' : '3ème'} Année</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                      <span className="text-blue-500/80">{q.module_name}</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Aucune question récente</p>
+              <p className="text-slate-500 text-sm italic">Aucune question récente</p>
             )}
           </div>
 
           {/* Recent Resources */}
-          <div className="bg-white rounded-lg shadow p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-semibold mb-4">Ressources Récentes</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+              <span className="w-8 h-8 flex items-center justify-center bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600">📁</span>
+              Ressources Récentes
+            </h2>
             {stats.recentResources.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {stats.recentResources.map((r) => (
-                  <div key={r.id} className="border-l-4 border-green-500 pl-3 py-2">
-                    <p className="text-sm font-medium text-gray-900">{r.title}</p>
-                    <div className="flex gap-2 mt-1">
-                      <span className="text-xs text-gray-500">
-                        {getResourceTypeLabel(r.type)}
-                      </span>
-                      <span className="text-xs text-gray-500">•</span>
-                      <span className="text-xs text-gray-500">
-                        {r.year === '1' ? '1ère' : r.year === '2' ? '2ème' : '3ème'} Année
-                      </span>
+                  <div key={r.id} className="group p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-transparent hover:border-green-500/30 transition-all">
+                    <p className="text-sm font-bold text-slate-900 dark:text-slate-200 uppercase tracking-tight">{r.title}</p>
+                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      <span className="text-green-500/80">{getResourceTypeLabel(r.type)}</span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
+                      <span>{r.year === '1' ? '1ère' : r.year === '2' ? '2ème' : '3ème'} Année</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">Aucune ressource récente</p>
+              <p className="text-slate-500 text-sm italic">Aucune ressource récente</p>
             )}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Actions Rapides</h2>
-          <div className="space-y-2 md:space-y-3">
-            <a
-              href="/modules"
-              className="block p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className="text-xl md:text-2xl">📚</span>
-                <div>
-                  <p className="font-medium text-sm md:text-base">Voir les Modules</p>
-                  <p className="text-xs md:text-sm text-gray-500">Consulter les modules du curriculum</p>
-                </div>
-              </div>
-            </a>
-
-            <a
-              href="/questions"
-              className="block p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className="text-xl md:text-2xl">➕</span>
-                <div>
-                  <p className="font-medium text-sm md:text-base">Ajouter une Question</p>
-                  <p className="text-xs md:text-sm text-gray-500">Créer un nouveau QCM</p>
-                </div>
-              </div>
-            </a>
-
-            <a
-              href="/resources"
-              className="block p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className="text-xl md:text-2xl">➕</span>
-                <div>
-                  <p className="font-medium text-sm md:text-base">Ajouter une Ressource</p>
-                  <p className="text-xs md:text-sm text-gray-500">Ajouter un lien Google Drive, Telegram, etc.</p>
-                </div>
-              </div>
-            </a>
-
-            <a
-              href="/history"
-              className="block p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2 md:gap-3">
-                <span className="text-xl md:text-2xl">📊</span>
-                <div>
-                  <p className="font-medium text-sm md:text-base">Voir l&apos;Historique</p>
-                  <p className="text-xs md:text-sm text-gray-500">Consulter toutes les questions</p>
-                </div>
-              </div>
-            </a>
+      {/* Quick Actions & Curriculum */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Actions Rapides</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { href: '/modules', icon: '📚', title: 'Modules', desc: 'Curriculum' },
+              { href: '/questions', icon: '➕', title: 'Question', desc: 'Nouveau QCM' },
+              { href: '/resources', icon: '🔗', title: 'Ressource', desc: 'Nouveau Lien' },
+              { href: '/history', icon: '📜', title: 'Historique', desc: 'Liste QCM' },
+            ].map((action, idx) => (
+              <a
+                key={idx}
+                href={action.href}
+                className="group flex flex-col p-5 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-transparent hover:border-primary-500/30 hover:shadow-lg hover:shadow-primary-500/5 transition-all"
+              >
+                <span className="text-3xl mb-3 transition-transform group-hover:scale-110 group-hover:-rotate-3">{action.icon}</span>
+                <p className="font-bold text-slate-900 dark:text-white leading-tight">{action.title}</p>
+                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">{action.desc}</p>
+              </a>
+            ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
-          <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Structure du Curriculum</h2>
-          <div className="space-y-3 md:space-y-4 text-xs md:text-sm">
-            <div>
-              <p className="font-medium text-gray-900">1ère Année</p>
-              <p className="text-gray-600">6 Modules Annuels + 4 Modules Semestriels</p>
-              <p className="text-gray-500 text-xs mt-1">
-                {stats.questionsByYear.find((y) => y.year === '1')?.count || 0} questions
-              </p>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">2ème Année</p>
-              <p className="text-gray-600">5 U.E.I + 2 Modules Autonomes</p>
-              <p className="text-gray-500 text-xs mt-1">
-                {stats.questionsByYear.find((y) => y.year === '2')?.count || 0} questions
-              </p>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900">3ème Année</p>
-              <p className="text-gray-600">Structure similaire à la 2ème année</p>
-              <p className="text-gray-500 text-xs mt-1">
-                {stats.questionsByYear.find((y) => y.year === '3')?.count || 0} questions
-              </p>
-            </div>
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-white/5 shadow-sm">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Structure Curriculum</h2>
+          <div className="space-y-6">
+            {[
+              { year: '1ère Année', desc: '6 Modules Annuels + 4 Semestriels', count: stats.questionsByYear.find((y) => y.year === '1')?.count || 0 },
+              { year: '2ème Année', desc: '5 U.E.I + 2 Modules Autonomes', count: stats.questionsByYear.find((y) => y.year === '2')?.count || 0 },
+              { year: '3ème Année', desc: 'Structure unifiée', count: stats.questionsByYear.find((y) => y.year === '3')?.count || 0 },
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-start gap-4">
+                <div className="w-1.5 h-12 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+                  <div className="w-full h-1/2 bg-primary-500"></div>
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-slate-900 dark:text-white">{item.year}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{item.desc}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-[10px] font-bold rounded-lg border border-primary-100 dark:border-primary-900/50">
+                      {item.count} Questions
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

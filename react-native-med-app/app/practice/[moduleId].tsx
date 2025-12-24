@@ -1,9 +1,9 @@
 // ============================================================================
-// Practice Screen - QCM Session
+// Practice Screen - Light Sea Green Brand (Matching Design)
 // ============================================================================
 
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -11,6 +11,8 @@ import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
 import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
+import { Card, Badge, LoadingSpinner, Button } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
 
 export default function PracticeScreen() {
   const { moduleId, moduleName, examType, subDiscipline, cours } = useLocalSearchParams<{
@@ -206,26 +208,38 @@ export default function PracticeScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <LoadingSpinner message="Chargement des questions..." />
       </SafeAreaView>
     )
   }
 
   if (questions.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center px-6">
-        <Text className="text-4xl mb-4">📭</Text>
-        <Text className="text-xl font-bold text-gray-900 mb-2">Aucune question</Text>
-        <Text className="text-gray-500 text-center mb-6">
-          Aucune question disponible pour cette sélection
-        </Text>
-        <TouchableOpacity 
-          className="bg-primary-500 px-6 py-3 rounded-xl"
-          onPress={() => router.back()}
-        >
-          <Text className="text-white font-semibold">Retour</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 }}>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>📭</Text>
+          <Text style={{
+            fontSize: 20,
+            fontWeight: 'bold',
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 8
+          }}>
+            Aucune question
+          </Text>
+          <Text style={{
+            color: BRAND_THEME.colors.gray[600],
+            textAlign: 'center',
+            marginBottom: 24
+          }}>
+            Aucune question disponible pour cette sélection
+          </Text>
+          <Button 
+            title="Retour"
+            onPress={() => router.back()}
+            variant="primary"
+          />
+        </View>
       </SafeAreaView>
     )
   }
@@ -236,49 +250,57 @@ export default function PracticeScreen() {
     <>
       <Stack.Screen 
         options={{ 
-          title: `Question ${currentIndex + 1}/${questions.length}`,
-          headerRight: () => (
-            <TouchableOpacity onPress={finishPractice} className="mr-4">
-              <Text className="text-primary-500 font-medium">Terminer</Text>
+          title: `Questions ${currentIndex + 1}/${questions.length}`,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={{ color: BRAND_THEME.colors.primary[600], fontSize: 16 }}>←</Text>
             </TouchableOpacity>
           )
         }} 
       />
       
-      <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
-        {/* Progress Bar */}
-        <View className="h-1 bg-gray-200">
-          <View 
-            className="h-full bg-primary-500"
-            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-          />
-        </View>
-
-        <ScrollView ref={scrollRef} className="flex-1 px-6 py-4">
-          {/* Question Header */}
-          <View className="flex-row items-center justify-between mb-4">
-            <View className="flex-row items-center">
-              <View className="bg-primary-100 px-3 py-1 rounded-full mr-2">
-                <Text className="text-primary-700 font-medium">
-                  Q{currentQuestion.number}
-                </Text>
-              </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
+        <ScrollView ref={scrollRef} style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 16 }}>
+          {/* Question Header - Matching Design */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Badge 
+                label={`Q${currentQuestion.number}`}
+                variant="primary"
+                style={{ marginRight: 8 }}
+              />
               {currentQuestion.exam_type && (
-                <View className="bg-gray-100 px-3 py-1 rounded-full">
-                  <Text className="text-gray-700 text-sm">
-                    {currentQuestion.exam_type}
-                  </Text>
-                </View>
+                <Badge 
+                  label={currentQuestion.exam_type}
+                  variant="secondary"
+                />
               )}
             </View>
-            <TouchableOpacity onPress={toggleSave}>
-              <Text className="text-2xl">{isSaved ? '❤️' : '🤍'}</Text>
+            
+            <TouchableOpacity 
+              onPress={toggleSave}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: isSaved ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100],
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <Text style={{ fontSize: 20 }}>
+                {isSaved ? '💾' : '📥'}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Question Text */}
-          <View className="bg-white rounded-2xl p-4 mb-4">
-            <Text className="text-gray-900 text-lg leading-relaxed">
+          {/* Question Text - Matching Design */}
+          <Card variant="default" padding="md" style={{ marginBottom: 16 }}>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[900],
+              fontSize: 16,
+              lineHeight: 24
+            }}>
               {currentQuestion.question_text}
             </Text>
             
@@ -286,130 +308,144 @@ export default function PracticeScreen() {
             {currentQuestion.image_url && (
               <Image 
                 source={{ uri: currentQuestion.image_url }}
-                className="w-full h-48 mt-4 rounded-lg"
+                style={{ width: '100%', height: 192, marginTop: 16, borderRadius: 8 }}
                 resizeMode="contain"
               />
             )}
-          </View>
+          </Card>
 
-          {/* Multiple Choice Indicator */}
-          {isMultipleChoice && (
-            <View className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex-row items-center">
-              <Text className="text-amber-600 mr-2">⚠️</Text>
-              <Text className="text-amber-700 flex-1">
-                Cette question a {correctAnswersCount} réponses correctes. 
-                {!isSubmitted && ` (${currentAnswers.length}/${correctAnswersCount} sélectionnées)`}
-              </Text>
-            </View>
-          )}
-
-          {/* Answer Options */}
-          <View className="space-y-3">
+          {/* Answer Options - Matching Design */}
+          <View style={{ gap: 12 }}>
             {currentQuestion.answers.map((answer) => {
               const isSelected = currentAnswers.includes(answer.option_label)
               const isCorrect = answer.is_correct
               
-              let bgColor = 'bg-white'
-              let borderColor = 'border-gray-200'
-              let textColor = 'text-gray-900'
+              let cardStyle = {}
+              let textColor: string = BRAND_THEME.colors.gray[900]
               
               if (isSubmitted) {
                 if (isCorrect) {
-                  bgColor = 'bg-green-50'
-                  borderColor = 'border-green-500'
-                  textColor = 'text-green-700'
+                  cardStyle = { 
+                    backgroundColor: BRAND_THEME.colors.success[50],
+                    borderColor: BRAND_THEME.colors.success[500],
+                    borderWidth: 2
+                  }
+                  textColor = BRAND_THEME.colors.success[600]
                 } else if (isSelected && !isCorrect) {
-                  bgColor = 'bg-red-50'
-                  borderColor = 'border-red-500'
-                  textColor = 'text-red-700'
+                  cardStyle = { 
+                    backgroundColor: BRAND_THEME.colors.error[50],
+                    borderColor: BRAND_THEME.colors.error[500],
+                    borderWidth: 2
+                  }
+                  textColor = BRAND_THEME.colors.error[600]
                 }
               } else if (isSelected) {
-                bgColor = 'bg-primary-50'
-                borderColor = 'border-primary-500'
-                textColor = 'text-primary-700'
+                cardStyle = { 
+                  backgroundColor: BRAND_THEME.colors.primary[100],
+                  borderColor: BRAND_THEME.colors.primary[500],
+                  borderWidth: 2
+                }
+                textColor = BRAND_THEME.colors.primary[600]
               }
 
               return (
                 <TouchableOpacity
                   key={answer.id}
-                  className={`${bgColor} rounded-xl p-4 border-2 ${borderColor}`}
                   onPress={() => selectAnswer(answer.option_label)}
                   disabled={isSubmitted}
+                  activeOpacity={0.7}
                 >
-                  <View className="flex-row items-start">
-                    <View className={`w-8 h-8 ${isMultipleChoice ? 'rounded-lg' : 'rounded-full'} items-center justify-center mr-3 ${
-                      isSelected ? 'bg-primary-500' : 'bg-gray-100'
-                    }`}>
-                      <Text className={`font-bold ${isSelected ? 'text-white' : 'text-gray-600'}`}>
-                        {answer.option_label}
+                  <Card variant="default" padding="md" style={cardStyle}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <View style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: isSelected ? BRAND_THEME.colors.primary[500] : BRAND_THEME.colors.gray[100],
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 12
+                      }}>
+                        <Text style={{
+                          fontWeight: 'bold',
+                          color: isSelected ? '#ffffff' : BRAND_THEME.colors.gray[600]
+                        }}>
+                          {answer.option_label}
+                        </Text>
+                      </View>
+                      <Text style={{
+                        flex: 1,
+                        color: textColor,
+                        fontSize: 16,
+                        lineHeight: 22
+                      }}>
+                        {answer.answer_text}
                       </Text>
+                      {isSubmitted && isCorrect && (
+                        <Text style={{ color: BRAND_THEME.colors.success[500], fontSize: 20, marginLeft: 8 }}>✓</Text>
+                      )}
+                      {isSubmitted && isSelected && !isCorrect && (
+                        <Text style={{ color: BRAND_THEME.colors.error[500], fontSize: 20, marginLeft: 8 }}>✗</Text>
+                      )}
                     </View>
-                    <Text className={`flex-1 ${textColor}`}>
-                      {answer.answer_text}
-                    </Text>
-                    {isSubmitted && isCorrect && (
-                      <Text className="text-green-500 text-xl ml-2">✓</Text>
-                    )}
-                    {isSubmitted && isSelected && !isCorrect && (
-                      <Text className="text-red-500 text-xl ml-2">✗</Text>
-                    )}
-                  </View>
+                  </Card>
                 </TouchableOpacity>
               )
             })}
           </View>
 
           {/* Bottom Spacing */}
-          <View className="h-24" />
+          <View style={{ height: 100 }} />
         </ScrollView>
 
-        {/* Bottom Actions */}
-        <View className="bg-white border-t border-gray-100 px-6 py-4">
-          <View className="flex-row items-center justify-between">
+        {/* Bottom Actions - Matching Design */}
+        <View style={{
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: BRAND_THEME.colors.gray[100],
+          paddingHorizontal: 24,
+          paddingVertical: 16
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             {/* Previous Button */}
             <TouchableOpacity
-              className={`px-4 py-3 rounded-xl ${
-                currentIndex > 0 ? 'bg-gray-100' : 'bg-gray-50'
-              }`}
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor: currentIndex > 0 ? BRAND_THEME.colors.gray[100] : BRAND_THEME.colors.gray[50]
+              }}
               onPress={goToPrevious}
               disabled={currentIndex === 0}
             >
-              <Text className={`font-medium ${
-                currentIndex > 0 ? 'text-gray-700' : 'text-gray-300'
-              }`}>
+              <Text style={{
+                fontWeight: '500',
+                color: currentIndex > 0 ? BRAND_THEME.colors.gray[700] : BRAND_THEME.colors.gray[300]
+              }}>
                 ← Précédent
               </Text>
             </TouchableOpacity>
 
             {/* Submit / Next Button */}
             {!isSubmitted ? (
-              <TouchableOpacity
-                className={`px-6 py-3 rounded-xl ${
-                  currentAnswers.length > 0 ? 'bg-primary-500' : 'bg-gray-200'
-                }`}
+              <Button
+                title="Valider"
                 onPress={submitAnswer}
                 disabled={currentAnswers.length === 0}
-              >
-                <Text className={`font-semibold ${
-                  currentAnswers.length > 0 ? 'text-white' : 'text-gray-400'
-                }`}>
-                  Valider
-                </Text>
-              </TouchableOpacity>
+                variant="primary"
+              />
             ) : currentIndex < questions.length - 1 ? (
-              <TouchableOpacity
-                className="bg-primary-500 px-6 py-3 rounded-xl"
+              <Button
+                title="Suivant →"
                 onPress={goToNext}
-              >
-                <Text className="text-white font-semibold">Suivant →</Text>
-              </TouchableOpacity>
+                variant="primary"
+              />
             ) : (
-              <TouchableOpacity
-                className="bg-green-500 px-6 py-3 rounded-xl"
+              <Button
+                title="Voir résultats"
                 onPress={saveResults}
-              >
-                <Text className="text-white font-semibold">Voir résultats</Text>
-              </TouchableOpacity>
+                variant="primary"
+              />
             )}
           </View>
         </View>

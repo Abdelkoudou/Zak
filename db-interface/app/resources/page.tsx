@@ -355,12 +355,16 @@ export default function ResourcesPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Ressources de Cours</h1>
-          <p className="text-sm md:text-base text-gray-600">Gérer les ressources (Google Drive, Telegram, YouTube, PDF)</p>
+          <h1 className="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1 md:mb-2">
+            Ressources de Cours
+          </h1>
+          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
+            Gérer les ressources • QCM Med
+          </p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm md:text-base whitespace-nowrap"
+          className="px-6 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95 text-sm md:text-base whitespace-nowrap"
         >
           {showForm ? 'Annuler' : '➕ Nouvelle Ressource'}
         </button>
@@ -395,139 +399,40 @@ export default function ResourcesPage() {
         </div>
       )}
 
-      {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-6 md:mb-8">
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Total Ressources</p>
-          <p className="text-xl md:text-3xl font-bold text-gray-900">{resources.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Résultats Filtrés</p>
-          <p className="text-xl md:text-3xl font-bold text-blue-600">{filteredResources.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Types Uniques</p>
-          <p className="text-xl md:text-3xl font-bold text-green-600">
-            {new Set(filteredResources.map(r => r.type)).size}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-3 md:p-6">
-          <p className="text-gray-500 text-xs md:text-sm">Page Actuelle</p>
-          <p className="text-xl md:text-3xl font-bold text-purple-600">
-            {currentPage} / {totalPages || 1}
-          </p>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Total Ressources', value: resources.length, icon: '📚', color: 'primary' },
+          { label: 'Résultats Filtrés', value: filteredResources.length, icon: '🔍', color: 'primary' },
+          { label: 'Types Uniques', value: new Set(filteredResources.map(r => r.type)).size, icon: '🧩', color: 'green' },
+          { label: 'Page Actuelle', value: `${currentPage} / ${totalPages || 1}`, icon: '📄', color: 'purple' },
+        ].map((item, idx) => (
+          <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xl">{item.icon}</span>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+            </div>
+            <p className="text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">🔍 Filtres</h2>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-3xl p-6 mb-8 shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🔍</span>
+            <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Filtres</h2>
+          </div>
           <button
             onClick={clearFilters}
-            className="px-4 py-2 text-sm bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+            className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary-500 transition-colors"
           >
             Réinitialiser
           </button>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* Year Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Année
-            </label>
-            <select
-              value={filters.year}
-              onChange={(e) => setFilters({ ...filters, year: e.target.value, moduleId: '' })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Toutes les années</option>
-              {YEARS.map((year) => (
-                <option key={year.value} value={year.value}>
-                  {year.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Module Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Module
-            </label>
-            <select
-              value={filters.moduleId}
-              onChange={(e) => setFilters({ ...filters, moduleId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les modules</option>
-              {availableFilterModules.map((module) => (
-                <option key={module.name} value={module.name}>
-                  {module.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Speciality Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Spécialité
-            </label>
-            <select
-              value={filters.speciality}
-              onChange={(e) => setFilters({ ...filters, speciality: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Toutes les spécialités</option>
-              <option value="Médecine">Médecine</option>
-              <option value="Pharmacie">Pharmacie</option>
-              <option value="Dentaire">Dentaire</option>
-            </select>
-          </div>
-
-          {/* Resource Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type de Ressource
-            </label>
-            <select
-              value={filters.resourceType}
-              onChange={(e) => setFilters({ ...filters, resourceType: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les types</option>
-              {RESOURCE_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Created By Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ajouté par
-            </label>
-            <select
-              value={filters.createdBy}
-              onChange={(e) => setFilters({ ...filters, createdBy: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Tous les utilisateurs</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.full_name || user.email}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Search Text */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="md:col-span-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Rechercher
             </label>
             <input
@@ -535,50 +440,74 @@ export default function ResourcesPage() {
               value={filters.searchText}
               onChange={(e) => setFilters({ ...filters, searchText: e.target.value })}
               placeholder="Titre, description, cours..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
 
-          {/* Date From */}
+          {[
+            { label: 'Année', value: filters.year, options: YEARS.map(y => ({ value: y.value, label: y.label })), onChange: (v: string) => setFilters({ ...filters, year: v, moduleId: '' }), placeholder: 'Toutes les années' },
+            { label: 'Module', value: filters.moduleId, options: availableFilterModules.map(m => ({ value: m.name, label: m.name })), onChange: (v: string) => setFilters({ ...filters, moduleId: v }), placeholder: 'Tous les modules' },
+            { label: 'Spécialité', value: filters.speciality, options: [{ value: 'Médecine', label: 'Médecine' }, { value: 'Pharmacie', label: 'Pharmacie' }, { value: 'Dentaire', label: 'Dentaire' }], onChange: (v: string) => setFilters({ ...filters, speciality: v }), placeholder: 'Toutes les spécialités' },
+            { label: 'Type', value: filters.resourceType, options: RESOURCE_TYPES.map(t => ({ value: t.value, label: t.label })), onChange: (v: string) => setFilters({ ...filters, resourceType: v }), placeholder: 'Tous les types' },
+            { label: 'Ajouté par', value: filters.createdBy, options: users.map(u => ({ value: u.id, label: u.full_name || u.email })), onChange: (v: string) => setFilters({ ...filters, createdBy: v }), placeholder: 'Tous les utilisateurs' },
+          ].map((item, idx) => (
+            <div key={idx}>
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                {item.label}
+              </label>
+              <select
+                value={item.value}
+                onChange={(e) => item.onChange(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
+              >
+                <option value="">{item.placeholder}</option>
+                {item.options.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-900">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+
+          {/* Date Range */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Date de début
             </label>
             <input
               type="date"
               value={filters.dateFrom}
               onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
-
-          {/* Date To */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
               Date de fin
             </label>
             <input
               type="date"
               value={filters.dateTo}
               onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
         </div>
 
         {/* Export Buttons */}
-        <div className="flex gap-2 pt-4 border-t">
+        <div className="flex gap-4 pt-6 border-t border-slate-100 dark:border-white/5">
           <button
             onClick={exportToJSON}
             disabled={filteredResources.length === 0}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
           >
             📄 Exporter JSON
           </button>
           <button
             onClick={exportToCSV}
             disabled={filteredResources.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
           >
             📊 Exporter CSV
           </button>
@@ -586,62 +515,50 @@ export default function ResourcesPage() {
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6 mb-6 md:mb-8">
-          <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6">Ajouter une Ressource</h2>
-          <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
-            {/* Form fields - similar to questions page */}
-            <div className="border-2 border-gray-200 rounded-lg p-4 md:p-6 bg-gray-50">
-              <h3 className="text-base md:text-lg font-semibold mb-3 md:mb-4 text-gray-700 border-b pb-2">
-                📖 Détails de la Ressource
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-6 md:p-10 mb-8 shadow-xl">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-primary-500/10 rounded-2xl flex items-center justify-center text-2xl">
+              ➕
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Ajouter une Ressource
+            </h2>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <div className="bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-white/5">
+              <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.25em] mb-8 flex items-center gap-3">
+                <span className="w-8 h-px bg-slate-200 dark:bg-white/10"></span>
+                Détails de la Ressource
+                <span className="flex-1 h-px bg-slate-200 dark:bg-white/10"></span>
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {/* Speciality */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Spécialité *
-                  </label>
-                  <select
-                    value={formData.speciality || 'Médecine'}
-                    onChange={(e) => setFormData({ ...formData, speciality: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="Médecine">Médecine</option>
-                    <option value="Pharmacie">Pharmacie</option>
-                    <option value="Dentaire">Dentaire</option>
-                  </select>
-                </div>
-
-                {/* Year */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Année d&apos;Étude *
-                  </label>
-                  <select
-                    value={formData.year}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      year: e.target.value as any,
-                      moduleId: '',
-                      subDisciplineId: undefined,
-                      unityName: undefined,
-                      moduleType: undefined
-                    })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    {YEARS.map((year) => (
-                      <option key={year.value} value={year.value}>
-                        {year.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {[
+                  { label: 'Spécialité *', value: formData.speciality || 'Médecine', options: ['Médecine', 'Pharmacie', 'Dentaire'], onChange: (v: string) => setFormData({ ...formData, speciality: v as any }), required: true },
+                  { label: 'Année d\'Étude *', value: formData.year, options: YEARS.map(y => ({ value: y.value, label: y.label })), onChange: (v: string) => setFormData({ ...formData, year: v as any, moduleId: '', subDisciplineId: undefined, unityName: undefined, moduleType: undefined }), required: true },
+                ].map((item, idx) => (
+                  <div key={idx}>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      {item.label}
+                    </label>
+                    <select
+                      value={item.value}
+                      onChange={(e) => item.onChange(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
+                      required={item.required}
+                    >
+                      {Array.isArray(item.options) ? item.options.map((opt) => (
+                        <option key={typeof opt === 'string' ? opt : opt.value} value={typeof opt === 'string' ? opt : opt.value} className="bg-white dark:bg-slate-900">
+                          {typeof opt === 'string' ? opt : opt.label}
+                        </option>
+                      )) : null}
+                    </select>
+                  </div>
+                ))}
 
                 {/* Module */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
                     Module / Unité *
                   </label>
                   <select
@@ -656,44 +573,33 @@ export default function ResourcesPage() {
                         moduleType: selectedMod?.type
                       });
                     }}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                     required
                   >
                     <option value="">Sélectionner un module</option>
                     {availableModules.map((module) => (
-                      <option key={module.name} value={module.name}>
-                        {module.type === 'uei' && '🟢 UEI: '}
-                        {module.type === 'standalone' && '🟡 '}
-                        {module.type === 'annual' && '🔵 '}
-                        {module.type === 'semestrial' && '🔵 '}
+                      <option key={module.name} value={module.name} className="bg-white dark:bg-slate-900">
+                        {module.type === 'uei' ? '🟢 ' : module.type === 'standalone' ? '🟡 ' : '🔵 '}
                         {module.name}
                       </option>
                     ))}
                   </select>
-                  {selectedModule && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {selectedModule.type === 'uei' && '🟢 Unité d\'Enseignement Intégré (UEI)'}
-                      {selectedModule.type === 'standalone' && '🟡 Module Autonome'}
-                      {selectedModule.type === 'annual' && '🔵 Module Annuel'}
-                      {selectedModule.type === 'semestrial' && '🔵 Module Semestriel'}
-                    </p>
-                  )}
                 </div>
 
-                {/* Sub-discipline (if applicable) */}
+                {/* Sub-discipline */}
                 {availableSubDisciplines.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
                       Sous-discipline
                     </label>
                     <select
                       value={formData.subDisciplineId || ''}
                       onChange={(e) => setFormData({ ...formData, subDisciplineId: e.target.value || undefined })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                     >
                       <option value="">Aucune (optionnel)</option>
                       {availableSubDisciplines.map((subDisc) => (
-                        <option key={subDisc} value={subDisc}>
+                        <option key={subDisc} value={subDisc} className="bg-white dark:bg-slate-900">
                           {subDisc}
                         </option>
                       ))}
@@ -703,17 +609,17 @@ export default function ResourcesPage() {
 
                 {/* Resource Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
                     Type de Ressource *
                   </label>
                   <select
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                     required
                   >
                     {RESOURCE_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
+                      <option key={type.value} value={type.value} className="bg-white dark:bg-slate-900">
                         {type.label}
                       </option>
                     ))}
@@ -722,18 +628,18 @@ export default function ResourcesPage() {
               </div>
 
               {/* Cours (Multiple) */}
-              <div className="mt-4 md:mt-6">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  Cours *
+              <div className="mt-8">
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 px-1">
+                  Cours associés *
                 </label>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {(formData.cours || ['']).map((cours, index) => (
-                    <div key={index} className="flex gap-2">
+                    <div key={index} className="flex gap-3">
                       <input
                         type="text"
                         value={cours}
                         onChange={(e) => updateCoursInput(index, e.target.value)}
-                        className="flex-1 px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+                        className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                         placeholder="Nom du cours"
                         required
                       />
@@ -741,78 +647,73 @@ export default function ResourcesPage() {
                         <button
                           type="button"
                           onClick={addCoursInput}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold"
+                          className="w-12 h-12 flex items-center justify-center bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 active:scale-95"
                         >
-                          +
+                          ➕
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => removeCoursInput(index)}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold"
+                          className="w-12 h-12 flex items-center justify-center bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500/20 transition-all active:scale-95"
                         >
-                          −
+                          ✕
                         </button>
                       )}
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Vous pouvez ajouter plusieurs cours en cliquant sur le bouton +
-                </p>
               </div>
 
-              {/* Title */}
-              <div className="mt-4 md:mt-6">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  Titre de la Ressource *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                  placeholder="Ex: Cours Anatomie - Chapitre 1"
-                  required
-                />
-              </div>
-
-              {/* URL */}
-              <div className="mt-3 md:mt-4">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  URL / Lien *
-                </label>
-                <input
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                  placeholder="https://drive.google.com/... ou https://t.me/..."
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="mt-3 md:mt-4">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  Description (optionnel)
-                </label>
-                <textarea
-                  value={formData.description || ''}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-                  rows={3}
-                  placeholder="Description de la ressource..."
-                />
+              {/* Title & URL & Description */}
+              <div className="mt-8 space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    Titre de la Ressource *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                    placeholder="Ex: Cours Anatomie - Chapitre 1"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    URL / Lien *
+                  </label>
+                  <input
+                    type="url"
+                    value={formData.url}
+                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                    placeholder="https://drive.google.com/... ou https://t.me/..."
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    Description (optionnel)
+                  </label>
+                  <textarea
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                    rows={3}
+                    placeholder="Description de la ressource..."
+                  />
+                </div>
               </div>
             </div>
 
             {/* Submit Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400 disabled:cursor-not-allowed text-sm md:text-base"
+                className="flex-1 px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? '⏳ Enregistrement...' : '✅ Enregistrer la Ressource'}
               </button>
@@ -822,7 +723,7 @@ export default function ResourcesPage() {
                   setShowForm(false);
                   resetForm();
                 }}
-                className="px-4 md:px-6 py-2 md:py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm md:text-base"
+                className="px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
               >
                 Annuler
               </button>
@@ -832,93 +733,103 @@ export default function ResourcesPage() {
       )}
 
       {/* Resources List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 md:p-6 border-b">
-          <h2 className="text-lg md:text-xl font-semibold">
-            Ressources ({filteredResources.length})
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] shadow-sm overflow-hidden mb-12">
+        <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5 flex justify-between items-center">
+          <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+            Ressources <span className="text-primary-500 ml-2">({filteredResources.length})</span>
           </h2>
         </div>
-        <div className="p-4 md:p-6">
+        <div className="p-6 md:p-8">
           {loading ? (
-            <p className="text-gray-500 text-center py-8">
-              ⏳ Chargement des ressources...
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+              <div className="w-12 h-12 border-4 border-primary-500/20 border-t-primary-500 rounded-full animate-spin"></div>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                Chargement des ressources...
+              </p>
+            </div>
           ) : filteredResources.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              {resources.length === 0 
-                ? 'Aucune ressource ajoutée. Cliquez sur "Nouvelle Ressource" pour commencer.'
-                : 'Aucune ressource trouvée avec ces filtres.'
-              }
-            </p>
+            <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-950/30 rounded-3xl border border-dashed border-slate-200 dark:border-white/5">
+              <span className="text-4xl mb-4">📭</span>
+              <p className="text-slate-500 dark:text-slate-400 font-bold">
+                {resources.length === 0 
+                  ? 'Aucune ressource ajoutée.'
+                  : 'Aucune ressource trouvée.'
+                }
+              </p>
+              <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2">
+                {resources.length === 0 ? 'Cliquez sur "Nouvelle Ressource" pour commencer.' : 'Essayez d\'ajuster vos filtres.'}
+              </p>
+            </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {paginatedResources.map((resource) => (
-                  <div key={resource.id} className="border border-gray-200 rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="text-3xl">{getResourceIcon(resource.type)}</div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-2">{resource.title}</h4>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                  <div key={resource.id} className="group bg-white dark:bg-slate-950/40 border border-slate-100 dark:border-white/5 rounded-3xl p-6 transition-all hover:shadow-xl hover:shadow-primary-500/5 hover:border-primary-500/20">
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="w-14 h-14 bg-slate-50 dark:bg-slate-900 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">
+                        {getResourceIcon(resource.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-slate-900 dark:text-white mb-2 truncate group-hover:text-primary-500 transition-colors">
+                          {resource.title}
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="px-2 py-0.5 bg-primary-600 text-white text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                             {YEARS.find(y => y.value === resource.year)?.label}
                           </span>
-                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                          <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
                             {resource.module_name}
-                          </span>
-                          {resource.speciality && (
-                            <span className="px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded">
-                              {resource.speciality}
-                            </span>
-                          )}
-                          {resource.module_type === 'uei' && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded">
-                              🟢 UEI
-                            </span>
-                          )}
-                          {resource.module_type === 'standalone' && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded">
-                              🟡 Autonome
-                            </span>
-                          )}
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                            {RESOURCE_TYPES.find(t => t.value === resource.type)?.label}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {resource.description && (
-                      <p className="text-sm text-gray-600 mb-3">{resource.description}</p>
-                    )}
-
-                    {resource.cours && resource.cours.length > 0 && (
-                      <p className="text-xs text-gray-600 mb-3">
-                        📚 Cours: {resource.cours.join(', ')}
-                      </p>
-                    )}
-
-                    <p className="text-xs text-gray-500 mb-3">
-                      📅 {new Date(resource.created_at).toLocaleDateString('fr-FR')}
-                    </p>
-
-                    <div className="flex gap-2">
-                      <a
-                        href={resource.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 px-3 py-2 text-sm text-center bg-blue-600 text-white rounded hover:bg-blue-700"
-                      >
-                        Ouvrir
-                      </a>
-                      {(userRole === 'owner' || userRole === 'admin') && (
-                        <button
-                          onClick={() => deleteResourceHandler(resource.id)}
-                          className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded"
-                        >
-                          ✕
-                        </button>
+                    <div className="space-y-4 mb-6">
+                      {resource.description && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {resource.description}
+                        </p>
                       )}
+
+                      {resource.cours && resource.cours.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {resource.cours.slice(0, 3).map((c: string, i: number) => (
+                            <span key={i} className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-medium rounded-md">
+                              {c}
+                            </span>
+                          ))}
+                          {resource.cours.length > 3 && (
+                            <span className="px-2 py-0.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 text-slate-500 dark:text-slate-400 text-[10px] font-medium rounded-md">
+                              +{resource.cours.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/5">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {new Date(resource.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                        <div className="flex gap-2">
+                          {(userRole === 'owner' || userRole === 'admin') && (
+                            <button
+                              onClick={() => deleteResourceHandler(resource.id)}
+                              className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
+                              title="Supprimer"
+                            >
+                              ✕
+                            </button>
+                          )}
+                          <a
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-primary-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 active:scale-95"
+                          >
+                            Ouvrir
+                          </a>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -926,23 +837,23 @@ export default function ResourcesPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-6">
+                <div className="flex justify-center items-center gap-4 mt-10">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl text-slate-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    ← Précédent
+                    ←
                   </button>
-                  <span className="text-gray-700">
-                    Page {currentPage} sur {totalPages}
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Page <span className="text-slate-900 dark:text-white">{currentPage}</span> / {totalPages}
                   </span>
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-xl text-slate-500 hover:text-primary-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    Suivant →
+                    →
                   </button>
                 </div>
               )}

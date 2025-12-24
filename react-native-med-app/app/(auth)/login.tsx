@@ -3,12 +3,15 @@
 // ============================================================================
 
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
-import { Button, Input, Alert } from '@/components/ui'
+import { Button, Input, Alert as UIAlert } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+
+// Brand Logo
+const Logo = require('@/assets/images/logo.png')
 
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth()
@@ -29,11 +32,19 @@ export default function LoginScreen() {
     }
 
     setError(null)
-    const { error: loginError } = await signIn(email.trim(), password)
+    const { error: loginError, deviceLimitWarning } = await signIn(email.trim(), password)
     
     if (loginError) {
       setError(loginError)
     } else {
+      // Show device limit warning if applicable
+      if (deviceLimitWarning) {
+        Alert.alert(
+          'Limite d\'appareils atteinte',
+          'Vous avez atteint la limite de 2 appareils. L\'appareil le moins récemment utilisé a été déconnecté automatiquement.',
+          [{ text: 'Compris', style: 'default' }]
+        )
+      }
       router.replace('/(tabs)')
     }
   }
@@ -66,18 +77,15 @@ export default function LoginScreen() {
               </TouchableOpacity>
               
               {/* Brand Logo */}
-              <View style={{
-                width: 64,
-                height: 64,
-                backgroundColor: BRAND_THEME.colors.primary[500],
-                borderRadius: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 24,
-                ...BRAND_THEME.shadows.md
-              }}>
-                <Text style={{ color: '#ffffff', fontSize: 28 }}>🩺</Text>
-              </View>
+              <Image 
+                source={Logo}
+                style={{
+                  width: 80,
+                  height: 80,
+                  marginBottom: 24,
+                  resizeMode: 'contain'
+                }}
+              />
               
               <Text style={{
                 fontSize: 28,
@@ -97,7 +105,7 @@ export default function LoginScreen() {
 
             {/* Error Message */}
             {error && (
-              <Alert 
+              <UIAlert 
                 variant="error"
                 message={error}
                 onClose={() => setError(null)}
@@ -142,14 +150,15 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Login Button */}
-            <Button 
-              title="Se connecter"
-              onPress={handleLogin}
-              loading={isLoading}
-              variant="primary"
-              size="lg"
-              style={{ marginBottom: 16 }}
-            />
+            <View style={{ marginBottom: 16 }}>
+              <Button 
+                title="Se connecter"
+                onPress={handleLogin}
+                loading={isLoading}
+                variant="primary"
+                size="lg"
+              />
+            </View>
 
             {/* Register Link */}
             <View style={{ 
