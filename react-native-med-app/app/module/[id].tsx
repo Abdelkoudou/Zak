@@ -251,7 +251,7 @@ export default function ModuleDetailScreen() {
                       fontSize: 16,
                       marginBottom: 2
                     }}>
-                      QCM d'examen
+                      FMC d'examen
                     </Text>
                     <Text style={{
                       color: BRAND_THEME.colors.gray[600],

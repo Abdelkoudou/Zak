@@ -185,7 +185,7 @@ export default function RegisterScreen() {
                 </View>
                 <View className={isDesktop ? 'flex-1' : ''}>
                   <Text className="text-gray-700 font-medium mb-2">Code d'activation *</Text>
-                  <TextInput className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 uppercase" placeholder="MCQ-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
+                  <TextInput className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 uppercase" placeholder="FMC-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
                 </View>
               </View>
             </View>

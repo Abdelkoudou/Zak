@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "MCQ Study App",
-    "slug": "mcq-study-app",
+    "name": "FMC Study App",
+    "slug": "fmc-study-app",
     "version": "1.1.0",
     "orientation": "portrait",
-    "scheme": "mcqstudyapp",
+    "scheme": "fmcstudyapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "backgroundColor": "#3B82F6"
@@ -14,10 +14,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mcqstudyapp.mobile"
+      "bundleIdentifier": "com.fmcstudyapp.mobile"
     },
     "android": {
-      "package": "com.mcqstudyapp.mobile",
+      "package": "com.fmcstudyapp.mobile",
       "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#3B82F6"

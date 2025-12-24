@@ -28,7 +28,7 @@ export const BrandShowcase: React.FC = () => {
             fontSize: 16, 
             color: BRAND_THEME.colors.gray[600] 
           }}>
-            MCQ Study App - Brand Identity Showcase
+            FMC - OUR BRAND - Brand Identity Showcase
           </Text>
         </View>
 

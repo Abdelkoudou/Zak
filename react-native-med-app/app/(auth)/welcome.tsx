@@ -46,7 +46,7 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               marginBottom: 8
             }}>
-              MCQ Study App
+              FMC Study App
             </Text>
             
             <Text style={{
@@ -80,7 +80,7 @@ export default function WelcomeScreen() {
               <View style={{ width: isDesktop ? '48%' : '100%' }}>
                 <FeatureItem 
                   icon="📝" 
-                  title="QCM par module" 
+                  title="FMC par module" 
                   description="Questions organisées par année et module d'étude"
                 />
               </View>

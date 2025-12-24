@@ -1,5 +1,5 @@
 {
-  "name": "mcq-study-app",
+  "name": "fmc-study-app",
   "version": "1.1.0",
   "main": "expo-router/entry",
   "scripts": {
