@@ -259,7 +259,7 @@ export default function ActivationCodesPage() {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8">
         <div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-            Codes d'Activation
+            Codes d&apos;Activation
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
             Génération & Gestion de Licences • QCM Med
@@ -380,8 +380,8 @@ export default function ActivationCodesPage() {
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Générer des Codes</h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-              L'année et la faculté seront renseignées par l'utilisateur lors de son inscription. 
-              Ces codes sont valides pour n'importe quelle année/faculté.
+              L&apos;année et la faculté seront renseignées par l&apos;utilisateur lors de son inscription. 
+              Ces codes sont valides pour n&apos;importe quelle année/faculté.
             </p>
             
             <div className="space-y-6">
@@ -898,7 +898,7 @@ export default function ActivationCodesPage() {
                 <div className="pt-2">
                   <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 px-1">Notes</span>
                   <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl text-xs text-slate-700 dark:text-slate-300 italic">
-                    "{selectedCode.notes}"
+                    &quot;{selectedCode.notes}&quot;
                   </div>
                 </div>
               )}

@@ -115,7 +115,7 @@ export default function ModulesPage() {
             <p className="text-sm font-black text-primary-900 dark:text-primary-100 uppercase tracking-widest mb-1">Modules Prédéfinis</p>
             <p className="text-xs text-primary-700/80 dark:text-primary-300/80 font-medium leading-relaxed">
               Ces modules sont définis par le curriculum médical et ne peuvent pas être modifiés. 
-              Vous pouvez associer des questions et des ressources à chaque module en utilisant les boutons d'action.
+              Vous pouvez associer des questions et des ressources à chaque module en utilisant les boutons d&apos;action.
             </p>
           </div>
         </div>

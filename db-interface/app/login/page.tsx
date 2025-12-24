@@ -117,7 +117,7 @@ function LoginForm() {
             QCM Med
           </h2>
           <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest">
-            Interface d'Administration
+            Interface d&apos;Administration
           </p>
         </div>
         
@@ -214,7 +214,7 @@ function LoginForm() {
         <div className="text-center space-y-2">
           <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">Accès Restreint</p>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Contactez l'administrateur système pour vos identifiants.
+            Contactez l&apos;administrateur système pour vos identifiants.
           </p>
         </div>
       </div>

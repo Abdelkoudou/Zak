@@ -174,7 +174,7 @@ export default function ExportPage() {
             <div className="flex items-start gap-4">
               <span className="text-2xl">⚠️</span>
               <div>
-                <h3 className="text-sm font-black text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Erreur d'Export</h3>
+                <h3 className="text-sm font-black text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Erreur d&apos;Export</h3>
                 <p className="text-sm text-red-600 dark:text-red-300 font-medium">{error}</p>
               </div>
             </div>
@@ -244,7 +244,7 @@ export default function ExportPage() {
                      </>
                   ) : (
                     <>
-                      🚀 Lancer l'Exportation & Synchro
+                      🚀 Lancer l&apos;Exportation & Synchro
                     </>
                   )}
                 </button>

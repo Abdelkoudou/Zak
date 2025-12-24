@@ -371,7 +371,7 @@ export default function HistoryPage() {
                 Aucune question trouvée.
               </p>
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2">
-                Essayez d'ajuster vos filtres.
+                Essayez d&apos;ajuster vos filtres.
               </p>
             </div>
           ) : (
