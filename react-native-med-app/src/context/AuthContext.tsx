@@ -68,8 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setIsLoading(true)
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
-    } catch (error) {
-      console.error('Error checking session:', error)
+    } catch {
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -81,8 +80,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
-    } catch (error) {
-      console.error('Error refreshing user:', error)
+    } catch {
+      // Error refreshing user silently handled
     }
   }
 

@@ -60,8 +60,8 @@ export default function HomeScreen() {
       
       if (!modulesResult.error) setModules(modulesResult.modules)
       if (!statsResult.error) setStats(statsResult.stats)
-    } catch (error) {
-      console.error('Error loading data:', error)
+    } catch {
+      // Error loading data silently handled
     } finally {
       setIsLoading(false)
       setRefreshing(false)

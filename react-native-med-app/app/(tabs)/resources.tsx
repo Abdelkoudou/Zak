@@ -7,11 +7,11 @@ import {
   View, 
   Text, 
   ScrollView, 
-  TouchableOpacity, 
   RefreshControl, 
   Linking,
   Animated,
-  Pressable 
+  Pressable,
+  TouchableOpacity
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
@@ -53,8 +53,7 @@ export default function ResourcesScreen() {
       } else {
         setResources(data)
       }
-    } catch (error) {
-      console.error('Error loading resources:', error)
+    } catch {
       setError('Erreur lors du chargement des ressources')
       setResources([])
     } finally {

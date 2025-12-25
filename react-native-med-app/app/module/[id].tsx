@@ -10,7 +10,7 @@ import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/mod
 import { getQuestionCount } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
-import { Card, Badge, FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
+import { FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { QcmExamIcon, BookQcmIcon, ChevronLeftIcon } from '@/components/icons'
 
@@ -56,8 +56,8 @@ export default function ModuleDetailScreen() {
         await loadExamTypesWithCounts(moduleData)
         await loadCoursWithCounts(moduleData.name, coursData)
       }
-    } catch (error) {
-      console.error('Error loading module:', error)
+    } catch {
+      // Error loading module silently handled
     } finally {
       setIsLoading(false)
     }
@@ -79,8 +79,8 @@ export default function ModuleDetailScreen() {
       )
 
       setAvailableExamTypes(examTypesWithCounts.filter(item => item.count > 0))
-    } catch (error) {
-      console.error('Error loading exam types:', error)
+    } catch {
+      // Error loading exam types silently handled
     }
   }
 
@@ -97,8 +97,8 @@ export default function ModuleDetailScreen() {
       )
 
       setCoursWithCounts(coursWithCounts.filter(item => item.count > 0))
-    } catch (error) {
-      console.error('Error loading cours counts:', error)
+    } catch {
+      // Error loading cours counts silently handled
     }
   }
 

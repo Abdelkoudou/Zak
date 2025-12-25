@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useRef } from 'react'
-import { View, Text, ScrollView, Image, useWindowDimensions, Animated } from 'react-native'
+import { View, Text, ScrollView, Image, Animated } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AnimatedButton, FadeInView } from '@/components/ui'
@@ -12,8 +12,6 @@ import { BRAND_THEME } from '@/constants/theme'
 const Logo = require('@/assets/images/logo.png')
 
 export default function WelcomeScreen() {
-  const { width } = useWindowDimensions()
-  const isDesktop = width >= 768
   const contentMaxWidth = 500
 
   // Animations
@@ -180,30 +178,5 @@ export default function WelcomeScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  )
-}
-
-// Feature Row Component
-function FeatureRow({ icon, text }: { icon: string; text: string }) {
-  return (
-    <View style={{ 
-      flexDirection: 'row', 
-      alignItems: 'center', 
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      backgroundColor: BRAND_THEME.colors.gray[50],
-      borderRadius: 12,
-      marginBottom: 8,
-    }}>
-      <Text style={{ fontSize: 20, marginRight: 14 }}>{icon}</Text>
-      <Text style={{ 
-        fontSize: 15, 
-        color: BRAND_THEME.colors.gray[700],
-        fontWeight: '500',
-        flex: 1,
-      }}>
-        {text}
-      </Text>
-    </View>
   )
 }

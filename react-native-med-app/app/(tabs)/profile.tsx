@@ -7,26 +7,25 @@ import {
   View, 
   Text, 
   ScrollView, 
-  TouchableOpacity, 
   RefreshControl, 
   Alert, 
-  useWindowDimensions,
   Animated,
-  Pressable
+  Pressable,
+  Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router, useFocusEffect } from 'expo-router'
+import { router } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getUserStatistics, getAllModuleStatistics } from '@/lib/stats'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { OfflineContentService } from '@/lib/offline-content'
 import { UserStatistics, ModuleStatistics, DeviceSession } from '@/types'
 import { YEARS } from '@/constants'
-import { Card, Badge, FadeInView, Skeleton } from '@/components/ui'
+import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
-import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 export default function ProfileScreen() {
   const { user, signOut, getDeviceSessions } = useAuth()
-  const { width } = useWindowDimensions()
   const contentMaxWidth = 800
   
   const [stats, setStats] = useState<UserStatistics | null>(null)
@@ -52,8 +51,8 @@ export default function ProfileScreen() {
       if (!userStats.error) setStats(userStats.stats)
       if (!modStats.error) setModuleStats(modStats.stats)
       if (!sessions.error) setDeviceSessions(sessions.sessions)
-    } catch (error) {
-      console.error('Error loading profile data:', error)
+    } catch {
+      // Error loading profile data silently handled
     } finally {
       setIsLoading(false)
       setRefreshing(false)
@@ -240,6 +239,13 @@ export default function ProfileScreen() {
             </View>
           </FadeInView>
 
+          {/* Offline Mode */}
+          <FadeInView delay={250} animation="slideUp">
+            <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+               <OfflineContentCard />
+            </View>
+          </FadeInView>
+
           {/* Saved Questions */}
           <FadeInView delay={300} animation="slideUp">
             <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
@@ -418,6 +424,120 @@ function ProfileSkeleton() {
       <Skeleton width="100%" height={180} borderRadius={16} />
     </View>
   )
+}
+
+// Offline Content Card
+function OfflineContentCard() {
+  const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [status, setStatus] = useState<string>('Vérifier les mises à jour');
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+
+  const check = async () => {
+    console.log('Checking for updates...');
+    if (Platform.OS === 'web') {
+      Alert.alert('Non disponible', 'Le mode hors ligne n\'est pas disponible sur le web');
+      return;
+    }
+    
+    setChecking(true);
+    setStatus('Vérification...');
+    try {
+      console.log('Calling OfflineContentService.checkForUpdates()');
+      const { hasUpdate, remoteVersion, error } = await OfflineContentService.checkForUpdates();
+      console.log('Check result:', { hasUpdate, remoteVersion, error });
+      
+      if (error) {
+        setStatus('Erreur');
+        Alert.alert('Erreur', 'Vérification échouée: ' + error);
+        return;
+      }
+
+      setUpdateAvailable(hasUpdate);
+      setLastCheck(new Date());
+      setStatus(hasUpdate ? 'Mise à jour disponible' : 'À jour');
+      if (!hasUpdate) {
+        setTimeout(() => setStatus('Vérifier les mises à jour'), 3000);
+      }
+    } catch (error) {
+      console.error('Check error:', error);
+      setStatus('Erreur de vérification');
+      Alert.alert('Erreur', 'Échec de la vérification: ' + (error as any).message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const update = async () => {
+    setDownloading(true);
+    setStatus('Téléchargement...');
+    try {
+      await OfflineContentService.downloadUpdates((p) => {
+        setProgress(p);
+        setStatus(`Téléchargement ${Math.round(p * 100)}%`);
+      });
+      setStatus('Mise à jour terminée !');
+      setUpdateAvailable(false);
+      setTimeout(() => setStatus('Vérifier les mises à jour'), 3000);
+    } catch {
+      Alert.alert('Erreur', 'Le téléchargement a échoué');
+      setStatus('Réessayer');
+    } finally {
+      setDownloading(false);
+      setProgress(0);
+    }
+  };
+
+  return (
+    <AnimatedPressableCard onPress={updateAvailable ? update : check}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+          <View style={{
+            width: 44,
+            height: 44,
+            backgroundColor: 'rgba(9, 178, 173, 0.1)',
+            borderRadius: 22,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 14,
+          }}>
+            <Text style={{ fontSize: 20 }}>☁️</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: BRAND_THEME.colors.gray[900] }}>
+              Mode Hors Ligne
+            </Text>
+            <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 13 }}>
+              {status}
+            </Text>
+            {downloading && (
+               <View style={{ height: 4, backgroundColor: BRAND_THEME.colors.gray[100], borderRadius: 2, marginTop: 6, width: '100%' }}>
+                  <View style={{ height: '100%', backgroundColor: '#09B2AD', borderRadius: 2, width: `${progress * 100}%` }} />
+               </View>
+            )}
+          </View>
+        </View>
+        
+        <View>
+           {checking || downloading ? (
+             <View style={{ width: 24, height: 24, borderTopWidth: 2, borderRightWidth: 2, borderColor: '#09B2AD', borderRadius: 12 }} /> 
+             // Ideally use an ActivityIndicator here, but keeping it simple with inline loop or just text
+           ) : (
+             <Text style={{ color: updateAvailable ? '#09B2AD' : BRAND_THEME.colors.gray[400], fontWeight: '700' }}>
+               {updateAvailable ? '⬇️' : '🔄'}
+             </Text>
+           )}
+        </View>
+      </View>
+      {lastCheck && !downloading && !checking && !updateAvailable && (
+         <Text style={{ fontSize: 10, color: BRAND_THEME.colors.gray[400], marginTop: 8, textAlign: 'right' }}>
+            Dernière vérif: {lastCheck.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+         </Text>
+      )}
+    </AnimatedPressableCard>
+  );
 }
 
 // Stat Box

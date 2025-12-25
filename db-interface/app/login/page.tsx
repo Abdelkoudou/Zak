@@ -44,15 +44,12 @@ function LoginForm() {
       });
 
       if (signInError) {
-        console.error('Sign in error:', signInError);
         throw signInError;
       }
 
       if (!data.user) {
         throw new Error('No user data returned');
       }
-
-      console.log('User signed in:', data.user.id);
 
       // Check if user is admin/manager/owner
       const { data: userData, error: userError } = await supabase
@@ -62,7 +59,6 @@ function LoginForm() {
         .single();
 
       if (userError) {
-        console.error('User role check error:', userError);
         throw new Error('Failed to verify user role. Make sure the user exists in the users table.');
       }
 
@@ -73,15 +69,12 @@ function LoginForm() {
       // Type assertion for userData
       const userRecord = userData as any;
 
-      console.log('User role:', userRecord.role);
-
       if (!['owner', 'admin', 'manager'].includes(userRecord.role)) {
         await supabase.auth.signOut();
         throw new Error(`Access denied. Role '${userRecord.role}' does not have admin privileges.`);
       }
 
       // Success! Redirect to questions page
-      console.log('Login successful, redirecting...');
       
       // Refresh session to ensure cookies are set (important for SSR middleware)
       await supabase.auth.refreshSession();
@@ -92,7 +85,6 @@ function LoginForm() {
       // Use window.location for full page reload (ensures middleware gets fresh cookies)
       window.location.href = '/questions';
     } catch (err: any) {
-      console.error('Login error:', err);
       setError(err.message || 'Failed to login');
     } finally {
       setLoading(false);

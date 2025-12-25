@@ -22,7 +22,6 @@ export default function SessionManager() {
     }
 
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log('⏰ Session expired due to inactivity');
       await handleLogout('Votre session a expiré en raison d\'inactivité. Veuillez vous reconnecter.');
     }, INACTIVITY_TIMEOUT);
   };
@@ -44,7 +43,6 @@ export default function SessionManager() {
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error || !session) {
-      console.log('❌ Invalid session detected');
       await handleLogout('Votre session a expiré. Veuillez vous reconnecter.');
       return;
     }
@@ -52,7 +50,6 @@ export default function SessionManager() {
     // Check if token is expired
     const expiresAt = session.expires_at;
     if (expiresAt && expiresAt * 1000 < Date.now()) {
-      console.log('⏰ Token expired');
       await handleLogout('Votre session a expiré. Veuillez vous reconnecter.');
       return;
     }
@@ -60,7 +57,6 @@ export default function SessionManager() {
     // Check inactivity
     const timeSinceLastActivity = Date.now() - lastActivityRef.current;
     if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
-      console.log('⏰ Inactivity timeout reached');
       await handleLogout('Votre session a expiré en raison d\'inactivité. Veuillez vous reconnecter.');
       return;
     }
@@ -90,10 +86,7 @@ export default function SessionManager() {
       if (event === 'SIGNED_OUT') {
         router.push('/login');
       } else if (event === 'TOKEN_REFRESHED') {
-        console.log('✅ Token refreshed successfully');
         resetInactivityTimer();
-      } else if (event === 'USER_UPDATED') {
-        console.log('✅ User updated');
       }
     });
 
