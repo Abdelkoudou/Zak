@@ -1,155 +1,209 @@
 // ============================================================================
-// Welcome Screen - Light Sea Green Brand
+// Welcome Screen - Premium UI with Smooth Animations
 // ============================================================================
 
-import { View, Text, ScrollView, Image, useWindowDimensions, Platform } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { View, Text, ScrollView, Image, useWindowDimensions, Animated } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Button, Card } from '@/components/ui'
+import { AnimatedButton, FadeInView } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 
-// Brand Logo
 const Logo = require('@/assets/images/logo.png')
 
 export default function WelcomeScreen() {
   const { width } = useWindowDimensions()
   const isDesktop = width >= 768
-  const contentMaxWidth = 800
+  const contentMaxWidth = 500
+
+  // Animations
+  const logoScale = useRef(new Animated.Value(0.5)).current
+  const logoOpacity = useRef(new Animated.Value(0)).current
+  const titleOpacity = useRef(new Animated.Value(0)).current
+  const titleSlide = useRef(new Animated.Value(30)).current
+
+  useEffect(() => {
+    // Staggered entrance animations
+    Animated.sequence([
+      // Logo animation
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 6,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Title animation
+      Animated.parallel([
+        Animated.timing(titleOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(titleSlide, {
+          toValue: 0,
+          friction: 8,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start()
+  }, [])
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={{ 
           flex: 1, 
           width: '100%', 
           maxWidth: contentMaxWidth, 
           paddingHorizontal: 24, 
-          paddingVertical: 32 
+          paddingVertical: 40,
+          justifyContent: 'center',
         }}>
-          {/* Logo & Title */}
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
-            {/* Brand Logo */}
-            <Image 
-              source={Logo}
-              style={{
-                width: 120,
-                height: 120,
-                marginBottom: 24,
-                resizeMode: 'contain'
-              }}
-            />
-            
-            <Text style={{
-              fontSize: 32,
-              fontWeight: 'bold',
-              color: BRAND_THEME.colors.gray[900],
-              textAlign: 'center',
-              marginBottom: 8
-            }}>
-              FMC Study App
-            </Text>
-            
-            <Text style={{
-              fontSize: 18,
-              color: BRAND_THEME.colors.gray[600],
-              textAlign: 'center',
-              marginBottom: 32
-            }}>
-              Préparez vos examens médicaux
-            </Text>
-
-            <Text style={{
-              fontSize: 16,
-              color: BRAND_THEME.colors.primary[700],
-              textAlign: 'center',
+          {/* Logo & Title Section */}
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            {/* Animated Logo */}
+            <Animated.View style={{
+              opacity: logoOpacity,
+              transform: [{ scale: logoScale }],
               marginBottom: 32,
-              fontWeight: '500'
             }}>
-              Curriculum français • Étudiants algériens
-            </Text>
+              <View style={{
+                width: 140,
+                height: 140,
+                borderRadius: 35,
+                backgroundColor: 'rgba(9, 178, 173, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                ...BRAND_THEME.shadows.lg,
+              }}>
+                <Image 
+                  source={Logo}
+                  style={{
+                    width: 100,
+                    height: 100,
+                    resizeMode: 'contain',
+                  }}
+                />
+              </View>
+            </Animated.View>
+            
+            {/* Animated Title */}
+            <Animated.View style={{
+              opacity: titleOpacity,
+              transform: [{ translateY: titleSlide }],
+              alignItems: 'center',
+            }}>
+              <Text style={{
+                fontSize: 36,
+                fontWeight: '800',
+                color: BRAND_THEME.colors.gray[900],
+                textAlign: 'center',
+                marginBottom: 12,
+                letterSpacing: -1,
+              }}>
+                FMC Study App
+              </Text>
+              
+              <Text style={{
+                fontSize: 18,
+                color: BRAND_THEME.colors.gray[500],
+                textAlign: 'center',
+                marginBottom: 16,
+                lineHeight: 26,
+              }}>
+                Préparez vos examens médicaux{'\n'}avec confiance
+              </Text>
 
-
+              <View style={{
+                backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                paddingHorizontal: 20,
+                paddingVertical: 10,
+                borderRadius: 25,
+              }}>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#09B2AD',
+                  fontWeight: '600',
+                  letterSpacing: 0.5,
+                }}>
+                  🇩🇿 Curriculum français • Étudiants algériens
+                </Text>
+              </View>
+            </Animated.View>
           </View>
 
+        
+       
+
           {/* Action Buttons */}
-          <View style={{ 
-            gap: 12, 
-            flexDirection: isDesktop ? 'row' : 'column',
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <View style={{ width: isDesktop ? '48%' : '100%' }}>
-              <Button 
+          <FadeInView delay={800} animation="slideUp">
+            <View style={{ gap: 12 }}>
+              <AnimatedButton 
                 title="Créer un compte" 
                 onPress={() => router.push('/(auth)/register')}
                 variant="primary"
                 size="lg"
               />
-            </View>
-            
-            <View style={{ width: isDesktop ? '48%' : '100%' }}>
-              <Button 
+              
+              <AnimatedButton 
                 title="Se connecter" 
                 onPress={() => router.push('/(auth)/login')}
                 variant="secondary"
                 size="lg"
               />
             </View>
-          </View>
+          </FadeInView>
 
           {/* Footer */}
-          <Text style={{
-            fontSize: 14,
-            color: BRAND_THEME.colors.gray[500],
-            textAlign: 'center',
-            marginTop: 48
-          }}>
-            Plateforme dédiée aux étudiants en médecine
-          </Text>
+          <FadeInView delay={1000} animation="fade">
+            <Text style={{
+              fontSize: 13,
+              color: BRAND_THEME.colors.gray[400],
+              textAlign: 'center',
+              marginTop: 40,
+            }}>
+              Plateforme sécurisée pour étudiants en médecine
+            </Text>
+          </FadeInView>
         </View>
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Enhanced Feature Item Component
-function FeatureItem({ icon, title, description }: { 
-  icon: string
-  title: string
-  description: string 
-}) {
+// Feature Row Component
+function FeatureRow({ icon, text }: { icon: string; text: string }) {
   return (
-    <Card variant="default" padding="md" style={{ backgroundColor: BRAND_THEME.colors.primary[50] }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={{
-          width: 48,
-          height: 48,
-          backgroundColor: BRAND_THEME.colors.primary[100],
-          borderRadius: 12,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: 16
-        }}>
-          <Text style={{ fontSize: 24 }}>{icon}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{
-            fontSize: 16,
-            fontWeight: '600',
-            color: BRAND_THEME.colors.primary[800],
-            marginBottom: 4
-          }}>
-            {title}
-          </Text>
-          <Text style={{
-            fontSize: 14,
-            color: BRAND_THEME.colors.primary[600],
-            lineHeight: 20
-          }}>
-            {description}
-          </Text>
-        </View>
-      </View>
-    </Card>
+    <View style={{ 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: BRAND_THEME.colors.gray[50],
+      borderRadius: 12,
+      marginBottom: 8,
+    }}>
+      <Text style={{ fontSize: 20, marginRight: 14 }}>{icon}</Text>
+      <Text style={{ 
+        fontSize: 15, 
+        color: BRAND_THEME.colors.gray[700],
+        fontWeight: '500',
+        flex: 1,
+      }}>
+        {text}
+      </Text>
+    </View>
   )
 }

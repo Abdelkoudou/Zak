@@ -1,16 +1,24 @@
 // ============================================================================
-// Login Screen - Light Sea Green Brand
+// Login Screen - Premium UI with Smooth Animations
 // ============================================================================
 
-import { useState } from 'react'
-import { View, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native'
+import { useState, useRef, useEffect } from 'react'
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView, 
+  Image,
+  Animated 
+} from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
-import { Button, Input, Alert as UIAlert } from '@/components/ui'
+import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 
-// Brand Logo
 const Logo = require('@/assets/images/logo.png')
 
 export default function LoginScreen() {
@@ -20,8 +28,44 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
+  // Animations
+  const logoScale = useRef(new Animated.Value(0.8)).current
+  const logoOpacity = useRef(new Animated.Value(0)).current
+  const formOpacity = useRef(new Animated.Value(0)).current
+  const formSlide = useRef(new Animated.Value(30)).current
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.parallel([
+        Animated.spring(logoScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(formOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(formSlide, {
+          toValue: 0,
+          friction: 8,
+          tension: 60,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start()
+  }, [])
+
   const handleLogin = async () => {
-    // Validation
     if (!email.trim()) {
       setError('Veuillez entrer votre email')
       return
@@ -51,139 +95,157 @@ export default function LoginScreen() {
           style={{ flex: 1 }} 
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
-            {/* Header */}
-            <View style={{ marginBottom: 32 }}>
-              <TouchableOpacity 
-                style={{ marginBottom: 24 }}
-                onPress={() => router.back()}
-              >
-                <Text style={{ 
-                  color: BRAND_THEME.colors.primary[600], 
-                  fontSize: 16,
-                  fontWeight: '500'
-                }}>
-                  ← Retour
-                </Text>
-              </TouchableOpacity>
-              
-              {/* Brand Logo */}
-              <Image 
-                source={Logo}
-                style={{
-                  width: 80,
-                  height: 80,
-                  marginBottom: 24,
-                  resizeMode: 'contain'
-                }}
-              />
+          <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32, maxWidth: 500, alignSelf: 'center', width: '100%' }}>
+            {/* Back Button */}
+            <TouchableOpacity 
+              style={{ marginBottom: 24 }}
+              onPress={() => router.back()}
+            >
+              <View style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: BRAND_THEME.colors.gray[100],
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 20, color: BRAND_THEME.colors.gray[600] }}>←</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Header with Logo */}
+            <Animated.View style={{
+              opacity: logoOpacity,
+              transform: [{ scale: logoScale }],
+              alignItems: 'center',
+              marginBottom: 32,
+            }}>
+              <View style={{
+                width: 80,
+                height: 80,
+                borderRadius: 20,
+                backgroundColor: 'rgba(9, 178, 173, 0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 24,
+              }}>
+                <Image 
+                  source={Logo}
+                  style={{ width: 56, height: 56, resizeMode: 'contain' }}
+                />
+              </View>
               
               <Text style={{
                 fontSize: 28,
-                fontWeight: 'bold',
+                fontWeight: '800',
                 color: BRAND_THEME.colors.gray[900],
-                marginBottom: 8
+                marginBottom: 8,
+                letterSpacing: -0.5,
               }}>
                 Bon retour !
               </Text>
               <Text style={{
                 fontSize: 16,
-                color: BRAND_THEME.colors.gray[600]
+                color: BRAND_THEME.colors.gray[500],
+                textAlign: 'center',
               }}>
-                Connectez-vous à votre compte pour continuer
+                Connectez-vous pour continuer
               </Text>
-            </View>
-
-            {/* Error Message */}
-            {error && (
-              <UIAlert 
-                variant="error"
-                message={error}
-                onClose={() => setError(null)}
-                style={{ marginBottom: 24 }}
-              />
-            )}
+            </Animated.View>
 
             {/* Form */}
-            <View style={{ marginBottom: 24 }}>
-              <Input
-                label="Adresse email"
-                placeholder="votre@email.com"
-                value={email}
-                onChangeText={setEmail}
-                leftIcon={<Text style={{ color: BRAND_THEME.colors.gray[500] }}>📧</Text>}
-                style={{ marginBottom: 16 }}
-              />
+            <Animated.View style={{
+              opacity: formOpacity,
+              transform: [{ translateY: formSlide }],
+            }}>
+              {/* Error Message */}
+              {error && (
+                <FadeInView animation="scale">
+                  <UIAlert 
+                    variant="error"
+                    message={error}
+                    onClose={() => setError(null)}
+                    style={{ marginBottom: 24 }}
+                  />
+                </FadeInView>
+              )}
 
-              <Input
-                label="Mot de passe"
-                placeholder="••••••••"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                leftIcon={<Text style={{ color: BRAND_THEME.colors.gray[500] }}>🔒</Text>}
-              />
-            </View>
+              {/* Input Fields */}
+              <View style={{ marginBottom: 24 }}>
+                <Input
+                  label="Adresse email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChangeText={setEmail}
+                  leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>}
+                  style={{ marginBottom: 16 }}
+                />
 
-            {/* Forgot Password */}
-            <TouchableOpacity 
-              style={{ marginBottom: 32 }}
-              onPress={() => router.push('/(auth)/forgot-password')}
-            >
-              <Text style={{
-                color: BRAND_THEME.colors.primary[600],
-                textAlign: 'center',
-                fontSize: 16,
-                fontWeight: '500'
-              }}>
-                Mot de passe oublié ?
-              </Text>
-            </TouchableOpacity>
+                <Input
+                  label="Mot de passe"
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  leftIcon={<Text style={{ fontSize: 18 }}>🔒</Text>}
+                />
+              </View>
 
-            {/* Login Button */}
-            <View style={{ marginBottom: 16 }}>
-              <Button 
+              {/* Forgot Password */}
+              <TouchableOpacity 
+                style={{ marginBottom: 32, alignSelf: 'center' }}
+                onPress={() => router.push('/(auth)/forgot-password')}
+              >
+                <Text style={{
+                  color: '#09B2AD',
+                  fontSize: 15,
+                  fontWeight: '600',
+                }}>
+                  Mot de passe oublié ?
+                </Text>
+              </TouchableOpacity>
+
+              {/* Login Button */}
+              <AnimatedButton 
                 title="Se connecter"
                 onPress={handleLogin}
                 loading={isLoading}
                 variant="primary"
                 size="lg"
               />
-            </View>
 
-            {/* Register Link */}
-            <View style={{ 
-              flexDirection: 'row', 
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <Text style={{ color: BRAND_THEME.colors.gray[600] }}>
-                Pas encore de compte ? 
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-                <Text style={{
-                  color: BRAND_THEME.colors.primary[600],
-                  fontWeight: '600',
-                  marginLeft: 4
-                }}>
-                  S'inscrire
+              {/* Register Link */}
+              <View style={{ 
+                flexDirection: 'row', 
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginTop: 24,
+              }}>
+                <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>
+                  Pas encore de compte ?{' '}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+                  <Text style={{
+                    color: '#09B2AD',
+                    fontWeight: '700',
+                    fontSize: 15,
+                  }}>
+                    S'inscrire
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
 
             {/* Footer */}
-            <View style={{ 
-              marginTop: 'auto',
-              paddingTop: 32,
-              alignItems: 'center'
-            }}>
+            <View style={{ marginTop: 'auto', paddingTop: 32, alignItems: 'center' }}>
               <Text style={{
-                fontSize: 14,
-                color: BRAND_THEME.colors.gray[500],
-                textAlign: 'center'
+                fontSize: 13,
+                color: BRAND_THEME.colors.gray[400],
+                textAlign: 'center',
               }}>
-                Plateforme sécurisée pour étudiants en médecine
+                🔒 Connexion sécurisée
               </Text>
             </View>
           </View>
