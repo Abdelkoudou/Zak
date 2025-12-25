@@ -6,6 +6,7 @@ import 'react-native-url-polyfill/auto'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
+import * as Linking from 'expo-linking'
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -39,6 +40,11 @@ const customStorage = {
       // Ignore storage errors during SSR
     }
   },
+}
+
+// Create the redirect URL for deep linking
+export const getRedirectUrl = () => {
+  return Linking.createURL('auth/callback')
 }
 
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {

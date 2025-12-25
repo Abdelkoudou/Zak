@@ -22,6 +22,7 @@ export interface OfflineVersion {
         path: string; // Remote path
         last_updated: string;
     }>;
+    module_metadata?: any[]; // Array of Module objects from DB
 }
 
 export const OfflineContentService = {
@@ -84,14 +85,12 @@ export const OfflineContentService = {
 
             for (const mod of modules) {
                 // Construct the public URL for the file
-                // Or leverage supabase.storage.download if we want to handle auth, but this bucket is public
-                // We can use createSignedUrl if private, or getPublicUrl if public.
-                // Assuming public for instant access as per plan.
                 const { data: { publicUrl } } = supabase.storage
                     .from('questions')
                     .getPublicUrl(mod.path);
 
                 // Define local path (sanitize path just in case, though mod.path is usually safe 'year/mod.json')
+                // We typically expect "yearX/module_name.json", which we flatten to "yearX_module_name.json"
                 const localPath = OFFLINE_DIR + mod.path.replace(/\//g, '_');
 
                 // Download
@@ -151,6 +150,44 @@ export const OfflineContentService = {
             return JSON.parse(content);
         } catch (e) {
             return null;
+        }
+    },
+
+    // Get Module Metadata by ID
+    async getModuleById(id: string): Promise<any | null> {
+        if (Platform.OS === 'web') return null;
+        try {
+            const version = await this.getLocalVersion();
+            if (!version || !version.module_metadata) return null;
+
+            return version.module_metadata.find((m: any) => m.id === id) || null;
+        } catch (e) {
+            return null;
+        }
+    },
+
+    // Get All Modules Metadata
+    async getAllModules(): Promise<any[]> {
+        if (Platform.OS === 'web') return [];
+        try {
+            const version = await this.getLocalVersion();
+            if (!version || !version.module_metadata) return [];
+            return version.module_metadata;
+        } catch (e) {
+            return [];
+        }
+    },
+
+    // Get Modules by Year
+    async getModulesByYear(year: string): Promise<any[]> {
+        if (Platform.OS === 'web') return [];
+        try {
+            const version = await this.getLocalVersion();
+            if (!version || !version.module_metadata) return [];
+            // Assuming module metadata has 'year' field as number or string
+            return version.module_metadata.filter((m: any) => String(m.year) === String(year));
+        } catch (e) {
+            return [];
         }
     }
 };

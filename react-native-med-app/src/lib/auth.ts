@@ -2,7 +2,7 @@
 // Authentication Service
 // ============================================================================
 
-import { supabase } from './supabase'
+import { supabase, getRedirectUrl } from './supabase'
 import * as Device from 'expo-device'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 
@@ -12,10 +12,14 @@ import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSe
 
 export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
-    // 1. Create auth user
+    // 1. Create auth user with redirect URL for email verification
+    const redirectUrl = getRedirectUrl()
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     })
 
     if (authError) {
@@ -214,7 +218,10 @@ export async function updateProfile(userId: string, data: ProfileUpdateData): Pr
 
 export async function resetPassword(email: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    const redirectUrl = getRedirectUrl()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    })
     if (error) {
       return { error: error.message }
     }

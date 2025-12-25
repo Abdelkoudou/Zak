@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase'
 import { Module, YearLevel } from '@/types'
+import { OfflineContentService } from './offline-content'
 
 // ============================================================================
 // Get All Modules
@@ -11,6 +12,12 @@ import { Module, YearLevel } from '@/types'
 
 export async function getAllModules(): Promise<{ modules: Module[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModules = await OfflineContentService.getAllModules()
+    if (offlineModules && offlineModules.length > 0) {
+      return { modules: offlineModules as Module[], error: null }
+    }
+
     const { data, error } = await supabase
       .from('modules')
       .select('*')
@@ -33,6 +40,12 @@ export async function getAllModules(): Promise<{ modules: Module[]; error: strin
 
 export async function getModulesByYear(year: YearLevel): Promise<{ modules: Module[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModules = await OfflineContentService.getModulesByYear(year)
+    if (offlineModules && offlineModules.length > 0) {
+      return { modules: offlineModules as Module[], error: null }
+    }
+
     const { data, error } = await supabase
       .from('modules')
       .select('*')
@@ -56,6 +69,13 @@ export async function getModulesByYear(year: YearLevel): Promise<{ modules: Modu
 
 export async function getModuleById(id: string): Promise<{ module: Module | null; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModule = await OfflineContentService.getModuleById(id)
+    if (offlineModule) {
+      return { module: offlineModule as Module, error: null }
+    }
+
+    // Fallback to online
     const { data, error } = await supabase
       .from('modules')
       .select('*')
@@ -100,6 +120,13 @@ export async function getModuleByName(name: string): Promise<{ module: Module | 
 
 export async function getModuleQuestionCount(moduleName: string): Promise<{ count: number; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModuleData = await OfflineContentService.getModuleContent(moduleName)
+    if (offlineModuleData) {
+      // offlineModuleData.questions is an array of questions
+      return { count: offlineModuleData.questions.length, error: null }
+    }
+
     const { count, error } = await supabase
       .from('questions')
       .select('*', { count: 'exact', head: true })
@@ -119,9 +146,9 @@ export async function getModuleQuestionCount(moduleName: string): Promise<{ coun
 // Get Modules with Question Counts
 // ============================================================================
 
-export async function getModulesWithCounts(year: YearLevel): Promise<{ 
-  modules: (Module & { question_count: number })[]; 
-  error: string | null 
+export async function getModulesWithCounts(year: YearLevel): Promise<{
+  modules: (Module & { question_count: number })[];
+  error: string | null
 }> {
   try {
     // Get modules for the year
@@ -156,6 +183,19 @@ export async function getModulesWithCounts(year: YearLevel): Promise<{
 
 export async function getModuleCours(moduleName: string): Promise<{ cours: string[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModuleData = await OfflineContentService.getModuleContent(moduleName)
+    if (offlineModuleData && offlineModuleData.questions) {
+      // Extract unique cours from offline questions
+      // Need to handle potential nested or missing cours field if type is loose
+      const allCours = offlineModuleData.questions
+        .flatMap((q: any) => q.cours || [])
+        .filter((value: any, index: number, self: any[]) => self.indexOf(value) === index)
+        .sort() as string[];
+
+      return { cours: allCours, error: null }
+    }
+
     const { data, error } = await supabase
       .from('questions')
       .select('cours')

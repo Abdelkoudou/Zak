@@ -148,9 +148,10 @@ export default function ModuleDetailScreen() {
   if (!module) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
-        <FadeInView animation="scale" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <FadeInView animation="scale" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
-          <Text style={{ color: BRAND_THEME.colors.gray[600], fontSize: 16 }}>Module non trouvé</Text>
+          <Text style={{ color: BRAND_THEME.colors.gray[600], fontSize: 16, textAlign: 'center' }}>Module non trouvé</Text>
+          <Text style={{ color: BRAND_THEME.colors.gray[400], fontSize: 12, marginTop: 8 }}>ID: {id}</Text>
         </FadeInView>
       </SafeAreaView>
     )
