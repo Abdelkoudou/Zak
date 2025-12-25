@@ -11,9 +11,9 @@ import {
   Platform, 
   ScrollView, 
   Image,
+  useWindowDimensions,
   Animated,
-  Easing,
-  useWindowDimensions
+  Easing
 } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -23,6 +23,7 @@ import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/component
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('@/assets/images/logo.png')
 
 export default function LoginScreen() {
@@ -42,15 +43,15 @@ export default function LoginScreen() {
   const logoOpacity = useRef(new Animated.Value(0)).current
   const logoRotate = useRef(new Animated.Value(0)).current
   const formOpacity = useRef(new Animated.Value(0)).current
-  const formSlide = useRef(new Animated.Value(50)).current
+  const formSlide = useRef(new Animated.Value(40)).current
   const inputsOpacity = useRef(new Animated.Value(0)).current
   const inputsSlide = useRef(new Animated.Value(30)).current
   const buttonOpacity = useRef(new Animated.Value(0)).current
   const buttonSlide = useRef(new Animated.Value(40)).current
-  const glowPulse = useRef(new Animated.Value(0.3)).current
   const floatingY = useRef(new Animated.Value(0)).current
+  const glowPulse = useRef(new Animated.Value(0.3)).current
 
-  // Floating animation
+  // Floating animation for decorative elements
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -69,6 +70,7 @@ export default function LoginScreen() {
       ])
     ).start()
 
+    // Glow pulse animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(glowPulse, {
@@ -299,58 +301,6 @@ export default function LoginScreen() {
               Votre compagnon pour réussir vos examens médicaux
             </Text>
           </Animated.View>
-
-          {/* Testimonial Card */}
-          <Animated.View style={{
-            marginTop: 50,
-            backgroundColor: 'rgba(255, 255, 255, 0.12)',
-            borderRadius: 24,
-            padding: 28,
-            maxWidth: 420,
-            // @ts-ignore
-            backdropFilter: isWeb ? 'blur(15px)' : undefined,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 255, 255, 0.15)',
-            opacity: formOpacity,
-          }}>
-            <Text style={{
-              fontSize: 16,
-              color: 'rgba(255, 255, 255, 0.95)',
-              fontStyle: 'italic',
-              lineHeight: 26,
-              marginBottom: 18,
-            }}>
-              "Cette application m'a aidé à améliorer mes résultats de 30% en seulement 2 mois de pratique régulière."
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginRight: 12,
-              }}>
-                <Text style={{ fontSize: 18 }}>👨‍⚕️</Text>
-              </View>
-              <View>
-                <Text style={{
-                  fontSize: 14,
-                  color: '#ffffff',
-                  fontWeight: '700',
-                }}>
-                  Étudiant en 2ème année
-                </Text>
-                <Text style={{
-                  fontSize: 12,
-                  color: 'rgba(255, 255, 255, 0.7)',
-                }}>
-                  Faculté de Médecine
-                </Text>
-              </View>
-            </View>
-          </Animated.View>
         </LinearGradient>
 
         {/* Right Side - Form */}
@@ -378,8 +328,6 @@ export default function LoginScreen() {
                 backgroundColor: BRAND_THEME.colors.gray[100],
                 alignItems: 'center',
                 justifyContent: 'center',
-                // @ts-ignore
-                ...(isWeb && { cursor: 'pointer', transition: 'all 0.2s ease' }),
               }}>
                 <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[600]} strokeWidth={2.5} />
               </View>
