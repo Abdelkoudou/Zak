@@ -1,21 +1,27 @@
 // ============================================================================
-// Home Screen - Light Sea Green Brand
+// Home Screen - Premium UI with Smooth Animations (Replays on Focus)
 // ============================================================================
 
-import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, useWindowDimensions } from 'react-native'
+import { useState, useCallback, useRef } from 'react'
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  RefreshControl, 
+  useWindowDimensions,
+  Animated,
+  Pressable
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getModulesWithCounts } from '@/lib/modules'
 import { getUserStatistics } from '@/lib/stats'
 import { Module, UserStatistics } from '@/types'
-import { MODULE_TYPES, MODULE_TYPE_COLORS } from '@/constants'
-import { Card, Badge, LoadingSpinner } from '@/components/ui'
+import { Card, FadeInView, StatsSkeleton, ListSkeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
-
-// Brand Logo
-const Logo = require('@/assets/images/logo.png')
+import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 export default function HomeScreen() {
   const { user } = useAuth()
@@ -25,6 +31,12 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Header animations - will replay on focus
+  const headerOpacity = useRef(new Animated.Value(0)).current
+  const headerSlide = useRef(new Animated.Value(-20)).current
+  const statsScale = useRef(new Animated.Value(0.95)).current
+  const statsOpacity = useRef(new Animated.Value(0)).current
 
   // Responsive constants
   const isDesktop = width >= 1024
@@ -40,33 +52,69 @@ export default function HomeScreen() {
     }
 
     try {
-      // Load modules for user's year (default to year 1 if not set)
       const yearToLoad = user.year_of_study || '1'
-      const { modules: modulesData, error: modulesError } = await getModulesWithCounts(yearToLoad)
+      const [modulesResult, statsResult] = await Promise.all([
+        getModulesWithCounts(yearToLoad),
+        getUserStatistics(user.id)
+      ])
       
-      if (modulesError) {
-        console.error('Error loading modules:', modulesError)
-      }
-      setModules(modulesData)
-
-      // Load user statistics
-      const { stats: statsData, error: statsError } = await getUserStatistics(user.id)
-      
-      if (statsError) {
-        console.error('Error loading stats:', statsError)
-      }
-      setStats(statsData)
-    } catch (error) {
-      console.error('Error loading data:', error)
+      if (!modulesResult.error) setModules(modulesResult.modules)
+      if (!statsResult.error) setStats(statsResult.stats)
+    } catch {
+      // Error loading data silently handled
     } finally {
       setIsLoading(false)
       setRefreshing(false)
     }
   }, [user])
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  // Animate on focus - replays every time screen comes into view
+  useFocusEffect(
+    useCallback(() => {
+      // Reset animation values
+      headerOpacity.setValue(0)
+      headerSlide.setValue(-20)
+      statsScale.setValue(0.95)
+      statsOpacity.setValue(0)
+
+      // Run smooth entrance animations
+      Animated.parallel([
+        Animated.timing(headerOpacity, {
+          toValue: 1,
+          duration: ANIMATION_DURATION.normal,
+          easing: ANIMATION_EASING.smooth,
+          useNativeDriver: true,
+        }),
+        Animated.timing(headerSlide, {
+          toValue: 0,
+          duration: ANIMATION_DURATION.normal,
+          easing: ANIMATION_EASING.premium,
+          useNativeDriver: true,
+        }),
+      ]).start()
+
+      // Stats card animation with slight delay
+      setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(statsOpacity, {
+            toValue: 1,
+            duration: ANIMATION_DURATION.fast,
+            easing: ANIMATION_EASING.smooth,
+            useNativeDriver: true,
+          }),
+          Animated.timing(statsScale, {
+            toValue: 1,
+            duration: ANIMATION_DURATION.fast,
+            easing: ANIMATION_EASING.premium,
+            useNativeDriver: true,
+          }),
+        ]).start()
+      }, 100)
+
+      // Load data
+      loadData()
+    }, [loadData])
+  )
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
@@ -82,148 +130,112 @@ export default function HomeScreen() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
-        <LoadingSpinner message="Chargement de vos modules..." />
-      </SafeAreaView>
-    )
-  }
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ alignItems: 'center' }}
+        showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={onRefresh}
-            tintColor={BRAND_THEME.colors.primary[500]}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#09B2AD" colors={['#09B2AD']} />
         }
       >
-        {/* Enhanced Header */}
+        {/* Premium Animated Header */}
         <View style={{
           backgroundColor: '#09B2AD',
           width: '100%',
           alignItems: 'center',
-          borderBottomLeftRadius: 40,
-          borderBottomRightRadius: 40,
-          paddingTop: 48,
-          paddingBottom: 80,
+          borderBottomLeftRadius: 32,
+          borderBottomRightRadius: 32,
+          paddingTop: 40,
+          paddingBottom: 70,
+          overflow: 'hidden',
         }}>
-          <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24 }}>
-            <View style={{ marginBottom: 16 }}>
-              <Text style={{ 
-                color: 'rgba(255, 255, 255, 0.8)', 
-                fontSize: 16,
-                fontWeight: '500',
-                marginBottom: 4
-              }}>
-                Bienvenue
+          {/* Decorative circles */}
+          <View style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255, 255, 255, 0.06)' }} />
+          <View style={{ position: 'absolute', bottom: -20, left: -20, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255, 255, 255, 0.04)' }} />
+
+          <Animated.View style={{ 
+            width: '100%', 
+            maxWidth: contentMaxWidth, 
+            paddingHorizontal: 24,
+            opacity: headerOpacity,
+            transform: [{ translateY: headerSlide }],
+          }}>
+            <View style={{ marginBottom: 14 }}>
+              <Text style={{ color: 'rgba(255, 255, 255, 0.75)', fontSize: 15, fontWeight: '500', marginBottom: 4 }}>
+                Bienvenue 👋
               </Text>
-              <Text style={{
-                color: '#ffffff',
-                fontSize: isDesktop ? 32 : 24,
-                fontWeight: 'bold'
-              }}>
+              <Text style={{ color: '#ffffff', fontSize: isDesktop ? 32 : 26, fontWeight: '700' }}>
                 {user?.full_name || 'Étudiant'}
               </Text>
             </View>
             
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Badge 
-                label={getYearLabel()} 
-                variant="secondary"
-                style={{ 
-                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                  borderRadius: 15,
-                  paddingHorizontal: 12
-                }}
-              />
+              <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.18)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 }}>
+                <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 13 }}>{getYearLabel()}</Text>
+              </View>
               {user?.speciality && (
-                <Badge 
-                  label={user.speciality} 
-                  variant="secondary"
-                  style={{ 
-                    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                    borderRadius: 15,
-                    paddingHorizontal: 12
-                  }}
-                />
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.18)', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 }}>
+                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 13 }}>{user.speciality}</Text>
+                </View>
               )}
             </View>
-          </View>
+          </Animated.View>
         </View>
 
-        {/* content wrapper */}
+        {/* Content wrapper */}
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24 }}>
-          {/* Quick Stats */}
-          {stats && (
-            <View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: -40 }}>
-              <Card variant="elevated" padding="md" style={{ borderRadius: 17, borderWidth: 0 }}>
+          {/* Quick Stats Card */}
+          <Animated.View style={{ 
+            width: '100%', 
+            maxWidth: statsMaxWidth, 
+            alignSelf: 'center', 
+            marginTop: -35,
+            opacity: statsOpacity,
+            transform: [{ scale: statsScale }],
+          }}>
+            {isLoading ? (
+              <StatsSkeleton />
+            ) : stats ? (
+              <View style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 20, ...BRAND_THEME.shadows.md }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                  <StatItem 
-                    label="Questions" 
-                    value={stats.total_questions_attempted.toString()} 
-                    icon="📝"
-                  />
-                  <StatItem 
-                    label="précision" 
-                    value={`${Math.round(stats.average_score)}%`} 
-                    icon="🎯"
-                  />
-                  <StatItem 
-                    label="sauvegardées" 
-                    value={stats.saved_questions_count.toString()} 
-                    icon="💾"
-                  />
+                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={28} color="#09B2AD" />} />
+                  <View style={{ width: 1, height: 40, backgroundColor: BRAND_THEME.colors.gray[200] }} />
+                  <StatItem label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={28} color="#09B2AD" />} />
+                  <View style={{ width: 1, height: 40, backgroundColor: BRAND_THEME.colors.gray[200] }} />
+                  <StatItem label="Sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={28} color="#09B2AD" />} />
                 </View>
-              </Card>
-            </View>
-          )}
+              </View>
+            ) : null}
+          </Animated.View>
 
           {/* Modules Section */}
-          <View style={{ marginTop: 24, width: '100%' }}>
-            <Text style={{
-              fontSize: 20,
-              fontWeight: 'bold',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 16
-            }}>
-              Vos Modules
-            </Text>
+          <View style={{ marginTop: 28, width: '100%' }}>
+            <FadeInView delay={150}>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: BRAND_THEME.colors.gray[900], marginBottom: 14 }}>
+                Vos Modules
+              </Text>
+            </FadeInView>
 
-            {modules.length === 0 ? (
-              <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
-                <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
-                <Text style={{
-                  color: BRAND_THEME.colors.gray[600],
-                  textAlign: 'center',
-                  fontSize: 16
-                }}>
-                  Aucun module disponible pour votre année
-                </Text>
-              </Card>
+            {isLoading ? (
+              <ListSkeleton count={3} />
+            ) : modules.length === 0 ? (
+              <FadeInView delay={200}>
+                <Card variant="default" padding="lg" style={{ alignItems: 'center' }}>
+                  <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
+                  <Text style={{ color: BRAND_THEME.colors.gray[600], textAlign: 'center', fontSize: 16 }}>
+                    Aucun module disponible pour votre année
+                  </Text>
+                </Card>
+              </FadeInView>
             ) : (
-              <View style={{ 
-                flexDirection: 'row', 
-                flexWrap: 'wrap', 
-                marginHorizontal: -6, // Account for gap
-              }}>
-                {modules.map((module) => (
-                  <View 
-                    key={module.id} 
-                    style={{ 
-                      width: `${100 / columnCount}%`, 
-                      padding: 6 
-                    }}
-                  >
-                    <ModuleCard 
-                      module={module}
-                      onPress={() => router.push(`/module/${module.id}`)}
-                    />
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
+                {modules.map((module, index) => (
+                  <View key={module.id} style={{ width: `${100 / columnCount}%`, padding: 6 }}>
+                    <FadeInView delay={200 + index * 40}>
+                      <ModuleCard module={module} onPress={() => router.push(`/module/${module.id}`)} />
+                    </FadeInView>
                   </View>
                 ))}
               </View>
@@ -231,88 +243,67 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Bottom Spacing */}
-        <View style={{ height: isDesktop ? 100 : 32 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-// Enhanced Stat Item Component
-function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
+// Stat Item Component
+function StatItem({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontSize: 32, marginBottom: 8 }}>{icon}</Text>
-      <Text style={{
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#000000',
-        marginBottom: 2
-      }}>
-        {value}
-      </Text>
-      <Text style={{
-        color: 'rgba(0, 0, 0, 0.6)',
-        fontSize: 12,
-        fontWeight: '500'
-      }}>
-        {label}
-      </Text>
+      <View style={{ marginBottom: 6 }}>{icon}</View>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: BRAND_THEME.colors.gray[900], marginBottom: 2 }}>{value}</Text>
+      <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 12, fontWeight: '500' }}>{label}</Text>
     </View>
   )
 }
 
-// Enhanced Module Card Component
-function ModuleCard({ 
-  module, 
-  onPress 
-}: { 
-  module: Module & { question_count: number }
-  onPress: () => void 
-}) {
+// Module Card with smooth press animation
+function ModuleCard({ module, onPress }: { module: Module & { question_count: number }; onPress: () => void }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.timing(scaleAnim, {
+      toValue: 0.97,
+      duration: ANIMATION_DURATION.instant,
+      easing: ANIMATION_EASING.smooth,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.timing(scaleAnim, {
+      toValue: 1,
+      duration: ANIMATION_DURATION.fast,
+      easing: ANIMATION_EASING.smooth,
+      useNativeDriver: true,
+    }).start()
+  }
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Card variant="default" padding="none" style={{ borderRadius: 17, borderWidth: 0, shadowOpacity: 0.1 }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          justifyContent: 'space-between',
-          padding: 20
-        }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{
-              fontSize: 18,
-              fontWeight: '700',
-              color: '#000000',
-              marginBottom: 6
-            }}>
+    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Animated.View style={{ 
+        transform: [{ scale: scaleAnim }],
+        backgroundColor: '#ffffff',
+        borderRadius: 18,
+        ...BRAND_THEME.shadows.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18 }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: BRAND_THEME.colors.gray[900], marginBottom: 3 }} numberOfLines={2}>
               {module.name}
             </Text>
-            <Text style={{
-              color: 'rgba(0, 0, 0, 0.4)',
-              fontSize: 14,
-              fontWeight: '500'
-            }}>
+            <Text style={{ color: BRAND_THEME.colors.gray[400], fontSize: 13, fontWeight: '500' }}>
               {module.question_count} Questions
             </Text>
           </View>
-
-          <View style={{
-            backgroundColor: 'rgba(12, 227, 220, 0.3)',
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderRadius: 15,
-          }}>
-            <Text style={{
-              color: '#09B2AD',
-              fontWeight: '700',
-              fontSize: 16
-            }}>
-              Pratiquer
-            </Text>
+          <View style={{ backgroundColor: 'rgba(9, 178, 173, 0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 }}>
+            <Text style={{ color: '#09B2AD', fontWeight: '700', fontSize: 13 }}>Pratiquer</Text>
           </View>
         </View>
-      </Card>
-    </TouchableOpacity>
+      </Animated.View>
+    </Pressable>
   )
 }

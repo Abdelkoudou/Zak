@@ -4,6 +4,7 @@
 
 import { supabase } from './supabase'
 import { Question, QuestionWithAnswers, ExamType, YearLevel } from '@/types'
+import { OfflineContentService } from './offline-content'
 
 // ============================================================================
 // Get Questions with Answers
@@ -19,12 +20,42 @@ export interface QuestionFilters {
   offset?: number
 }
 
-export async function getQuestions(filters: QuestionFilters): Promise<{ 
-  questions: QuestionWithAnswers[]; 
+export async function getQuestions(filters: QuestionFilters): Promise<{
+  questions: QuestionWithAnswers[];
   total: number;
-  error: string | null 
+  error: string | null
 }> {
   try {
+    // Check offline content first
+    if (filters.module_name) {
+      const year = filters.year ? parseInt(filters.year) : undefined;
+      const offlineData = await OfflineContentService.getModuleContent(filters.module_name, year)
+      if (offlineData) {
+        let questions = offlineData.questions as QuestionWithAnswers[];
+
+        // Apply filters in memory
+        if (filters.exam_type) {
+          questions = questions.filter(q => q.exam_type === filters.exam_type)
+        }
+        if (filters.sub_discipline) {
+          questions = questions.filter(q => q.sub_discipline === filters.sub_discipline)
+        }
+        if (filters.cours) {
+          questions = questions.filter(q => q.cours && q.cours.includes(filters.cours as string))
+        }
+
+        // Pagination
+        const total = questions.length
+        if (filters.offset !== undefined && filters.limit !== undefined) {
+          questions = questions.slice(filters.offset, filters.offset + filters.limit)
+        } else if (filters.limit) {
+          questions = questions.slice(0, filters.limit)
+        }
+
+        return { questions, total, error: null }
+      }
+    }
+
     let query = supabase
       .from('questions')
       .select(`
@@ -72,10 +103,10 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       answers: (q.answers || []).sort((a: any, b: any) => a.display_order - b.display_order)
     }))
 
-    return { 
-      questions: questionsWithSortedAnswers as QuestionWithAnswers[], 
+    return {
+      questions: questionsWithSortedAnswers as QuestionWithAnswers[],
       total: count || 0,
-      error: null 
+      error: null
     }
   } catch (error) {
     return { questions: [], total: 0, error: 'Failed to fetch questions' }
@@ -87,7 +118,7 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
 // ============================================================================
 
 export async function getQuestionsByExam(
-  moduleName: string, 
+  moduleName: string,
   examType: ExamType,
   subDiscipline?: string
 ): Promise<{ questions: QuestionWithAnswers[]; error: string | null }> {
@@ -95,7 +126,7 @@ export async function getQuestionsByExam(
     module_name: moduleName,
     exam_type: examType,
   }
-  
+
   if (subDiscipline) {
     filters.sub_discipline = subDiscipline
   }
@@ -109,7 +140,7 @@ export async function getQuestionsByExam(
 // ============================================================================
 
 export async function getQuestionsByCours(
-  moduleName: string, 
+  moduleName: string,
   cours: string
 ): Promise<{ questions: QuestionWithAnswers[]; error: string | null }> {
   const { questions, error } = await getQuestions({
@@ -177,9 +208,9 @@ export async function getRandomQuestions(
 // Get Question by ID
 // ============================================================================
 
-export async function getQuestionById(id: string): Promise<{ 
-  question: QuestionWithAnswers | null; 
-  error: string | null 
+export async function getQuestionById(id: string): Promise<{
+  question: QuestionWithAnswers | null;
+  error: string | null
 }> {
   try {
     const { data, error } = await supabase
@@ -211,9 +242,9 @@ export async function getQuestionById(id: string): Promise<{
 // Get Question Count
 // ============================================================================
 
-export async function getQuestionCount(filters: QuestionFilters): Promise<{ 
-  count: number; 
-  error: string | null 
+export async function getQuestionCount(filters: QuestionFilters): Promise<{
+  count: number;
+  error: string | null
 }> {
   try {
     let query = supabase

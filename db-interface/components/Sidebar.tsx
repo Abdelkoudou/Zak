@@ -106,7 +106,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div
         className={`
-          fixed md:static inset-y-0 left-0 z-50
+          fixed md:sticky top-0 md:h-screen md:left-0 z-50
           w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/5 p-6
           transform transition-transform duration-300 ease-in-out
           md:transform-none shadow-xl md:shadow-none flex flex-col

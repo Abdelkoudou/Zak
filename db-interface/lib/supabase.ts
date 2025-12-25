@@ -12,9 +12,8 @@ const isConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
   !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
 
-if (!isConfigured) {
-  console.warn('⚠️ Supabase credentials not configured. Please add them to .env.local');
-  console.warn('📝 Copy .env.local.example to .env.local and add your credentials');
+if (!isConfigured && typeof window !== 'undefined') {
+  // Only warn in browser environment during development
 }
 
 // Create Supabase client for browser with session management

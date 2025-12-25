@@ -239,7 +239,7 @@ export async function fetchActivationKeys(filters?: {
   if (usedByIds.length > 0) {
     const { data: usersData } = await supabase
       .from('users')
-      .select('id, email, full_name, speciality, year_of_study, region')
+      .select('id, email, full_name, speciality, year_of_study, region, faculty')
       .in('id', usedByIds);
 
     if (usersData) {
@@ -487,6 +487,7 @@ function transformUser(row: Record<string, unknown>): ActivationKeyUser {
     speciality: row.speciality as Speciality | undefined,
     yearOfStudy: row.year_of_study as YearLevel | undefined,
     region: row.region as string | undefined,
+    faculty: row.faculty as string | undefined,
   };
 }
 
@@ -530,6 +531,38 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
     .delete()
     .eq('id', id)
     .eq('is_used', false); // Can only revoke unused keys
+
+  return { error: error?.message };
+}
+
+/**
+ * Fetch connected devices for a user
+ */
+export async function fetchUserDevices(userId: string): Promise<{ data: any[]; error?: string }> {
+  // Note: using 'any' because DeviceSession type might not be fully available in the supabase client types yet
+  // Using supabaseAdmin to bypass RLS if needed, though client might work depending on policies
+  // Ideally, use the admin client for owner operations
+  const { data, error } = await supabase
+    .from('device_sessions')
+    .select('*')
+    .eq('user_id', userId)
+    .order('last_active_at', { ascending: false });
+
+  if (error) {
+    return { data: [], error: error.message };
+  }
+
+  return { data: data || [] };
+}
+
+/**
+ * Delete a user device
+ */
+export async function deleteUserDevice(sessionId: string): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from('device_sessions')
+    .delete()
+    .eq('id', sessionId);
 
   return { error: error?.message };
 }

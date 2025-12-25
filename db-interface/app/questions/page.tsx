@@ -551,7 +551,7 @@ export default function QuestionsPage() {
           { label: 'Exam Types', value: new Set(questions.map((q) => q.exam_type)).size, icon: '📝', color: 'green' },
         ].map((item, idx) => (
           <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
-            <p className="text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{item.label}</p>
+            <p className="text-slate-500 dark:text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-1">{item.label}</p>
             <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white">
               {item.value}
             </p>
@@ -582,7 +582,7 @@ export default function QuestionsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {/* Spécialité */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Spécialité 
                   </label>
                   <select
@@ -602,7 +602,7 @@ export default function QuestionsPage() {
 
                 {/* Année */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Année d&apos;Étude 
                   </label>
                   <select
@@ -631,7 +631,7 @@ export default function QuestionsPage() {
 
                 {/* Module */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Module / Unité 
                   </label>
                   <select
@@ -667,7 +667,7 @@ export default function QuestionsPage() {
                     ))}
                   </select>
                   {selectedModule && (
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
+                    <p className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
                       {selectedModule.type === "uei" &&
                         "🟢 Unité d'Enseignement Intégré (UEI)"}
                       {selectedModule.type === "standalone" &&
@@ -693,7 +693,7 @@ export default function QuestionsPage() {
                           subDisciplineId: e.target.value || undefined,
                         })
                       }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                     >
                       <option value="">Aucune (optionnel)</option>
                       {availableSubDisciplines.map((subDisc) => (
@@ -706,7 +706,7 @@ export default function QuestionsPage() {
                 )}
                 {/* Source de la Faculté */}
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                     Source de la Question
                   </label>
                   <select
@@ -726,7 +726,7 @@ export default function QuestionsPage() {
                     <option value="annexe_khenchela">🏫 Annexe de Khenchela</option>
                     <option value="annexe_souk_ahras">🏫 Annexe de Souk Ahras</option>
                   </select>
-                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
+                  <p className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-wider mt-2 ml-1">
                     Indiquez la source exacte (Fac Mère ou Annexe)
                   </p>
                 </div>
@@ -745,7 +745,7 @@ export default function QuestionsPage() {
                       examType: e.target.value as any,
                     })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                   required
                   disabled={!formData.moduleId}
                 >
@@ -773,7 +773,7 @@ export default function QuestionsPage() {
                         : undefined,
                     })
                   }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                 >
                   <option value="">Sélectionner la promo</option>
                   {formData.year === "1" &&

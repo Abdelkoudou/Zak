@@ -2,7 +2,7 @@
 // Authentication Service
 // ============================================================================
 
-import { supabase } from './supabase'
+import { supabase, getRedirectUrl } from './supabase'
 import * as Device from 'expo-device'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 
@@ -12,10 +12,14 @@ import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSe
 
 export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
-    // 1. Create auth user
+    // 1. Create auth user with redirect URL for email verification
+    const redirectUrl = getRedirectUrl()
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
     })
 
     if (authError) {
@@ -35,6 +39,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
         p_speciality: data.speciality,
         p_year_of_study: data.year_of_study,
         p_region: data.region,
+        p_faculty: data.faculty,
       })
 
     if (profileError) {
@@ -49,7 +54,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 
     // 3. Activate subscription with code
     const activationResult = await activateSubscription(authData.user.id, data.activation_code)
-    
+
     if (!activationResult.success) {
       return { user: null, error: activationResult.message }
     }
@@ -90,7 +95,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 // Sign In
 // ============================================================================
 
-export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null; deviceLimitWarning?: boolean }> {
+export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -109,10 +114,15 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
     const currentDeviceId = await getDeviceId()
     const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
-    
-    let deviceLimitWarning = false
+
+    // If this is a new device and user already has 2 devices, block login
     if (!isCurrentDeviceRegistered && sessions.length >= 2) {
-      deviceLimitWarning = true
+      // Sign out the user immediately
+      await supabase.auth.signOut()
+      return {
+        user: null,
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
+      }
     }
 
     // Register/update device session
@@ -129,7 +139,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: fetchError.message }
     }
 
-    return { user: userProfile as User, error: null, deviceLimitWarning }
+    return { user: userProfile as User, error: null }
   } catch (error) {
     return { user: null, error: 'An unexpected error occurred' }
   }
@@ -208,7 +218,10 @@ export async function updateProfile(userId: string, data: ProfileUpdateData): Pr
 
 export async function resetPassword(email: string): Promise<{ error: string | null }> {
   try {
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    const redirectUrl = getRedirectUrl()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl,
+    })
     if (error) {
       return { error: error.message }
     }
@@ -269,7 +282,7 @@ async function getDeviceId(): Promise<string> {
   const deviceName = Device.deviceName || 'Unknown Device'
   const osName = Device.osName || 'Unknown OS'
   const osVersion = Device.osVersion || ''
-  
+
   // Create a simple hash from device info
   const deviceString = `${deviceType}-${deviceName}-${osName}-${osVersion}`
   return deviceString.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)

@@ -1,31 +1,49 @@
 {
   "expo": {
-    "name": "MCQ Study App",
-    "slug": "mcq-study-app",
+    "name": "FMC App",
+    "slug": "fmc-app",
     "version": "1.1.0",
     "orientation": "portrait",
-    "scheme": "mcqstudyapp",
+    "icon": "./assets/icon.png",
+    "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#3B82F6"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09B2AD"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mcqstudyapp.mobile"
+      "bundleIdentifier": "com.fmcapp.mobile",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#09B2AD"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.mcqstudyapp.mobile",
+      "package": "com.fmcapp.mobile",
       "versionCode": 2,
       "adaptiveIcon": {
-        "backgroundColor": "#3B82F6"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#09B2AD"
+      },
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#09B2AD"
       }
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -39,7 +57,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "672f6566-b5f9-4629-a0ef-cec5968ef4e6"
+        "projectId": "3dce402c-e948-4ea1-b773-fd0c4c4a8b6d"
       }
     }
   }

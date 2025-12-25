@@ -10,9 +10,9 @@
     --font-body: 'Inter', sans-serif;
     --bg-main: theme('colors.slate.50');
     --bg-card: theme('colors.white');
-    --border-color: theme('colors.slate.200');
+    --border-color: theme('colors.slate.300');
     --text-main: theme('colors.slate.900');
-    --text-muted: theme('colors.slate.500');
+    --text-muted: theme('colors.slate.600');
   }
 
   .dark {

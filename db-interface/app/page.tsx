@@ -150,7 +150,7 @@ export default function Home() {
           <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-slate-400 dark:text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">{item.label}</p>
+                <p className="text-slate-500 dark:text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-widest mb-1">{item.label}</p>
                 <p className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
                   {loading ? '...' : item.value}
                 </p>
@@ -224,7 +224,7 @@ export default function Home() {
                     <p className="text-sm font-bold text-slate-900 dark:text-slate-200 line-clamp-2 leading-relaxed">
                       {q.question_text}
                     </p>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                       <span>{q.year === '1' ? '1ère' : q.year === '2' ? '2ème' : '3ème'} Année</span>
                       <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
                       <span className="text-blue-500/80">{q.module_name}</span>
@@ -248,7 +248,7 @@ export default function Home() {
                 {stats.recentResources.map((r) => (
                   <div key={r.id} className="group p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl border border-transparent hover:border-green-500/30 transition-all">
                     <p className="text-sm font-bold text-slate-900 dark:text-slate-200 uppercase tracking-tight">{r.title}</p>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-500">
                       <span className="text-green-500/80">{getResourceTypeLabel(r.type)}</span>
                       <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></span>
                       <span>{r.year === '1' ? '1ère' : r.year === '2' ? '2ème' : '3ème'} Année</span>
@@ -281,7 +281,7 @@ export default function Home() {
               >
                 <span className="text-3xl mb-3 transition-transform group-hover:scale-110 group-hover:-rotate-3">{action.icon}</span>
                 <p className="font-bold text-slate-900 dark:text-white leading-tight">{action.title}</p>
-                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">{action.desc}</p>
+                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-500 uppercase tracking-widest mt-1">{action.desc}</p>
               </a>
             ))}
           </div>

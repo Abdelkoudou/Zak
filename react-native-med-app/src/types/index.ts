@@ -22,6 +22,7 @@ export interface User {
   speciality: Speciality | null
   year_of_study: YearLevel | null
   region: string | null
+  faculty: string | null
   created_at: string
   updated_at: string
 }
@@ -149,6 +150,7 @@ export interface RegisterFormData {
   speciality: Speciality
   year_of_study: YearLevel
   region: string
+  faculty: string
   activation_code: string
 }
 

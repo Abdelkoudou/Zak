@@ -21,6 +21,7 @@ import type {
   SalesPointStats,
   YearLevel 
 } from '@/types/database';
+import DeviceManagerModal from '@/components/DeviceManagerModal';
 
 export default function ActivationCodesPage() {
   // Auth state
@@ -78,6 +79,13 @@ export default function ActivationCodesPage() {
 
   // Code detail modal
   const [selectedCode, setSelectedCode] = useState<ActivationKey | null>(null);
+
+  // Device manager modal
+  const [deviceManagerUser, setDeviceManagerUser] = useState<{ id: string; name: string } | null>(null);
+
+  // Selection mode state (always active)
+  const [selectionMode] = useState(true);
+  const [selectedCodeIds, setSelectedCodeIds] = useState<Set<string>>(new Set());
 
   // Check user role
   useEffect(() => {
@@ -207,6 +215,74 @@ export default function ActivationCodesPage() {
     } else {
       loadData();
     }
+  };
+
+  // Bulk revoke codes
+  const handleBulkRevoke = async () => {
+    if (selectedCodeIds.size === 0) return;
+    
+    // Filter to only unused codes
+    const unusedCodes = codes.filter(code => selectedCodeIds.has(code.id) && !code.isUsed);
+    
+    if (unusedCodes.length === 0) {
+      alert('Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être révoqués.');
+      return;
+    }
+    
+    const count = unusedCodes.length;
+    if (!confirm(`Voulez-vous vraiment révoquer ${count} code(s) non utilisé(s) sélectionné(s)?`)) return;
+    
+    const results = await Promise.all(
+      unusedCodes.map(code => revokeActivationKey(code.id))
+    );
+    
+    const errors = results.filter(r => r.error);
+    if (errors.length > 0) {
+      alert(`Erreur lors de la révocation de ${errors.length} code(s)`);
+     } else {
+       alert(`${count} code(s) révoqué(s) avec succès`);
+       setSelectedCodeIds(new Set());
+       loadData();
+     }
+  };
+
+  // Export selected codes
+  const handleExportSelected = () => {
+    if (selectedCodeIds.size === 0) return;
+    
+    const selectedCodes = codes.filter(code => selectedCodeIds.has(code.id));
+    const csv = exportToCsv(selectedCodes);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `activation-codes-selected-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  // Toggle code selection
+  const toggleCodeSelection = (codeId: string) => {
+    const newSelection = new Set(selectedCodeIds);
+    if (newSelection.has(codeId)) {
+      newSelection.delete(codeId);
+    } else {
+      newSelection.add(codeId);
+    }
+    setSelectedCodeIds(newSelection);
+  };
+
+  // Toggle select all
+  const toggleSelectAll = () => {
+    if (selectedCodeIds.size === codes.length) {
+      setSelectedCodeIds(new Set());
+    } else {
+      setSelectedCodeIds(new Set(codes.map(code => code.id)));
+    }
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedCodeIds(new Set());
   };
 
   // Export
@@ -536,65 +612,100 @@ export default function ActivationCodesPage() {
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
               </div>
               
-              <select
-                value={filters.year}
-                onChange={e => setFilters({ ...filters, year: e.target.value as YearLevel | '' })}
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-              >
+               <select
+                 value={filters.year}
+                 onChange={e => setFilters({ ...filters, year: e.target.value as YearLevel | '' })}
+                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+               >
                 <option value="" className="bg-white dark:bg-slate-900">Toutes les années</option>
                 <option value="1" className="bg-white dark:bg-slate-900">1ère Année</option>
                 <option value="2" className="bg-white dark:bg-slate-900">2ème Année</option>
                 <option value="3" className="bg-white dark:bg-slate-900">3ème Année</option>
               </select>
 
-              <select
-                value={filters.facultyId}
-                onChange={e => setFilters({ ...filters, facultyId: e.target.value })}
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-              >
+               <select
+                 value={filters.facultyId}
+                 onChange={e => setFilters({ ...filters, facultyId: e.target.value })}
+                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+               >
                 <option value="" className="bg-white dark:bg-slate-900">Toutes les facultés</option>
                 {faculties.map(f => (
                   <option key={f.id} value={f.id} className="bg-white dark:bg-slate-900">{f.name}</option>
                 ))}
               </select>
 
-              <select
-                value={filters.status}
-                onChange={e => setFilters({ ...filters, status: e.target.value as typeof filters.status })}
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-              >
+               <select
+                 value={filters.status}
+                 onChange={e => setFilters({ ...filters, status: e.target.value as typeof filters.status })}
+                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+               >
                 <option value="" className="bg-white dark:bg-slate-900">Tous les statuts</option>
                 <option value="active" className="bg-white dark:bg-slate-900">✅ Actifs</option>
                 <option value="used" className="bg-white dark:bg-slate-900">👤 Utilisés</option>
                 <option value="expired" className="bg-white dark:bg-slate-900">⏰ Expirés</option>
               </select>
 
-              <button
-                onClick={handleExport}
-                className="ml-auto flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
-              >
-                <span>📥</span> Exporter CSV
-              </button>
+               <div className="ml-auto flex items-center gap-2">
+                 {selectedCodeIds.size > 0 ? (
+                   <>
+                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                       {selectedCodeIds.size} sélectionné(s)
+                     </span>
+                     <button
+                       onClick={handleExportSelected}
+                       className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all active:scale-95"
+                     >
+                       <span>📥</span> Exporter Sélection
+                     </button>
+                     <button
+                       onClick={handleBulkRevoke}
+                       className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95"
+                     >
+                       <span>🗑️</span> Révoquer
+                     </button>
+                     <button
+                       onClick={clearSelection}
+                       className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                     >
+                       <span>✖️</span> Effacer
+                     </button>
+                   </>
+                 ) : (
+                   <button
+                     onClick={handleExport}
+                     className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                   >
+                     <span>📥</span> Exporter CSV
+                   </button>
+                 )}
+               </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950/50">
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Code</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Année</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Statut</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Utilisateur</th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Création</th>
-                  <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Actions</th>
-                </tr>
-              </thead>
+               <thead>
+                 <tr className="bg-slate-50 dark:bg-slate-950/50">
+                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                     <input
+                       type="checkbox"
+                       checked={selectedCodeIds.size === codes.length && codes.length > 0}
+                       onChange={toggleSelectAll}
+                       className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                     />
+                   </th>
+                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Code</th>
+                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Année</th>
+                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
+                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Statut</th>
+                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Utilisateur</th>
+                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Création</th>
+                 </tr>
+               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                {codes.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center">
+                 {codes.length === 0 ? (
+                   <tr>
+                     <td colSpan={8} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <span className="text-3xl">📭</span>
                         <p className="text-slate-500 dark:text-slate-400 font-bold">Aucun code trouvé</p>
@@ -607,13 +718,22 @@ export default function ActivationCodesPage() {
                     const isExpired = code.expiresAt && new Date(code.expiresAt) < new Date();
                     const status = code.isUsed ? 'used' : isExpired ? 'expired' : 'active';
                     const user = code.usedByUser;
+                    const isSelected = selectedCodeIds.has(code.id);
                     
                     return (
-                      <tr 
-                        key={code.id} 
-                        className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${code.isUsed ? 'bg-primary-500/5' : ''}`}
-                        onClick={() => setSelectedCode(code)}
-                      >
+                       <tr 
+                         key={code.id} 
+                         className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${code.isUsed ? 'bg-primary-500/5' : ''} ${isSelected ? 'bg-primary-500/10 dark:bg-primary-500/5' : ''}`}
+                         onClick={() => setSelectedCode(code)}
+                       >
+                         <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
+                           <input
+                             type="checkbox"
+                             checked={isSelected}
+                             onChange={() => toggleCodeSelection(code.id)}
+                             className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                           />
+                         </td>
                         <td className="px-6 py-5">
                           <code className="bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg text-xs font-black font-mono text-slate-900 dark:text-white tracking-widest group-hover:bg-primary-500/10 group-hover:text-primary-600 transition-colors">
                             {code.keyCode}
@@ -648,6 +768,16 @@ export default function ActivationCodesPage() {
                                 <div className="text-sm font-bold text-slate-900 dark:text-white">{user.fullName || 'User'}</div>
                                 <div className="text-[10px] text-slate-500 font-medium">{user.email}</div>
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeviceManagerUser({ id: user.id, name: user.fullName || 'User' });
+                                }}
+                                className="ml-2 p-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                title="Gérer les appareils"
+                              >
+                                📱
+                              </button>
                             </div>
                           ) : (
                             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Disponible</span>
@@ -659,23 +789,8 @@ export default function ActivationCodesPage() {
                             <div className="text-primary-600 dark:text-primary-400 mt-0.5">
                               Utilisé: {new Date(code.usedAt).toLocaleDateString('fr-FR')}
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!code.isUsed && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRevoke(code.id, code.keyCode);
-                                }}
-                                className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                              >
-                                🗑️
-                              </button>
-                            )}
-                          </div>
-                        </td>
+                           )}
+                         </td>
                       </tr>
                     );
                   })
@@ -888,9 +1003,9 @@ export default function ActivationCodesPage() {
 
             {/* Code Details */}
             <div className="space-y-4 mb-8">
-              <DetailRow label="Faculté" value={selectedCode.faculty?.name || '-'} />
+              
               <DetailRow label="Point de Vente" value={selectedCode.salesPoint?.name || '-'} />
-              <DetailRow label="Prix Payé" value={selectedCode.pricePaid ? `${selectedCode.pricePaid.toLocaleString()} DA` : '-'} />
+              
               {selectedCode.expiresAt && (
                 <DetailRow label="Date d'Expiration" value={new Date(selectedCode.expiresAt).toLocaleDateString('fr-FR')} />
               )}
@@ -922,6 +1037,11 @@ export default function ActivationCodesPage() {
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mt-4">
+                    {selectedCode.usedByUser.faculty && (
+                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                        🏛️ {selectedCode.usedByUser.faculty}
+                      </span>
+                    )}
                     {selectedCode.usedByUser.speciality && (
                       <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
                         🎓 {selectedCode.usedByUser.speciality}
@@ -964,6 +1084,15 @@ export default function ActivationCodesPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Device Manager Modal */}
+      {deviceManagerUser && (
+        <DeviceManagerModal
+          userId={deviceManagerUser.id}
+          userName={deviceManagerUser.name}
+          onClose={() => setDeviceManagerUser(null)}
+        />
       )}
     </div>
   );

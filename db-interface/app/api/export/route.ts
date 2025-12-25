@@ -79,6 +79,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`📊 Found ${questions.length} questions`);
 
+    // Get all modules for metadata
+    const { data: allModules, error: modulesError } = await supabaseAdmin
+      .from('modules')
+      .select('*');
+
+    if (modulesError) throw modulesError;
+
     // Group questions by year and module
     const groupedQuestions: { [key: string]: ModuleQuestions } = {};
 
@@ -118,6 +125,7 @@ export async function POST(request: NextRequest) {
             year: q.year,
             study_year: q.year,
             module: q.module_name,
+            cours: (q as any).cours || [], // Include cours array
             sub_discipline: q.sub_discipline,
             exam_type: q.exam_type,
             number: q.number,
@@ -172,16 +180,17 @@ export async function POST(request: NextRequest) {
 
     // Create and upload version.json
     const versionData = {
-      version: '1.0.0',
+      version: '1.1.0', // Bump version
       last_updated: new Date().toISOString(),
       total_questions: questions.length,
       total_modules: totalUploaded,
       modules: uploadedModules,
+      module_metadata: allModules, // Add complete module list with IDs
       changelog: [
         {
-          version: '1.0.0',
+          version: '1.1.0',
           date: new Date().toISOString().split('T')[0],
-          changes: `Exported ${questions.length} questions across ${totalUploaded} modules`
+          changes: `Exported ${questions.length} questions across ${totalUploaded} modules (with metadata)`
         }
       ]
     };

@@ -1,14 +1,22 @@
 // ============================================================================
-// Saved Questions Screen
+// Saved Questions Screen - Premium Animations
 // ============================================================================
 
-import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, Animated, LayoutAnimation, Platform, UIManager } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Stack } from 'expo-router'
+import { Stack, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getSavedQuestions, unsaveQuestion } from '@/lib/saved'
 import { QuestionWithAnswers } from '@/types'
+import { FadeInView, StaggeredList, CardSkeleton } from '@/components/ui'
+import { BRAND_THEME } from '@/constants/theme'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true)
+}
 
 export default function SavedQuestionsScreen() {
   const { user } = useAuth()
@@ -32,9 +40,11 @@ export default function SavedQuestionsScreen() {
     }
   }, [user])
 
-  useEffect(() => {
-    loadQuestions()
-  }, [loadQuestions])
+  useFocusEffect(
+    useCallback(() => {
+      loadQuestions()
+    }, [loadQuestions])
+  )
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
@@ -44,18 +54,25 @@ export default function SavedQuestionsScreen() {
   const handleUnsave = async (questionId: string) => {
     if (!user) return
     
+    // Animate removal
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    
     await unsaveQuestion(user.id, questionId)
     setQuestions(prev => prev.filter(q => q.id !== questionId))
   }
 
   const toggleExpand = (id: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setExpandedId(expandedId === id ? null : id)
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 items-center justify-center">
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <Stack.Screen options={{ title: 'Questions sauvegardées' }} />
+        <View style={{ padding: 24 }}>
+          <CardSkeleton count={3} />
+        </View>
       </SafeAreaView>
     )
   }
@@ -64,39 +81,67 @@ export default function SavedQuestionsScreen() {
     <>
       <Stack.Screen options={{ title: 'Questions sauvegardées' }} />
       
-      <SafeAreaView className="flex-1 bg-gray-50" edges={['bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={onRefresh}
+              tintColor={BRAND_THEME.colors.primary[500]}
+            />
           }
         >
-          <View className="px-6 py-4">
+          <View style={{ paddingHorizontal: 24, paddingVertical: 16 }}>
             {questions.length === 0 ? (
-              <View className="bg-white rounded-2xl p-8 items-center mt-8">
-                <Text className="text-4xl mb-4">💾</Text>
-                <Text className="text-xl font-bold text-gray-900 mb-2">
-                  Aucune question sauvegardée
-                </Text>
-                <Text className="text-gray-500 text-center">
-                  Sauvegardez des questions pendant vos sessions de pratique pour les revoir plus tard
-                </Text>
-              </View>
+              <FadeInView animation="scale" delay={100}>
+                <View style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: 16,
+                  padding: 32,
+                  alignItems: 'center',
+                  marginTop: 32,
+                  ...BRAND_THEME.shadows.md
+                }}>
+                  <Text style={{ fontSize: 48, marginBottom: 16 }}>💾</Text>
+                  <Text style={{
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    color: BRAND_THEME.colors.gray[900],
+                    marginBottom: 8
+                  }}>
+                    Aucune question sauvegardée
+                  </Text>
+                  <Text style={{
+                    color: BRAND_THEME.colors.gray[500],
+                    textAlign: 'center',
+                    lineHeight: 22
+                  }}>
+                    Sauvegardez des questions pendant vos sessions de pratique pour les revoir plus tard
+                  </Text>
+                </View>
+              </FadeInView>
             ) : (
               <>
-                <Text className="text-gray-500 mb-4">
-                  {questions.length} question{questions.length > 1 ? 's' : ''} sauvegardée{questions.length > 1 ? 's' : ''}
-                </Text>
+                <FadeInView animation="slideUp" delay={0}>
+                  <Text style={{
+                    color: BRAND_THEME.colors.gray[500],
+                    marginBottom: 16
+                  }}>
+                    {questions.length} question{questions.length > 1 ? 's' : ''} sauvegardée{questions.length > 1 ? 's' : ''}
+                  </Text>
+                </FadeInView>
                 
-                <View className="space-y-3">
-                  {questions.map((question) => (
-                    <SavedQuestionCard
-                      key={question.id}
-                      question={question}
-                      isExpanded={expandedId === question.id}
-                      onToggle={() => toggleExpand(question.id)}
-                      onUnsave={() => handleUnsave(question.id)}
-                    />
+                <View style={{ gap: 12 }}>
+                  {questions.map((question, index) => (
+                    <FadeInView key={question.id} animation="slideUp" delay={index * 60}>
+                      <SavedQuestionCard
+                        question={question}
+                        isExpanded={expandedId === question.id}
+                        onToggle={() => toggleExpand(question.id)}
+                        onUnsave={() => handleUnsave(question.id)}
+                      />
+                    </FadeInView>
                   ))}
                 </View>
               </>
@@ -104,14 +149,14 @@ export default function SavedQuestionsScreen() {
           </View>
 
           {/* Bottom Spacing */}
-          <View className="h-8" />
+          <View style={{ height: 32 }} />
         </ScrollView>
       </SafeAreaView>
     </>
   )
 }
 
-// Saved Question Card Component
+// Saved Question Card Component with Animations
 function SavedQuestionCard({
   question,
   isExpanded,
@@ -124,42 +169,129 @@ function SavedQuestionCard({
   onUnsave: () => void
 }) {
   const correctAnswers = question.answers.filter(a => a.is_correct)
+  const scale = useRef(new Animated.Value(1)).current
+  const deleteScale = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.timing(scale, {
+      toValue: 0.98,
+      duration: 100,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      tension: 200,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handleDeletePress = () => {
+    Animated.sequence([
+      Animated.timing(deleteScale, {
+        toValue: 0.8,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(deleteScale, {
+        toValue: 1,
+        friction: 3,
+        tension: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onUnsave())
+  }
 
   return (
-    <View className="bg-white rounded-2xl overflow-hidden">
+    <Animated.View style={{
+      transform: [{ scale }],
+      backgroundColor: '#ffffff',
+      borderRadius: 16,
+      overflow: 'hidden',
+      ...BRAND_THEME.shadows.sm
+    }}>
       {/* Header */}
       <TouchableOpacity 
-        className="p-4"
+        style={{ padding: 16 }}
         onPress={onToggle}
-        activeOpacity={0.7}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
       >
-        <View className="flex-row items-start justify-between mb-2">
-          <View className="flex-row items-center flex-1 mr-2">
-            <View className="bg-primary-100 px-2 py-1 rounded mr-2">
-              <Text className="text-primary-700 text-xs font-medium">
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          marginBottom: 8
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+            <View style={{
+              backgroundColor: BRAND_THEME.colors.primary[100],
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 6,
+              marginRight: 8
+            }}>
+              <Text style={{
+                color: BRAND_THEME.colors.primary[700],
+                fontSize: 12,
+                fontWeight: '500'
+              }}>
                 Q{question.number}
               </Text>
             </View>
-            <View className="bg-gray-100 px-2 py-1 rounded mr-2">
-              <Text className="text-gray-600 text-xs">
+            <View style={{
+              backgroundColor: BRAND_THEME.colors.gray[100],
+              paddingHorizontal: 8,
+              paddingVertical: 4,
+              borderRadius: 6
+            }}>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                fontSize: 12
+              }}>
                 {question.exam_type}
               </Text>
             </View>
           </View>
-          <TouchableOpacity onPress={onUnsave}>
-            <Text className="text-red-400">🗑️</Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: deleteScale }] }}>
+            <TouchableOpacity onPress={handleDeletePress} activeOpacity={0.7}>
+              <Text style={{ fontSize: 18 }}>🗑️</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
         
-        <Text className="text-gray-900" numberOfLines={isExpanded ? undefined : 2}>
+        <Text 
+          style={{
+            color: BRAND_THEME.colors.gray[900],
+            fontSize: 15,
+            lineHeight: 22
+          }}
+          numberOfLines={isExpanded ? undefined : 2}
+        >
           {question.question_text}
         </Text>
         
-        <View className="flex-row items-center justify-between mt-2">
-          <Text className="text-gray-400 text-sm">
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 12
+        }}>
+          <Text style={{
+            color: BRAND_THEME.colors.gray[400],
+            fontSize: 13
+          }}>
             {question.module_name}
           </Text>
-          <Text className="text-primary-500 text-sm">
+          <Text style={{
+            color: BRAND_THEME.colors.primary[500],
+            fontSize: 13,
+            fontWeight: '500'
+          }}>
             {isExpanded ? 'Masquer ▲' : 'Voir réponses ▼'}
           </Text>
         </View>
@@ -167,49 +299,85 @@ function SavedQuestionCard({
 
       {/* Expanded Content */}
       {isExpanded && (
-        <View className="border-t border-gray-100 p-4">
+        <View style={{
+          borderTopWidth: 1,
+          borderTopColor: BRAND_THEME.colors.gray[100],
+          padding: 16
+        }}>
           {/* Question Image */}
           {question.image_url && (
             <Image 
               source={{ uri: question.image_url }}
-              className="w-full h-48 mb-4 rounded-lg"
+              style={{
+                width: '100%',
+                height: 192,
+                marginBottom: 16,
+                borderRadius: 12
+              }}
               resizeMode="contain"
             />
           )}
           
-          <Text className="text-gray-500 text-sm mb-3">Réponses:</Text>
-          <View className="space-y-2">
-            {question.answers.map((answer) => (
-              <View 
-                key={answer.id}
-                className={`p-3 rounded-xl ${
-                  answer.is_correct ? 'bg-green-50' : 'bg-gray-50'
-                }`}
-              >
-                <View className="flex-row items-start">
-                  <View className={`w-6 h-6 rounded-full items-center justify-center mr-2 ${
-                    answer.is_correct ? 'bg-green-500' : 'bg-gray-200'
-                  }`}>
-                    <Text className={`text-xs font-bold ${
-                      answer.is_correct ? 'text-white' : 'text-gray-500'
-                    }`}>
-                      {answer.option_label}
+          <Text style={{
+            color: BRAND_THEME.colors.gray[500],
+            fontSize: 13,
+            marginBottom: 12
+          }}>
+            Réponses:
+          </Text>
+          <View style={{ gap: 8 }}>
+            {question.answers.map((answer, index) => (
+              <FadeInView key={answer.id} animation="slideUp" delay={index * 50} replayOnFocus={false}>
+                <View style={{
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: answer.is_correct 
+                    ? BRAND_THEME.colors.success[50] 
+                    : BRAND_THEME.colors.gray[50]
+                }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                    <View style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: 8,
+                      backgroundColor: answer.is_correct 
+                        ? BRAND_THEME.colors.success[500] 
+                        : BRAND_THEME.colors.gray[200]
+                    }}>
+                      <Text style={{
+                        fontSize: 11,
+                        fontWeight: 'bold',
+                        color: answer.is_correct ? '#ffffff' : BRAND_THEME.colors.gray[500]
+                      }}>
+                        {answer.option_label}
+                      </Text>
+                    </View>
+                    <Text style={{
+                      flex: 1,
+                      fontSize: 14,
+                      lineHeight: 20,
+                      color: answer.is_correct 
+                        ? BRAND_THEME.colors.success[600] 
+                        : BRAND_THEME.colors.gray[600]
+                    }}>
+                      {answer.answer_text}
                     </Text>
+                    {answer.is_correct && (
+                      <Text style={{
+                        color: BRAND_THEME.colors.success[500],
+                        marginLeft: 8
+                      }}>✓</Text>
+                    )}
                   </View>
-                  <Text className={`flex-1 ${
-                    answer.is_correct ? 'text-green-700' : 'text-gray-600'
-                  }`}>
-                    {answer.answer_text}
-                  </Text>
-                  {answer.is_correct && (
-                    <Text className="text-green-500 ml-2">✓</Text>
-                  )}
                 </View>
-              </View>
+              </FadeInView>
             ))}
           </View>
         </View>
       )}
-    </View>
+    </Animated.View>
   )
 }
