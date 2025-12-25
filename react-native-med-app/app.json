@@ -22,6 +22,9 @@
         "image": "./assets/splash.png",
         "resizeMode": "contain",
         "backgroundColor": "#09B2AD"
+      },
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -54,7 +57,7 @@
         "origin": false
       },
       "eas": {
-        "projectId": "672f6566-b5f9-4629-a0ef-cec5968ef4e6"
+        "projectId": "3dce402c-e948-4ea1-b773-fd0c4c4a8b6d"
       }
     }
   }
