@@ -419,7 +419,7 @@ export default function ProfileScreen() {
                         <StatBox 
                           label="Précision" 
                           value={`${Math.round(stats.average_score)}%`} 
-                          icon={<GoalIcon size={24} color="#09B2AD" />}
+                          icon={<GoalIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
                           highlight
                         />
                         <StatBox 
@@ -641,14 +641,14 @@ function StatBox({
         marginBottom: 6,
         padding: 6,
         borderRadius: 12,
-        backgroundColor: highlight ? 'rgba(9, 178, 173, 0.1)' : 'transparent',
+        backgroundColor: 'transparent',
       }}>
         {icon}
       </View>
       <Text style={{ 
         fontSize: 22, 
         fontWeight: '800', 
-        color: highlight ? '#09B2AD' : BRAND_THEME.colors.gray[900], 
+        color: BRAND_THEME.colors.gray[900], 
         marginBottom: 2 
       }}>
         {value}

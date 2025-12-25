@@ -302,7 +302,7 @@ export default function HomeScreen() {
                   <StatItem 
                     label="Précision" 
                     value={`${Math.round(stats.average_score)}%`} 
-                    icon={<GoalIcon size={isDesktop ? 32 : 28} />} 
+                    icon={<GoalIcon size={isDesktop ? 32 : 28} color={BRAND_THEME.colors.gray[900]} />} 
                     isDesktop={isDesktop}
                     highlight
                   />
@@ -479,14 +479,14 @@ function StatItem({
         marginBottom: 10,
         padding: 8,
         borderRadius: 14,
-        backgroundColor: highlight ? 'rgba(9, 178, 173, 0.1)' : 'transparent',
+        backgroundColor: 'transparent',
       }}>
         {icon}
       </View>
       <Text style={{ 
         fontSize: isDesktop ? 28 : 22, 
         fontWeight: '800', 
-        color: highlight ? '#09B2AD' : BRAND_THEME.colors.gray[900], 
+        color: BRAND_THEME.colors.gray[900], 
         marginBottom: 4,
         letterSpacing: -0.5,
       }}>
