@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "FMC Study App",
-    "slug": "fmc-study-app",
+    "name": "FMC App",
+    "slug": "fmc-app",
     "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "fmcstudyapp",
+    "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
       "backgroundColor": "#3B82F6"
@@ -15,10 +15,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fmcstudyapp.mobile"
+      "bundleIdentifier": "com.fmcapp.mobile"
     },
     "android": {
-      "package": "com.fmcstudyapp.mobile",
+      "package": "com.fmcapp.mobile",
       "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",

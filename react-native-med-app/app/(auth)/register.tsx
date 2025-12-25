@@ -114,7 +114,7 @@ export default function RegisterScreen() {
             )}
 
             {/* Form */}
-            <View className="space-y-4">
+            <View className="space-y-4" style={{ zIndex: 300 }}>
               <View className={isDesktop ? 'flex-row gap-4' : 'space-y-4'}>
                 <View className={isDesktop ? 'flex-1' : ''}>
                   <Text className="text-gray-700 font-medium mb-2">Nom complet *</Text>

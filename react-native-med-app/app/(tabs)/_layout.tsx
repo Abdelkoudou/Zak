@@ -2,12 +2,26 @@
 // Tabs Layout
 // ============================================================================
 
-import { Tabs } from 'expo-router'
-import { View, Text, useWindowDimensions } from 'react-native'
+import { Tabs, Redirect } from 'expo-router'
+import { View, Text, useWindowDimensions, ActivityIndicator } from 'react-native'
+import { useAuth } from '@/context/AuthContext'
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
+  const { isAuthenticated, isLoading } = useAuth()
   const isDesktop = width >= 1024
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#09B2AD" />
+      </View>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/welcome" />
+  }
 
   return (
     <Tabs
