@@ -21,6 +21,13 @@ interface ExportStatus {
   storage_url: string;
 }
 
+interface ExportResult {
+  total_questions: number;
+  total_modules: number;
+  modules: string[];
+  version: string;
+}
+
 export default function ExportPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -29,10 +36,19 @@ export default function ExportPage() {
   const [error, setError] = useState('');
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string; result?: ExportResult } | null>(null);
 
   useEffect(() => {
     checkAccessAndFetchStatus();
   }, []);
+
+  // Auto-dismiss toast after 8 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const checkAccessAndFetchStatus = async () => {
     try {
@@ -81,6 +97,7 @@ export default function ExportPage() {
   const handleExport = async () => {
     setExporting(true);
     setError('');
+    setToast(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -101,11 +118,21 @@ export default function ExportPage() {
 
       // Refresh status
       await checkAccessAndFetchStatus();
-      alert('✅ Export completed successfully!');
+      
+      // Show success toast with export details
+      setToast({
+        type: 'success',
+        message: 'Exportation terminée avec succès!',
+        result: result.data
+      });
 
     } catch (err: any) {
       console.error('Export error:', err);
       setError(err.message || 'Failed to export');
+      setToast({
+        type: 'error',
+        message: err.message || 'Échec de l\'exportation'
+      });
     } finally {
       setExporting(false);
     }
@@ -177,6 +204,54 @@ export default function ExportPage() {
                 <h3 className="text-sm font-black text-red-800 dark:text-red-400 uppercase tracking-widest mb-1">Erreur d&apos;Export</h3>
                 <p className="text-sm text-red-600 dark:text-red-300 font-medium">{error}</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`fixed top-6 right-6 z-50 max-w-md w-full animate-in slide-in-from-right fade-in duration-300 ${
+            toast.type === 'success' 
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-500' 
+              : 'bg-gradient-to-r from-red-500 to-rose-500'
+          } rounded-3xl shadow-2xl overflow-hidden`}>
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+                    {toast.type === 'success' ? '✅' : '❌'}
+                  </div>
+                  <div>
+                    <h4 className="text-white font-black text-sm uppercase tracking-widest mb-1">
+                      {toast.type === 'success' ? 'Succès' : 'Erreur'}
+                    </h4>
+                    <p className="text-white/90 font-medium text-sm">{toast.message}</p>
+                    {toast.result && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="bg-white/20 text-white text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl">
+                          📊 {toast.result.total_questions} questions
+                        </span>
+                        <span className="bg-white/20 text-white text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl">
+                          📦 {toast.result.total_modules} modules
+                        </span>
+                        <span className="bg-white/20 text-white text-xs font-black uppercase tracking-wider px-3 py-1.5 rounded-xl">
+                          v{toast.result.version}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setToast(null)}
+                  className="text-white/70 hover:text-white transition-colors text-xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+            {/* Progress bar for auto-dismiss */}
+            <div className="h-1 bg-white/20">
+              <div className="h-full bg-white/50 animate-shrink-width" style={{ animationDuration: '8s' }} />
             </div>
           </div>
         )}

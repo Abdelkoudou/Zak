@@ -153,39 +153,120 @@ export const OfflineContentService = {
         }
     },
 
-    // Get Module Metadata by ID
+    // Build module metadata from downloaded content files (fallback if module_metadata is empty)
+    async buildModuleMetadataFromFiles(): Promise<any[]> {
+        if (Platform.OS === 'web') return [];
+
+        try {
+            await this.init();
+            const files = await FileSystem.readDirectoryAsync(OFFLINE_DIR);
+            const moduleFiles = files.filter(f => f.endsWith('.json') && f !== 'version.json');
+
+            const modules: any[] = [];
+
+            for (const filename of moduleFiles) {
+                try {
+                    const content = await FileSystem.readAsStringAsync(OFFLINE_DIR + filename);
+                    const data = JSON.parse(content);
+
+                    if (data.module && data.study_year) {
+                        // Generate a deterministic ID from the module name
+                        const id = `offline_${data.module.toLowerCase().replace(/\s+/g, '_')}`;
+
+                        modules.push({
+                            id: id,
+                            name: data.module,
+                            year: String(data.study_year),
+                            type: 'module', // Default type
+                            question_count: data.questions?.length || 0,
+                            // Store original filename for lookup
+                            _filename: filename
+                        });
+                    }
+                } catch (e) {
+                    // Skip invalid files
+                    console.log(`Skipping invalid file: ${filename}`);
+                }
+            }
+
+            return modules;
+        } catch (e) {
+            console.error('Failed to build module metadata from files:', e);
+            return [];
+        }
+    },
+
+    // Get Module Metadata by ID (with fallback to content file lookup)
     async getModuleById(id: string): Promise<any | null> {
         if (Platform.OS === 'web') return null;
         try {
             const version = await this.getLocalVersion();
-            if (!version || !version.module_metadata) return null;
 
-            return version.module_metadata.find((m: any) => m.id === id) || null;
+            // First try module_metadata if available
+            if (version?.module_metadata && version.module_metadata.length > 0) {
+                // Try to find by ID first
+                const moduleById = version.module_metadata.find((m: any) => m.id === id);
+                if (moduleById) return moduleById;
+
+                // Fallback: try to find by matching name pattern
+                const moduleByName = version.module_metadata.find((m: any) =>
+                    m.name === id ||
+                    m.name?.toLowerCase().replace(/\s+/g, '_') === id.toLowerCase() ||
+                    id.includes(m.id)
+                );
+                if (moduleByName) return moduleByName;
+            }
+
+            // Fallback: Build metadata from downloaded files
+            const builtModules = await this.buildModuleMetadataFromFiles();
+            if (builtModules.length > 0) {
+                // Try to find by ID or name
+                const found = builtModules.find((m: any) =>
+                    m.id === id ||
+                    m.name === id ||
+                    m.name?.toLowerCase().replace(/\s+/g, '_') === id.toLowerCase()
+                );
+                if (found) return found;
+            }
+
+            return null;
         } catch (e) {
             return null;
         }
     },
 
-    // Get All Modules Metadata
+    // Get All Modules Metadata (with fallback)
     async getAllModules(): Promise<any[]> {
         if (Platform.OS === 'web') return [];
         try {
             const version = await this.getLocalVersion();
-            if (!version || !version.module_metadata) return [];
-            return version.module_metadata;
+
+            // Use module_metadata if available and non-empty
+            if (version?.module_metadata && version.module_metadata.length > 0) {
+                return version.module_metadata;
+            }
+
+            // Fallback: Build from content files
+            return await this.buildModuleMetadataFromFiles();
         } catch (e) {
             return [];
         }
     },
 
-    // Get Modules by Year
+    // Get Modules by Year (with fallback)
     async getModulesByYear(year: string): Promise<any[]> {
         if (Platform.OS === 'web') return [];
         try {
             const version = await this.getLocalVersion();
-            if (!version || !version.module_metadata) return [];
-            // Assuming module metadata has 'year' field as number or string
-            return version.module_metadata.filter((m: any) => String(m.year) === String(year));
+
+            // Use module_metadata if available and non-empty
+            if (version?.module_metadata && version.module_metadata.length > 0) {
+                return version.module_metadata.filter((m: any) => String(m.year) === String(year));
+            }
+
+            // Fallback: Build from content files and filter by year
+            const builtModules = await this.buildModuleMetadataFromFiles();
+            return builtModules.filter((m: any) => String(m.year) === String(year));
         } catch (e) {
             return [];
         }
