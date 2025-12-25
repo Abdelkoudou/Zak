@@ -8,26 +8,39 @@
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "backgroundColor": "#3B82F6"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#09B2AD"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fmcapp.mobile"
+      "bundleIdentifier": "com.fmcapp.mobile",
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#09B2AD"
+      }
     },
     "android": {
       "package": "com.fmcapp.mobile",
       "versionCode": 2,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#3B82F6"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#09B2AD"
+      },
+      "splash": {
+        "image": "./assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#09B2AD"
       }
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
