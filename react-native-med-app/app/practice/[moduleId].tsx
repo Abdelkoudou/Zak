@@ -135,7 +135,7 @@ export default function PracticeScreen() {
   const correctAnswersCount = currentQuestion 
     ? currentQuestion.answers.filter(a => a.is_correct).length 
     : 0
-  const isMultipleChoice = correctAnswersCount > 1
+  const isMultipleChoice = true // Always allow multiple selection for QCM support
 
   const selectAnswer = (label: OptionLabel) => {
     if (isSubmitted || !currentQuestion) return
