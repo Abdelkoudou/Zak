@@ -695,7 +695,7 @@ export default function QuestionsPage() {
                       }
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
                     >
-                      <option value="">Aucune (optionnel)</option>
+                      <option value="">Aucune (obligatoire)</option>
                       {availableSubDisciplines.map((subDisc) => (
                         <option key={subDisc} value={subDisc}>
                           {subDisc}
