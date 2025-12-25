@@ -19,7 +19,7 @@ import { useAuth } from '@/context/AuthContext'
 import { getModulesWithCounts } from '@/lib/modules'
 import { getUserStatistics } from '@/lib/stats'
 import { Module, UserStatistics } from '@/types'
-import { Card, FadeInView, StatsSkeleton, ListSkeleton } from '@/components/ui'
+import { FadeInView, StatsSkeleton, ListSkeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { BRAND_THEME } from '@/constants/theme'
 import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
@@ -295,14 +295,14 @@ export default function HomeScreen() {
                   <StatItem 
                     label="Questions" 
                     value={stats.total_questions_attempted.toString()} 
-                    icon={<QcmExamIcon size={isDesktop ? 32 : 28} />} 
+                    icon={<QcmExamIcon size={isDesktop ? 30 : 26} />} 
                     isDesktop={isDesktop}
                   />
                   {!isMobile && <Divider />}
                   <StatItem 
                     label="Précision" 
                     value={`${Math.round(stats.average_score)}%`} 
-                    icon={<GoalIcon size={isDesktop ? 32 : 28} color={BRAND_THEME.colors.gray[900]} />} 
+                    icon={<GoalIcon size={isDesktop ? 30 : 26} color={BRAND_THEME.colors.gray[900]} />} 
                     isDesktop={isDesktop}
                     highlight
                   />
@@ -310,44 +310,13 @@ export default function HomeScreen() {
                   <StatItem 
                     label="Sauvegardées" 
                     value={stats.saved_questions_count.toString()} 
-                    icon={<SavesIcon size={isDesktop ? 32 : 28} />} 
+                    icon={<SavesIcon size={isDesktop ? 30 : 26} />} 
                     isDesktop={isDesktop}
                   />
                 </View>
               </View>
             ) : null}
           </Animated.View>
-
-          {/* Quick Actions (Desktop) */}
-          {isDesktop && (
-            <FadeInView delay={200}>
-              <View style={{ 
-                flexDirection: 'row', 
-                gap: 16, 
-                marginTop: 32,
-                marginBottom: 8,
-              }}>
-                <QuickActionCard 
-                  icon="📖"
-                  title="Continuer"
-                  subtitle="Reprendre votre dernière session"
-                  onPress={() => {}}
-                />
-                <QuickActionCard 
-                  icon="💾"
-                  title="Sauvegardées"
-                  subtitle={`${stats?.saved_questions_count || 0} questions`}
-                  onPress={() => router.push('/saved')}
-                />
-                <QuickActionCard 
-                  icon="📊"
-                  title="Statistiques"
-                  subtitle="Voir votre progression"
-                  onPress={() => router.push('/(tabs)/profile')}
-                />
-              </View>
-            </FadeInView>
-          )}
 
           {/* Modules Section */}
           <View style={{ marginTop: isDesktop ? 40 : 28, width: '100%' }}>
@@ -461,7 +430,6 @@ function StatItem({
   value, 
   icon, 
   isDesktop,
-  highlight 
 }: { 
   label: string
   value: string
@@ -511,79 +479,6 @@ function Divider() {
       height: 50, 
       backgroundColor: BRAND_THEME.colors.gray[200] 
     }} />
-  )
-}
-
-// Quick Action Card (Desktop)
-function QuickActionCard({ 
-  icon, 
-  title, 
-  subtitle, 
-  onPress 
-}: { 
-  icon: string
-  title: string
-  subtitle: string
-  onPress: () => void
-}) {
-  const scaleAnim = useRef(new Animated.Value(1)).current
-
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.98,
-      friction: 8,
-      tension: 100,
-      useNativeDriver: true,
-    }).start()
-  }
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 8,
-      tension: 100,
-      useNativeDriver: true,
-    }).start()
-  }
-
-  return (
-    <Pressable 
-      onPress={onPress} 
-      onPressIn={handlePressIn} 
-      onPressOut={handlePressOut}
-      style={{ flex: 1 }}
-    >
-      <Animated.View style={{
-        transform: [{ scale: scaleAnim }],
-        backgroundColor: '#ffffff',
-        borderRadius: 20,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: BRAND_THEME.colors.gray[100],
-        ...BRAND_THEME.shadows.sm,
-        // @ts-ignore
-        ...(Platform.OS === 'web' && { 
-          transition: 'all 0.2s ease',
-          cursor: 'pointer',
-        }),
-      }}>
-        <Text style={{ fontSize: 32, marginBottom: 12 }}>{icon}</Text>
-        <Text style={{ 
-          fontSize: 16, 
-          fontWeight: '700', 
-          color: BRAND_THEME.colors.gray[900],
-          marginBottom: 4,
-        }}>
-          {title}
-        </Text>
-        <Text style={{ 
-          fontSize: 13, 
-          color: BRAND_THEME.colors.gray[500] 
-        }}>
-          {subtitle}
-        </Text>
-      </Animated.View>
-    </Pressable>
   )
 }
 

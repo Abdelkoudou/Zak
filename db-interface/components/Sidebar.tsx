@@ -54,14 +54,14 @@ export default function Sidebar() {
           <div className="relative w-8 h-8">
             <Image 
               src="/logo.png" 
-              alt="QCM Med Logo" 
+              alt="FMC APP Logo" 
               fill 
               className="object-contain"
             />
           </div>
           <div>
             <h1 className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-600">
-              QCM Med
+              FMC APP
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-[10px] uppercase tracking-wider font-semibold">Admin Panel</p>
           </div>
@@ -118,14 +118,14 @@ export default function Sidebar() {
           <div className="relative w-12 h-12 bg-primary-50 dark:bg-primary-950/30 p-2 rounded-xl border border-primary-100 dark:border-primary-900/50 shadow-sm">
             <Image 
               src="/logo.png" 
-              alt="QCM Med Logo" 
+              alt="FMC APP Logo" 
               fill 
               className="object-contain p-2"
             />
           </div>
           <div>
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-400 dark:to-primary-600">
-              QCM Med
+              FMC APP
             </h1>
             <p className="text-slate-400 dark:text-slate-500 text-xs uppercase tracking-widest font-bold">Admin Panel</p>
           </div>

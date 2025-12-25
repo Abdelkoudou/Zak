@@ -1,5 +1,5 @@
 // ============================================================================
-// Register Screen - Premium UI with Smooth Animations
+// Register Screen - Ultra Premium UI with Smooth Animations
 // ============================================================================
 
 import { useState, useRef, useEffect } from 'react'
@@ -14,11 +14,14 @@ import {
   ScrollView, 
   useWindowDimensions,
   Animated,
+  Easing,
   Pressable,
-  FlatList
+  FlatList,
+  Image
 } from 'react-native'
 import { Link, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
 import { YEARS, SPECIALITIES } from '@/constants'
 import { FACULTIES } from '@/constants/faculty'
@@ -28,15 +31,23 @@ import { BRAND_THEME } from '@/constants/theme'
 import { FadeInView, AnimatedButton } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 
+const Logo = require('@/assets/images/logo.png')
+
 export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
   const { width } = useWindowDimensions()
   const isDesktop = width >= 768
+  const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = 600
   
-  // Animations
+  // Premium Animations
   const headerOpacity = useRef(new Animated.Value(0)).current
-  const headerSlide = useRef(new Animated.Value(-20)).current
+  const headerSlide = useRef(new Animated.Value(-30)).current
+  const formOpacity = useRef(new Animated.Value(0)).current
+  const formSlide = useRef(new Animated.Value(40)).current
+  const logoScale = useRef(new Animated.Value(0.5)).current
+  const floatingY = useRef(new Animated.Value(0)).current
+  const glowPulse = useRef(new Animated.Value(0.3)).current
 
   // Form state
   const [fullName, setFullName] = useState('')
@@ -57,10 +68,55 @@ export default function RegisterScreen() {
   const [showRegion, setShowRegion] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
 
+  // Floating animation
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY, {
+          toValue: -10,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingY, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 0.6,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0.3,
+          duration: 1500,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+  }, [])
+
+  useEffect(() => {
+    // Premium entrance sequence
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(headerOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(headerSlide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: true }),
+        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
+        Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(formSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+      ]),
     ]).start()
   }, [])
 
@@ -124,39 +180,122 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
           style={{ flex: 1 }} 
-          contentContainerStyle={{ paddingBottom: 40, alignItems: 'center' }} 
+          contentContainerStyle={{ paddingBottom: 40 }} 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
         >
-          <View style={{ paddingHorizontal: 24, paddingVertical: 32, width: '100%', maxWidth: contentMaxWidth }}>
-            {/* Header */}
-            <Animated.View style={{ marginBottom: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
-              <TouchableOpacity style={{ marginBottom: 24 }} onPress={() => router.back()}>
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND_THEME.colors.gray[100], alignItems: 'center', justifyContent: 'center' }}>
-                  <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[600]} strokeWidth={2.5} />
+          {/* Premium Gradient Header */}
+          <LinearGradient
+            colors={['#0D9488', '#09B2AD', '#14B8A6']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              paddingTop: 16,
+              paddingBottom: 40,
+              paddingHorizontal: 24,
+              borderBottomLeftRadius: 36,
+              borderBottomRightRadius: 36,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Animated Decorative Circles */}
+            <Animated.View style={{ 
+              position: 'absolute', 
+              top: -30, 
+              right: -30, 
+              width: 120, 
+              height: 120, 
+              borderRadius: 60, 
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              transform: [{ translateY: floatingY }],
+            }} />
+            <Animated.View style={{ 
+              position: 'absolute', 
+              bottom: -20, 
+              left: -20, 
+              width: 80, 
+              height: 80, 
+              borderRadius: 40, 
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              opacity: glowPulse,
+            }} />
+
+            {/* Back Button */}
+            <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
+              <TouchableOpacity style={{ marginBottom: 16 }} onPress={() => router.back()}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                  <ChevronLeftIcon size={22} color="#ffffff" strokeWidth={2.5} />
                 </View>
               </TouchableOpacity>
-              <Text style={{ fontSize: 28, fontWeight: '800', color: BRAND_THEME.colors.gray[900], marginBottom: 8, letterSpacing: -0.5 }}>
-                Créer un compte
-              </Text>
-              <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 16 }}>
-                Remplissez vos informations pour commencer
-              </Text>
             </Animated.View>
 
+            {/* Header Content */}
+            <Animated.View style={{ 
+              alignItems: 'center',
+              opacity: headerOpacity,
+              transform: [{ translateY: headerSlide }],
+            }}>
+              <Animated.View style={{
+                width: 70,
+                height: 70,
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+                transform: [{ scale: logoScale }],
+              }}>
+                <Image 
+                  source={Logo}
+                  style={{ width: 48, height: 48, resizeMode: 'contain' }}
+                />
+              </Animated.View>
+              
+              <Text style={{
+                fontSize: 28,
+                fontWeight: '900',
+                color: '#ffffff',
+                marginBottom: 4,
+                letterSpacing: -0.5,
+                textShadowColor: 'rgba(0, 0, 0, 0.1)',
+                textShadowOffset: { width: 0, height: 2 },
+                textShadowRadius: 8,
+              }}>
+                Créer un compte
+              </Text>
+              <Text style={{
+                fontSize: 14,
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontWeight: '600',
+              }}>
+                Rejoignez FMC APP aujourd'hui
+              </Text>
+            </Animated.View>
+          </LinearGradient>
+
+          {/* Form Section */}
+          <Animated.View style={{ 
+            paddingHorizontal: 24, 
+            paddingTop: 24,
+            width: '100%', 
+            maxWidth: contentMaxWidth,
+            alignSelf: 'center',
+            opacity: formOpacity,
+            transform: [{ translateY: formSlide }],
+          }}>
             {/* Error Message */}
             {error && (
               <FadeInView animation="scale">
-                <View style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, padding: 16, marginBottom: 20 }}>
-                  <Text style={{ color: '#DC2626', fontSize: 15 }}>{error}</Text>
+                <View style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 16, marginBottom: 20 }}>
+                  <Text style={{ color: '#DC2626', fontSize: 15, fontWeight: '600' }}>⚠️ {error}</Text>
                 </View>
               </FadeInView>
             )}
 
             {/* Form */}
-            <FadeInView delay={100} animation="slideUp" style={{ zIndex: 1000 }}>
-              <View style={{ gap: 16, zIndex: 300 }}>
+            <View style={{ gap: 16, zIndex: 300 }}>
                 {/* Name & Email Row */}
                 <View style={isDesktop ? { flexDirection: 'row', gap: 16 } : { gap: 16 }}>
                   <View style={isDesktop ? { flex: 1 } : {}}>
@@ -241,25 +380,27 @@ export default function RegisterScreen() {
                   <FormInput placeholder="FMC-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
                 </View>
               </View>
-            </FadeInView>
 
             {/* Register Button */}
-            <FadeInView delay={200} animation="slideUp">
-              <View style={{ marginTop: 32, zIndex: 200 }}>
-                <AnimatedButton title="Créer mon compte" onPress={handleRegister} loading={isLoading} variant="primary" size="lg" />
-              </View>
-            </FadeInView>
+            <View style={{ marginTop: 28, zIndex: 200 }}>
+              <AnimatedButton title="Créer mon compte" onPress={handleRegister} loading={isLoading} variant="primary" size="lg" />
+            </View>
 
             {/* Login Link */}
-            <FadeInView delay={300} animation="fade">
-              <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
-                <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>Déjà un compte ? </Text>
-                <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-                  <Text style={{ color: '#09B2AD', fontWeight: '700', fontSize: 15 }}>Se connecter</Text>
-                </TouchableOpacity>
-              </View>
-            </FadeInView>
-          </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 20 }}>
+              <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>Déjà un compte ? </Text>
+              <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+                <Text style={{ color: '#09B2AD', fontWeight: '700', fontSize: 15 }}>Se connecter</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Footer */}
+            <View style={{ alignItems: 'center', marginTop: 24 }}>
+              <Text style={{ fontSize: 13, color: BRAND_THEME.colors.gray[400], textAlign: 'center' }}>
+                🔒 Vos données sont sécurisées
+              </Text>
+            </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

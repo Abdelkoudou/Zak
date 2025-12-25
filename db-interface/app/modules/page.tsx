@@ -56,7 +56,7 @@ export default function ModulesPage() {
             Modules du Curriculum
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-            Curriculum médical français (Algérie) • QCM Med
+            Curriculum médical français (Algérie) • FMC APP
           </p>
         </div>
       </div>

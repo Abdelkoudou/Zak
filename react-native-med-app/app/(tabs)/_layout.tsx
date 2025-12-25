@@ -22,9 +22,9 @@ export default function TabsLayout() {
         tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: 85,
-          paddingBottom: 25,
-          paddingTop: 12,
+          height: Platform.OS === 'ios' ? 98 : 92,
+          paddingBottom: Platform.OS === 'ios' ? 34 : 26,
+          paddingTop: 14,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
           position: 'absolute',
@@ -42,7 +42,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: 8,
           letterSpacing: 0.3,
         },
         tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
@@ -54,7 +54,7 @@ export default function TabsLayout() {
           title: 'Accueil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <HomeIcon size={28} color={color} />
+              <HomeIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -65,7 +65,7 @@ export default function TabsLayout() {
           title: 'Ressources',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ResourcesIcon size={28} color={color} />
+              <ResourcesIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -76,7 +76,7 @@ export default function TabsLayout() {
           title: 'Profil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ProfileIcon size={28} color={color} />
+              <ProfileIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -121,7 +121,6 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
 // Animated Tab Button with press effect
 function AnimatedTabButton(props: any) {
   const scaleAnim = useRef(new Animated.Value(1)).current
-  const isFocused = props.accessibilityState?.selected
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -146,25 +145,15 @@ function AnimatedTabButton(props: any) {
       {...props}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[props.style, { flex: 1 }]}
+      style={[props.style, { flex: 1, alignItems: 'center' }]}
     >
       <Animated.View style={{ 
-        flex: 1, 
         alignItems: 'center', 
         justifyContent: 'center',
         transform: [{ scale: scaleAnim }],
+        paddingTop: 4,
       }}>
         {props.children}
-        {isFocused && (
-          <View style={{
-            position: 'absolute',
-            bottom: 4,
-            width: 4,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: '#ffffff',
-          }} />
-        )}
       </Animated.View>
     </Pressable>
   )

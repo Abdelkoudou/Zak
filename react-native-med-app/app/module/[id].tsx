@@ -247,7 +247,7 @@ export default function ModuleDetailScreen() {
               <AnimatedModeCard
                 isSelected={selectedMode === 'exam'}
                 onPress={() => { setSelectedMode('exam'); setSelectedCours(null) }}
-                icon={<QcmExamIcon size={24} color="#ffffff" />}
+                icon={<QcmExamIcon size={26} color="#ffffff" />}
                 title="QCM d'examen"
                 subtitle="Questions mélangées par type d'examen"
               />
@@ -259,7 +259,7 @@ export default function ModuleDetailScreen() {
                 <AnimatedModeCard
                   isSelected={selectedMode === 'cours'}
                   onPress={() => { setSelectedMode('cours'); setSelectedExamType(null) }}
-                  icon={<BookQcmIcon size={24} color="#ffffff" />}
+                  icon={<BookQcmIcon size={26} color="#ffffff" />}
                   title="Par cours"
                   subtitle="Questions d'un cours spécifique"
                 />

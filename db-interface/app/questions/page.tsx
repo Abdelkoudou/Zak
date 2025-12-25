@@ -438,7 +438,7 @@ export default function QuestionsPage() {
             Questions MCQ
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-            Gestion du catalogue • QCM Med
+            Gestion du catalogue • FMC APP
           </p>
         </div>
         <div className="flex gap-3">

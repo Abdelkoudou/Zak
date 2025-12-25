@@ -5,8 +5,8 @@ import SessionManager from "@/components/SessionManager";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "DB Interface - Admin Panel",
-  description: "Database management interface for MCQ Study App",
+  title: "FMC APP - Admin Panel",
+  description: "Interface d'administration pour FMC APP - Premium Medical Learning",
 };
 
 export const viewport: Viewport = {

@@ -152,19 +152,19 @@ export default function ResultsScreen() {
                 <AnimatedStatItem 
                   label="Total" 
                   value={totalNum.toString()} 
-                  icon={<FileIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
+                  icon={<FileIcon size={26} color={BRAND_THEME.colors.gray[900]} />}
                   delay={600}
                 />
                 <AnimatedStatItem 
                   label="Correctes" 
                   value={`${scoreNum.toFixed(0)}%`} 
-                  icon={<CorrectIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
+                  icon={<CorrectIcon size={26} color={BRAND_THEME.colors.gray[900]} />}
                   delay={700}
                 />
                 <AnimatedStatItem 
                   label="Incorrectes" 
                   value={incorrectNum.toString()} 
-                  icon={<FalseIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
+                  icon={<FalseIcon size={26} color={BRAND_THEME.colors.gray[900]} />}
                   delay={800}
                 />
               </View>

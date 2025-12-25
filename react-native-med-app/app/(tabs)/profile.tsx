@@ -296,7 +296,7 @@ export default function ProfileScreen() {
                         justifyContent: 'center',
                         marginRight: 16,
                       }}>
-                        <SavesIcon size={24} />
+                        <SavesIcon size={26} />
                       </View>
                       <View>
                         <Text style={{ 
@@ -396,17 +396,17 @@ export default function ProfileScreen() {
                         <StatBox 
                           label="Total" 
                           value={stats.total_questions_attempted} 
-                          icon={<FileIcon size={24} color={BRAND_THEME.colors.gray[900]} />} 
+                          icon={<FileIcon size={26} color={BRAND_THEME.colors.gray[900]} />} 
                         />
                         <StatBox 
                           label="Correctes" 
                           value={stats.total_correct_answers} 
-                          icon={<CorrectIcon size={24} color={BRAND_THEME.colors.gray[900]} />} 
+                          icon={<CorrectIcon size={26} color={BRAND_THEME.colors.gray[900]} />} 
                         />
                         <StatBox 
                           label="Incorrectes" 
                           value={stats.total_questions_attempted - stats.total_correct_answers} 
-                          icon={<FalseIcon size={24} color={BRAND_THEME.colors.gray[900]} />} 
+                          icon={<FalseIcon size={26} color={BRAND_THEME.colors.gray[900]} />} 
                         />
                       </View>
 
@@ -414,18 +414,18 @@ export default function ProfileScreen() {
                         <StatBox 
                           label="Temps" 
                           value={`${stats.total_time_spent_minutes}m`} 
-                          icon={<GoalIcon size={24} color={BRAND_THEME.colors.gray[900]} />} 
+                          icon={<GoalIcon size={26} color={BRAND_THEME.colors.gray[900]} />} 
                         />
                         <StatBox 
                           label="Précision" 
                           value={`${Math.round(stats.average_score)}%`} 
-                          icon={<GoalIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
+                          icon={<GoalIcon size={26} color={BRAND_THEME.colors.gray[900]} />}
                           highlight
                         />
                         <StatBox 
                           label="Modules" 
                           value={stats.modules_practiced} 
-                          icon={<BookIcon size={24} color={BRAND_THEME.colors.gray[900]} />} 
+                          icon={<BookIcon size={26} color={BRAND_THEME.colors.gray[900]} />} 
                         />
                       </View>
 

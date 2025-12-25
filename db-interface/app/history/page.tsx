@@ -228,7 +228,7 @@ export default function HistoryPage() {
             Historique des Questions
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-            Recherche globale • QCM Med
+            Recherche globale • FMC APP
           </p>
         </div>
       </div>
