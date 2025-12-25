@@ -1003,9 +1003,9 @@ export default function ActivationCodesPage() {
 
             {/* Code Details */}
             <div className="space-y-4 mb-8">
-              <DetailRow label="Faculté" value={selectedCode.faculty?.name || '-'} />
+              
               <DetailRow label="Point de Vente" value={selectedCode.salesPoint?.name || '-'} />
-              <DetailRow label="Prix Payé" value={selectedCode.pricePaid ? `${selectedCode.pricePaid.toLocaleString()} DA` : '-'} />
+              
               {selectedCode.expiresAt && (
                 <DetailRow label="Date d'Expiration" value={new Date(selectedCode.expiresAt).toLocaleDateString('fr-FR')} />
               )}
