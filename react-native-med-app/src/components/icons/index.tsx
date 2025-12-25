@@ -4,7 +4,7 @@
 // ============================================================================
 
 import React from 'react';
-import Svg, { Path, G } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 interface IconProps {
   size?: number;
@@ -51,7 +51,7 @@ export function ProfileIcon({ size = 24, color = '#ffffff' }: IconProps) {
 }
 
 // Saves/Bookmark Icon - Floppy disk style
-export function SavesIcon({ size = 24, color = '#ffffff', strokeWidth = 2.5 }: IconProps) {
+export function SavesIcon({ size = 24, color = '#000000', strokeWidth = 2.5 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 31 31" fill="none">
       <Path

@@ -114,16 +114,6 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
       transform: [{ scale: scaleAnim }],
     }}>
       {children}
-      {focused && (
-        <View style={{
-          position: 'absolute',
-          bottom: -8,
-          width: 4,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: '#ffffff',
-        }} />
-      )}
     </Animated.View>
   )
 }
@@ -131,6 +121,7 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
 // Animated Tab Button with press effect
 function AnimatedTabButton(props: any) {
   const scaleAnim = useRef(new Animated.Value(1)).current
+  const isFocused = props.accessibilityState?.selected
 
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
@@ -164,6 +155,16 @@ function AnimatedTabButton(props: any) {
         transform: [{ scale: scaleAnim }],
       }}>
         {props.children}
+        {isFocused && (
+          <View style={{
+            position: 'absolute',
+            bottom: 4,
+            width: 4,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: '#ffffff',
+          }} />
+        )}
       </Animated.View>
     </Pressable>
   )
