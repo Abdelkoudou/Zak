@@ -124,6 +124,21 @@ export function FileIcon({ size = 24, color = '#000000' }: IconProps) {
   );
 }
 
+// Chevron Left Icon - Back arrow
+export function ChevronLeftIcon({ size = 24, color = '#000000', strokeWidth = 2.5 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M15 19L8 12L15 5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 // Export all icons
 export const Icons = {
   Home: HomeIcon,
@@ -134,6 +149,7 @@ export const Icons = {
   QcmExam: QcmExamIcon,
   Goal: GoalIcon,
   File: FileIcon,
+  ChevronLeft: ChevronLeftIcon,
 };
 
 export default Icons;

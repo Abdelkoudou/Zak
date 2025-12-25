@@ -12,6 +12,7 @@ import { saveTestAttempt } from '@/lib/stats'
 import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView } from '@/components/ui'
+import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
@@ -316,8 +317,12 @@ export default function PracticeScreen() {
         options={{ 
           title: `Questions ${currentIndex + 1}/${questions.length}`,
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={{ color: BRAND_THEME.colors.primary[600], fontSize: 16 }}>←</Text>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={{ marginLeft: -12, padding: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <ChevronLeftIcon size={28} color={BRAND_THEME.colors.primary[600]} strokeWidth={2.5} />
             </TouchableOpacity>
           )
         }} 

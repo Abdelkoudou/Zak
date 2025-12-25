@@ -8,6 +8,7 @@ import { Link, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
 import { FadeInView, LoadingSpinner } from '@/components/ui'
+import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
@@ -157,7 +158,10 @@ export default function ForgotPasswordScreen() {
             <View style={{ marginBottom: 32 }}>
               <Link href="/(auth)/login" asChild>
                 <TouchableOpacity style={{ marginBottom: 24 }}>
-                  <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 16 }}>← Retour</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <ChevronLeftIcon size={20} color={BRAND_THEME.colors.primary[500]} strokeWidth={2.5} />
+                    <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 16, marginLeft: 4 }}>Retour</Text>
+                  </View>
                 </TouchableOpacity>
               </Link>
               

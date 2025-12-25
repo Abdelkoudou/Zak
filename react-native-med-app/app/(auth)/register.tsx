@@ -25,6 +25,7 @@ import { WILAYAS } from '@/constants/regions'
 import { YearLevel, Speciality, RegisterFormData } from '@/types'
 import { BRAND_THEME } from '@/constants/theme'
 import { FadeInView, AnimatedButton } from '@/components/ui'
+import { ChevronLeftIcon } from '@/components/icons'
 
 export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
@@ -126,7 +127,7 @@ export default function RegisterScreen() {
             <Animated.View style={{ marginBottom: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
               <TouchableOpacity style={{ marginBottom: 24 }} onPress={() => router.back()}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: BRAND_THEME.colors.gray[100], alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 20, color: BRAND_THEME.colors.gray[600] }}>←</Text>
+                  <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[600]} strokeWidth={2.5} />
                 </View>
               </TouchableOpacity>
               <Text style={{ fontSize: 28, fontWeight: '800', color: BRAND_THEME.colors.gray[900], marginBottom: 8, letterSpacing: -0.5 }}>

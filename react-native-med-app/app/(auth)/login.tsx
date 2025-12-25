@@ -17,6 +17,7 @@ import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
 import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/components/ui'
+import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 
 const Logo = require('@/assets/images/logo.png')
@@ -111,7 +112,7 @@ export default function LoginScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Text style={{ fontSize: 20, color: BRAND_THEME.colors.gray[600] }}>←</Text>
+                <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[600]} strokeWidth={2.5} />
               </View>
             </TouchableOpacity>
 

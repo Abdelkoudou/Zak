@@ -12,7 +12,7 @@ import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
 import { Card, Badge, FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
-import { QcmExamIcon, BookQcmIcon } from '@/components/icons'
+import { QcmExamIcon, BookQcmIcon, ChevronLeftIcon } from '@/components/icons'
 
 export default function ModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -191,7 +191,7 @@ export default function ModuleDetailScreen() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <Text style={{ color: '#ffffff', fontSize: 20 }}>←</Text>
+                <ChevronLeftIcon size={24} color="#ffffff" strokeWidth={2.5} />
               </View>
             </TouchableOpacity>
 
