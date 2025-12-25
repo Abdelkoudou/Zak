@@ -12,6 +12,7 @@ import { Module, ExamType } from '@/types'
 import { EXAM_TYPES, EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
 import { Card, Badge, LoadingSpinner, Button } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import { QcmExamIcon, BookQcmIcon } from '@/components/icons'
 
 export default function ModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -242,7 +243,7 @@ export default function ModuleDetailScreen() {
                     justifyContent: 'center',
                     marginRight: 16
                   }}>
-                    <Text style={{ color: '#ffffff', fontSize: 20 }}>📝</Text>
+                    <QcmExamIcon size={24} color="#ffffff" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={{
@@ -295,7 +296,7 @@ export default function ModuleDetailScreen() {
                       justifyContent: 'center',
                       marginRight: 16
                     }}>
-                      <Text style={{ color: '#ffffff', fontSize: 20 }}>📖</Text>
+                      <BookQcmIcon size={24} color="#ffffff" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{

@@ -1,27 +1,14 @@
 // ============================================================================
-// Tabs Layout
+// Tabs Layout - Premium Custom Icons from Figma
 // ============================================================================
 
-import { Tabs, Redirect } from 'expo-router'
-import { View, Text, useWindowDimensions, ActivityIndicator } from 'react-native'
-import { useAuth } from '@/context/AuthContext'
+import { Tabs } from 'expo-router'
+import { View, useWindowDimensions } from 'react-native'
+import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
-  const { isAuthenticated, isLoading } = useAuth()
-  const isDesktop = width >= 1024
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#09B2AD" />
-      </View>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return <Redirect href="/(auth)/welcome" />
-  }
+  const isDesktop = width >= 768
 
   return (
     <Tabs
@@ -30,7 +17,7 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: isDesktop ? 60 : 80,
+          height: isDesktop ? 70 : 90,
           paddingBottom: isDesktop ? 0 : 20,
           paddingTop: 10,
           borderTopLeftRadius: 25,
@@ -48,7 +35,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: '600',
           marginTop: 4,
         },
@@ -57,18 +44,22 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Acceuil',
+          title: 'Accueil',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="🏠" color={color} focused={focused} />
+            <TabIcon focused={focused}>
+              <HomeIcon size={32} color={color} />
+            </TabIcon>
           ),
         }}
       />
       <Tabs.Screen
         name="resources"
         options={{
-          title: 'Resources',
+          title: 'Ressources',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="📚" color={color} focused={focused} />
+            <TabIcon focused={focused}>
+              <ResourcesIcon size={32} color={color} />
+            </TabIcon>
           ),
         }}
       />
@@ -77,7 +68,9 @@ export default function TabsLayout() {
         options={{
           title: 'Profil',
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon icon="👤" color={color} focused={focused} />
+            <TabIcon focused={focused}>
+              <ProfileIcon size={32} color={color} />
+            </TabIcon>
           ),
         }}
       />
@@ -85,11 +78,16 @@ export default function TabsLayout() {
   )
 }
 
-// Tab Icon Component
-function TabIcon({ icon, color, focused }: { icon: string; color: string; focused: boolean }) {
+// Tab Icon Wrapper with focus animation
+function TabIcon({ children, focused }: { children: React.ReactNode; focused: boolean }) {
   return (
-    <View className={`items-center justify-center ${focused ? 'opacity-100' : 'opacity-60'}`}>
-      <Text style={{ fontSize: 24 }}>{icon}</Text>
+    <View style={{ 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      opacity: focused ? 1 : 0.6,
+      transform: [{ scale: focused ? 1.1 : 1 }]
+    }}>
+      {children}
     </View>
   )
 }

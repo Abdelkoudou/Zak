@@ -29,7 +29,7 @@ export const BRAND_THEME = {
       800: '#115e59',   // Darker for text on light backgrounds
       900: '#134e4a',   // Darkest for high contrast text
     },
-    
+
     // Semantic colors
     success: {
       50: '#f0fdf4',
@@ -37,21 +37,21 @@ export const BRAND_THEME = {
       500: '#22c55e',
       600: '#16a34a',
     },
-    
+
     error: {
       50: '#fef2f2',
       100: '#fee2e2',
       500: '#ef4444',
       600: '#dc2626',
     },
-    
+
     warning: {
       50: '#fffbeb',
       100: '#fef3c7',
       500: '#f59e0b',
       600: '#d97706',
     },
-    
+
     // Neutral grays
     gray: {
       50: '#f9fafb',
@@ -66,34 +66,34 @@ export const BRAND_THEME = {
       900: '#111827',
     },
   },
-  
+
   // Typography scale
   typography: {
     fontSizes: {
-      xs: 12,
-      sm: 14,
-      base: 16,
-      lg: 18,
-      xl: 20,
-      '2xl': 24,
-      '3xl': 30,
-      '4xl': 36,
+      xs: 14,
+      sm: 16,
+      base: 18,
+      lg: 20,
+      xl: 24,
+      '2xl': 30,
+      '3xl': 36,
+      '4xl': 42,
     },
-    
+
     fontWeights: {
       normal: '400',
       medium: '500',
       semibold: '600',
       bold: '700',
     },
-    
+
     lineHeights: {
       tight: 1.25,
       normal: 1.5,
       relaxed: 1.75,
     },
   },
-  
+
   // Spacing scale
   spacing: {
     xs: 4,
@@ -104,7 +104,7 @@ export const BRAND_THEME = {
     '2xl': 48,
     '3xl': 64,
   },
-  
+
   // Border radius
   borderRadius: {
     sm: 4,
@@ -113,7 +113,7 @@ export const BRAND_THEME = {
     xl: 16,
     full: 9999,
   },
-  
+
   // Shadows
   shadows: {
     sm: {
@@ -164,7 +164,7 @@ export const COMPONENT_THEMES = {
       textHover: BRAND_THEME.colors.primary[700],
     },
   },
-  
+
   // Card variants
   card: {
     default: {
@@ -178,7 +178,7 @@ export const COMPONENT_THEMES = {
       shadow: BRAND_THEME.shadows.md,
     },
   },
-  
+
   // Input variants
   input: {
     default: {

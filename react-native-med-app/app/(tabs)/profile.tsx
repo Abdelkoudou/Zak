@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -15,6 +15,8 @@ import { BRAND_THEME } from '@/constants/theme'
 
 export default function ProfileScreen() {
   const { user, signOut, isLoading: authLoading, getDeviceSessions } = useAuth()
+  const { width } = useWindowDimensions()
+  const contentMaxWidth = 800
   
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [moduleStats, setModuleStats] = useState<ModuleStatistics[]>([])
@@ -48,13 +50,18 @@ export default function ProfileScreen() {
     loadData()
   }, [loadData])
 
+  useEffect(() => {
+    if (!user && !isLoading) {
+      router.replace('/(auth)/welcome')
+    }
+  }, [user, isLoading])
+
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     loadData()
   }, [loadData])
 
   const handleSignOut = () => {
-    console.log('Sign out button pressed')
     Alert.alert(
       'Déconnexion',
       'Êtes-vous sûr de vouloir vous déconnecter ?',
@@ -64,14 +71,15 @@ export default function ProfileScreen() {
           text: 'Déconnexion', 
           style: 'destructive',
           onPress: async () => {
-            console.log('Confirmed logout in Alert')
             try {
-              console.log('Calling signOut()...')
-              await signOut()
-              console.log('signOut() finished, redirecting...')
-              router.replace('/(auth)/welcome')
-            } catch (e) {
-              console.error('Logout error:', e)
+              const result = await signOut()
+              if (result?.error) {
+                Alert.alert('Erreur', result.error)
+              }
+              // The useEffect will handle the redirect when user becomes null
+            } catch (error) {
+              console.error('Logout error:', error)
+              Alert.alert('Erreur', 'Une erreur est survenue lors de la déconnexion')
             }
           }
         },
@@ -127,6 +135,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
       <ScrollView
         style={{ flex: 1 }}
+        contentContainerStyle={{ alignItems: 'center' }}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -135,6 +144,7 @@ export default function ProfileScreen() {
           />
         }
       >
+        <View style={{ width: '100%', maxWidth: contentMaxWidth }}>
         {/* Profile Header - Matching Design */}
         <View style={{
           backgroundColor: '#ffffff',
@@ -157,7 +167,7 @@ export default function ProfileScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{
-                fontSize: 20,
+                fontSize: 24,
                 fontWeight: 'bold',
                 color: BRAND_THEME.colors.gray[900],
                 marginBottom: 4
@@ -191,7 +201,7 @@ export default function ProfileScreen() {
               <View>
                 <Text style={{
                   color: BRAND_THEME.colors.gray[700],
-                  fontSize: 14,
+                  fontSize: 16,
                   marginBottom: 4
                 }}>
                   Abonnement
@@ -216,7 +226,7 @@ export default function ProfileScreen() {
         {/* Device Management - View Only (No Deletion) */}
         <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
           <Text style={{
-            fontSize: 18,
+            fontSize: 22,
             fontWeight: 'bold',
             color: BRAND_THEME.colors.gray[900],
             marginBottom: 12
@@ -286,7 +296,7 @@ export default function ProfileScreen() {
                   </View>
                   <View>
                     <Text style={{
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: 'bold',
                       color: BRAND_THEME.colors.gray[900]
                     }}>
@@ -310,7 +320,7 @@ export default function ProfileScreen() {
         {stats && (
           <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
             <Text style={{
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: 'bold',
               color: BRAND_THEME.colors.gray[900],
               marginBottom: 12
@@ -381,7 +391,7 @@ export default function ProfileScreen() {
         {moduleStats.length > 0 && (
           <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
             <Text style={{
-              fontSize: 18,
+              fontSize: 22,
               fontWeight: 'bold',
               color: BRAND_THEME.colors.gray[900],
               marginBottom: 12
@@ -426,6 +436,7 @@ export default function ProfileScreen() {
 
         {/* Bottom Spacing */}
         <View style={{ height: 120 }} />
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -435,9 +446,9 @@ export default function ProfileScreen() {
 function StatBox({ label, value, icon }: { label: string; value: number | string; icon: string }) {
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
-      <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
+      <Text style={{ fontSize: 28, marginBottom: 4 }}>{icon}</Text>
       <Text style={{
-        fontSize: 18,
+        fontSize: 22,
         fontWeight: 'bold',
         color: BRAND_THEME.colors.gray[900],
         marginBottom: 2
@@ -446,7 +457,7 @@ function StatBox({ label, value, icon }: { label: string; value: number | string
       </Text>
       <Text style={{
         color: BRAND_THEME.colors.gray[600],
-        fontSize: 12
+        fontSize: 14
       }}>
         {label}
       </Text>
@@ -489,7 +500,7 @@ function ModuleProgressCard({ stat }: { stat: ModuleStatistics }) {
       
       <Text style={{
         color: BRAND_THEME.colors.gray[500],
-        fontSize: 12
+        fontSize: 14
       }}>
         {stat.questions_attempted} question • {stat.attempts_count} sessions
       </Text>
@@ -532,7 +543,7 @@ function DeviceSessionCard({
       }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Text style={{ fontSize: 18, marginRight: 8 }}>📱</Text>
+            <Text style={{ fontSize: 22, marginRight: 8 }}>📱</Text>
             <Text style={{
               color: BRAND_THEME.colors.gray[900],
               fontWeight: '500',
@@ -543,7 +554,7 @@ function DeviceSessionCard({
           </View>
           <Text style={{
             color: BRAND_THEME.colors.gray[500],
-            fontSize: 12
+            fontSize: 14
           }}>
             Dernière activité: {formatLastActive(session.last_active_at)}
           </Text>

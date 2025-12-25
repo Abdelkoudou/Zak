@@ -13,6 +13,7 @@ import { Module, UserStatistics } from '@/types'
 import { MODULE_TYPES, MODULE_TYPE_COLORS } from '@/constants'
 import { Card, Badge, LoadingSpinner } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 
 // Brand Logo
 const Logo = require('@/assets/images/logo.png')
@@ -117,7 +118,7 @@ export default function HomeScreen() {
             <View style={{ marginBottom: 16 }}>
               <Text style={{ 
                 color: 'rgba(255, 255, 255, 0.8)', 
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: '500',
                 marginBottom: 4
               }}>
@@ -125,7 +126,7 @@ export default function HomeScreen() {
               </Text>
               <Text style={{
                 color: '#ffffff',
-                fontSize: isDesktop ? 32 : 24,
+                fontSize: isDesktop ? 36 : 28,
                 fontWeight: 'bold'
               }}>
                 {user?.full_name || 'Étudiant'}
@@ -167,17 +168,17 @@ export default function HomeScreen() {
                   <StatItem 
                     label="Questions" 
                     value={stats.total_questions_attempted.toString()} 
-                    icon="📝"
+                    customIcon={<QcmExamIcon size={32} color="#09B2AD" />}
                   />
                   <StatItem 
                     label="précision" 
                     value={`${Math.round(stats.average_score)}%`} 
-                    icon="🎯"
+                    customIcon={<GoalIcon size={32} color="#09B2AD" />}
                   />
                   <StatItem 
                     label="sauvegardées" 
                     value={stats.saved_questions_count.toString()} 
-                    icon="💾"
+                    customIcon={<SavesIcon size={32} color="#09B2AD" />}
                   />
                 </View>
               </Card>
@@ -187,7 +188,7 @@ export default function HomeScreen() {
           {/* Modules Section */}
           <View style={{ marginTop: 24, width: '100%' }}>
             <Text style={{
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: 'bold',
               color: BRAND_THEME.colors.gray[900],
               marginBottom: 16
@@ -239,10 +240,19 @@ export default function HomeScreen() {
 }
 
 // Enhanced Stat Item Component
-function StatItem({ label, value, icon }: { label: string; value: string; icon: string }) {
+function StatItem({ label, value, icon, customIcon }: { 
+  label: string; 
+  value: string; 
+  icon?: string;
+  customIcon?: React.ReactNode;
+}) {
   return (
     <View style={{ alignItems: 'center' }}>
-      <Text style={{ fontSize: 32, marginBottom: 8 }}>{icon}</Text>
+      {customIcon ? (
+        <View style={{ marginBottom: 8 }}>{customIcon}</View>
+      ) : (
+        <Text style={{ fontSize: 36, marginBottom: 8 }}>{icon}</Text>
+      )}
       <Text style={{
         fontSize: 16,
         fontWeight: '700',
@@ -253,7 +263,7 @@ function StatItem({ label, value, icon }: { label: string; value: string; icon: 
       </Text>
       <Text style={{
         color: 'rgba(0, 0, 0, 0.6)',
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: '500'
       }}>
         {label}
@@ -281,7 +291,7 @@ function ModuleCard({
         }}>
           <View style={{ flex: 1 }}>
             <Text style={{
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: '700',
               color: '#000000',
               marginBottom: 6
@@ -290,7 +300,7 @@ function ModuleCard({
             </Text>
             <Text style={{
               color: 'rgba(0, 0, 0, 0.4)',
-              fontSize: 14,
+              fontSize: 16,
               fontWeight: '500'
             }}>
               {module.question_count} Questions
