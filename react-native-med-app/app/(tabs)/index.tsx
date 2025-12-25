@@ -200,11 +200,11 @@ export default function HomeScreen() {
             ) : stats ? (
               <View style={{ backgroundColor: '#ffffff', borderRadius: 20, padding: 20, ...BRAND_THEME.shadows.md }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={28} color="#09B2AD" />} />
+                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={28} />} />
                   <View style={{ width: 1, height: 40, backgroundColor: BRAND_THEME.colors.gray[200] }} />
-                  <StatItem label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={28} color="#09B2AD" />} />
+                  <StatItem label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={28} />} />
                   <View style={{ width: 1, height: 40, backgroundColor: BRAND_THEME.colors.gray[200] }} />
-                  <StatItem label="Sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={28} color="#09B2AD" />} />
+                  <StatItem label="Sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={28} />} />
                 </View>
               </View>
             ) : null}

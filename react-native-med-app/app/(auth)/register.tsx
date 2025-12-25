@@ -14,7 +14,8 @@ import {
   ScrollView, 
   useWindowDimensions,
   Animated,
-  Pressable
+  Pressable,
+  FlatList
 } from 'react-native'
 import { Link, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -121,7 +122,13 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40, alignItems: 'center' }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingBottom: 40, alignItems: 'center' }} 
+          keyboardShouldPersistTaps="handled" 
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+        >
           <View style={{ paddingHorizontal: 24, paddingVertical: 32, width: '100%', maxWidth: contentMaxWidth }}>
             {/* Header */}
             <Animated.View style={{ marginBottom: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
@@ -148,7 +155,7 @@ export default function RegisterScreen() {
             )}
 
             {/* Form */}
-            <FadeInView delay={100} animation="slideUp">
+            <FadeInView delay={100} animation="slideUp" style={{ zIndex: 1000 }}>
               <View style={{ gap: 16, zIndex: 300 }}>
                 {/* Name & Email Row */}
                 <View style={isDesktop ? { flexDirection: 'row', gap: 16 } : { gap: 16 }}>
@@ -330,13 +337,17 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
           zIndex: 100,
         }}>
           {scrollable ? (
-            <ScrollView nestedScrollEnabled style={{ maxHeight: 200 }}>
-              {options.map((opt) => (
-                <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>
-                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(item.value)}>
+                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{item.label}</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
+              )}
+              style={{ maxHeight: 200 }}
+              nestedScrollEnabled={true}
+            />
           ) : (
             options.map((opt) => (
               <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>

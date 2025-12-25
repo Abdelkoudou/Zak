@@ -9,6 +9,8 @@ import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router
 import { Card, Button, FadeInView, StaggeredList } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { Ionicons } from '@expo/vector-icons'
+import { CorrectIcon, FalseIcon, FileIcon } from '@/components/icons/ResultIcons'
 
 export default function ResultsScreen() {
   const { total, correct, score, time, moduleName } = useLocalSearchParams<{
@@ -88,13 +90,6 @@ export default function ResultsScreen() {
     return 'Révisez et réessayez !'
   }
 
-  const getScoreEmoji = () => {
-    if (scoreNum >= 80) return '🏆'
-    if (scoreNum >= 60) return '⭐'
-    if (scoreNum >= 40) return '📚'
-    return '💪'
-  }
-
   return (
     <>
       <Stack.Screen options={{ title: 'Résultat', headerBackVisible: false }} />
@@ -115,7 +110,12 @@ export default function ResultsScreen() {
                 marginBottom: 16,
                 ...BRAND_THEME.shadows.lg
               }}>
-                <Text style={{ fontSize: 48, marginBottom: 8 }}>{getScoreEmoji()}</Text>
+                <Ionicons 
+                  name="book" 
+                  size={48} 
+                  color={BRAND_THEME.colors.gray[900]} 
+                  style={{ marginBottom: 8 }}
+                />
                 <Text style={{
                   fontSize: 36,
                   fontWeight: 'bold',
@@ -142,15 +142,6 @@ export default function ResultsScreen() {
                   {moduleName}
                 </Text>
               </FadeInView>
-
-              {/* Celebration particles for good scores */}
-              <Animated.View style={{
-                position: 'absolute',
-                top: -20,
-                opacity: celebrationOpacity,
-              }}>
-                <Text style={{ fontSize: 24 }}>🎉</Text>
-              </Animated.View>
             </View>
           </FadeInView>
 
@@ -161,19 +152,19 @@ export default function ResultsScreen() {
                 <AnimatedStatItem 
                   label="Total" 
                   value={totalNum.toString()} 
-                  icon="📝"
+                  icon={<FileIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
                   delay={600}
                 />
                 <AnimatedStatItem 
                   label="Correctes" 
                   value={`${scoreNum.toFixed(0)}%`} 
-                  icon="✅"
+                  icon={<CorrectIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
                   delay={700}
                 />
                 <AnimatedStatItem 
                   label="Incorrectes" 
                   value={incorrectNum.toString()} 
-                  icon="❌"
+                  icon={<FalseIcon size={24} color={BRAND_THEME.colors.gray[900]} />}
                   delay={800}
                 />
               </View>
@@ -185,7 +176,7 @@ export default function ResultsScreen() {
                 alignItems: 'center'
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 20, marginRight: 8 }}>⏱️</Text>
+                  <Ionicons name="time-outline" size={20} color={BRAND_THEME.colors.gray[600]} style={{ marginRight: 8 }} />
                   <Text style={{ color: BRAND_THEME.colors.gray[600] }}>Temps : </Text>
                   <Text style={{
                     color: BRAND_THEME.colors.gray[900],
@@ -276,7 +267,7 @@ function AnimatedStatItem({
 }: { 
   label: string
   value: string
-  icon: string
+  icon: React.ReactNode
   delay?: number
 }) {
   const scale = useRef(new Animated.Value(0)).current
@@ -300,7 +291,7 @@ function AnimatedStatItem({
       flex: 1,
       transform: [{ scale }]
     }}>
-      <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
+      <View style={{ marginBottom: 4 }}>{icon}</View>
       <Text style={{
         fontSize: 18,
         fontWeight: 'bold',

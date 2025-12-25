@@ -23,6 +23,7 @@ import { UserStatistics, ModuleStatistics, DeviceSession } from '@/types'
 import { YEARS } from '@/constants'
 import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
 
 export default function ProfileScreen() {
   const { user, signOut, getDeviceSessions } = useAuth()
@@ -239,12 +240,7 @@ export default function ProfileScreen() {
             </View>
           </FadeInView>
 
-          {/* Offline Mode */}
-          <FadeInView delay={250} animation="slideUp">
-            <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-               <OfflineContentCard />
-            </View>
-          </FadeInView>
+         
 
           {/* Saved Questions */}
           <FadeInView delay={300} animation="slideUp">
@@ -261,7 +257,7 @@ export default function ProfileScreen() {
                       justifyContent: 'center',
                       marginRight: 14,
                     }}>
-                      <Text style={{ fontSize: 20 }}>💾</Text>
+                      <SavesIcon size={22}  />
                     </View>
                     <View>
                       <Text style={{ fontSize: 16, fontWeight: '700', color: BRAND_THEME.colors.gray[900] }}>
@@ -272,7 +268,7 @@ export default function ProfileScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Text style={{ color: '#09B2AD', fontSize: 20, fontWeight: '600' }}>→</Text>
+                  <Text style={{  fontSize: 20, fontWeight: '600' }}>→</Text>
                 </View>
               </AnimatedPressableCard>
             </View>
@@ -288,15 +284,15 @@ export default function ProfileScreen() {
                 
                 <AnimatedPressableCard>
                   <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-                    <StatBox label="Total" value={stats.total_questions_attempted} icon="📝" />
-                    <StatBox label="Correctes" value={stats.total_correct_answers} icon="✅" />
-                    <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon="❌" />
+                    <StatBox label="Total" value={stats.total_questions_attempted} icon={<FileIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
+                    <StatBox label="Correctes" value={stats.total_correct_answers} icon={<CorrectIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
+                    <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
                   </View>
 
                   <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-                    <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon="⏱️" />
-                    <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon="📊" />
-                    <StatBox label="Modules" value={stats.modules_practiced} icon="📚" />
+                    <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
+                    <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
+                    <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={24} color={BRAND_THEME.colors.gray[900]} />} />
                   </View>
 
                   {stats.last_practice_date && (
@@ -541,10 +537,10 @@ function OfflineContentCard() {
 }
 
 // Stat Box
-function StatBox({ label, value, icon }: { label: string; value: number | string; icon: string }) {
+function StatBox({ label, value, icon }: { label: string; value: number | string; icon: React.ReactNode }) {
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
-      <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
+      <View style={{ marginBottom: 4 }}>{icon}</View>
       <Text style={{ fontSize: 20, fontWeight: '700', color: BRAND_THEME.colors.gray[900], marginBottom: 2 }}>{value}</Text>
       <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 12 }}>{label}</Text>
     </View>
