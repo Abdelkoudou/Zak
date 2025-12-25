@@ -17,3 +17,15 @@ export { FadeInView, StaggeredList } from './FadeInView'
 export { Skeleton, CardSkeleton, StatsSkeleton, ListSkeleton } from './SkeletonLoader'
 export { PremiumHeader, SimpleHeader } from './PremiumHeader'
 export { AnimatedListItem, AnimatedFlatList, AnimatedGrid } from './AnimatedList'
+
+// Premium Web Components
+export { WebHeader } from './WebHeader'
+export { 
+  PremiumCard, 
+  PremiumButton, 
+  StatsCard, 
+  ModuleCard, 
+  SectionHeader, 
+  EmptyState,
+  AnimatedCounter 
+} from './PremiumComponents'

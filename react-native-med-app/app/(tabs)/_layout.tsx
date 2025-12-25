@@ -1,42 +1,42 @@
 // ============================================================================
-// Tabs Layout - Premium Tab Bar with Smooth Animations
+// Tabs Layout - Premium Tab Bar with Responsive Design
 // ============================================================================
 
 import { useRef, useEffect } from 'react'
 import { Tabs } from 'expo-router'
-import { View, useWindowDimensions, Animated, Pressable } from 'react-native'
+import { View, useWindowDimensions, Animated, Pressable, Platform } from 'react-native'
 import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
+  const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 768
+  
+  // Hide tab bar on desktop web (use header navigation instead)
+  const showTabBar = !isWeb || !isDesktop
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
+        tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: isDesktop ? 70 : 85,
-          paddingBottom: isDesktop ? 10 : 25,
+          height: 85,
+          paddingBottom: 25,
           paddingTop: 12,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
           position: 'absolute',
           bottom: 0,
-          left: isDesktop ? (width - Math.min(width, 600)) / 2 : 0,
-          right: isDesktop ? (width - Math.min(width, 600)) / 2 : 0,
-          width: isDesktop ? Math.min(width, 600) : '100%',
+          left: 0,
+          right: 0,
           elevation: 0,
           shadowColor: '#09B2AD',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.15,
           shadowRadius: 12,
-          borderBottomLeftRadius: isDesktop ? 28 : 0,
-          borderBottomRightRadius: isDesktop ? 28 : 0,
-          marginBottom: isDesktop ? 20 : 0,
-        },
+        } : { display: 'none' },
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
         tabBarLabelStyle: {
@@ -45,7 +45,7 @@ export default function TabsLayout() {
           marginTop: 4,
           letterSpacing: 0.3,
         },
-        tabBarButton: (props) => <AnimatedTabButton {...props} />,
+        tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
     >
       <Tabs.Screen
