@@ -75,9 +75,10 @@ export default function WelcomeScreen() {
           <View style={{ 
             gap: 12, 
             flexDirection: isDesktop ? 'row' : 'column',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            alignItems: 'center'
           }}>
-            <View style={{ flex: isDesktop ? 1 : 0 }}>
+            <View style={{ width: isDesktop ? '48%' : '100%' }}>
               <Button 
                 title="Créer un compte" 
                 onPress={() => router.push('/(auth)/register')}
@@ -86,7 +87,7 @@ export default function WelcomeScreen() {
               />
             </View>
             
-            <View style={{ flex: isDesktop ? 1 : 0 }}>
+            <View style={{ width: isDesktop ? '48%' : '100%' }}>
               <Button 
                 title="Se connecter" 
                 onPress={() => router.push('/(auth)/login')}
