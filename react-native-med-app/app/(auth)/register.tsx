@@ -216,7 +216,7 @@ export default function RegisterScreen() {
             </View>
 
             {/* Register Button */}
-            <TouchableOpacity className={`py-4 rounded-xl mt-8 ${isLoading ? 'bg-primary-300' : 'bg-primary-500'}`} onPress={handleRegister} disabled={isLoading}>
+            <TouchableOpacity className={`py-4 rounded-xl mt-8 ${isLoading ? 'bg-primary-300' : 'bg-primary-500'}`} onPress={handleRegister} disabled={isLoading} style={{ zIndex: 200 }}>
               {isLoading ? <ActivityIndicator color="white" /> : <Text className="text-white text-center font-semibold text-lg">Créer mon compte</Text>}
             </TouchableOpacity>
 
