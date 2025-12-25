@@ -239,7 +239,7 @@ export async function fetchActivationKeys(filters?: {
   if (usedByIds.length > 0) {
     const { data: usersData } = await supabase
       .from('users')
-      .select('id, email, full_name, speciality, year_of_study, region')
+      .select('id, email, full_name, speciality, year_of_study, region, faculty')
       .in('id', usedByIds);
 
     if (usersData) {
@@ -487,6 +487,7 @@ function transformUser(row: Record<string, unknown>): ActivationKeyUser {
     speciality: row.speciality as Speciality | undefined,
     yearOfStudy: row.year_of_study as YearLevel | undefined,
     region: row.region as string | undefined,
+    faculty: row.faculty as string | undefined,
   };
 }
 

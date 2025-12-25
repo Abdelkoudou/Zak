@@ -724,14 +724,13 @@ export default function ActivationCodesPage() {
                        <tr 
                          key={code.id} 
                          className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${code.isUsed ? 'bg-primary-500/5' : ''} ${isSelected ? 'bg-primary-500/10 dark:bg-primary-500/5' : ''}`}
-                         onClick={() => toggleCodeSelection(code.id)}
+                         onClick={() => setSelectedCode(code)}
                        >
                          <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
                            <input
                              type="checkbox"
                              checked={isSelected}
                              onChange={() => toggleCodeSelection(code.id)}
-                             onClick={(e) => e.stopPropagation()}
                              className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
                            />
                          </td>
@@ -1038,9 +1037,9 @@ export default function ActivationCodesPage() {
                   </div>
                   
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {selectedCode.faculty && (
+                    {selectedCode.usedByUser.faculty && (
                       <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
-                        🏛️ {selectedCode.faculty.name}
+                        🏛️ {selectedCode.usedByUser.faculty}
                       </span>
                     )}
                     {selectedCode.usedByUser.speciality && (

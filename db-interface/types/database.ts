@@ -205,6 +205,7 @@ export interface ActivationKeyUser {
   speciality?: Speciality;
   yearOfStudy?: YearLevel;
   region?: string;
+  faculty?: string;
 }
 
 export interface DeviceSession {

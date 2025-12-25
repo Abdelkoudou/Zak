@@ -54,6 +54,7 @@ export default function ProfileScreen() {
   }, [loadData])
 
   const handleSignOut = () => {
+    console.log('Sign out button pressed')
     Alert.alert(
       'Déconnexion',
       'Êtes-vous sûr de vouloir vous déconnecter ?',
@@ -63,8 +64,15 @@ export default function ProfileScreen() {
           text: 'Déconnexion', 
           style: 'destructive',
           onPress: async () => {
-            await signOut()
-            router.replace('/(auth)/welcome')
+            console.log('Confirmed logout in Alert')
+            try {
+              console.log('Calling signOut()...')
+              await signOut()
+              console.log('signOut() finished, redirecting...')
+              router.replace('/(auth)/welcome')
+            } catch (e) {
+              console.error('Logout error:', e)
+            }
           }
         },
       ]
@@ -389,8 +397,35 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Logout Button */}
+        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+          <TouchableOpacity 
+            onPress={handleSignOut}
+            activeOpacity={0.7}
+            style={{
+              backgroundColor: '#FEF2F2',
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: 'center',
+              borderWidth: 1,
+              borderColor: '#FECACA',
+              flexDirection: 'row',
+              justifyContent: 'center'
+            }}
+          >
+            <Text style={{ fontSize: 18, marginRight: 8 }}>🚪</Text>
+            <Text style={{
+              color: '#DC2626',
+              fontSize: 16,
+              fontWeight: '600'
+            }}>
+              Se déconnecter
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Bottom Spacing */}
-        <View style={{ height: 32 }} />
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   )
