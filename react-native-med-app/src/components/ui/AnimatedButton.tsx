@@ -1,5 +1,5 @@
 // ============================================================================
-// Animated Button Component - Premium Press Effects
+// Animated Button Component - Ultra Premium Press Effects
 // ============================================================================
 
 import React, { useRef } from 'react'
@@ -12,8 +12,8 @@ import {
   TextStyle,
   View 
 } from 'react-native'
-import { COMPONENT_THEMES, BRAND_THEME } from '@/constants/theme'
-import { createScalePress, INITIAL_VALUES } from '@/lib/animations'
+import { BRAND_THEME } from '@/constants/theme'
+import { PREMIUM_SPRING } from '@/lib/premiumAnimations'
 
 interface AnimatedButtonProps {
   title: string
@@ -41,15 +41,38 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   style,
 }) => {
   const scale = useRef(new Animated.Value(1)).current
+  const shadowOpacity = useRef(new Animated.Value(variant === 'primary' ? 0.15 : 0)).current
 
   const handlePressIn = () => {
     if (!disabled && !loading) {
-      createScalePress(scale, 0.97).start()
+      Animated.parallel([
+        Animated.spring(scale, {
+          toValue: 0.96,
+          ...PREMIUM_SPRING.snappy,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shadowOpacity, {
+          toValue: 0.05,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+      ]).start()
     }
   }
 
   const handlePressOut = () => {
-    createScalePress(scale, 1).start()
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        ...PREMIUM_SPRING.bouncy,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shadowOpacity, {
+        toValue: variant === 'primary' ? 0.15 : 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start()
   }
 
   const getButtonStyles = (): ViewStyle => {

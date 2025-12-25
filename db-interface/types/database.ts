@@ -83,7 +83,7 @@ export interface Question {
   facultySource?: FacultySource;
   imageUrl?: string;  // URL to the image in storage
   createdBy?: string;
-  // Removed: explanation
+  explanation?: string;  // Optional explanation for the answer
   answers: Answer[];
   createdAt: Date;
   updatedAt: Date;
@@ -143,7 +143,7 @@ export interface QuestionFormData {
   moduleType?: ModuleType;
   facultySource?: FacultySource;
   imageUrl?: string;
-  // Removed: explanation
+  explanation?: string;  // Optional explanation for the answer
   answers: {
     optionLabel: string;
     answerText: string;

@@ -31,6 +31,7 @@ export default function QuestionsPage() {
     cours: [''],
     facultySource: undefined,
     imageUrl: undefined,
+    explanation: '',
     answers: [
       { optionLabel: 'A', answerText: '', isCorrect: false },
       { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -223,6 +224,7 @@ export default function QuestionsPage() {
       module_type: formData.moduleType || selectedModule?.type,
       faculty_source: formData.facultySource || undefined,
       image_url: formData.imageUrl || undefined,
+      explanation: formData.explanation || undefined,
       answers: validAnswers.map((answer, idx) => ({
         option_label: answer.optionLabel as 'A' | 'B' | 'C' | 'D' | 'E',
         answer_text: answer.answerText,
@@ -282,9 +284,10 @@ export default function QuestionsPage() {
       questionText: '',
       speciality: 'Médecine',
       cours: [''],
-      facultySource: undefined,
-      imageUrl: undefined,
-      answers: [
+    facultySource: undefined,
+    imageUrl: undefined,
+    explanation: '',
+    answers: [
         { optionLabel: 'A', answerText: '', isCorrect: false },
         { optionLabel: 'B', answerText: '', isCorrect: false },
         { optionLabel: 'C', answerText: '', isCorrect: false },
@@ -311,6 +314,7 @@ export default function QuestionsPage() {
       moduleType: question.module_type,
       facultySource: question.faculty_source || undefined,
       imageUrl: question.image_url || undefined,
+      explanation: question.explanation || '',
       answers: question.answers.map((a: any) => ({
         optionLabel: a.option_label,
         answerText: a.answer_text,
@@ -942,6 +946,22 @@ export default function QuestionsPage() {
                   rows={4}
                   placeholder="Entrez votre question ici..."
                   required
+                />
+              </div>
+
+              {/* Explanation Text */}
+              <div className="mt-4 md:mt-6">
+                <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
+                  Explication (Optionnelle)
+                </label>
+                <textarea
+                  value={formData.explanation || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, explanation: e.target.value })
+                  }
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
+                  rows={3}
+                  placeholder="Expliquez la réponse correcte..."
                 />
               </div>
 

@@ -42,8 +42,11 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 8,
+          marginTop: 10,
           letterSpacing: 0.3,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
         },
         tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
@@ -112,6 +115,7 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
       justifyContent: 'center',
       opacity: opacityAnim,
       transform: [{ scale: scaleAnim }],
+      marginBottom: 2,
     }}>
       {children}
     </Animated.View>

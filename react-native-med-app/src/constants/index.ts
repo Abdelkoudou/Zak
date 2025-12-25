@@ -7,6 +7,10 @@ import { YearLevel, ModuleType, ExamType, Speciality, ResourceType } from '@/typ
 // Export theme
 export * from './theme'
 
+// Export theme context
+export { useTheme, ThemeProvider } from '@/context/ThemeContext'
+export type { ThemeColors, ThemeMode } from '@/context/ThemeContext'
+
 // ============================================================================
 // Years
 // ============================================================================

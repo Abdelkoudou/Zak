@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className="bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <body className="bg-theme-main text-theme-main">
         <ThemeProvider>
           <SessionManager />
           <div className="flex flex-col md:flex-row min-h-screen">

@@ -1,5 +1,5 @@
 // ============================================================================
-// Login Screen - Ultra Premium UI with Smooth Animations
+// Login Screen - Stunning Premium UI with Jaw-Dropping Animations
 // ============================================================================
 
 import { useState, useRef, useEffect } from 'react'
@@ -13,7 +13,6 @@ import {
   Image,
   useWindowDimensions,
   Animated,
-  Easing
 } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -22,6 +21,13 @@ import { useAuth } from '@/context/AuthContext'
 import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
+import {
+  PREMIUM_TIMING,
+  PREMIUM_EASING,
+  PREMIUM_SPRING,
+  createFloatingAnimation,
+  createGlowPulse,
+} from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('@/assets/images/logo.png')
@@ -38,124 +44,154 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  // Premium Animations
-  const logoScale = useRef(new Animated.Value(0.5)).current
+  // ========== Premium Animation Values ==========
+  // Logo animations
+  const logoScale = useRef(new Animated.Value(0.3)).current
   const logoOpacity = useRef(new Animated.Value(0)).current
   const logoRotate = useRef(new Animated.Value(0)).current
-  const formOpacity = useRef(new Animated.Value(0)).current
-  const formSlide = useRef(new Animated.Value(40)).current
-  const inputsOpacity = useRef(new Animated.Value(0)).current
-  const inputsSlide = useRef(new Animated.Value(30)).current
+  
+  // Header animations
+  const headerOpacity = useRef(new Animated.Value(0)).current
+  const headerSlide = useRef(new Animated.Value(30)).current
+  
+  // Welcome card animations
+  const cardOpacity = useRef(new Animated.Value(0)).current
+  const cardSlide = useRef(new Animated.Value(50)).current
+  const cardScale = useRef(new Animated.Value(0.9)).current
+  
+  // Input animations (staggered)
+  const input1Opacity = useRef(new Animated.Value(0)).current
+  const input1Slide = useRef(new Animated.Value(30)).current
+  
+  const input2Opacity = useRef(new Animated.Value(0)).current
+  const input2Slide = useRef(new Animated.Value(30)).current
+  
+  // Forgot password link
+  const forgotOpacity = useRef(new Animated.Value(0)).current
+  
+  // Button animations
   const buttonOpacity = useRef(new Animated.Value(0)).current
   const buttonSlide = useRef(new Animated.Value(40)).current
-  const floatingY = useRef(new Animated.Value(0)).current
-  const glowPulse = useRef(new Animated.Value(0.3)).current
+  const buttonScale = useRef(new Animated.Value(0.9)).current
+  
+  // Footer animation
+  const footerOpacity = useRef(new Animated.Value(0)).current
+  
+  // Ambient animations
+  const floatingY1 = useRef(new Animated.Value(0)).current
+  const floatingY2 = useRef(new Animated.Value(0)).current
+  const glowPulse = useRef(new Animated.Value(0.2)).current
+  const breathingScale = useRef(new Animated.Value(1)).current
 
-  // Floating animation for decorative elements
+  // ========== Ambient Animations ==========
   useEffect(() => {
+    createFloatingAnimation(floatingY1, 10).start()
+    
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatingY, {
-          toValue: -12,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
+        Animated.timing(floatingY2, {
+          toValue: -15,
+          duration: PREMIUM_TIMING.ambient * 1.1,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
-        Animated.timing(floatingY, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
+        Animated.timing(floatingY2, {
+          toValue: 15,
+          duration: PREMIUM_TIMING.ambient * 1.1,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
       ])
     ).start()
 
-    // Glow pulse animation
+    createGlowPulse(glowPulse, 0.15, 0.45).start()
+    
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowPulse, {
-          toValue: 0.7,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(breathingScale, {
+          toValue: 1.02,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
-        Animated.timing(glowPulse, {
-          toValue: 0.3,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(breathingScale, {
+          toValue: 1,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
       ])
     ).start()
   }, [])
 
+  // ========== Entrance Animation Sequence ==========
   useEffect(() => {
-    // Premium entrance sequence
-    Animated.sequence([
-      // Logo entrance
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 5,
-          tension: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 500,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoRotate, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.out(Easing.back(1.2)),
-          useNativeDriver: true,
-        }),
-      ]),
-      // Form header
-      Animated.parallel([
-        Animated.timing(formOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(formSlide, {
-          toValue: 0,
-          friction: 8,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Inputs
-      Animated.parallel([
-        Animated.timing(inputsOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(inputsSlide, {
-          toValue: 0,
-          friction: 8,
-          tension: 60,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Button
-      Animated.parallel([
-        Animated.timing(buttonOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(buttonSlide, {
-          toValue: 0,
-          friction: 8,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]),
+    // Total animation duration: 1 second (1000ms)
+    // 6 phases with ~160ms stagger = ~1000ms total
+    const staggerDelay = 160
+    
+    // Phase 1: Logo (immediate)
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        ...PREMIUM_SPRING.stiff,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 150,
+        easing: PREMIUM_EASING.elegantOut,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 200,
+        easing: PREMIUM_EASING.dramaticEntrance,
+        useNativeDriver: true,
+      }),
     ]).start()
+    
+    // Phase 2: Header (160ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(headerOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(headerSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay)
+    
+    // Phase 3: Welcome card (320ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(cardSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(cardScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 2)
+    
+    // Phase 4: Both inputs together (480ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(input1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(input1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(input2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(input2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 3)
+    
+    // Phase 5: Forgot + Button (640ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(forgotOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.timing(buttonOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(buttonSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(buttonScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 4)
+    
+    // Phase 6: Footer (800ms, completes ~1000ms)
+    setTimeout(() => {
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+    }, staggerDelay * 5)
   }, [])
 
   const handleLogin = async () => {
@@ -180,10 +216,11 @@ export default function LoginScreen() {
 
   const logoSpin = logoRotate.interpolate({
     inputRange: [0, 1],
-    outputRange: ['-8deg', '0deg'],
+    outputRange: ['-12deg', '0deg'],
   })
 
-  // Desktop Layout
+
+  // ========== Desktop Layout ==========
   if (isDesktop) {
     return (
       <View style={{ flex: 1, flexDirection: 'row', backgroundColor: '#ffffff' }}>
@@ -210,7 +247,7 @@ export default function LoginScreen() {
             height: 300, 
             borderRadius: 150, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY }],
+            transform: [{ translateY: floatingY1 }],
           }} />
           <Animated.View style={{ 
             position: 'absolute', 
@@ -230,12 +267,15 @@ export default function LoginScreen() {
             height: 80, 
             borderRadius: 40, 
             backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            transform: [{ translateY: Animated.multiply(floatingY, -0.7) }],
+            transform: [{ translateY: floatingY2 }],
           }} />
 
           <Animated.View style={{
             opacity: logoOpacity,
-            transform: [{ scale: logoScale }, { rotate: logoSpin }],
+            transform: [
+              { scale: Animated.multiply(logoScale, breathingScale) }, 
+              { rotate: logoSpin }
+            ],
             alignItems: 'center',
           }}>
             <View style={{
@@ -250,8 +290,8 @@ export default function LoginScreen() {
               backdropFilter: isWeb ? 'blur(25px)' : undefined,
               shadowColor: '#ffffff',
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.25,
-              shadowRadius: 25,
+              shadowOpacity: 0.3,
+              shadowRadius: 30,
             }}>
               <Image 
                 source={Logo}
@@ -259,47 +299,53 @@ export default function LoginScreen() {
               />
             </View>
             
-            <Text style={{
-              fontSize: 48,
-              fontWeight: '900',
-              color: '#ffffff',
-              textAlign: 'center',
-              marginBottom: 8,
-              letterSpacing: -2,
-              textShadowColor: 'rgba(0, 0, 0, 0.1)',
-              textShadowOffset: { width: 0, height: 2 },
-              textShadowRadius: 10,
-            }}>
-              FMC APP
-            </Text>
-            
-            <View style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              paddingHorizontal: 16,
-              paddingVertical: 6,
-              borderRadius: 16,
-              marginBottom: 12,
+            <Animated.View style={{
+              opacity: headerOpacity,
+              transform: [{ translateY: headerSlide }],
+              alignItems: 'center',
             }}>
               <Text style={{
-                fontSize: 12,
+                fontSize: 48,
+                fontWeight: '900',
                 color: '#ffffff',
-                fontWeight: '700',
-                letterSpacing: 1.5,
-                textTransform: 'uppercase',
+                textAlign: 'center',
+                marginBottom: 8,
+                letterSpacing: -2,
+                textShadowColor: 'rgba(0, 0, 0, 0.15)',
+                textShadowOffset: { width: 0, height: 4 },
+                textShadowRadius: 12,
               }}>
-                Premium Medical Learning
+                FMC APP
               </Text>
-            </View>
-            
-            <Text style={{
-              fontSize: 18,
-              color: 'rgba(255, 255, 255, 0.85)',
-              textAlign: 'center',
-              lineHeight: 28,
-              maxWidth: 360,
-            }}>
-              Votre compagnon pour réussir vos examens médicaux
-            </Text>
+              
+              <View style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                paddingHorizontal: 16,
+                paddingVertical: 6,
+                borderRadius: 16,
+                marginBottom: 12,
+              }}>
+                <Text style={{
+                  fontSize: 12,
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  letterSpacing: 1.5,
+                  textTransform: 'uppercase',
+                }}>
+                  Premium Medical Learning
+                </Text>
+              </View>
+              
+              <Text style={{
+                fontSize: 18,
+                color: 'rgba(255, 255, 255, 0.85)',
+                textAlign: 'center',
+                lineHeight: 28,
+                maxWidth: 360,
+              }}>
+                Votre compagnon pour réussir vos examens médicaux
+              </Text>
+            </Animated.View>
           </Animated.View>
         </LinearGradient>
 
@@ -310,12 +356,7 @@ export default function LoginScreen() {
           alignItems: 'center',
           padding: 60,
         }}>
-          <Animated.View style={{
-            opacity: formOpacity,
-            transform: [{ translateY: formSlide }],
-            width: '100%',
-            maxWidth: 440,
-          }}>
+          <View style={{ width: '100%', maxWidth: 440 }}>
             {/* Back Button */}
             <TouchableOpacity 
               style={{ marginBottom: 36 }}
@@ -333,22 +374,27 @@ export default function LoginScreen() {
               </View>
             </TouchableOpacity>
 
-            <Text style={{
-              fontSize: 38,
-              fontWeight: '900',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 8,
-              letterSpacing: -1,
+            <Animated.View style={{
+              opacity: cardOpacity,
+              transform: [{ translateY: cardSlide }, { scale: cardScale }],
             }}>
-              Bon retour ! 👋
-            </Text>
-            <Text style={{
-              fontSize: 17,
-              color: BRAND_THEME.colors.gray[500],
-              marginBottom: 40,
-            }}>
-              Connectez-vous pour continuer votre apprentissage
-            </Text>
+              <Text style={{
+                fontSize: 38,
+                fontWeight: '900',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 8,
+                letterSpacing: -1,
+              }}>
+                Bon retour ! 👋
+              </Text>
+              <Text style={{
+                fontSize: 17,
+                color: BRAND_THEME.colors.gray[500],
+                marginBottom: 40,
+              }}>
+                Connectez-vous pour continuer votre apprentissage
+              </Text>
+            </Animated.View>
 
             {/* Error */}
             {error && (
@@ -364,9 +410,9 @@ export default function LoginScreen() {
 
             {/* Form */}
             <Animated.View style={{ 
-              marginBottom: 24,
-              opacity: inputsOpacity,
-              transform: [{ translateY: inputsSlide }],
+              marginBottom: 20,
+              opacity: input1Opacity,
+              transform: [{ translateY: input1Slide }],
             }}>
               <Input
                 label="Adresse email"
@@ -374,9 +420,14 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={setEmail}
                 leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>}
-                style={{ marginBottom: 20 }}
               />
+            </Animated.View>
 
+            <Animated.View style={{ 
+              marginBottom: 24,
+              opacity: input2Opacity,
+              transform: [{ translateY: input2Slide }],
+            }}>
               <Input
                 label="Mot de passe"
                 placeholder="••••••••"
@@ -387,22 +438,24 @@ export default function LoginScreen() {
               />
             </Animated.View>
 
-            <TouchableOpacity 
-              style={{ marginBottom: 32, alignSelf: 'flex-start' }}
-              onPress={() => router.push('/(auth)/forgot-password')}
-            >
-              <Text style={{
-                color: '#09B2AD',
-                fontSize: 15,
-                fontWeight: '600',
-              }}>
-                Mot de passe oublié ?
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={{ opacity: forgotOpacity }}>
+              <TouchableOpacity 
+                style={{ marginBottom: 32, alignSelf: 'flex-start' }}
+                onPress={() => router.push('/(auth)/forgot-password')}
+              >
+                <Text style={{
+                  color: '#09B2AD',
+                  fontSize: 15,
+                  fontWeight: '600',
+                }}>
+                  Mot de passe oublié ?
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             <Animated.View style={{
               opacity: buttonOpacity,
-              transform: [{ translateY: buttonSlide }],
+              transform: [{ translateY: buttonSlide }, { scale: buttonScale }],
             }}>
               <AnimatedButton 
                 title="Se connecter"
@@ -413,11 +466,12 @@ export default function LoginScreen() {
               />
             </Animated.View>
 
-            <View style={{ 
+            <Animated.View style={{ 
               flexDirection: 'row', 
               justifyContent: 'center',
               alignItems: 'center',
               marginTop: 32,
+              opacity: footerOpacity,
             }}>
               <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>
                 Pas encore de compte ?{' '}
@@ -431,14 +485,14 @@ export default function LoginScreen() {
                   S'inscrire
                 </Text>
               </TouchableOpacity>
-            </View>
-          </Animated.View>
+            </Animated.View>
+          </View>
         </View>
       </View>
     )
   }
 
-  // Mobile/Tablet Layout - Premium Design
+  // ========== Mobile/Tablet Layout ==========
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <KeyboardAvoidingView 
@@ -475,7 +529,7 @@ export default function LoginScreen() {
               height: 150, 
               borderRadius: 75, 
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              transform: [{ translateY: floatingY }],
+              transform: [{ translateY: floatingY1 }],
             }} />
             <Animated.View style={{ 
               position: 'absolute', 
@@ -508,7 +562,10 @@ export default function LoginScreen() {
             {/* Logo */}
             <Animated.View style={{
               opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
+              transform: [
+                { scale: Animated.multiply(logoScale, breathingScale) },
+                { rotate: logoSpin }
+              ],
               alignItems: 'center',
             }}>
               <View style={{
@@ -521,8 +578,8 @@ export default function LoginScreen() {
                 marginBottom: 16,
                 shadowColor: '#ffffff',
                 shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: 0.2,
-                shadowRadius: 15,
+                shadowOpacity: 0.3,
+                shadowRadius: 20,
               }}>
                 <Image 
                   source={Logo}
@@ -534,25 +591,31 @@ export default function LoginScreen() {
                 />
               </View>
               
-              <Text style={{
-                fontSize: isTablet ? 36 : 30,
-                fontWeight: '900',
-                color: '#ffffff',
-                marginBottom: 4,
-                letterSpacing: -1,
-                textShadowColor: 'rgba(0, 0, 0, 0.1)',
-                textShadowOffset: { width: 0, height: 2 },
-                textShadowRadius: 8,
+              <Animated.View style={{
+                opacity: headerOpacity,
+                transform: [{ translateY: headerSlide }],
+                alignItems: 'center',
               }}>
-                FMC APP
-              </Text>
-              <Text style={{
-                fontSize: 14,
-                color: 'rgba(255, 255, 255, 0.85)',
-                fontWeight: '600',
-              }}>
-                Connexion à votre compte
-              </Text>
+                <Text style={{
+                  fontSize: isTablet ? 36 : 30,
+                  fontWeight: '900',
+                  color: '#ffffff',
+                  marginBottom: 4,
+                  letterSpacing: -1,
+                  textShadowColor: 'rgba(0, 0, 0, 0.15)',
+                  textShadowOffset: { width: 0, height: 3 },
+                  textShadowRadius: 10,
+                }}>
+                  FMC APP
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  color: 'rgba(255, 255, 255, 0.85)',
+                  fontWeight: '600',
+                }}>
+                  Connexion à votre compte
+                </Text>
+              </Animated.View>
             </Animated.View>
           </LinearGradient>
 
@@ -569,8 +632,8 @@ export default function LoginScreen() {
           }}>
             {/* Welcome Card */}
             <Animated.View style={{
-              opacity: formOpacity,
-              transform: [{ translateY: formSlide }],
+              opacity: cardOpacity,
+              transform: [{ translateY: cardSlide }, { scale: cardScale }],
               backgroundColor: '#ffffff',
               borderRadius: 24,
               padding: 24,
@@ -610,9 +673,9 @@ export default function LoginScreen() {
 
             {/* Form Inputs */}
             <Animated.View style={{
-              opacity: inputsOpacity,
-              transform: [{ translateY: inputsSlide }],
-              marginBottom: 24,
+              opacity: input1Opacity,
+              transform: [{ translateY: input1Slide }],
+              marginBottom: 16,
             }}>
               <Input
                 label="Adresse email"
@@ -620,9 +683,14 @@ export default function LoginScreen() {
                 value={email}
                 onChangeText={setEmail}
                 leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>}
-                style={{ marginBottom: 16 }}
               />
+            </Animated.View>
 
+            <Animated.View style={{
+              opacity: input2Opacity,
+              transform: [{ translateY: input2Slide }],
+              marginBottom: 24,
+            }}>
               <Input
                 label="Mot de passe"
                 placeholder="••••••••"
@@ -633,22 +701,24 @@ export default function LoginScreen() {
               />
             </Animated.View>
 
-            <TouchableOpacity 
-              style={{ marginBottom: 28, alignSelf: 'center' }}
-              onPress={() => router.push('/(auth)/forgot-password')}
-            >
-              <Text style={{
-                color: '#09B2AD',
-                fontSize: 15,
-                fontWeight: '600',
-              }}>
-                Mot de passe oublié ?
-              </Text>
-            </TouchableOpacity>
+            <Animated.View style={{ opacity: forgotOpacity }}>
+              <TouchableOpacity 
+                style={{ marginBottom: 28, alignSelf: 'center' }}
+                onPress={() => router.push('/(auth)/forgot-password')}
+              >
+                <Text style={{
+                  color: '#09B2AD',
+                  fontSize: 15,
+                  fontWeight: '600',
+                }}>
+                  Mot de passe oublié ?
+                </Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             <Animated.View style={{
               opacity: buttonOpacity,
-              transform: [{ translateY: buttonSlide }],
+              transform: [{ translateY: buttonSlide }, { scale: buttonScale }],
             }}>
               <AnimatedButton 
                 title="Se connecter"
@@ -659,11 +729,12 @@ export default function LoginScreen() {
               />
             </Animated.View>
 
-            <View style={{ 
+            <Animated.View style={{ 
               flexDirection: 'row', 
               justifyContent: 'center',
               alignItems: 'center',
               marginTop: 24,
+              opacity: footerOpacity,
             }}>
               <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>
                 Pas encore de compte ?{' '}
@@ -677,10 +748,10 @@ export default function LoginScreen() {
                   S'inscrire
                 </Text>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
 
             {/* Footer */}
-            <View style={{ marginTop: 'auto', paddingTop: 24, alignItems: 'center' }}>
+            <Animated.View style={{ marginTop: 'auto', paddingTop: 24, alignItems: 'center', opacity: footerOpacity }}>
               <Text style={{
                 fontSize: 13,
                 color: BRAND_THEME.colors.gray[400],
@@ -688,7 +759,7 @@ export default function LoginScreen() {
               }}>
                 🔒 Connexion sécurisée
               </Text>
-            </View>
+            </Animated.View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

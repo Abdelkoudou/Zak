@@ -27,6 +27,7 @@ export interface CreateQuestionData {
   module_type?: string;
   faculty_source?: FacultySource;  // Source: Faculté Mère ou Annexes
   image_url?: string;  // URL to uploaded image
+  explanation?: string;  // Optional explanation for the answer
   answers: {
     option_label: 'A' | 'B' | 'C' | 'D' | 'E';
     answer_text: string;
@@ -65,6 +66,7 @@ export async function createQuestion(data: CreateQuestionData) {
           module_type: data.module_type,
           faculty_source: data.faculty_source || null,
           image_url: data.image_url || null,
+          explanation: data.explanation || null,
         },
         answers: data.answers,
       }),
@@ -199,6 +201,7 @@ export async function updateQuestion(
           module_type: data.module_type,
           faculty_source: data.faculty_source || null,
           image_url: data.image_url || null,
+          explanation: data.explanation || null,
         },
         answers: data.answers,
       }),

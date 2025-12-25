@@ -6,17 +6,18 @@
 import { Animated, Easing } from 'react-native'
 import { useCallback, useRef } from 'react'
 import { useFocusEffect } from 'expo-router'
+import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING } from './premiumAnimations'
 
 // ============================================================================
-// Animation Timing Presets
+// Animation Timing Presets (Legacy - use PREMIUM_TIMING instead)
 // ============================================================================
 
 export const ANIMATION_DURATION = {
   instant: 80,
-  fast: 150,
-  normal: 250,
-  slow: 400,
-  verySlow: 600,
+  fast: PREMIUM_TIMING.quick,
+  normal: PREMIUM_TIMING.smooth,
+  slow: PREMIUM_TIMING.elegant,
+  verySlow: PREMIUM_TIMING.dramatic,
 } as const
 
 export const ANIMATION_EASING = {
@@ -31,11 +32,11 @@ export const ANIMATION_EASING = {
   bounce: Easing.bounce,
   elastic: Easing.elastic(1),
   
-  // Custom premium easings - smoother curves
-  smooth: Easing.bezier(0.4, 0, 0.2, 1),
-  snappy: Easing.bezier(0.2, 0, 0, 1),
-  premium: Easing.bezier(0.16, 1, 0.3, 1),
-  spring: Easing.bezier(0.34, 1.56, 0.64, 1),
+  // Premium easings (mapped from premiumAnimations)
+  smooth: PREMIUM_EASING.appleSmooth,
+  snappy: PREMIUM_EASING.snappy,
+  premium: PREMIUM_EASING.elegantOut,
+  spring: PREMIUM_EASING.dramaticEntrance,
 } as const
 
 // ============================================================================
@@ -55,24 +56,22 @@ export function useAnimateOnFocus() {
       translateY.setValue(15)
       scale.setValue(0.97)
 
-      // Run entrance animation
+      // Run entrance animation with premium springs
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
-          duration: ANIMATION_DURATION.normal,
-          easing: ANIMATION_EASING.smooth,
+          duration: PREMIUM_TIMING.quick,
+          easing: PREMIUM_EASING.appleSmooth,
           useNativeDriver: true,
         }),
-        Animated.timing(translateY, {
+        Animated.spring(translateY, {
           toValue: 0,
-          duration: ANIMATION_DURATION.normal,
-          easing: ANIMATION_EASING.premium,
+          ...PREMIUM_SPRING.snappy,
           useNativeDriver: true,
         }),
-        Animated.timing(scale, {
+        Animated.spring(scale, {
           toValue: 1,
-          duration: ANIMATION_DURATION.normal,
-          easing: ANIMATION_EASING.smooth,
+          ...PREMIUM_SPRING.gentle,
           useNativeDriver: true,
         }),
       ]).start()
@@ -91,11 +90,11 @@ export function useAnimateOnFocus() {
 // For staggered list animations that replay on focus
 // ============================================================================
 
-export function useStaggerAnimateOnFocus(itemCount: number, staggerDelay = 40) {
+export function useStaggerAnimateOnFocus(itemCount: number, staggerDelay = 50) {
   const animations = useRef(
     Array.from({ length: Math.max(itemCount, 20) }, () => ({
       opacity: new Animated.Value(0),
-      translateY: new Animated.Value(12),
+      translateY: new Animated.Value(15),
     }))
   ).current
 
@@ -104,24 +103,23 @@ export function useStaggerAnimateOnFocus(itemCount: number, staggerDelay = 40) {
       // Reset all values
       animations.forEach((anim) => {
         anim.opacity.setValue(0)
-        anim.translateY.setValue(12)
+        anim.translateY.setValue(15)
       })
 
-      // Create staggered animations
+      // Create staggered animations with premium springs
       const animationSequence = animations.slice(0, itemCount).map((anim, index) =>
         Animated.parallel([
           Animated.timing(anim.opacity, {
             toValue: 1,
-            duration: ANIMATION_DURATION.fast,
+            duration: PREMIUM_TIMING.quick,
             delay: index * staggerDelay,
-            easing: ANIMATION_EASING.smooth,
+            easing: PREMIUM_EASING.appleSmooth,
             useNativeDriver: true,
           }),
-          Animated.timing(anim.translateY, {
+          Animated.spring(anim.translateY, {
             toValue: 0,
-            duration: ANIMATION_DURATION.fast,
             delay: index * staggerDelay,
-            easing: ANIMATION_EASING.premium,
+            ...PREMIUM_SPRING.snappy,
             useNativeDriver: true,
           }),
         ])

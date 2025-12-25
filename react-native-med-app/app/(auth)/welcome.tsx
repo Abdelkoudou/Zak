@@ -1,14 +1,22 @@
 // ============================================================================
-// Welcome Screen - Ultra Premium Landing Page with Smooth Animations
+// Welcome Screen - Stunning Premium Landing with Jaw-Dropping Animations
 // ============================================================================
 
 import { useEffect, useRef } from 'react'
-import { View, Text, ScrollView, Image, Animated, useWindowDimensions, Platform, Easing } from 'react-native'
+import { View, Text, ScrollView, Image, Animated, useWindowDimensions, Platform } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { AnimatedButton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import {
+  PREMIUM_TIMING,
+  PREMIUM_EASING,
+  PREMIUM_SPRING,
+  PREMIUM_INITIAL,
+  createFloatingAnimation,
+  createGlowPulse,
+} from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('@/assets/images/logo.png')
@@ -20,131 +28,206 @@ export default function WelcomeScreen() {
   const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = isDesktop ? 1200 : 500
 
-  // Premium Animations
-  const logoScale = useRef(new Animated.Value(0.3)).current
+  // ========== Premium Animation Values ==========
+  // Logo animations
+  const logoScale = useRef(new Animated.Value(PREMIUM_INITIAL.logoScale)).current
   const logoOpacity = useRef(new Animated.Value(0)).current
   const logoRotate = useRef(new Animated.Value(0)).current
+  const logoGlow = useRef(new Animated.Value(0)).current
+  
+  // Title animations
   const titleOpacity = useRef(new Animated.Value(0)).current
-  const titleSlide = useRef(new Animated.Value(50)).current
+  const titleSlide = useRef(new Animated.Value(40)).current
+  const titleScale = useRef(new Animated.Value(0.9)).current
+  
+  // Subtitle animations
   const subtitleOpacity = useRef(new Animated.Value(0)).current
-  const buttonsSlide = useRef(new Animated.Value(80)).current
-  const buttonsOpacity = useRef(new Animated.Value(0)).current
-  const glowPulse = useRef(new Animated.Value(0.3)).current
-  const floatingY = useRef(new Animated.Value(0)).current
+  const subtitleSlide = useRef(new Animated.Value(25)).current
+  
+  // Badge animation
+  const badgeOpacity = useRef(new Animated.Value(0)).current
+  const badgeScale = useRef(new Animated.Value(0.5)).current
+  
+  // Tagline card animations
+  const taglineOpacity = useRef(new Animated.Value(0)).current
+  const taglineSlide = useRef(new Animated.Value(60)).current
+  const taglineScale = useRef(new Animated.Value(0.85)).current
+  
+  // Button animations (staggered)
+  const button1Opacity = useRef(new Animated.Value(0)).current
+  const button1Slide = useRef(new Animated.Value(40)).current
+  const button1Scale = useRef(new Animated.Value(0.9)).current
+  
+  const button2Opacity = useRef(new Animated.Value(0)).current
+  const button2Slide = useRef(new Animated.Value(40)).current
+  const button2Scale = useRef(new Animated.Value(0.9)).current
+  
+  // Footer animation
+  const footerOpacity = useRef(new Animated.Value(0)).current
+  
+  // Ambient animations
+  const floatingY1 = useRef(new Animated.Value(0)).current
+  const floatingY2 = useRef(new Animated.Value(0)).current
+  const floatingY3 = useRef(new Animated.Value(0)).current
+  const glowPulse = useRef(new Animated.Value(0.2)).current
+  const breathingScale = useRef(new Animated.Value(1)).current
 
-  // Floating animation for decorative elements
+  // ========== Ambient Animations (Continuous) ==========
   useEffect(() => {
+    // Multiple floating elements at different speeds
+    createFloatingAnimation(floatingY1, 12).start()
+    
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatingY, {
-          toValue: -15,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
+        Animated.timing(floatingY2, {
+          toValue: -18,
+          duration: PREMIUM_TIMING.ambient * 1.2,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
-        Animated.timing(floatingY, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
+        Animated.timing(floatingY2, {
+          toValue: 18,
+          duration: PREMIUM_TIMING.ambient * 1.2,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+    
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY3, {
+          toValue: -8,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingY3, {
+          toValue: 8,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
       ])
     ).start()
 
-    // Glow pulse animation
+    // Glow pulse
+    createGlowPulse(glowPulse, 0.15, 0.5).start()
+    
+    // Logo breathing
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowPulse, {
-          toValue: 0.8,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(breathingScale, {
+          toValue: 1.03,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
-        Animated.timing(glowPulse, {
-          toValue: 0.3,
-          duration: 1500,
-          easing: Easing.inOut(Easing.ease),
+        Animated.timing(breathingScale, {
+          toValue: 1,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
       ])
     ).start()
   }, [])
 
+  // ========== Entrance Animation Sequence ==========
   useEffect(() => {
-    // Premium entrance sequence
-    Animated.sequence([
-      // Logo entrance with bounce
-      Animated.parallel([
-        Animated.spring(logoScale, {
-          toValue: 1,
-          friction: 5,
-          tension: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoRotate, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.back(1.5)),
-          useNativeDriver: true,
-        }),
-      ]),
-      // Title slide in
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 500,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(titleSlide, {
-          toValue: 0,
-          friction: 7,
-          tension: 50,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Subtitle fade
-      Animated.timing(subtitleOpacity, {
+    // Total animation duration: 1 second (1000ms)
+    // 7 phases with ~140ms stagger = ~1000ms total
+    const staggerDelay = 140
+    
+    // Phase 1: Logo (immediate)
+    Animated.parallel([
+      Animated.spring(logoScale, {
         toValue: 1,
-        duration: 400,
+        ...PREMIUM_SPRING.stiff,
         useNativeDriver: true,
       }),
-      // Buttons
-      Animated.parallel([
-        Animated.timing(buttonsOpacity, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(buttonsSlide, {
-          toValue: 0,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 150,
+        easing: PREMIUM_EASING.elegantOut,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 200,
+        easing: PREMIUM_EASING.dramaticEntrance,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoGlow, {
+        toValue: 1,
+        duration: 200,
+        easing: PREMIUM_EASING.elegantOut,
+        useNativeDriver: true,
+      }),
     ]).start()
+    
+    // Phase 2: Title + Badge (140ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(titleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(titleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(titleScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(badgeOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(badgeScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay)
+    
+    // Phase 3: Subtitle (280ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(subtitleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(subtitleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 2)
+    
+    // Phase 4: Tagline card (420ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(taglineOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(taglineSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(taglineScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 3)
+    
+    // Phase 5: First button (560ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(button1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(button1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(button1Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 4)
+    
+    // Phase 6: Second button (700ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(button2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(button2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(button2Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 5)
+    
+    // Phase 7: Footer (840ms, completes ~1000ms)
+    setTimeout(() => {
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+    }, staggerDelay * 6)
   }, [])
 
   const logoSpin = logoRotate.interpolate({
     inputRange: [0, 1],
-    outputRange: ['-10deg', '0deg'],
+    outputRange: ['-15deg', '0deg'],
   })
 
-  // Desktop Layout
+
+  // ========== Desktop Layout ==========
   if (isDesktop) {
     return (
-      <View style={{ 
-        flex: 1, 
-        backgroundColor: '#ffffff',
-        flexDirection: 'row',
-      }}>
+      <View style={{ flex: 1, backgroundColor: '#ffffff', flexDirection: 'row' }}>
         {/* Left Side - Hero with Gradient */}
         <LinearGradient
           colors={['#0D9488', '#09B2AD', '#14B8A6']}
@@ -168,7 +251,7 @@ export default function WelcomeScreen() {
             height: 400, 
             borderRadius: 200, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY }],
+            transform: [{ translateY: floatingY1 }],
           }} />
           <Animated.View style={{ 
             position: 'absolute', 
@@ -188,7 +271,7 @@ export default function WelcomeScreen() {
             height: 120, 
             borderRadius: 60, 
             backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            transform: [{ translateY: Animated.multiply(floatingY, -0.5) }],
+            transform: [{ translateY: floatingY2 }],
           }} />
           <Animated.View style={{ 
             position: 'absolute', 
@@ -198,12 +281,15 @@ export default function WelcomeScreen() {
             height: 80, 
             borderRadius: 40, 
             backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            transform: [{ translateY: Animated.multiply(floatingY, 0.7) }],
+            transform: [{ translateY: floatingY3 }],
           }} />
 
           <Animated.View style={{
             opacity: logoOpacity,
-            transform: [{ scale: logoScale }, { rotate: logoSpin }],
+            transform: [
+              { scale: Animated.multiply(logoScale, breathingScale) }, 
+              { rotate: logoSpin }
+            ],
             alignItems: 'center',
             zIndex: 1,
           }}>
@@ -220,8 +306,8 @@ export default function WelcomeScreen() {
               backdropFilter: isWeb ? 'blur(30px)' : undefined,
               shadowColor: '#ffffff',
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.3,
-              shadowRadius: 30,
+              shadowOpacity: logoGlow,
+              shadowRadius: 40,
             }}>
               <Image 
                 source={Logo}
@@ -229,21 +315,28 @@ export default function WelcomeScreen() {
               />
             </Animated.View>
             
-            <Text style={{
-              fontSize: 56,
-              fontWeight: '900',
-              color: '#ffffff',
-              textAlign: 'center',
-              marginBottom: 8,
-              letterSpacing: -2,
-              textShadowColor: 'rgba(0, 0, 0, 0.1)',
-              textShadowOffset: { width: 0, height: 2 },
-              textShadowRadius: 10,
+            <Animated.View style={{
+              opacity: titleOpacity,
+              transform: [{ translateY: titleSlide }, { scale: titleScale }],
             }}>
-              FMC APP
-            </Text>
+              <Text style={{
+                fontSize: 56,
+                fontWeight: '900',
+                color: '#ffffff',
+                textAlign: 'center',
+                marginBottom: 8,
+                letterSpacing: -2,
+                textShadowColor: 'rgba(0, 0, 0, 0.15)',
+                textShadowOffset: { width: 0, height: 4 },
+                textShadowRadius: 15,
+              }}>
+                FMC APP
+              </Text>
+            </Animated.View>
             
-            <View style={{
+            <Animated.View style={{
+              opacity: badgeOpacity,
+              transform: [{ scale: badgeScale }],
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               paddingHorizontal: 20,
               paddingVertical: 8,
@@ -259,18 +352,20 @@ export default function WelcomeScreen() {
               }}>
                 Premium Medical Learning
               </Text>
-            </View>
+            </Animated.View>
             
-            <Text style={{
+            <Animated.Text style={{
               fontSize: 20,
               color: 'rgba(255, 255, 255, 0.9)',
               textAlign: 'center',
               lineHeight: 32,
               maxWidth: 420,
               fontWeight: '500',
+              opacity: subtitleOpacity,
+              transform: [{ translateY: subtitleSlide }],
             }}>
               La plateforme de préparation aux examens médicaux pour les étudiants algériens
-            </Text>
+            </Animated.Text>
           </Animated.View>
         </LinearGradient>
 
@@ -282,21 +377,21 @@ export default function WelcomeScreen() {
           padding: 60,
           backgroundColor: '#ffffff',
         }}>
-          <Animated.View style={{
-            opacity: titleOpacity,
-            transform: [{ translateY: titleSlide }],
-            width: '100%',
-            maxWidth: 460,
-          }}>
-            <Text style={{
-              fontSize: 42,
-              fontWeight: '900',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 12,
-              letterSpacing: -1.5,
+          <View style={{ width: '100%', maxWidth: 460 }}>
+            <Animated.View style={{
+              opacity: titleOpacity,
+              transform: [{ translateY: titleSlide }],
             }}>
-              Bienvenue 👋
-            </Text>
+              <Text style={{
+                fontSize: 42,
+                fontWeight: '900',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 12,
+                letterSpacing: -1.5,
+              }}>
+                Bienvenue 👋
+              </Text>
+            </Animated.View>
             
             <Animated.Text style={{
               fontSize: 18,
@@ -304,15 +399,16 @@ export default function WelcomeScreen() {
               marginBottom: 48,
               lineHeight: 28,
               opacity: subtitleOpacity,
+              transform: [{ translateY: subtitleSlide }],
             }}>
               Connectez-vous pour accéder à vos cours et commencer à pratiquer
             </Animated.Text>
 
             {/* Animated Buttons */}
             <Animated.View style={{ 
-              gap: 16,
-              opacity: buttonsOpacity,
-              transform: [{ translateY: buttonsSlide }],
+              marginBottom: 16,
+              opacity: button1Opacity,
+              transform: [{ translateY: button1Slide }, { scale: button1Scale }],
             }}>
               <AnimatedButton 
                 title="Créer un compte" 
@@ -320,7 +416,12 @@ export default function WelcomeScreen() {
                 variant="primary"
                 size="lg"
               />
-              
+            </Animated.View>
+            
+            <Animated.View style={{ 
+              opacity: button2Opacity,
+              transform: [{ translateY: button2Slide }, { scale: button2Scale }],
+            }}>
               <AnimatedButton 
                 title="Se connecter" 
                 onPress={() => router.push('/(auth)/login')}
@@ -334,17 +435,17 @@ export default function WelcomeScreen() {
               color: BRAND_THEME.colors.gray[400],
               textAlign: 'center',
               marginTop: 32,
-              opacity: buttonsOpacity,
+              opacity: footerOpacity,
             }}>
               🔒 Plateforme sécurisée • 🇩🇿 Curriculum français
             </Animated.Text>
-          </Animated.View>
+          </View>
         </View>
       </View>
     )
   }
 
-  // Mobile/Tablet Layout - Premium Design
+  // ========== Mobile/Tablet Layout ==========
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <ScrollView 
@@ -378,7 +479,7 @@ export default function WelcomeScreen() {
             height: 200, 
             borderRadius: 100, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY }],
+            transform: [{ translateY: floatingY1 }],
           }} />
           <Animated.View style={{ 
             position: 'absolute', 
@@ -390,14 +491,27 @@ export default function WelcomeScreen() {
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
             opacity: glowPulse,
           }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            top: '40%', 
+            left: '5%', 
+            width: 60, 
+            height: 60, 
+            borderRadius: 30, 
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            transform: [{ translateY: floatingY3 }],
+          }} />
 
           {/* Logo */}
           <Animated.View style={{
             opacity: logoOpacity,
-            transform: [{ scale: logoScale }],
+            transform: [
+              { scale: Animated.multiply(logoScale, breathingScale) },
+              { rotate: logoSpin }
+            ],
             marginBottom: 24,
           }}>
-            <View style={{
+            <Animated.View style={{
               width: isTablet ? 130 : 110,
               height: isTablet ? 130 : 110,
               borderRadius: 32,
@@ -406,8 +520,8 @@ export default function WelcomeScreen() {
               justifyContent: 'center',
               shadowColor: '#ffffff',
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.3,
-              shadowRadius: 20,
+              shadowOpacity: 0.4,
+              shadowRadius: 30,
             }}>
               <Image 
                 source={Logo}
@@ -417,12 +531,12 @@ export default function WelcomeScreen() {
                   resizeMode: 'contain',
                 }}
               />
-            </View>
+            </Animated.View>
           </Animated.View>
           
           <Animated.View style={{
             opacity: titleOpacity,
-            transform: [{ translateY: titleSlide }],
+            transform: [{ translateY: titleSlide }, { scale: titleScale }],
             alignItems: 'center',
           }}>
             <Text style={{
@@ -432,29 +546,31 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               marginBottom: 12,
               letterSpacing: -1.5,
-              textShadowColor: 'rgba(0, 0, 0, 0.1)',
-              textShadowOffset: { width: 0, height: 2 },
-              textShadowRadius: 10,
+              textShadowColor: 'rgba(0, 0, 0, 0.15)',
+              textShadowOffset: { width: 0, height: 4 },
+              textShadowRadius: 15,
             }}>
               FMC APP
             </Text>
-            
-            <View style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              paddingHorizontal: 20,
-              paddingVertical: 8,
-              borderRadius: 20,
+          </Animated.View>
+          
+          <Animated.View style={{
+            opacity: badgeOpacity,
+            transform: [{ scale: badgeScale }],
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}>
+            <Text style={{
+              fontSize: 11,
+              color: '#ffffff',
+              fontWeight: '700',
+              letterSpacing: 2,
+              textTransform: 'uppercase',
             }}>
-              <Text style={{
-                fontSize: 11,
-                color: '#ffffff',
-                fontWeight: '700',
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-              }}>
-                Premium Medical Learning
-              </Text>
-            </View>
+              Premium Medical Learning
+            </Text>
           </Animated.View>
         </LinearGradient>
 
@@ -469,7 +585,8 @@ export default function WelcomeScreen() {
         }}>
           {/* Tagline Card */}
           <Animated.View style={{
-            opacity: subtitleOpacity,
+            opacity: taglineOpacity,
+            transform: [{ translateY: taglineSlide }, { scale: taglineScale }],
             backgroundColor: '#ffffff',
             borderRadius: 28,
             paddingVertical: 28,
@@ -520,9 +637,9 @@ export default function WelcomeScreen() {
 
           {/* Action Buttons */}
           <Animated.View style={{ 
-            gap: 16,
-            opacity: buttonsOpacity,
-            transform: [{ translateY: buttonsSlide }],
+            marginBottom: 16,
+            opacity: button1Opacity,
+            transform: [{ translateY: button1Slide }, { scale: button1Scale }],
           }}>
             <AnimatedButton 
               title="Créer un compte" 
@@ -530,7 +647,12 @@ export default function WelcomeScreen() {
               variant="primary"
               size="lg"
             />
-            
+          </Animated.View>
+          
+          <Animated.View style={{ 
+            opacity: button2Opacity,
+            transform: [{ translateY: button2Slide }, { scale: button2Scale }],
+          }}>
             <AnimatedButton 
               title="Se connecter" 
               onPress={() => router.push('/(auth)/login')}
@@ -540,7 +662,7 @@ export default function WelcomeScreen() {
           </Animated.View>
 
           {/* Footer */}
-          <Animated.View style={{ opacity: buttonsOpacity, marginTop: 40, marginBottom: 24 }}>
+          <Animated.View style={{ opacity: footerOpacity, marginTop: 40, marginBottom: 24 }}>
             <Text style={{
               fontSize: 13,
               color: BRAND_THEME.colors.gray[400],

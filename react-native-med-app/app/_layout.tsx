@@ -10,12 +10,15 @@ import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import * as Linking from 'expo-linking'
 import { AuthProvider } from '@/context/AuthContext'
+import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { supabase } from '@/lib/supabase'
 
 // Prevent splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync()
 
-export default function RootLayout() {
+function RootLayoutContent() {
+  const { isDark, colors } = useTheme()
+
   useEffect(() => {
     // Hide splash screen after a short delay
     const hideSplash = async () => {
@@ -57,9 +60,16 @@ export default function RootLayout() {
   }, [])
 
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack 
+        screenOptions={{ 
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -69,6 +79,16 @@ export default function RootLayout() {
         <Stack.Screen name="practice/results" options={{ headerShown: true, title: 'Results' }} />
         <Stack.Screen name="saved/index" options={{ headerShown: true, title: 'Saved Questions' }} />
       </Stack>
-    </AuthProvider>
+    </>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

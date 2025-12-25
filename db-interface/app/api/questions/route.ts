@@ -78,6 +78,7 @@ export async function POST(request: NextRequest) {
       module_type: question.module_type,
       faculty_source: question.faculty_source || null,
       image_url: question.image_url || null,
+      explanation: question.explanation || null,
       created_by: user.id, // Track who created the question
     };
 
@@ -186,6 +187,7 @@ export async function PUT(request: NextRequest) {
       module_type: question.module_type,
       faculty_source: question.faculty_source || null,
       image_url: question.image_url || null,
+      explanation: question.explanation || null,
     };
 
     const { data: updatedQuestion, error: questionError } = await supabaseAdmin
