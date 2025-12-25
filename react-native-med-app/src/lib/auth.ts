@@ -35,6 +35,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
         p_speciality: data.speciality,
         p_year_of_study: data.year_of_study,
         p_region: data.region,
+        p_faculty: data.faculty,
       })
 
     if (profileError) {
@@ -49,7 +50,7 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 
     // 3. Activate subscription with code
     const activationResult = await activateSubscription(authData.user.id, data.activation_code)
-    
+
     if (!activationResult.success) {
       return { user: null, error: activationResult.message }
     }
@@ -109,14 +110,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
     const currentDeviceId = await getDeviceId()
     const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
-    
+
     // If this is a new device and user already has 2 devices, block login
     if (!isCurrentDeviceRegistered && sessions.length >= 2) {
       // Sign out the user immediately
       await supabase.auth.signOut()
-      return { 
-        user: null, 
-        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.' 
+      return {
+        user: null,
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
       }
     }
 
@@ -274,7 +275,7 @@ async function getDeviceId(): Promise<string> {
   const deviceName = Device.deviceName || 'Unknown Device'
   const osName = Device.osName || 'Unknown OS'
   const osVersion = Device.osVersion || ''
-  
+
   // Create a simple hash from device info
   const deviceString = `${deviceType}-${deviceName}-${osName}-${osVersion}`
   return deviceString.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)

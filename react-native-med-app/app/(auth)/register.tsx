@@ -8,6 +8,7 @@ import { Link, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
 import { YEARS, SPECIALITIES } from '@/constants'
+import { FACULTIES } from '@/constants/faculty'
 import { WILAYAS } from '@/constants/regions'
 import { YearLevel, Speciality, RegisterFormData } from '@/types'
 
@@ -25,6 +26,7 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [speciality, setSpeciality] = useState<Speciality | ''>('')
   const [yearOfStudy, setYearOfStudy] = useState<YearLevel | ''>('')
+  const [faculty, setFaculty] = useState('')
   const [region, setRegion] = useState('')
   const [activationCode, setActivationCode] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,6 +34,7 @@ export default function RegisterScreen() {
   // Dropdown visibility
   const [showSpeciality, setShowSpeciality] = useState(false)
   const [showYear, setShowYear] = useState(false)
+  const [showFaculty, setShowFaculty] = useState(false)
   const [showRegion, setShowRegion] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
 
@@ -43,6 +46,7 @@ export default function RegisterScreen() {
     if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas'); return; }
     if (!speciality) { setError('Veuillez sélectionner votre spécialité'); return; }
     if (!yearOfStudy) { setError('Veuillez sélectionner votre année d\'étude'); return; }
+    if (!faculty) { setError('Veuillez sélectionner votre faculté / annexe'); return; }
     if (!region) { setError('Veuillez sélectionner votre wilaya'); return; }
     if (!activationCode.trim()) { setError('Veuillez entrer votre code d\'activation'); return; }
 
@@ -54,6 +58,7 @@ export default function RegisterScreen() {
       full_name: fullName.trim(),
       speciality: speciality as Speciality,
       year_of_study: yearOfStudy as YearLevel,
+      faculty,
       region,
       activation_code: activationCode.trim().toUpperCase(),
     }
@@ -132,14 +137,14 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              <View className={isDesktop ? 'flex-row gap-4' : 'space-y-4'}>
-                <View className={isDesktop ? 'flex-1' : ''}>
+              <View className={isDesktop ? 'flex-row gap-4' : 'space-y-4'} style={{ zIndex: 50 }}>
+                <View className={isDesktop ? 'flex-1' : ''} style={{ zIndex: 20 }}>
                   <Text className="text-gray-700 font-medium mb-2">Spécialité *</Text>
-                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => setShowSpeciality(!showSpeciality)}>
+                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => { setShowSpeciality(!showSpeciality); setShowYear(false); setShowFaculty(false); setShowRegion(false); }}>
                     <Text className={speciality ? 'text-gray-900' : 'text-gray-400'}>{speciality || 'Sélectionner'}</Text>
                   </TouchableOpacity>
                   {showSpeciality && (
-                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full z-10 shadow-lg">
+                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full shadow-lg" style={{ zIndex: 100 }}>
                       {SPECIALITIES.map((s) => (
                         <TouchableOpacity key={s.value} className="px-4 py-3 border-b border-gray-100" onPress={() => { setSpeciality(s.value); setShowSpeciality(false); }}>
                           <Text className="text-gray-900">{s.label}</Text>
@@ -148,13 +153,13 @@ export default function RegisterScreen() {
                     </View>
                   )}
                 </View>
-                <View className={isDesktop ? 'flex-1' : ''}>
+                <View className={isDesktop ? 'flex-1' : ''} style={{ zIndex: 10 }}>
                   <Text className="text-gray-700 font-medium mb-2">Année d'étude *</Text>
-                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => setShowYear(!showYear)}>
+                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => { setShowYear(!showYear); setShowSpeciality(false); setShowFaculty(false); setShowRegion(false); }}>
                     <Text className={yearOfStudy ? 'text-gray-900' : 'text-gray-400'}>{yearOfStudy ? YEARS.find(y => y.value === yearOfStudy)?.label : 'Sélectionner'}</Text>
                   </TouchableOpacity>
                   {showYear && (
-                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full z-10 shadow-lg">
+                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full shadow-lg" style={{ zIndex: 100 }}>
                       {YEARS.map((y) => (
                         <TouchableOpacity key={y.value} className="px-4 py-3 border-b border-gray-100" onPress={() => { setYearOfStudy(y.value); setShowYear(false); }}>
                           <Text className="text-gray-900">{y.label}</Text>
@@ -165,14 +170,31 @@ export default function RegisterScreen() {
                 </View>
               </View>
 
-              <View className={isDesktop ? 'flex-row gap-4' : 'space-y-4'}>
-                <View className={isDesktop ? 'flex-1' : ''}>
+              <View className={isDesktop ? 'flex-row gap-4' : 'space-y-4'} style={{ zIndex: 40 }}>
+                <View className={isDesktop ? 'flex-1' : ''} style={{ zIndex: 20 }}>
+                  <Text className="text-gray-700 font-medium mb-2">Faculté / Annexe *</Text>
+                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => { setShowFaculty(!showFaculty); setShowRegion(false); setShowSpeciality(false); setShowYear(false); }}>
+                    <Text className={faculty ? 'text-gray-900' : 'text-gray-400'}>{faculty ? FACULTIES.find(f => f.value === faculty)?.label : 'Sélectionner'}</Text>
+                  </TouchableOpacity>
+                  {showFaculty && (
+                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full shadow-lg" style={{ maxHeight: 200, zIndex: 100 }}>
+                      <ScrollView nestedScrollEnabled>
+                        {FACULTIES.map((f) => (
+                          <TouchableOpacity key={f.value} className="px-4 py-3 border-b border-gray-100" onPress={() => { setFaculty(f.value); setShowFaculty(false); }}>
+                            <Text className="text-gray-900">{f.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+                <View className={isDesktop ? 'flex-1' : ''} style={{ zIndex: 10 }}>
                   <Text className="text-gray-700 font-medium mb-2">Wilaya *</Text>
-                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => setShowRegion(!showRegion)}>
+                  <TouchableOpacity className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3" onPress={() => { setShowRegion(!showRegion); setShowFaculty(false); setShowSpeciality(false); setShowYear(false); }}>
                     <Text className={region ? 'text-gray-900' : 'text-gray-400'}>{region || 'Sélectionner'}</Text>
                   </TouchableOpacity>
                   {showRegion && (
-                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full z-10 shadow-lg max-h-48 overflow-hidden">
+                    <View className="bg-white border border-gray-200 rounded-xl mt-1 absolute top-full w-full shadow-lg max-h-48 overflow-hidden" style={{ zIndex: 100 }}>
                       <ScrollView nestedScrollEnabled>
                         {WILAYAS.map((w) => (
                           <TouchableOpacity key={w.code} className="px-4 py-3 border-b border-gray-100" onPress={() => { setRegion(w.name); setShowRegion(false); }}>
@@ -183,7 +205,10 @@ export default function RegisterScreen() {
                     </View>
                   )}
                 </View>
-                <View className={isDesktop ? 'flex-1' : ''}>
+              </View>
+
+              <View className="space-y-4" style={{ zIndex: 30 }}>
+                 <View className="">
                   <Text className="text-gray-700 font-medium mb-2">Code d'activation *</Text>
                   <TextInput className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 uppercase" placeholder="FMC-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
                 </View>

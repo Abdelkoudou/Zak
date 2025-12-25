@@ -4,6 +4,7 @@
     "slug": "fmc-study-app",
     "version": "1.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "fmcstudyapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -20,6 +21,7 @@
       "package": "com.fmcstudyapp.mobile",
       "versionCode": 2,
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#3B82F6"
       }
     },

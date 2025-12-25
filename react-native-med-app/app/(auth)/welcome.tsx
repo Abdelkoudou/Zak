@@ -68,44 +68,7 @@ export default function WelcomeScreen() {
               Curriculum français • Étudiants algériens
             </Text>
 
-            {/* Features */}
-            <View style={{ 
-              width: '100%', 
-              flexDirection: isDesktop ? 'row' : 'column', 
-              flexWrap: 'wrap',
-              gap: 16, 
-              marginBottom: 32,
-              justifyContent: isDesktop ? 'space-between' : 'flex-start'
-            }}>
-              <View style={{ width: isDesktop ? '48%' : '100%' }}>
-                <FeatureItem 
-                  icon="📝" 
-                  title="FMC par module" 
-                  description="Questions organisées par année et module d'étude"
-                />
-              </View>
-              <View style={{ width: isDesktop ? '48%' : '100%' }}>
-                <FeatureItem 
-                  icon="📊" 
-                  title="Suivi de progression" 
-                  description="Statistiques détaillées de vos performances"
-                />
-              </View>
-              <View style={{ width: isDesktop ? '48%' : '100%' }}>
-                <FeatureItem 
-                  icon="💾" 
-                  title="Questions sauvegardées" 
-                  description="Révisez les questions difficiles plus tard"
-                />
-              </View>
-              <View style={{ width: isDesktop ? '48%' : '100%' }}>
-                <FeatureItem 
-                  icon="📁" 
-                  title="Ressources pédagogiques" 
-                  description="Accédez aux cours et documents complémentaires"
-                />
-              </View>
-            </View>
+
           </View>
 
           {/* Action Buttons */}
