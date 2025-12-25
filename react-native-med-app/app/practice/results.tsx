@@ -1,12 +1,14 @@
 // ============================================================================
-// Results Screen - Light Sea Green Brand (Matching Design)
+// Results Screen - Light Sea Green Brand (Premium Animations)
 // ============================================================================
 
-import { View, Text, TouchableOpacity } from 'react-native'
+import { useEffect, useRef, useCallback } from 'react'
+import { View, Text, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, router, Stack } from 'expo-router'
-import { Card, Button } from '@/components/ui'
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
+import { Card, Button, FadeInView, StaggeredList } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 export default function ResultsScreen() {
   const { total, correct, score, time, moduleName } = useLocalSearchParams<{
@@ -23,6 +25,55 @@ export default function ResultsScreen() {
   const timeNum = parseInt(time || '0')
   const incorrectNum = totalNum - correctNum
 
+  // Animation values
+  const scoreScale = useRef(new Animated.Value(0)).current
+  const scoreRotate = useRef(new Animated.Value(0)).current
+  const progressWidth = useRef(new Animated.Value(0)).current
+  const celebrationOpacity = useRef(new Animated.Value(0)).current
+
+  // Run animations on focus
+  useFocusEffect(
+    useCallback(() => {
+      // Reset animations
+      scoreScale.setValue(0)
+      scoreRotate.setValue(0)
+      progressWidth.setValue(0)
+      celebrationOpacity.setValue(0)
+
+      // Score circle entrance with bounce
+      Animated.sequence([
+        Animated.delay(200),
+        Animated.spring(scoreScale, {
+          toValue: 1,
+          friction: 4,
+          tension: 100,
+          useNativeDriver: true,
+        }),
+      ]).start()
+
+      // Progress bar animation
+      Animated.timing(progressWidth, {
+        toValue: (correctNum / totalNum) * 100,
+        duration: 1000,
+        delay: 600,
+        easing: ANIMATION_EASING.premium,
+        useNativeDriver: false,
+      }).start()
+
+      // Celebration for good scores
+      if (scoreNum >= 60) {
+        Animated.sequence([
+          Animated.delay(800),
+          Animated.timing(celebrationOpacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start()
+      }
+    }, [])
+  )
+
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
@@ -37,173 +88,218 @@ export default function ResultsScreen() {
     return 'Révisez et réessayez !'
   }
 
+  const getScoreEmoji = () => {
+    if (scoreNum >= 80) return '🏆'
+    if (scoreNum >= 60) return '⭐'
+    if (scoreNum >= 40) return '📚'
+    return '💪'
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Résultat', headerBackVisible: false }} />
       
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
         <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
-          {/* Score Circle - Matching Design */}
-          <View style={{ alignItems: 'center', marginBottom: 32 }}>
-            <View style={{
-              width: 160,
-              height: 160,
-              borderRadius: 80,
-              backgroundColor: '#ffffff',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 16,
-              ...BRAND_THEME.shadows.lg
-            }}>
-              <Text style={{ fontSize: 48, marginBottom: 8 }}>📚</Text>
-              <Text style={{
-                fontSize: 36,
-                fontWeight: 'bold',
-                color: BRAND_THEME.colors.gray[900]
+          {/* Score Circle - Animated */}
+          <FadeInView animation="scale" delay={0}>
+            <View style={{ alignItems: 'center', marginBottom: 32 }}>
+              <Animated.View style={{
+                transform: [{ scale: scoreScale }],
+                width: 160,
+                height: 160,
+                borderRadius: 80,
+                backgroundColor: '#ffffff',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 16,
+                ...BRAND_THEME.shadows.lg
               }}>
-                {scoreNum.toFixed(0)}%
-              </Text>
-            </View>
-            
-            <Text style={{
-              fontSize: 20,
-              fontWeight: '600',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 4
-            }}>
-              {getScoreMessage()}
-            </Text>
-            <Text style={{
-              color: BRAND_THEME.colors.gray[600],
-              fontSize: 16
-            }}>
-              {moduleName}
-            </Text>
-          </View>
-
-          {/* Stats Cards - Matching Design */}
-          <Card variant="default" padding="md" style={{ marginBottom: 24 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-              <StatItem 
-                label="Total" 
-                value={totalNum.toString()} 
-                icon="📝"
-              />
-              <StatItem 
-                label="Correctes" 
-                value={`${scoreNum.toFixed(0)}%`} 
-                icon="✅"
-              />
-              <StatItem 
-                label="Incorrectes" 
-                value={incorrectNum.toString()} 
-                icon="❌"
-              />
-            </View>
-            
-            <View style={{
-              paddingTop: 16,
-              borderTopWidth: 1,
-              borderTopColor: BRAND_THEME.colors.gray[100],
-              alignItems: 'center'
-            }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontSize: 20, marginRight: 8 }}>⏱️</Text>
-                <Text style={{ color: BRAND_THEME.colors.gray[600] }}>Temps : </Text>
+                <Text style={{ fontSize: 48, marginBottom: 8 }}>{getScoreEmoji()}</Text>
                 <Text style={{
-                  color: BRAND_THEME.colors.gray[900],
-                  fontWeight: '600'
+                  fontSize: 36,
+                  fontWeight: 'bold',
+                  color: BRAND_THEME.colors.gray[900]
                 }}>
-                  {formatTime(timeNum)}
+                  {scoreNum.toFixed(0)}%
+                </Text>
+              </Animated.View>
+              
+              <FadeInView animation="slideUp" delay={400}>
+                <Text style={{
+                  fontSize: 20,
+                  fontWeight: '600',
+                  color: BRAND_THEME.colors.gray[900],
+                  marginBottom: 4
+                }}>
+                  {getScoreMessage()}
+                </Text>
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[600],
+                  fontSize: 16,
+                  textAlign: 'center'
+                }}>
+                  {moduleName}
+                </Text>
+              </FadeInView>
+
+              {/* Celebration particles for good scores */}
+              <Animated.View style={{
+                position: 'absolute',
+                top: -20,
+                opacity: celebrationOpacity,
+              }}>
+                <Text style={{ fontSize: 24 }}>🎉</Text>
+              </Animated.View>
+            </View>
+          </FadeInView>
+
+          {/* Stats Cards - Staggered Animation */}
+          <FadeInView animation="slideUp" delay={500}>
+            <Card variant="default" padding="md" style={{ marginBottom: 24 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
+                <AnimatedStatItem 
+                  label="Total" 
+                  value={totalNum.toString()} 
+                  icon="📝"
+                  delay={600}
+                />
+                <AnimatedStatItem 
+                  label="Correctes" 
+                  value={`${scoreNum.toFixed(0)}%`} 
+                  icon="✅"
+                  delay={700}
+                />
+                <AnimatedStatItem 
+                  label="Incorrectes" 
+                  value={incorrectNum.toString()} 
+                  icon="❌"
+                  delay={800}
+                />
+              </View>
+              
+              <View style={{
+                paddingTop: 16,
+                borderTopWidth: 1,
+                borderTopColor: BRAND_THEME.colors.gray[100],
+                alignItems: 'center'
+              }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 20, marginRight: 8 }}>⏱️</Text>
+                  <Text style={{ color: BRAND_THEME.colors.gray[600] }}>Temps : </Text>
+                  <Text style={{
+                    color: BRAND_THEME.colors.gray[900],
+                    fontWeight: '600'
+                  }}>
+                    {formatTime(timeNum)}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+          </FadeInView>
+
+          {/* Progress Bar - Animated */}
+          <FadeInView animation="slideUp" delay={700}>
+            <Card variant="default" padding="md" style={{ marginBottom: 32 }}>
+              <Text style={{
+                color: BRAND_THEME.colors.gray[600],
+                fontSize: 14,
+                marginBottom: 8
+              }}>
+                Progression
+              </Text>
+              
+              <View style={{
+                height: 16,
+                backgroundColor: BRAND_THEME.colors.gray[100],
+                borderRadius: 8,
+                overflow: 'hidden',
+                flexDirection: 'row',
+                marginBottom: 8
+              }}>
+                <Animated.View style={{
+                  height: '100%',
+                  backgroundColor: BRAND_THEME.colors.primary[500],
+                  borderRadius: 8,
+                  width: progressWidth.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                }} />
+              </View>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{
+                  color: BRAND_THEME.colors.primary[600],
+                  fontSize: 14
+                }}>
+                  {correctNum} Correctes
+                </Text>
+                <Text style={{
+                  color: BRAND_THEME.colors.gray[500],
+                  fontSize: 14
+                }}>
+                  {incorrectNum} Incorrectes
                 </Text>
               </View>
-            </View>
-          </Card>
+            </Card>
+          </FadeInView>
 
-          {/* Progress Bar - Matching Design */}
-          <Card variant="default" padding="md" style={{ marginBottom: 32 }}>
-            <Text style={{
-              color: BRAND_THEME.colors.gray[600],
-              fontSize: 14,
-              marginBottom: 8
-            }}>
-              Progression
-            </Text>
-            
-            <View style={{
-              height: 16,
-              backgroundColor: BRAND_THEME.colors.gray[100],
-              borderRadius: 8,
-              overflow: 'hidden',
-              flexDirection: 'row',
-              marginBottom: 8
-            }}>
-              <View style={{
-                height: '100%',
-                backgroundColor: BRAND_THEME.colors.primary[500],
-                width: `${(correctNum / totalNum) * 100}%`
-              }} />
-            </View>
-            
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={{
-                color: BRAND_THEME.colors.primary[600],
-                fontSize: 14
-              }}>
-                {correctNum} Correctes
-              </Text>
-              <Text style={{
-                color: BRAND_THEME.colors.gray[500],
-                fontSize: 14
-              }}>
-                {incorrectNum} Incorrectes
-              </Text>
-            </View>
-          </Card>
+          {/* Action Buttons - Animated */}
+          <FadeInView animation="slideUp" delay={900}>
+            <View style={{ gap: 12 }}>
+              <AnimatedActionButton 
+                title="Pratiquer à nouveau"
+                onPress={() => router.back()}
+                variant="primary"
+              />
 
-          {/* Action Buttons - Matching Design */}
-          <View style={{ gap: 12 }}>
-            <Button 
-              title="Pratiquer à nouveau"
-              onPress={() => router.back()}
-              variant="primary"
-              size="lg"
-            />
-
-            <TouchableOpacity
-              style={{
-                paddingVertical: 16,
-                alignItems: 'center'
-              }}
-              onPress={() => router.replace('/(tabs)')}
-            >
-              <Text style={{
-                color: BRAND_THEME.colors.gray[700],
-                fontWeight: '600',
-                fontSize: 16
-              }}>
-                Retour à l'accueil
-              </Text>
-            </TouchableOpacity>
-          </View>
+              <AnimatedActionButton 
+                title="Retour à l'accueil"
+                onPress={() => router.replace('/(tabs)')}
+                variant="ghost"
+              />
+            </View>
+          </FadeInView>
         </View>
       </SafeAreaView>
     </>
   )
 }
 
-// Stat Item Component - Matching Design
-function StatItem({ 
+// Animated Stat Item Component
+function AnimatedStatItem({ 
   label, 
   value, 
-  icon
+  icon,
+  delay = 0
 }: { 
   label: string
   value: string
   icon: string
+  delay?: number
 }) {
+  const scale = useRef(new Animated.Value(0)).current
+
+  useFocusEffect(
+    useCallback(() => {
+      scale.setValue(0)
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 100,
+        delay,
+        useNativeDriver: true,
+      }).start()
+    }, [delay])
+  )
+
   return (
-    <View style={{ alignItems: 'center', flex: 1 }}>
+    <Animated.View style={{ 
+      alignItems: 'center', 
+      flex: 1,
+      transform: [{ scale }]
+    }}>
       <Text style={{ fontSize: 24, marginBottom: 4 }}>{icon}</Text>
       <Text style={{
         fontSize: 18,
@@ -219,6 +315,84 @@ function StatItem({
       }}>
         {label}
       </Text>
-    </View>
+    </Animated.View>
+  )
+}
+
+// Animated Action Button
+function AnimatedActionButton({
+  title,
+  onPress,
+  variant = 'primary'
+}: {
+  title: string
+  onPress: () => void
+  variant?: 'primary' | 'ghost'
+}) {
+  const scale = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.timing(scale, {
+      toValue: 0.97,
+      duration: 100,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      tension: 200,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  if (variant === 'ghost') {
+    return (
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <TouchableOpacity
+          style={{ paddingVertical: 16, alignItems: 'center' }}
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={1}
+        >
+          <Text style={{
+            color: BRAND_THEME.colors.gray[700],
+            fontWeight: '600',
+            fontSize: 16
+          }}>
+            {title}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    )
+  }
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={{
+          backgroundColor: BRAND_THEME.colors.primary[500],
+          paddingVertical: 16,
+          borderRadius: 12,
+          alignItems: 'center',
+          ...BRAND_THEME.shadows.md
+        }}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Text style={{
+          color: '#ffffff',
+          fontWeight: '600',
+          fontSize: 16
+        }}>
+          {title}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
   )
 }

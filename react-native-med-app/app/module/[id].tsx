@@ -1,16 +1,16 @@
 // ============================================================================
-// Module Detail Screen - Light Sea Green Brand (Matching Design)
+// Module Detail Screen - Premium UI with Smooth Animations
 // ============================================================================
 
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { useEffect, useState, useRef } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
 import { getQuestionCount } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
-import { EXAM_TYPES, EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
-import { Card, Badge, LoadingSpinner, Button } from '@/components/ui'
+import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
+import { Card, Badge, FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { QcmExamIcon, BookQcmIcon } from '@/components/icons'
 
@@ -23,13 +23,20 @@ export default function ModuleDetailScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedMode, setSelectedMode] = useState<'exam' | 'cours' | null>('exam')
   const [selectedExamType, setSelectedExamType] = useState<ExamType | null>(null)
-  const [selectedSubDiscipline, setSelectedSubDiscipline] = useState<string | null>(null)
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
   const [availableExamTypes, setAvailableExamTypes] = useState<{ type: ExamType; count: number }[]>([])
   const [coursWithCounts, setCoursWithCounts] = useState<{ name: string; count: number }[]>([])
 
+  // Header animation
+  const headerOpacity = useRef(new Animated.Value(0)).current
+  const headerSlide = useRef(new Animated.Value(-20)).current
+
   useEffect(() => {
     loadModule()
+    Animated.parallel([
+      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+    ]).start()
   }, [id])
 
   const loadModule = async () => {
@@ -46,10 +53,7 @@ export default function ModuleDetailScreen() {
         const { cours: coursData } = await getModuleCours(moduleData.name)
         setCours(coursData)
 
-        // Load available exam types with counts
         await loadExamTypesWithCounts(moduleData)
-        
-        // Load cours with counts
         await loadCoursWithCounts(moduleData.name, coursData)
       }
     } catch (error) {
@@ -61,7 +65,6 @@ export default function ModuleDetailScreen() {
 
   const loadExamTypesWithCounts = async (moduleData: Module) => {
     try {
-      // Get valid exam types for this module type
       const validExamTypes = EXAM_TYPES_BY_MODULE_TYPE[moduleData.type] || []
       
       const examTypesWithCounts = await Promise.all(
@@ -75,7 +78,6 @@ export default function ModuleDetailScreen() {
         })
       )
 
-      // Only show exam types that have questions
       setAvailableExamTypes(examTypesWithCounts.filter(item => item.count > 0))
     } catch (error) {
       console.error('Error loading exam types:', error)
@@ -94,7 +96,6 @@ export default function ModuleDetailScreen() {
         })
       )
 
-      // Only show cours that have questions
       setCoursWithCounts(coursWithCounts.filter(item => item.count > 0))
     } catch (error) {
       console.error('Error loading cours counts:', error)
@@ -104,24 +105,16 @@ export default function ModuleDetailScreen() {
   const startPractice = async () => {
     if (!module) return
 
-    // Build query params
-    const params: Record<string, string> = {
-      moduleName: module.name,
-    }
+    const params: Record<string, string> = { moduleName: module.name }
 
     if (selectedMode === 'exam' && selectedExamType) {
       params.examType = selectedExamType
-      if (selectedSubDiscipline) {
-        params.subDiscipline = selectedSubDiscipline
-      }
     } else if (selectedMode === 'cours' && selectedCours) {
       params.cours = selectedCours
     }
 
-    // Check if there are questions
     const filters: any = { module_name: module.name }
     if (params.examType) filters.exam_type = params.examType
-    if (params.subDiscipline) filters.sub_discipline = params.subDiscipline
     if (params.cours) filters.cours = params.cours
 
     const { count } = await getQuestionCount(filters)
@@ -139,19 +132,15 @@ export default function ModuleDetailScreen() {
 
   const canStartPractice = () => {
     if (!selectedMode) return false
-    if (selectedMode === 'exam') {
-      return !!selectedExamType
-    }
-    if (selectedMode === 'cours') {
-      return !!selectedCours
-    }
+    if (selectedMode === 'exam') return !!selectedExamType
+    if (selectedMode === 'cours') return !!selectedCours
     return false
   }
 
   if (isLoading) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
-        <LoadingSpinner message="Chargement du module..." />
+        <ModuleDetailSkeleton />
       </SafeAreaView>
     )
   }
@@ -159,9 +148,10 @@ export default function ModuleDetailScreen() {
   if (!module) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: BRAND_THEME.colors.gray[600] }}>Module non trouvé</Text>
-        </View>
+        <FadeInView animation="scale" style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>📚</Text>
+          <Text style={{ color: BRAND_THEME.colors.gray[600], fontSize: 16 }}>Module non trouvé</Text>
+        </FadeInView>
       </SafeAreaView>
     )
   }
@@ -171,310 +161,188 @@ export default function ModuleDetailScreen() {
       <Stack.Screen 
         options={{ 
           title: module.name,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={{ color: BRAND_THEME.colors.primary[600], fontSize: 16 }}>←</Text>
-            </TouchableOpacity>
-          )
+          headerShown: false,
         }} 
       />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
-        <ScrollView style={{ flex: 1 }}>
-          {/* Module Header - Matching Design */}
-          <View style={{
-            backgroundColor: '#ffffff',
+      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+          {/* Module Header */}
+          <Animated.View style={{
+            backgroundColor: '#09B2AD',
             paddingHorizontal: 24,
-            paddingVertical: 24,
-            borderBottomWidth: 1,
-            borderBottomColor: BRAND_THEME.colors.gray[100]
+            paddingTop: 16,
+            paddingBottom: 32,
+            borderBottomLeftRadius: 32,
+            borderBottomRightRadius: 32,
+            opacity: headerOpacity,
+            transform: [{ translateY: headerSlide }],
           }}>
+            {/* Back Button */}
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={{ marginBottom: 16 }}
+            >
+              <View style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#ffffff', fontSize: 20 }}>←</Text>
+              </View>
+            </TouchableOpacity>
+
             <Text style={{
-              fontSize: 24,
-              fontWeight: 'bold',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 8
+              fontSize: 26,
+              fontWeight: '800',
+              color: '#ffffff',
+              marginBottom: 8,
+              letterSpacing: -0.5,
             }}>
               {module.name}
             </Text>
-            <Text style={{
-              color: BRAND_THEME.colors.gray[600],
-              fontSize: 14
-            }}>
-              {questionCount} Questions
-            </Text>
-          </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+              }}>
+                <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 14 }}>
+                  {questionCount} Questions
+                </Text>
+              </View>
+              <View style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                borderRadius: 20,
+                paddingHorizontal: 14,
+                paddingVertical: 6,
+              }}>
+                <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 14 }}>
+                  {module.year}ère Année
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
 
-          {/* Practice Mode Selection - Matching Design */}
+          {/* Practice Mode Selection */}
           <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-            <Text style={{
-              fontSize: 18,
-              fontWeight: 'bold',
-              color: BRAND_THEME.colors.gray[900],
-              marginBottom: 12
-            }}>
-              Mode de pratique
-            </Text>
+            <FadeInView delay={100} animation="slideUp">
+              <Text style={{
+                fontSize: 18,
+                fontWeight: '700',
+                color: BRAND_THEME.colors.gray[900],
+                marginBottom: 14,
+              }}>
+                Mode de pratique
+              </Text>
+            </FadeInView>
 
-            {/* Exam Mode - Matching Design */}
-            <TouchableOpacity
-              onPress={() => {
-                setSelectedMode('exam')
-                setSelectedCours(null)
-              }}
-              activeOpacity={0.7}
-            >
-              <Card 
-                variant="default" 
-                padding="md" 
-                style={{
-                  marginBottom: 12,
-                  borderWidth: 2,
-                  borderColor: selectedMode === 'exam' ? BRAND_THEME.colors.primary[500] : 'transparent'
-                }}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{
-                    width: 48,
-                    height: 48,
-                    backgroundColor: BRAND_THEME.colors.gray[900],
-                    borderRadius: 12,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 16
-                  }}>
-                    <QcmExamIcon size={24} color="#ffffff" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{
-                      color: BRAND_THEME.colors.gray[900],
-                      fontWeight: '600',
-                      fontSize: 16,
-                      marginBottom: 2
-                    }}>
-                      FMC d'examen
-                    </Text>
-                    <Text style={{
-                      color: BRAND_THEME.colors.gray[600],
-                      fontSize: 14
-                    }}>
-                      Questions mélangées par type d'examen
-                    </Text>
-                  </View>
-                  {selectedMode === 'exam' && (
-                    <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
-                  )}
-                </View>
-              </Card>
-            </TouchableOpacity>
+            {/* Exam Mode */}
+            <FadeInView delay={150} animation="slideUp">
+              <AnimatedModeCard
+                isSelected={selectedMode === 'exam'}
+                onPress={() => { setSelectedMode('exam'); setSelectedCours(null) }}
+                icon={<QcmExamIcon size={24} color="#ffffff" />}
+                title="QCM d'examen"
+                subtitle="Questions mélangées par type d'examen"
+              />
+            </FadeInView>
 
-            {/* Cours Mode - Matching Design */}
+            {/* Cours Mode */}
             {cours.length > 0 && (
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedMode('cours')
-                  setSelectedExamType(null)
-                  setSelectedSubDiscipline(null)
-                }}
-                activeOpacity={0.7}
-              >
-                <Card 
-                  variant="default" 
-                  padding="md"
-                  style={{
-                    borderWidth: 2,
-                    borderColor: selectedMode === 'cours' ? BRAND_THEME.colors.primary[500] : 'transparent'
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <View style={{
-                      width: 48,
-                      height: 48,
-                      backgroundColor: BRAND_THEME.colors.gray[900],
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      marginRight: 16
-                    }}>
-                      <BookQcmIcon size={24} color="#ffffff" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{
-                        color: BRAND_THEME.colors.gray[900],
-                        fontWeight: '600',
-                        fontSize: 16,
-                        marginBottom: 2
-                      }}>
-                        Par cours
-                      </Text>
-                      <Text style={{
-                        color: BRAND_THEME.colors.gray[600],
-                        fontSize: 14
-                      }}>
-                        Questions d'un cours spécifique
-                      </Text>
-                    </View>
-                    {selectedMode === 'cours' && (
-                      <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
-                    )}
-                  </View>
-                </Card>
-              </TouchableOpacity>
+              <FadeInView delay={200} animation="slideUp">
+                <AnimatedModeCard
+                  isSelected={selectedMode === 'cours'}
+                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null) }}
+                  icon={<BookQcmIcon size={24} color="#ffffff" />}
+                  title="Par cours"
+                  subtitle="Questions d'un cours spécifique"
+                />
+              </FadeInView>
             )}
           </View>
 
-          {/* Exam Types List - Inline Display */}
+          {/* Exam Types List */}
           {selectedMode === 'exam' && availableExamTypes.length > 0 && (
             <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-              <Text style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                color: BRAND_THEME.colors.gray[900],
-                marginBottom: 12
-              }}>
-                Types d'examen disponibles
-              </Text>
+              <FadeInView delay={250} animation="slideUp">
+                <Text style={{
+                  fontSize: 18,
+                  fontWeight: '700',
+                  color: BRAND_THEME.colors.gray[900],
+                  marginBottom: 14,
+                }}>
+                  Types d'examen disponibles
+                </Text>
+              </FadeInView>
               
-              {availableExamTypes.map(({ type, count }) => (
-                <TouchableOpacity
-                  key={type}
-                  onPress={() => setSelectedExamType(type)}
-                  activeOpacity={0.7}
-                  style={{ marginBottom: 8 }}
-                >
-                  <Card 
-                    variant="default" 
-                    padding="md"
-                    style={{
-                      borderWidth: 2,
-                      borderColor: selectedExamType === type ? BRAND_THEME.colors.primary[500] : 'transparent'
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View>
-                        <Text style={{
-                          color: BRAND_THEME.colors.gray[900],
-                          fontWeight: '600',
-                          fontSize: 16,
-                          marginBottom: 2
-                        }}>
-                          {type}
-                        </Text>
-                        <Text style={{
-                          color: BRAND_THEME.colors.gray[600],
-                          fontSize: 14
-                        }}>
-                          {count} question{count !== 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Badge 
-                          variant="secondary" 
-                          size="sm"
-                          label={`${count} QCM`}
-                        />
-                        {selectedExamType === type && (
-                          <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
-                        )}
-                      </View>
-                    </View>
-                  </Card>
-                </TouchableOpacity>
+              {availableExamTypes.map(({ type, count }, index) => (
+                <FadeInView key={type} delay={300 + index * 50} animation="slideUp">
+                  <AnimatedOptionCard
+                    isSelected={selectedExamType === type}
+                    onPress={() => setSelectedExamType(type)}
+                    title={type}
+                    count={count}
+                  />
+                </FadeInView>
               ))}
             </View>
           )}
 
-          {/* Cours List - Inline Display */}
+          {/* Cours List */}
           {selectedMode === 'cours' && coursWithCounts.length > 0 && (
             <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-              <Text style={{
-                fontSize: 18,
-                fontWeight: 'bold',
-                color: BRAND_THEME.colors.gray[900],
-                marginBottom: 12
-              }}>
-                Cours disponibles
-              </Text>
+              <FadeInView delay={250} animation="slideUp">
+                <Text style={{
+                  fontSize: 18,
+                  fontWeight: '700',
+                  color: BRAND_THEME.colors.gray[900],
+                  marginBottom: 14,
+                }}>
+                  Cours disponibles
+                </Text>
+              </FadeInView>
               
-              {coursWithCounts.map(({ name, count }) => (
-                <TouchableOpacity
-                  key={name}
-                  onPress={() => setSelectedCours(name)}
-                  activeOpacity={0.7}
-                  style={{ marginBottom: 8 }}
-                >
-                  <Card 
-                    variant="default" 
-                    padding="md"
-                    style={{
-                      borderWidth: 2,
-                      borderColor: selectedCours === name ? BRAND_THEME.colors.primary[500] : 'transparent'
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{
-                          color: BRAND_THEME.colors.gray[900],
-                          fontWeight: '600',
-                          fontSize: 16,
-                          marginBottom: 2
-                        }} numberOfLines={2}>
-                          {name}
-                        </Text>
-                        <Text style={{
-                          color: BRAND_THEME.colors.gray[600],
-                          fontSize: 14
-                        }}>
-                          {count} question{count !== 1 ? 's' : ''}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Badge 
-                          variant="secondary" 
-                          size="sm"
-                          label={`${count} QCM`}
-                        />
-                        {selectedCours === name && (
-                          <Text style={{ color: BRAND_THEME.colors.primary[500], fontSize: 20 }}>✓</Text>
-                        )}
-                      </View>
-                    </View>
-                  </Card>
-                </TouchableOpacity>
+              {coursWithCounts.map(({ name, count }, index) => (
+                <FadeInView key={name} delay={300 + index * 50} animation="slideUp">
+                  <AnimatedOptionCard
+                    isSelected={selectedCours === name}
+                    onPress={() => setSelectedCours(name)}
+                    title={name}
+                    count={count}
+                  />
+                </FadeInView>
               ))}
             </View>
           )}
 
-          {/* Empty State Messages */}
+          {/* Empty States */}
           {selectedMode === 'exam' && availableExamTypes.length === 0 && !isLoading && (
-            <View style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
-              <Text style={{
-                color: BRAND_THEME.colors.gray[500],
-                fontSize: 16,
-                textAlign: 'center'
-              }}>
+            <FadeInView delay={300} animation="scale" style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 40, marginBottom: 12 }}>📋</Text>
+              <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 16, textAlign: 'center' }}>
                 Aucun examen disponible pour ce module
               </Text>
-            </View>
+            </FadeInView>
           )}
 
           {selectedMode === 'cours' && coursWithCounts.length === 0 && !isLoading && (
-            <View style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
-              <Text style={{
-                color: BRAND_THEME.colors.gray[500],
-                fontSize: 16,
-                textAlign: 'center'
-              }}>
+            <FadeInView delay={300} animation="scale" style={{ paddingHorizontal: 24, marginTop: 24, alignItems: 'center' }}>
+              <Text style={{ fontSize: 40, marginBottom: 12 }}>📖</Text>
+              <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 16, textAlign: 'center' }}>
                 Aucun cours disponible pour ce module
               </Text>
-            </View>
+            </FadeInView>
           )}
 
-          {/* Bottom Spacing */}
-          <View style={{ height: 120 }} />
+          <View style={{ height: 140 }} />
         </ScrollView>
 
-        {/* Start Button - Matching Design */}
+        {/* Start Button */}
         <View style={{
           position: 'absolute',
           bottom: 0,
@@ -484,9 +352,10 @@ export default function ModuleDetailScreen() {
           borderTopWidth: 1,
           borderTopColor: BRAND_THEME.colors.gray[100],
           paddingHorizontal: 24,
-          paddingVertical: 16
+          paddingVertical: 16,
+          paddingBottom: 32,
         }}>
-          <Button
+          <AnimatedButton
             title="Commencer la pratique"
             onPress={startPractice}
             disabled={!canStartPractice()}
@@ -496,5 +365,167 @@ export default function ModuleDetailScreen() {
         </View>
       </SafeAreaView>
     </>
+  )
+}
+
+// Animated Mode Card
+function AnimatedModeCard({ isSelected, onPress, icon, title, subtitle }: {
+  isSelected: boolean
+  onPress: () => void
+  icon: React.ReactNode
+  title: string
+  subtitle: string
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: true }).start()
+  }
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+  }
+
+  return (
+    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Animated.View style={{
+        transform: [{ scale: scaleAnim }],
+        backgroundColor: '#ffffff',
+        borderRadius: 18,
+        padding: 18,
+        marginBottom: 12,
+        borderWidth: 2,
+        borderColor: isSelected ? '#09B2AD' : 'transparent',
+        ...BRAND_THEME.shadows.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{
+            width: 52,
+            height: 52,
+            backgroundColor: isSelected ? '#09B2AD' : BRAND_THEME.colors.gray[800],
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 16,
+          }}>
+            {icon}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[900],
+              fontWeight: '700',
+              fontSize: 17,
+              marginBottom: 4,
+            }}>
+              {title}
+            </Text>
+            <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 14 }}>
+              {subtitle}
+            </Text>
+          </View>
+          {isSelected && (
+            <View style={{
+              width: 28,
+              height: 28,
+              borderRadius: 14,
+              backgroundColor: '#09B2AD',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '700' }}>✓</Text>
+            </View>
+          )}
+        </View>
+      </Animated.View>
+    </Pressable>
+  )
+}
+
+// Animated Option Card
+function AnimatedOptionCard({ isSelected, onPress, title, count }: {
+  isSelected: boolean
+  onPress: () => void
+  title: string
+  count: number
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: true }).start()
+  }
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+  }
+
+  return (
+    <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
+      <Animated.View style={{
+        transform: [{ scale: scaleAnim }],
+        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 10,
+        borderWidth: 2,
+        borderColor: isSelected ? '#09B2AD' : 'transparent',
+        ...BRAND_THEME.shadows.sm,
+      }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{
+              color: BRAND_THEME.colors.gray[900],
+              fontWeight: '600',
+              fontSize: 16,
+              marginBottom: 4,
+            }} numberOfLines={2}>
+              {title}
+            </Text>
+            <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 14 }}>
+              {count} question{count !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{
+              backgroundColor: 'rgba(9, 178, 173, 0.1)',
+              borderRadius: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+            }}>
+              <Text style={{ color: '#09B2AD', fontWeight: '700', fontSize: 13 }}>{count} QCM</Text>
+            </View>
+            {isSelected && (
+              <View style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                backgroundColor: '#09B2AD',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Text style={{ color: '#ffffff', fontSize: 12, fontWeight: '700' }}>✓</Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </Animated.View>
+    </Pressable>
+  )
+}
+
+// Module Detail Skeleton
+function ModuleDetailSkeleton() {
+  return (
+    <View>
+      <View style={{ backgroundColor: '#09B2AD', paddingHorizontal: 24, paddingTop: 60, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+        <Skeleton width={200} height={28} style={{ marginBottom: 12 }} />
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <Skeleton width={120} height={32} borderRadius={20} />
+          <Skeleton width={100} height={32} borderRadius={20} />
+        </View>
+      </View>
+      <View style={{ padding: 24 }}>
+        <Skeleton width={150} height={22} style={{ marginBottom: 16 }} />
+        <Skeleton width="100%" height={90} borderRadius={18} style={{ marginBottom: 12 }} />
+        <Skeleton width="100%" height={90} borderRadius={18} />
+      </View>
+    </View>
   )
 }

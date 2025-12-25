@@ -1,17 +1,18 @@
 // ============================================================================
-// Questions List Screen - Browse Questions by Filters
+// Questions List Screen - Browse Questions by Filters (Premium Animations)
 // ============================================================================
 
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, router, Stack } from 'expo-router'
+import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getQuestions, getQuestionCount } from '@/lib/questions'
 import { QuestionWithAnswers, ExamType, YearLevel } from '@/types'
-import { Card, Badge, LoadingSpinner, Button } from '@/components/ui'
+import { Card, Badge, LoadingSpinner, Button, FadeInView, CardSkeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { EXAM_TYPES, YEARS } from '@/constants'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 export default function QuestionsListScreen() {
   const { 
@@ -106,8 +107,11 @@ export default function QuestionsListScreen() {
   }
 
   const renderQuestion = ({ item: question, index }: { item: QuestionWithAnswers; index: number }) => (
-    <TouchableOpacity
+    <AnimatedQuestionCard
       key={question.id}
+      question={question}
+      index={index}
+      moduleName={moduleName || ''}
       onPress={() => {
         router.push({
           pathname: '/practice/[moduleId]',
@@ -119,125 +123,40 @@ export default function QuestionsListScreen() {
           }
         })
       }}
-      activeOpacity={0.7}
-    >
-      <Card variant="default" padding="md" style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-          <Text style={{
-            fontSize: 14,
-            fontWeight: '600',
-            color: BRAND_THEME.colors.primary[600]
-          }}>
-            Question {question.number}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            {question.exam_type && (
-              <Badge 
-                variant="secondary" 
-                size="sm"
-                label={question.exam_type}
-              />
-            )}
-            {question.year && (
-              <Badge 
-                variant="gray" 
-                size="sm"
-                label={`${question.year}ère Année`}
-              />
-            )}
-          </View>
-        </View>
-        
-        <Text style={{
-          fontSize: 16,
-          lineHeight: 24,
-          color: BRAND_THEME.colors.gray[900],
-          marginBottom: 12
-        }} numberOfLines={3}>
-          {question.question_text}
-        </Text>
-
-        {question.sub_discipline && (
-          <Badge 
-            variant="gray" 
-            size="sm"
-            label={question.sub_discipline}
-            style={{ alignSelf: 'flex-start', marginBottom: 8 }}
-          />
-        )}
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 12,
-            color: BRAND_THEME.colors.gray[500]
-          }}>
-            {question.answers.length} options
-          </Text>
-          
-          <Text style={{
-            fontSize: 12,
-            color: BRAND_THEME.colors.primary[600],
-            fontWeight: '500'
-          }}>
-            Voir la question →
-          </Text>
-        </View>
-      </Card>
-    </TouchableOpacity>
+    />
   )
 
   const renderFilters = () => (
-    <View style={{ padding: 16, backgroundColor: BRAND_THEME.colors.gray[50] }}>
-      {/* Exam Type Filter */}
-      <View style={{ marginBottom: 16 }}>
-        <Text style={{
-          fontSize: 16,
-          fontWeight: '600',
-          color: BRAND_THEME.colors.gray[900],
-          marginBottom: 8
-        }}>
-          Type d'Examen
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: !selectedExamType ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100]
-              }}
-              onPress={() => setSelectedExamType(null)}
-            >
-              <Text style={{
-                fontWeight: '500',
-                color: !selectedExamType ? BRAND_THEME.colors.primary[700] : BRAND_THEME.colors.gray[700]
-              }}>
-                Tous
-              </Text>
-            </TouchableOpacity>
-            {EXAM_TYPES.map(({ value, label }) => (
-              <TouchableOpacity
-                key={value}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: selectedExamType === value ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100]
-                }}
-                onPress={() => setSelectedExamType(value)}
-              >
-                <Text style={{
-                  fontWeight: '500',
-                  color: selectedExamType === value ? BRAND_THEME.colors.primary[700] : BRAND_THEME.colors.gray[700]
-                }}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-      </View>
+    <FadeInView animation="slideUp" delay={0} replayOnFocus={false}>
+      <View style={{ padding: 16, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+        {/* Exam Type Filter */}
+        <View style={{ marginBottom: 16 }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 8
+          }}>
+            Type d'Examen
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <AnimatedFilterChip
+                label="Tous"
+                isSelected={!selectedExamType}
+                onPress={() => setSelectedExamType(null)}
+              />
+              {EXAM_TYPES.map(({ value, label }) => (
+                <AnimatedFilterChip
+                  key={value}
+                  label={label}
+                  isSelected={selectedExamType === value}
+                  onPress={() => setSelectedExamType(value)}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
       {/* Year Filter */}
       <View style={{ marginBottom: 16 }}>
@@ -251,40 +170,18 @@ export default function QuestionsListScreen() {
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity
-              style={{
-                paddingHorizontal: 16,
-                paddingVertical: 8,
-                borderRadius: 20,
-                backgroundColor: !selectedYear ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100]
-              }}
+            <AnimatedFilterChip
+              label="Toutes"
+              isSelected={!selectedYear}
               onPress={() => setSelectedYear(null)}
-            >
-              <Text style={{
-                fontWeight: '500',
-                color: !selectedYear ? BRAND_THEME.colors.primary[700] : BRAND_THEME.colors.gray[700]
-              }}>
-                Toutes
-              </Text>
-            </TouchableOpacity>
+            />
             {YEARS.map(({ value, label }) => (
-              <TouchableOpacity
+              <AnimatedFilterChip
                 key={value}
-                style={{
-                  paddingHorizontal: 16,
-                  paddingVertical: 8,
-                  borderRadius: 20,
-                  backgroundColor: selectedYear === value ? BRAND_THEME.colors.primary[100] : BRAND_THEME.colors.gray[100]
-                }}
+                label={label}
+                isSelected={selectedYear === value}
                 onPress={() => setSelectedYear(value)}
-              >
-                <Text style={{
-                  fontWeight: '500',
-                  color: selectedYear === value ? BRAND_THEME.colors.primary[700] : BRAND_THEME.colors.gray[700]
-                }}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
         </ScrollView>
@@ -316,6 +213,7 @@ export default function QuestionsListScreen() {
         )}
       </View>
     </View>
+    </FadeInView>
   )
 
   return (
@@ -386,5 +284,204 @@ export default function QuestionsListScreen() {
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
+  )
+}
+
+// Animated Filter Chip Component
+function AnimatedFilterChip({
+  label,
+  isSelected,
+  onPress,
+}: {
+  label: string
+  isSelected: boolean
+  onPress: () => void
+}) {
+  const scale = useRef(new Animated.Value(1)).current
+
+  const handlePressIn = () => {
+    Animated.timing(scale, {
+      toValue: 0.95,
+      duration: 100,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      tension: 200,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        style={{
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+          borderRadius: 20,
+          backgroundColor: isSelected 
+            ? BRAND_THEME.colors.primary[100] 
+            : BRAND_THEME.colors.gray[100]
+        }}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Text style={{
+          fontWeight: '500',
+          color: isSelected 
+            ? BRAND_THEME.colors.primary[700] 
+            : BRAND_THEME.colors.gray[700]
+        }}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  )
+}
+
+// Animated Question Card Component
+function AnimatedQuestionCard({
+  question,
+  index,
+  moduleName,
+  onPress,
+}: {
+  question: QuestionWithAnswers
+  index: number
+  moduleName: string
+  onPress: () => void
+}) {
+  const scale = useRef(new Animated.Value(1)).current
+  const opacity = useRef(new Animated.Value(0)).current
+  const translateY = useRef(new Animated.Value(20)).current
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: ANIMATION_DURATION.normal,
+        delay: Math.min(index * 50, 300),
+        easing: ANIMATION_EASING.smooth,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: ANIMATION_DURATION.normal,
+        delay: Math.min(index * 50, 300),
+        easing: ANIMATION_EASING.premium,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [index])
+
+  const handlePressIn = () => {
+    Animated.timing(scale, {
+      toValue: 0.98,
+      duration: 100,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,
+      tension: 200,
+      useNativeDriver: true,
+    }).start()
+  }
+
+  return (
+    <Animated.View style={{
+      opacity,
+      transform: [{ translateY }, { scale }],
+      marginBottom: 12,
+      marginHorizontal: 16,
+    }}>
+      <TouchableOpacity
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <Card variant="default" padding="md">
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start', 
+            marginBottom: 8 
+          }}>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: BRAND_THEME.colors.primary[600]
+            }}>
+              Question {question.number}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {question.exam_type && (
+                <Badge 
+                  variant="secondary" 
+                  size="sm"
+                  label={question.exam_type}
+                />
+              )}
+              {question.year && (
+                <Badge 
+                  variant="gray" 
+                  size="sm"
+                  label={`${question.year}ère Année`}
+                />
+              )}
+            </View>
+          </View>
+          
+          <Text style={{
+            fontSize: 16,
+            lineHeight: 24,
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 12
+          }} numberOfLines={3}>
+            {question.question_text}
+          </Text>
+
+          {question.sub_discipline && (
+            <Badge 
+              variant="gray" 
+              size="sm"
+              label={question.sub_discipline}
+              style={{ alignSelf: 'flex-start', marginBottom: 8 }}
+            />
+          )}
+
+          <View style={{ 
+            flexDirection: 'row', 
+            justifyContent: 'space-between', 
+            alignItems: 'center' 
+          }}>
+            <Text style={{
+              fontSize: 12,
+              color: BRAND_THEME.colors.gray[500]
+            }}>
+              {question.answers.length} options
+            </Text>
+            
+            <Text style={{
+              fontSize: 12,
+              color: BRAND_THEME.colors.primary[600],
+              fontWeight: '500'
+            }}>
+              Voir la question →
+            </Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    </Animated.View>
   )
 }

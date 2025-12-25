@@ -1,14 +1,11 @@
 // ============================================================================
-// Fade In View - Animated Container for Smooth Entrances
+// Fade In View - Animated Container with Focus Support
 // ============================================================================
 
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { Animated, ViewStyle } from 'react-native'
-import { 
-  createSlideUp, 
-  createFadeIn,
-  ANIMATION_DURATION 
-} from '@/lib/animations'
+import { useFocusEffect } from 'expo-router'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 type AnimationType = 'fade' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'scale'
 
@@ -18,26 +15,42 @@ interface FadeInViewProps {
   duration?: number
   animation?: AnimationType
   style?: ViewStyle
+  replayOnFocus?: boolean
 }
 
 export const FadeInView: React.FC<FadeInViewProps> = ({
   children,
   delay = 0,
-  duration = ANIMATION_DURATION.normal,
+  duration = ANIMATION_DURATION.fast,
   animation = 'slideUp',
   style,
+  replayOnFocus = true,
 }) => {
   const opacity = useRef(new Animated.Value(0)).current
-  const translateY = useRef(new Animated.Value(animation === 'slideUp' ? 20 : animation === 'slideDown' ? -20 : 0)).current
-  const translateX = useRef(new Animated.Value(animation === 'slideLeft' ? 20 : animation === 'slideRight' ? -20 : 0)).current
-  const scale = useRef(new Animated.Value(animation === 'scale' ? 0.9 : 1)).current
+  const translateY = useRef(new Animated.Value(animation === 'slideUp' ? 12 : animation === 'slideDown' ? -12 : 0)).current
+  const translateX = useRef(new Animated.Value(animation === 'slideLeft' ? 12 : animation === 'slideRight' ? -12 : 0)).current
+  const scale = useRef(new Animated.Value(animation === 'scale' ? 0.95 : 1)).current
 
-  useEffect(() => {
+  const runAnimation = useCallback(() => {
+    // Reset values
+    opacity.setValue(0)
+    if (animation === 'slideUp') translateY.setValue(12)
+    else if (animation === 'slideDown') translateY.setValue(-12)
+    else translateY.setValue(0)
+    
+    if (animation === 'slideLeft') translateX.setValue(12)
+    else if (animation === 'slideRight') translateX.setValue(-12)
+    else translateX.setValue(0)
+    
+    if (animation === 'scale') scale.setValue(0.95)
+    else scale.setValue(1)
+
     const animations: Animated.CompositeAnimation[] = [
       Animated.timing(opacity, {
         toValue: 1,
         duration,
         delay,
+        easing: ANIMATION_EASING.smooth,
         useNativeDriver: true,
       }),
     ]
@@ -48,6 +61,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
           toValue: 0,
           duration,
           delay,
+          easing: ANIMATION_EASING.premium,
           useNativeDriver: true,
         })
       )
@@ -59,6 +73,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
           toValue: 0,
           duration,
           delay,
+          easing: ANIMATION_EASING.premium,
           useNativeDriver: true,
         })
       )
@@ -66,17 +81,33 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
 
     if (animation === 'scale') {
       animations.push(
-        Animated.spring(scale, {
+        Animated.timing(scale, {
           toValue: 1,
-          friction: 8,
-          tension: 100,
+          duration,
           delay,
+          easing: ANIMATION_EASING.premium,
           useNativeDriver: true,
         })
       )
     }
 
     Animated.parallel(animations).start()
+  }, [animation, delay, duration])
+
+  // Run on focus if enabled
+  useFocusEffect(
+    useCallback(() => {
+      if (replayOnFocus) {
+        runAnimation()
+      }
+    }, [replayOnFocus, runAnimation])
+  )
+
+  // Also run on initial mount
+  useEffect(() => {
+    if (!replayOnFocus) {
+      runAnimation()
+    }
   }, [])
 
   const animatedStyle = {
@@ -96,7 +127,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
 }
 
 // ============================================================================
-// Staggered List - Animate list items with delay
+// Staggered List - Animate list items with delay (replays on focus)
 // ============================================================================
 
 interface StaggeredListProps {
@@ -108,7 +139,7 @@ interface StaggeredListProps {
 
 export const StaggeredList: React.FC<StaggeredListProps> = ({
   children,
-  staggerDelay = 50,
+  staggerDelay = 40,
   animation = 'slideUp',
   style,
 }) => {
@@ -120,6 +151,7 @@ export const StaggeredList: React.FC<StaggeredListProps> = ({
           delay={index * staggerDelay} 
           animation={animation}
           style={style}
+          replayOnFocus={true}
         >
           {child}
         </FadeInView>

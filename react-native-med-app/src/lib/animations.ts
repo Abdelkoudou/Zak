@@ -4,17 +4,19 @@
 // ============================================================================
 
 import { Animated, Easing } from 'react-native'
+import { useCallback, useRef } from 'react'
+import { useFocusEffect } from 'expo-router'
 
 // ============================================================================
 // Animation Timing Presets
 // ============================================================================
 
 export const ANIMATION_DURATION = {
-  instant: 100,
-  fast: 200,
-  normal: 300,
-  slow: 500,
-  verySlow: 800,
+  instant: 80,
+  fast: 150,
+  normal: 250,
+  slow: 400,
+  verySlow: 600,
 } as const
 
 export const ANIMATION_EASING = {
@@ -29,12 +31,108 @@ export const ANIMATION_EASING = {
   bounce: Easing.bounce,
   elastic: Easing.elastic(1),
   
-  // Custom premium easings
-  smooth: Easing.bezier(0.25, 0.1, 0.25, 1),
-  snappy: Easing.bezier(0.4, 0, 0.2, 1),
-  premium: Easing.bezier(0.22, 1, 0.36, 1),
-  spring: Easing.bezier(0.68, -0.55, 0.265, 1.55),
+  // Custom premium easings - smoother curves
+  smooth: Easing.bezier(0.4, 0, 0.2, 1),
+  snappy: Easing.bezier(0.2, 0, 0, 1),
+  premium: Easing.bezier(0.16, 1, 0.3, 1),
+  spring: Easing.bezier(0.34, 1.56, 0.64, 1),
 } as const
+
+// ============================================================================
+// Custom Hook: useAnimateOnFocus
+// Replays animations every time screen comes into focus
+// ============================================================================
+
+export function useAnimateOnFocus() {
+  const opacity = useRef(new Animated.Value(0)).current
+  const translateY = useRef(new Animated.Value(15)).current
+  const scale = useRef(new Animated.Value(0.97)).current
+
+  useFocusEffect(
+    useCallback(() => {
+      // Reset values
+      opacity.setValue(0)
+      translateY.setValue(15)
+      scale.setValue(0.97)
+
+      // Run entrance animation
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: ANIMATION_DURATION.normal,
+          easing: ANIMATION_EASING.smooth,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: ANIMATION_DURATION.normal,
+          easing: ANIMATION_EASING.premium,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: ANIMATION_DURATION.normal,
+          easing: ANIMATION_EASING.smooth,
+          useNativeDriver: true,
+        }),
+      ]).start()
+
+      return () => {
+        // Optional: animate out when leaving
+      }
+    }, [])
+  )
+
+  return { opacity, translateY, scale }
+}
+
+// ============================================================================
+// Custom Hook: useStaggerAnimateOnFocus
+// For staggered list animations that replay on focus
+// ============================================================================
+
+export function useStaggerAnimateOnFocus(itemCount: number, staggerDelay = 40) {
+  const animations = useRef(
+    Array.from({ length: Math.max(itemCount, 20) }, () => ({
+      opacity: new Animated.Value(0),
+      translateY: new Animated.Value(12),
+    }))
+  ).current
+
+  useFocusEffect(
+    useCallback(() => {
+      // Reset all values
+      animations.forEach((anim) => {
+        anim.opacity.setValue(0)
+        anim.translateY.setValue(12)
+      })
+
+      // Create staggered animations
+      const animationSequence = animations.slice(0, itemCount).map((anim, index) =>
+        Animated.parallel([
+          Animated.timing(anim.opacity, {
+            toValue: 1,
+            duration: ANIMATION_DURATION.fast,
+            delay: index * staggerDelay,
+            easing: ANIMATION_EASING.smooth,
+            useNativeDriver: true,
+          }),
+          Animated.timing(anim.translateY, {
+            toValue: 0,
+            duration: ANIMATION_DURATION.fast,
+            delay: index * staggerDelay,
+            easing: ANIMATION_EASING.premium,
+            useNativeDriver: true,
+          }),
+        ])
+      )
+
+      Animated.parallel(animationSequence).start()
+    }, [itemCount])
+  )
+
+  return animations
+}
 
 // ============================================================================
 // Animation Creators

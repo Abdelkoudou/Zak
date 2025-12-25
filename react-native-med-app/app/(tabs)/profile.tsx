@@ -1,8 +1,8 @@
 // ============================================================================
-// Profile Screen - Premium UI with Smooth Animations
+// Profile Screen - Premium UI with Smooth Animations (Replays on Focus)
 // ============================================================================
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { 
   View, 
   Text, 
@@ -15,16 +15,17 @@ import {
   Pressable
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getUserStatistics, getAllModuleStatistics } from '@/lib/stats'
 import { UserStatistics, ModuleStatistics, DeviceSession } from '@/types'
 import { YEARS } from '@/constants'
 import { Card, Badge, FadeInView, Skeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
 export default function ProfileScreen() {
-  const { user, signOut, isLoading: authLoading, getDeviceSessions } = useAuth()
+  const { user, signOut, getDeviceSessions } = useAuth()
   const { width } = useWindowDimensions()
   const contentMaxWidth = 800
   
@@ -36,22 +37,21 @@ export default function ProfileScreen() {
 
   // Header animation
   const headerOpacity = useRef(new Animated.Value(0)).current
-  const headerSlide = useRef(new Animated.Value(-20)).current
+  const headerSlide = useRef(new Animated.Value(-15)).current
 
   const loadData = useCallback(async () => {
     if (!user) return
 
     try {
-      const { stats: userStats } = await getUserStatistics(user.id)
-      setStats(userStats)
-
-      const { stats: modStats } = await getAllModuleStatistics(user.id)
-      setModuleStats(modStats)
-
-      const { sessions, error: sessionsError } = await getDeviceSessions()
-      if (!sessionsError) {
-        setDeviceSessions(sessions)
-      }
+      const [userStats, modStats, sessions] = await Promise.all([
+        getUserStatistics(user.id),
+        getAllModuleStatistics(user.id),
+        getDeviceSessions()
+      ])
+      
+      if (!userStats.error) setStats(userStats.stats)
+      if (!modStats.error) setModuleStats(modStats.stats)
+      if (!sessions.error) setDeviceSessions(sessions.sessions)
     } catch (error) {
       console.error('Error loading profile data:', error)
     } finally {
