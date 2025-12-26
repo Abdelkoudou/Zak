@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 function LoginForm() {
   const router = useRouter();
@@ -74,7 +74,7 @@ function LoginForm() {
   };
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -82,23 +82,23 @@ function LoginForm() {
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { type: "spring", stiffness: 100, damping: 15 }
+      transition: { type: "spring" as const, stiffness: 100, damping: 15 }
     }
   };
 
-  const floatingVariants = {
+  const floatingVariants: Variants = {
     animate: {
       y: [-10, 10, -10],
       transition: { duration: 4, repeat: Infinity, ease: "easeInOut" as const }
     }
   };
 
-  const pulseVariants = {
+  const pulseVariants: Variants = {
     animate: {
       scale: [1, 1.05, 1],
       opacity: [0.3, 0.6, 0.3],
@@ -106,13 +106,13 @@ function LoginForm() {
     }
   };
 
-  const logoVariants = {
+  const logoVariants: Variants = {
     hidden: { scale: 0.5, opacity: 0, rotate: -10 },
     visible: { 
       scale: 1, 
       opacity: 1, 
       rotate: 0,
-      transition: { type: "spring", stiffness: 200, damping: 20 }
+      transition: { type: "spring" as const, stiffness: 200, damping: 20 }
     }
   };
 
