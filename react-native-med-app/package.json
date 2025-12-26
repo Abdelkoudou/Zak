@@ -7,11 +7,12 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build:web": "npm install react-native-worklets@0.7.1 --no-save && npx expo export --platform web && node -e \"require('fs').copyFileSync('public/favicon.ico', 'dist/favicon.ico')\"",
+    "build:web": "npx expo export --platform web && node -e \"require('fs').copyFileSync('public/favicon.ico', 'dist/favicon.ico')\"",
     "preview:web": "npx serve dist",
     "lint": "eslint .",
     "build:android": "eas build --platform android",
-    "build:ios": "eas build --platform ios"
+    "build:ios": "eas build --platform ios",
+    "postinstall": "node scripts/postinstall.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~3.2.3",
@@ -48,6 +49,7 @@
     "@types/react": "~18.2.45",
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^8.56.0",
+    "react-native-worklets": "^0.7.1",
     "serve": "^14.2.5",
     "typescript": "~5.3.3"
   },
