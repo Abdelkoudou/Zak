@@ -338,7 +338,7 @@ export default function ActivationCodesPage() {
             Codes d&apos;Activation
           </h1>
           <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-            Génération & Gestion de Licences • QCM Med
+            Génération & Gestion de Licences • FMC APP
           </p>
         </div>
       </div>

@@ -8,61 +8,89 @@
   :root {
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
-    --bg-main: theme('colors.slate.50');
-    --bg-card: theme('colors.white');
-    --border-color: theme('colors.slate.300');
-    --text-main: theme('colors.slate.900');
-    --text-muted: theme('colors.slate.600');
+    /* Light mode - Premium clean look */
+    --bg-main: #f9fafb;
+    --bg-secondary: #f3f4f6;
+    --bg-card: #ffffff;
+    --border-color: #e5e7eb;
+    --border-light: #f3f4f6;
+    --text-main: #111827;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
   }
 
   .dark {
-    --bg-main: theme('colors.slate.950');
-    --bg-card: theme('colors.slate.900');
-    --border-color: theme('colors.slate.800');
-    --text-main: theme('colors.slate.100');
-    --text-muted: theme('colors.slate.400');
+    /* Dark mode - Eerie Black palette */
+    --bg-main: #1f1f1f;
+    --bg-secondary: #262626;
+    --bg-card: #2a2a2a;
+    --border-color: #404040;
+    --border-light: #333333;
+    --text-main: #f9fafb;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
   }
 
   html {
-    font-size: 110%; /* Increase base font size slightly */
+    font-size: 110%;
   }
 
   body {
-    @apply font-body text-slate-900 bg-slate-50 dark:text-slate-100 dark:bg-slate-950 antialiased;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply font-body antialiased;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading tracking-tight;
   }
 
-  /* Snappier transitions for themed elements */
-  body, 
-  div, 
-  nav, 
-  aside, 
-  main, 
-  section, 
-  header, 
-  footer, 
-  button, 
-  input, 
-  select, 
-  textarea, 
-  a, 
-  span, 
-  p, 
-  h1, h2, h3, h4, h5, h6 {
-    transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                color 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-                box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Smooth transitions for theme changes */
+  *, *::before, *::after {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
   }
 
-  /* Specific exclusion for animations and transforms to avoid clashing */
+  /* Exclude animations from theme transitions */
   .animate-spin, .animate-pulse, .transition-transform {
     transition: none !important;
   }
+}
+
+/* Custom utility classes for theme-aware styling */
+@layer utilities {
+  .bg-theme-main {
+    background-color: var(--bg-main);
+  }
+  .bg-theme-secondary {
+    background-color: var(--bg-secondary);
+  }
+  .bg-theme-card {
+    background-color: var(--bg-card);
+  }
+  .border-theme {
+    border-color: var(--border-color);
+  }
+  .border-theme-light {
+    border-color: var(--border-light);
+  }
+  .text-theme-main {
+    color: var(--text-main);
+  }
+  .text-theme-secondary {
+    color: var(--text-secondary);
+  }
+  .text-theme-muted {
+    color: var(--text-muted);
+  }
+}
+
+/* Toast progress bar animation */
+@keyframes shrink-width {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.animate-shrink-width {
+  animation: shrink-width linear forwards;
 }

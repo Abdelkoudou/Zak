@@ -151,6 +151,19 @@ export async function getModulesWithCounts(year: YearLevel): Promise<{
   error: string | null
 }> {
   try {
+    // Try offline content first
+    const offlineModules = await OfflineContentService.getModulesByYear(year)
+    if (offlineModules && offlineModules.length > 0) {
+      // Get question counts for each offline module
+      const modulesWithCounts = await Promise.all(
+        offlineModules.map(async (module: any) => {
+          const { count } = await getModuleQuestionCount(module.name)
+          return { ...module, question_count: count }
+        })
+      )
+      return { modules: modulesWithCounts as (Module & { question_count: number })[], error: null }
+    }
+
     // Get modules for the year
     const { data: modules, error: modulesError } = await supabase
       .from('modules')

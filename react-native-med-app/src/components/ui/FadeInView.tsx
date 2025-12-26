@@ -1,11 +1,11 @@
 // ============================================================================
-// Fade In View - Animated Container with Focus Support
+// Fade In View - Premium Animated Container with Focus Support
 // ============================================================================
 
 import React, { useEffect, useRef, useCallback } from 'react'
 import { Animated, ViewStyle } from 'react-native'
 import { useFocusEffect } from 'expo-router'
-import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING } from '@/lib/premiumAnimations'
 
 type AnimationType = 'fade' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'scale'
 
@@ -21,28 +21,28 @@ interface FadeInViewProps {
 export const FadeInView: React.FC<FadeInViewProps> = ({
   children,
   delay = 0,
-  duration = ANIMATION_DURATION.fast,
+  duration = PREMIUM_TIMING.quick,
   animation = 'slideUp',
   style,
   replayOnFocus = true,
 }) => {
   const opacity = useRef(new Animated.Value(0)).current
-  const translateY = useRef(new Animated.Value(animation === 'slideUp' ? 12 : animation === 'slideDown' ? -12 : 0)).current
-  const translateX = useRef(new Animated.Value(animation === 'slideLeft' ? 12 : animation === 'slideRight' ? -12 : 0)).current
-  const scale = useRef(new Animated.Value(animation === 'scale' ? 0.95 : 1)).current
+  const translateY = useRef(new Animated.Value(animation === 'slideUp' ? 15 : animation === 'slideDown' ? -15 : 0)).current
+  const translateX = useRef(new Animated.Value(animation === 'slideLeft' ? 15 : animation === 'slideRight' ? -15 : 0)).current
+  const scale = useRef(new Animated.Value(animation === 'scale' ? 0.92 : 1)).current
 
   const runAnimation = useCallback(() => {
     // Reset values
     opacity.setValue(0)
-    if (animation === 'slideUp') translateY.setValue(12)
-    else if (animation === 'slideDown') translateY.setValue(-12)
+    if (animation === 'slideUp') translateY.setValue(15)
+    else if (animation === 'slideDown') translateY.setValue(-15)
     else translateY.setValue(0)
     
-    if (animation === 'slideLeft') translateX.setValue(12)
-    else if (animation === 'slideRight') translateX.setValue(-12)
+    if (animation === 'slideLeft') translateX.setValue(15)
+    else if (animation === 'slideRight') translateX.setValue(-15)
     else translateX.setValue(0)
     
-    if (animation === 'scale') scale.setValue(0.95)
+    if (animation === 'scale') scale.setValue(0.92)
     else scale.setValue(1)
 
     const animations: Animated.CompositeAnimation[] = [
@@ -50,18 +50,17 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
         toValue: 1,
         duration,
         delay,
-        easing: ANIMATION_EASING.smooth,
+        easing: PREMIUM_EASING.appleSmooth,
         useNativeDriver: true,
       }),
     ]
 
     if (animation === 'slideUp' || animation === 'slideDown') {
       animations.push(
-        Animated.timing(translateY, {
+        Animated.spring(translateY, {
           toValue: 0,
-          duration,
           delay,
-          easing: ANIMATION_EASING.premium,
+          ...PREMIUM_SPRING.snappy,
           useNativeDriver: true,
         })
       )
@@ -69,11 +68,10 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
 
     if (animation === 'slideLeft' || animation === 'slideRight') {
       animations.push(
-        Animated.timing(translateX, {
+        Animated.spring(translateX, {
           toValue: 0,
-          duration,
           delay,
-          easing: ANIMATION_EASING.premium,
+          ...PREMIUM_SPRING.snappy,
           useNativeDriver: true,
         })
       )
@@ -81,11 +79,10 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
 
     if (animation === 'scale') {
       animations.push(
-        Animated.timing(scale, {
+        Animated.spring(scale, {
           toValue: 1,
-          duration,
           delay,
-          easing: ANIMATION_EASING.premium,
+          ...PREMIUM_SPRING.bouncy,
           useNativeDriver: true,
         })
       )
@@ -139,7 +136,7 @@ interface StaggeredListProps {
 
 export const StaggeredList: React.FC<StaggeredListProps> = ({
   children,
-  staggerDelay = 40,
+  staggerDelay = 50,
   animation = 'slideUp',
   style,
 }) => {
@@ -149,6 +146,7 @@ export const StaggeredList: React.FC<StaggeredListProps> = ({
         <FadeInView 
           key={index} 
           delay={index * staggerDelay} 
+          duration={PREMIUM_TIMING.quick}
           animation={animation}
           style={style}
           replayOnFocus={true}

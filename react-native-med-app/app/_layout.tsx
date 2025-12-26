@@ -5,22 +5,34 @@
 import '../global.css'
 
 import { useEffect } from 'react'
+import { Platform } from 'react-native'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
-import * as SplashScreen from 'expo-splash-screen'
-import * as Linking from 'expo-linking'
 import { AuthProvider } from '@/context/AuthContext'
+import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { supabase } from '@/lib/supabase'
 
-// Prevent splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync()
+// Conditionally import native-only modules
+let SplashScreen: typeof import('expo-splash-screen') | null = null
+let Linking: typeof import('expo-linking') | null = null
 
-export default function RootLayout() {
+if (Platform.OS !== 'web') {
+  SplashScreen = require('expo-splash-screen')
+  Linking = require('expo-linking')
+  SplashScreen?.preventAutoHideAsync()
+}
+
+function RootLayoutContent() {
+  const { isDark, colors } = useTheme()
+
   useEffect(() => {
+    // Skip native-only code on web
+    if (Platform.OS === 'web') return
+
     // Hide splash screen after a short delay
     const hideSplash = async () => {
       await new Promise(resolve => setTimeout(resolve, 1000))
-      await SplashScreen.hideAsync()
+      await SplashScreen?.hideAsync()
     }
     hideSplash()
 
@@ -42,24 +54,31 @@ export default function RootLayout() {
     }
 
     // Listen for incoming deep links
-    const subscription = Linking.addEventListener('url', ({ url }) => {
+    const subscription = Linking?.addEventListener('url', ({ url }) => {
       handleDeepLink(url)
     })
 
     // Check if app was opened via deep link
-    Linking.getInitialURL().then((url) => {
+    Linking?.getInitialURL().then((url) => {
       if (url) handleDeepLink(url)
     })
 
     return () => {
-      subscription.remove()
+      subscription?.remove()
     }
   }, [])
 
   return (
-    <AuthProvider>
-      <StatusBar style="auto" />
-      <Stack screenOptions={{ headerShown: false }}>
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack 
+        screenOptions={{ 
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -69,6 +88,16 @@ export default function RootLayout() {
         <Stack.Screen name="practice/results" options={{ headerShown: true, title: 'Results' }} />
         <Stack.Screen name="saved/index" options={{ headerShown: true, title: 'Saved Questions' }} />
       </Stack>
-    </AuthProvider>
+    </>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <AuthProvider>
+        <RootLayoutContent />
+      </AuthProvider>
+    </ThemeProvider>
   )
 }

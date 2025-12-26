@@ -6,7 +6,6 @@ import 'react-native-url-polyfill/auto'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
-import * as Linking from 'expo-linking'
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -42,8 +41,13 @@ const customStorage = {
   },
 }
 
-// Create the redirect URL for deep linking
+// Create the redirect URL for deep linking (lazy load expo-linking)
 export const getRedirectUrl = () => {
+  if (Platform.OS === 'web') {
+    return typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'
+  }
+  // Only import expo-linking on native
+  const Linking = require('expo-linking')
   return Linking.createURL('auth/callback')
 }
 

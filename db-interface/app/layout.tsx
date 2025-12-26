@@ -5,8 +5,8 @@ import SessionManager from "@/components/SessionManager";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
-  title: "DB Interface - Admin Panel",
-  description: "Database management interface for MCQ Study App",
+  title: "FMC APP - Admin Panel",
+  description: "Interface d'administration pour FMC APP - Premium Medical Learning",
 };
 
 export const viewport: Viewport = {
@@ -22,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className="bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
+      <body className="bg-theme-main text-theme-main">
         <ThemeProvider>
           <SessionManager />
           <div className="flex flex-col md:flex-row min-h-screen">

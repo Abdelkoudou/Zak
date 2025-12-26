@@ -59,6 +59,7 @@ export interface Question {
   unity_name: string | null
   module_type: ModuleType | null
   image_url: string | null  // URL to question image
+  explanation: string | null // Optional explanation
   created_at: string
   updated_at: string
 }

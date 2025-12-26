@@ -14,14 +14,15 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
+  // Default to light mode
+  const [theme, setThemeState] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light');
 
-  // Handle mount and initial sync
   useEffect(() => {
+    // Check for saved preference, default to light
     const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme) {
+    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       setThemeState(savedTheme);
     }
     
@@ -61,14 +62,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [resolvedTheme, mounted]);
 
   const toggleTheme = () => {
-    // Always toggle between explicit light and dark (not system)
     const nextTheme: Theme = resolvedTheme === 'dark' ? 'light' : 'dark';
     setThemeState(nextTheme);
     localStorage.setItem('theme', nextTheme);
   };
 
-  // Prevent hydration mismatch by not rendering anything until mounted
-  // or just return the provider with light theme by default
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme, toggleTheme }}>
       {children}

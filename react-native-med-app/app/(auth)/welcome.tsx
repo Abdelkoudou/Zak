@@ -1,180 +1,676 @@
 // ============================================================================
-// Welcome Screen - Premium UI with Smooth Animations
+// Welcome Screen - Stunning Premium Landing with Jaw-Dropping Animations
 // ============================================================================
 
 import { useEffect, useRef } from 'react'
-import { View, Text, ScrollView, Image, Animated } from 'react-native'
+import { View, Text, ScrollView, Image, Animated, useWindowDimensions, Platform } from 'react-native'
 import { router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { AnimatedButton, FadeInView } from '@/components/ui'
+import { LinearGradient } from 'expo-linear-gradient'
+import { AnimatedButton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
+import {
+  PREMIUM_TIMING,
+  PREMIUM_EASING,
+  PREMIUM_SPRING,
+  PREMIUM_INITIAL,
+  createFloatingAnimation,
+  createGlowPulse,
+} from '@/lib/premiumAnimations'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('@/assets/images/logo.png')
 
 export default function WelcomeScreen() {
-  const contentMaxWidth = 500
+  const { width } = useWindowDimensions()
+  const isWeb = Platform.OS === 'web'
+  const isDesktop = width >= 1024
+  const isTablet = width >= 768 && width < 1024
+  const contentMaxWidth = isDesktop ? 1200 : 500
 
-  // Animations
-  const logoScale = useRef(new Animated.Value(0.5)).current
+  // ========== Premium Animation Values ==========
+  // Logo animations
+  const logoScale = useRef(new Animated.Value(PREMIUM_INITIAL.logoScale)).current
   const logoOpacity = useRef(new Animated.Value(0)).current
+  const logoRotate = useRef(new Animated.Value(0)).current
+  const logoGlow = useRef(new Animated.Value(0)).current
+  
+  // Title animations
   const titleOpacity = useRef(new Animated.Value(0)).current
-  const titleSlide = useRef(new Animated.Value(30)).current
+  const titleSlide = useRef(new Animated.Value(40)).current
+  const titleScale = useRef(new Animated.Value(0.9)).current
+  
+  // Subtitle animations
+  const subtitleOpacity = useRef(new Animated.Value(0)).current
+  const subtitleSlide = useRef(new Animated.Value(25)).current
+  
+  // Badge animation
+  const badgeOpacity = useRef(new Animated.Value(0)).current
+  const badgeScale = useRef(new Animated.Value(0.5)).current
+  
+  // Tagline card animations
+  const taglineOpacity = useRef(new Animated.Value(0)).current
+  const taglineSlide = useRef(new Animated.Value(60)).current
+  const taglineScale = useRef(new Animated.Value(0.85)).current
+  
+  // Button animations (staggered)
+  const button1Opacity = useRef(new Animated.Value(0)).current
+  const button1Slide = useRef(new Animated.Value(40)).current
+  const button1Scale = useRef(new Animated.Value(0.9)).current
+  
+  const button2Opacity = useRef(new Animated.Value(0)).current
+  const button2Slide = useRef(new Animated.Value(40)).current
+  const button2Scale = useRef(new Animated.Value(0.9)).current
+  
+  // Footer animation
+  const footerOpacity = useRef(new Animated.Value(0)).current
+  
+  // Ambient animations
+  const floatingY1 = useRef(new Animated.Value(0)).current
+  const floatingY2 = useRef(new Animated.Value(0)).current
+  const floatingY3 = useRef(new Animated.Value(0)).current
+  const glowPulse = useRef(new Animated.Value(0.2)).current
+  const breathingScale = useRef(new Animated.Value(1)).current
 
+  // ========== Ambient Animations (Continuous) ==========
   useEffect(() => {
-    // Staggered entrance animations
-    Animated.sequence([
-      // Logo animation
-      Animated.parallel([
-        Animated.spring(logoScale, {
+    // Multiple floating elements at different speeds
+    createFloatingAnimation(floatingY1, 12).start()
+    
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY2, {
+          toValue: -18,
+          duration: PREMIUM_TIMING.ambient * 1.2,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingY2, {
+          toValue: 18,
+          duration: PREMIUM_TIMING.ambient * 1.2,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+    
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY3, {
+          toValue: -8,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingY3, {
+          toValue: 8,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+
+    // Glow pulse
+    createGlowPulse(glowPulse, 0.15, 0.5).start()
+    
+    // Logo breathing
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathingScale, {
+          toValue: 1.03,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(breathingScale, {
           toValue: 1,
-          friction: 6,
-          tension: 80,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
           useNativeDriver: true,
         }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-      ]),
-      // Title animation
-      Animated.parallel([
-        Animated.timing(titleOpacity, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.spring(titleSlide, {
-          toValue: 0,
-          friction: 8,
-          tension: 60,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start()
+      ])
+    ).start()
   }, [])
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <ScrollView 
-        style={{ flex: 1 }} 
-        contentContainerStyle={{ flexGrow: 1, alignItems: 'center' }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={{ 
-          flex: 1, 
-          width: '100%', 
-          maxWidth: contentMaxWidth, 
-          paddingHorizontal: 24, 
-          paddingVertical: 40,
-          justifyContent: 'center',
-        }}>
-          {/* Logo & Title Section */}
-          <View style={{ alignItems: 'center', marginBottom: 48 }}>
-            {/* Animated Logo */}
+  // ========== Entrance Animation Sequence ==========
+  useEffect(() => {
+    // Total animation duration: 1 second (1000ms)
+    // 7 phases with ~140ms stagger = ~1000ms total
+    const staggerDelay = 140
+    
+    // Phase 1: Logo (immediate)
+    Animated.parallel([
+      Animated.spring(logoScale, {
+        toValue: 1,
+        ...PREMIUM_SPRING.stiff,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 150,
+        easing: PREMIUM_EASING.elegantOut,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoRotate, {
+        toValue: 1,
+        duration: 200,
+        easing: PREMIUM_EASING.dramaticEntrance,
+        useNativeDriver: true,
+      }),
+      Animated.timing(logoGlow, {
+        toValue: 1,
+        duration: 200,
+        easing: PREMIUM_EASING.elegantOut,
+        useNativeDriver: true,
+      }),
+    ]).start()
+    
+    // Phase 2: Title + Badge (140ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(titleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(titleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(titleScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(badgeOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(badgeScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay)
+    
+    // Phase 3: Subtitle (280ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(subtitleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(subtitleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 2)
+    
+    // Phase 4: Tagline card (420ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(taglineOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(taglineSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(taglineScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 3)
+    
+    // Phase 5: First button (560ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(button1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(button1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(button1Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 4)
+    
+    // Phase 6: Second button (700ms)
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(button2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.spring(button2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.spring(button2Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+      ]).start()
+    }, staggerDelay * 5)
+    
+    // Phase 7: Footer (840ms, completes ~1000ms)
+    setTimeout(() => {
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+    }, staggerDelay * 6)
+  }, [])
+
+  const logoSpin = logoRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-15deg', '0deg'],
+  })
+
+
+  // ========== Desktop Layout ==========
+  if (isDesktop) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#ffffff', flexDirection: 'row' }}>
+        {/* Left Side - Hero with Gradient */}
+        <LinearGradient
+          colors={['#0D9488', '#09B2AD', '#14B8A6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 60,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Animated Decorative Elements */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            top: -100, 
+            right: -100, 
+            width: 400, 
+            height: 400, 
+            borderRadius: 200, 
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            transform: [{ translateY: floatingY1 }],
+          }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            bottom: -150, 
+            left: -150, 
+            width: 500, 
+            height: 500, 
+            borderRadius: 250, 
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            opacity: glowPulse,
+          }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            top: '30%', 
+            left: '8%', 
+            width: 120, 
+            height: 120, 
+            borderRadius: 60, 
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            transform: [{ translateY: floatingY2 }],
+          }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            bottom: '20%', 
+            right: '15%', 
+            width: 80, 
+            height: 80, 
+            borderRadius: 40, 
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            transform: [{ translateY: floatingY3 }],
+          }} />
+
+          <Animated.View style={{
+            opacity: logoOpacity,
+            transform: [
+              { scale: Animated.multiply(logoScale, breathingScale) }, 
+              { rotate: logoSpin }
+            ],
+            alignItems: 'center',
+            zIndex: 1,
+          }}>
+            {/* Glowing Logo Container */}
             <Animated.View style={{
-              opacity: logoOpacity,
-              transform: [{ scale: logoScale }],
-              marginBottom: 32,
+              width: 200,
+              height: 200,
+              borderRadius: 50,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 40,
+              // @ts-ignore
+              backdropFilter: isWeb ? 'blur(30px)' : undefined,
+              shadowColor: '#ffffff',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: logoGlow,
+              shadowRadius: 40,
             }}>
-              <View style={{
-                width: 140,
-                height: 140,
-                borderRadius: 35,
-                backgroundColor: 'rgba(9, 178, 173, 0.08)',
-                alignItems: 'center',
-                justifyContent: 'center',
-                ...BRAND_THEME.shadows.lg,
-              }}>
-                <Image 
-                  source={Logo}
-                  style={{
-                    width: 100,
-                    height: 100,
-                    resizeMode: 'contain',
-                  }}
-                />
-              </View>
+              <Image 
+                source={Logo}
+                style={{ width: 140, height: 140, resizeMode: 'contain' }}
+              />
             </Animated.View>
             
-            {/* Animated Title */}
+            <Animated.View style={{
+              opacity: titleOpacity,
+              transform: [{ translateY: titleSlide }, { scale: titleScale }],
+            }}>
+              <Text style={{
+                fontSize: 56,
+                fontWeight: '900',
+                color: '#ffffff',
+                textAlign: 'center',
+                marginBottom: 8,
+                letterSpacing: -2,
+                textShadowColor: 'rgba(0, 0, 0, 0.15)',
+                textShadowOffset: { width: 0, height: 4 },
+                textShadowRadius: 15,
+              }}>
+                FMC APP
+              </Text>
+            </Animated.View>
+            
+            <Animated.View style={{
+              opacity: badgeOpacity,
+              transform: [{ scale: badgeScale }],
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              paddingHorizontal: 20,
+              paddingVertical: 8,
+              borderRadius: 20,
+              marginBottom: 16,
+            }}>
+              <Text style={{
+                fontSize: 14,
+                color: '#ffffff',
+                fontWeight: '700',
+                letterSpacing: 2,
+                textTransform: 'uppercase',
+              }}>
+                Premium Medical Learning
+              </Text>
+            </Animated.View>
+            
+            <Animated.Text style={{
+              fontSize: 20,
+              color: 'rgba(255, 255, 255, 0.9)',
+              textAlign: 'center',
+              lineHeight: 32,
+              maxWidth: 420,
+              fontWeight: '500',
+              opacity: subtitleOpacity,
+              transform: [{ translateY: subtitleSlide }],
+            }}>
+              La plateforme de préparation aux examens médicaux pour les étudiants algériens
+            </Animated.Text>
+          </Animated.View>
+        </LinearGradient>
+
+        {/* Right Side - Form */}
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 60,
+          backgroundColor: '#ffffff',
+        }}>
+          <View style={{ width: '100%', maxWidth: 460 }}>
             <Animated.View style={{
               opacity: titleOpacity,
               transform: [{ translateY: titleSlide }],
-              alignItems: 'center',
             }}>
               <Text style={{
-                fontSize: 36,
-                fontWeight: '800',
+                fontSize: 42,
+                fontWeight: '900',
                 color: BRAND_THEME.colors.gray[900],
-                textAlign: 'center',
                 marginBottom: 12,
-                letterSpacing: -1,
+                letterSpacing: -1.5,
               }}>
-                FMC Study App
+                Bienvenue 👋
               </Text>
-              
-              <Text style={{
-                fontSize: 18,
-                color: BRAND_THEME.colors.gray[500],
-                textAlign: 'center',
-                marginBottom: 16,
-                lineHeight: 26,
-              }}>
-                Préparez vos examens médicaux{'\n'}avec confiance
-              </Text>
-
-              <View style={{
-                backgroundColor: 'rgba(9, 178, 173, 0.1)',
-                paddingHorizontal: 20,
-                paddingVertical: 10,
-                borderRadius: 25,
-              }}>
-                <Text style={{
-                  fontSize: 14,
-                  color: '#09B2AD',
-                  fontWeight: '600',
-                  letterSpacing: 0.5,
-                }}>
-                  🇩🇿 Curriculum français • Étudiants algériens
-                </Text>
-              </View>
             </Animated.View>
-          </View>
+            
+            <Animated.Text style={{
+              fontSize: 18,
+              color: BRAND_THEME.colors.gray[500],
+              marginBottom: 48,
+              lineHeight: 28,
+              opacity: subtitleOpacity,
+              transform: [{ translateY: subtitleSlide }],
+            }}>
+              Connectez-vous pour accéder à vos cours et commencer à pratiquer
+            </Animated.Text>
 
-        
-       
-
-          {/* Action Buttons */}
-          <FadeInView delay={800} animation="slideUp">
-            <View style={{ gap: 12 }}>
+            {/* Animated Buttons */}
+            <Animated.View style={{ 
+              marginBottom: 16,
+              opacity: button1Opacity,
+              transform: [{ translateY: button1Slide }, { scale: button1Scale }],
+            }}>
               <AnimatedButton 
                 title="Créer un compte" 
                 onPress={() => router.push('/(auth)/register')}
                 variant="primary"
                 size="lg"
               />
-              
+            </Animated.View>
+            
+            <Animated.View style={{ 
+              opacity: button2Opacity,
+              transform: [{ translateY: button2Slide }, { scale: button2Scale }],
+            }}>
               <AnimatedButton 
                 title="Se connecter" 
                 onPress={() => router.push('/(auth)/login')}
                 variant="secondary"
                 size="lg"
               />
+            </Animated.View>
+
+            <Animated.Text style={{
+              fontSize: 13,
+              color: BRAND_THEME.colors.gray[400],
+              textAlign: 'center',
+              marginTop: 32,
+              opacity: footerOpacity,
+            }}>
+              🔒 Plateforme sécurisée • 🇩🇿 Curriculum français
+            </Animated.Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
+
+  // ========== Mobile/Tablet Layout ==========
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <ScrollView 
+        style={{ flex: 1 }} 
+        contentContainerStyle={{ flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Top Gradient Header */}
+        <LinearGradient
+          colors={['#0D9488', '#09B2AD', '#14B8A6']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            width: '100%',
+            paddingTop: 60,
+            paddingBottom: 80,
+            paddingHorizontal: 24,
+            alignItems: 'center',
+            borderBottomLeftRadius: 40,
+            borderBottomRightRadius: 40,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Animated Decorative Circles */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            top: -50, 
+            right: -50, 
+            width: 200, 
+            height: 200, 
+            borderRadius: 100, 
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            transform: [{ translateY: floatingY1 }],
+          }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            bottom: -30, 
+            left: -30, 
+            width: 150, 
+            height: 150, 
+            borderRadius: 75, 
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            opacity: glowPulse,
+          }} />
+          <Animated.View style={{ 
+            position: 'absolute', 
+            top: '40%', 
+            left: '5%', 
+            width: 60, 
+            height: 60, 
+            borderRadius: 30, 
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
+            transform: [{ translateY: floatingY3 }],
+          }} />
+
+          {/* Logo */}
+          <Animated.View style={{
+            opacity: logoOpacity,
+            transform: [
+              { scale: Animated.multiply(logoScale, breathingScale) },
+              { rotate: logoSpin }
+            ],
+            marginBottom: 24,
+          }}>
+            <Animated.View style={{
+              width: isTablet ? 130 : 110,
+              height: isTablet ? 130 : 110,
+              borderRadius: 32,
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#ffffff',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.4,
+              shadowRadius: 30,
+            }}>
+              <Image 
+                source={Logo}
+                style={{
+                  width: isTablet ? 90 : 75,
+                  height: isTablet ? 90 : 75,
+                  resizeMode: 'contain',
+                }}
+              />
+            </Animated.View>
+          </Animated.View>
+          
+          <Animated.View style={{
+            opacity: titleOpacity,
+            transform: [{ translateY: titleSlide }, { scale: titleScale }],
+            alignItems: 'center',
+          }}>
+            <Text style={{
+              fontSize: isTablet ? 52 : 44,
+              fontWeight: '900',
+              color: '#ffffff',
+              textAlign: 'center',
+              marginBottom: 12,
+              letterSpacing: -1.5,
+              textShadowColor: 'rgba(0, 0, 0, 0.15)',
+              textShadowOffset: { width: 0, height: 4 },
+              textShadowRadius: 15,
+            }}>
+              FMC APP
+            </Text>
+          </Animated.View>
+          
+          <Animated.View style={{
+            opacity: badgeOpacity,
+            transform: [{ scale: badgeScale }],
+            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+            paddingHorizontal: 20,
+            paddingVertical: 8,
+            borderRadius: 20,
+          }}>
+            <Text style={{
+              fontSize: 11,
+              color: '#ffffff',
+              fontWeight: '700',
+              letterSpacing: 2,
+              textTransform: 'uppercase',
+            }}>
+              Premium Medical Learning
+            </Text>
+          </Animated.View>
+        </LinearGradient>
+
+        {/* Content Section */}
+        <View style={{ 
+          flex: 1, 
+          width: '100%', 
+          maxWidth: contentMaxWidth, 
+          paddingHorizontal: 24,
+          alignSelf: 'center',
+          marginTop: -40,
+        }}>
+          {/* Tagline Card */}
+          <Animated.View style={{
+            opacity: taglineOpacity,
+            transform: [{ translateY: taglineSlide }, { scale: taglineScale }],
+            backgroundColor: '#ffffff',
+            borderRadius: 28,
+            paddingVertical: 28,
+            paddingHorizontal: 24,
+            marginBottom: 32,
+            ...BRAND_THEME.shadows.lg,
+            borderWidth: 1,
+            borderColor: 'rgba(9, 178, 173, 0.1)',
+          }}>
+            <Text style={{
+              fontSize: isTablet ? 22 : 20,
+              color: BRAND_THEME.colors.gray[800],
+              textAlign: 'center',
+              lineHeight: 30,
+              fontWeight: '600',
+            }}>
+              Préparez vos examens médicaux{'\n'}avec confiance 🎯
+            </Text>
+            
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              marginTop: 20,
+              gap: 10,
+            }}>
+              <View style={{
+                backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 14,
+              }}>
+                <Text style={{ fontSize: 13, color: '#09B2AD', fontWeight: '600' }}>
+                  🇩🇿 Algérie
+                </Text>
+              </View>
+              <View style={{
+                backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                borderRadius: 14,
+              }}>
+                <Text style={{ fontSize: 13, color: '#09B2AD', fontWeight: '600' }}>
+                  🇫🇷 Curriculum français
+                </Text>
+              </View>
             </View>
-          </FadeInView>
+          </Animated.View>
+
+          {/* Action Buttons */}
+          <Animated.View style={{ 
+            marginBottom: 16,
+            opacity: button1Opacity,
+            transform: [{ translateY: button1Slide }, { scale: button1Scale }],
+          }}>
+            <AnimatedButton 
+              title="Créer un compte" 
+              onPress={() => router.push('/(auth)/register')}
+              variant="primary"
+              size="lg"
+            />
+          </Animated.View>
+          
+          <Animated.View style={{ 
+            opacity: button2Opacity,
+            transform: [{ translateY: button2Slide }, { scale: button2Scale }],
+          }}>
+            <AnimatedButton 
+              title="Se connecter" 
+              onPress={() => router.push('/(auth)/login')}
+              variant="secondary"
+              size="lg"
+            />
+          </Animated.View>
 
           {/* Footer */}
-          <FadeInView delay={1000} animation="fade">
+          <Animated.View style={{ opacity: footerOpacity, marginTop: 40, marginBottom: 24 }}>
             <Text style={{
               fontSize: 13,
               color: BRAND_THEME.colors.gray[400],
               textAlign: 'center',
-              marginTop: 40,
             }}>
-              Plateforme sécurisée pour étudiants en médecine
+              🔒 Plateforme sécurisée pour étudiants en médecine
             </Text>
-          </FadeInView>
+          </Animated.View>
         </View>
       </ScrollView>
     </SafeAreaView>

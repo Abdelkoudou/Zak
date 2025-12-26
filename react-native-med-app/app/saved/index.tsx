@@ -9,7 +9,7 @@ import { Stack, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getSavedQuestions, unsaveQuestion } from '@/lib/saved'
 import { QuestionWithAnswers } from '@/types'
-import { FadeInView, StaggeredList, CardSkeleton } from '@/components/ui'
+import { FadeInView, StaggeredList, ListSkeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 
@@ -71,7 +71,7 @@ export default function SavedQuestionsScreen() {
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
         <Stack.Screen options={{ title: 'Questions sauvegardées' }} />
         <View style={{ padding: 24 }}>
-          <CardSkeleton count={3} />
+          <ListSkeleton count={3} />
         </View>
       </SafeAreaView>
     )

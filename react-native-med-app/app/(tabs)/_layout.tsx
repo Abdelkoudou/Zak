@@ -1,51 +1,54 @@
 // ============================================================================
-// Tabs Layout - Premium Tab Bar with Smooth Animations
+// Tabs Layout - Premium Tab Bar with Responsive Design
 // ============================================================================
 
 import { useRef, useEffect } from 'react'
 import { Tabs } from 'expo-router'
-import { View, useWindowDimensions, Animated, Pressable } from 'react-native'
+import { View, useWindowDimensions, Animated, Pressable, Platform } from 'react-native'
 import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
+  const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 768
+  
+  // Hide tab bar on desktop web (use header navigation instead)
+  const showTabBar = !isWeb || !isDesktop
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: {
+        tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: isDesktop ? 70 : 85,
-          paddingBottom: isDesktop ? 10 : 25,
-          paddingTop: 12,
+          height: Platform.OS === 'ios' ? 98 : 92,
+          paddingBottom: Platform.OS === 'ios' ? 34 : 26,
+          paddingTop: 14,
           borderTopLeftRadius: 28,
           borderTopRightRadius: 28,
           position: 'absolute',
           bottom: 0,
-          left: isDesktop ? (width - Math.min(width, 600)) / 2 : 0,
-          right: isDesktop ? (width - Math.min(width, 600)) / 2 : 0,
-          width: isDesktop ? Math.min(width, 600) : '100%',
+          left: 0,
+          right: 0,
           elevation: 0,
           shadowColor: '#09B2AD',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.15,
           shadowRadius: 12,
-          borderBottomLeftRadius: isDesktop ? 28 : 0,
-          borderBottomRightRadius: isDesktop ? 28 : 0,
-          marginBottom: isDesktop ? 20 : 0,
-        },
+        } : { display: 'none' },
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 4,
+          marginTop: 10,
           letterSpacing: 0.3,
         },
-        tabBarButton: (props) => <AnimatedTabButton {...props} />,
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
+        tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
     >
       <Tabs.Screen
@@ -54,7 +57,7 @@ export default function TabsLayout() {
           title: 'Accueil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <HomeIcon size={28} color={color} />
+              <HomeIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -65,7 +68,7 @@ export default function TabsLayout() {
           title: 'Ressources',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ResourcesIcon size={28} color={color} />
+              <ResourcesIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -76,7 +79,7 @@ export default function TabsLayout() {
           title: 'Profil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ProfileIcon size={28} color={color} />
+              <ProfileIcon size={26} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -112,18 +115,9 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
       justifyContent: 'center',
       opacity: opacityAnim,
       transform: [{ scale: scaleAnim }],
+      marginBottom: 2,
     }}>
       {children}
-      {focused && (
-        <View style={{
-          position: 'absolute',
-          bottom: -8,
-          width: 4,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: '#ffffff',
-        }} />
-      )}
     </Animated.View>
   )
 }
@@ -155,13 +149,13 @@ function AnimatedTabButton(props: any) {
       {...props}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[props.style, { flex: 1 }]}
+      style={[props.style, { flex: 1, alignItems: 'center' }]}
     >
       <Animated.View style={{ 
-        flex: 1, 
         alignItems: 'center', 
         justifyContent: 'center',
         transform: [{ scale: scaleAnim }],
+        paddingTop: 4,
       }}>
         {props.children}
       </Animated.View>

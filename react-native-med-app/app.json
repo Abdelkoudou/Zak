@@ -43,11 +43,12 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./public/favicon.ico"
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "./plugins/withCustomBuildProperties"
     ],
     "experiments": {
       "typedRoutes": true
