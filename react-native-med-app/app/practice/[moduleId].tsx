@@ -31,6 +31,7 @@ export default function PracticeScreen() {
   const [questions, setQuestions] = useState<QuestionWithAnswers[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, OptionLabel[]>>({})
+  const [eliminatedAnswers, setEliminatedAnswers] = useState<Record<string, OptionLabel[]>>({})
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set())
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
@@ -106,9 +107,38 @@ export default function PracticeScreen() {
   const currentQuestion = questions[currentIndex]
   const isSubmitted = currentQuestion ? submittedQuestions.has(currentQuestion.id) : false
   const currentAnswers = currentQuestion ? selectedAnswers[currentQuestion.id] || [] : []
+  const currentEliminated = currentQuestion ? eliminatedAnswers[currentQuestion.id] || [] : []
+
+  const toggleEliminate = (label: OptionLabel) => {
+    if (isSubmitted || !currentQuestion) return
+    
+    setEliminatedAnswers(prev => {
+      const current = prev[currentQuestion.id] || []
+      const isEliminated = current.includes(label)
+      
+      if (isEliminated) {
+        // Restore option
+        return { ...prev, [currentQuestion.id]: current.filter(l => l !== label) }
+      } else {
+        // Eliminate option
+        // If it was selected, deselect it
+        if (currentAnswers.includes(label)) {
+          setSelectedAnswers(prevSelected => ({
+            ...prevSelected,
+            [currentQuestion.id]: (prevSelected[currentQuestion.id] || []).filter(l => l !== label)
+          }))
+        }
+        return { ...prev, [currentQuestion.id]: [...current, label] }
+      }
+    })
+  }
 
   const selectAnswer = (label: OptionLabel) => {
     if (isSubmitted || !currentQuestion) return
+    
+    // Don't allow selecting eliminated options
+    if (currentEliminated.includes(label)) return
+
     setSelectedAnswers(prev => {
       const current = prev[currentQuestion.id] || []
       const isSelected = current.includes(label)
@@ -296,18 +326,28 @@ export default function PracticeScreen() {
                   answer={answer}
                   index={index}
                   isSelected={isSelected}
+                  isEliminated={currentEliminated.includes(answer.option_label)}
                   isCorrect={isCorrect}
                   isSubmitted={isSubmitted}
                   cardBg={cardBg}
                   borderColor={borderColor}
                   textColor={textColor}
                   onPress={() => selectAnswer(answer.option_label)}
+                  onLongPress={() => toggleEliminate(answer.option_label)}
                   questionFade={questionFade}
                   colors={colors}
                 />
               )
             })}
           </View>
+
+
+          {/* Feature Hint */}
+          {!isSubmitted && (
+            <Text style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: colors.textMuted }}>
+              💡 Astuce : Appui long pour éliminer une option
+            </Text>
+          )}
 
           {/* Explanation */}
           {isSubmitted && currentQuestion.explanation && (
@@ -346,7 +386,7 @@ export default function PracticeScreen() {
 }
 
 // Animated Answer Option
-function AnimatedAnswerOption({ answer, index, isSelected, isCorrect, isSubmitted, cardBg, borderColor, textColor, onPress, questionFade, colors }: any) {
+function AnimatedAnswerOption({ answer, index, isSelected, isEliminated, isCorrect, isSubmitted, cardBg, borderColor, textColor, onPress, onLongPress, questionFade, colors }: any) {
   const scale = useRef(new Animated.Value(1)).current
   const slideIn = useRef(new Animated.Value(30)).current
   
@@ -357,15 +397,29 @@ function AnimatedAnswerOption({ answer, index, isSelected, isCorrect, isSubmitte
   const handlePressIn = () => { Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: true }).start() }
   const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
 
+  // If eliminated, override styles to look disabled/crossed out
+  const finalCardBg = isEliminated ? colors.background : cardBg
+  const finalBorderColor = isEliminated ? colors.border : borderColor
+  const finalTextColor = isEliminated ? colors.textMuted : textColor
+  const finalOpacity = isEliminated ? 0.6 : 1
+
   return (
     <Animated.View style={{ opacity: questionFade, transform: [{ translateY: slideIn }, { scale }] }}>
-      <TouchableOpacity onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut} disabled={isSubmitted} activeOpacity={1}>
-        <View style={{ backgroundColor: cardBg, borderRadius: 16, padding: 16, borderWidth: 2, borderColor }}>
+      <TouchableOpacity 
+        onPress={onPress} 
+        onLongPress={onLongPress}
+        onPressIn={handlePressIn} 
+        onPressOut={handlePressOut} 
+        disabled={isSubmitted} 
+        activeOpacity={isEliminated ? 1 : 0.7}
+        delayLongPress={200}
+      >
+        <View style={{ backgroundColor: finalCardBg, borderRadius: 16, padding: 16, borderWidth: 2, borderColor: finalBorderColor, opacity: finalOpacity }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-              <Text style={{ fontWeight: 'bold', color: isSelected ? '#ffffff' : colors.textMuted }}>{answer.option_label}</Text>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center', marginRight: 12, opacity: isEliminated ? 0.5 : 1 }}>
+              <Text style={{ fontWeight: 'bold', color: isSelected ? '#ffffff' : colors.textMuted, textDecorationLine: isEliminated ? 'line-through' : 'none' }}>{answer.option_label}</Text>
             </View>
-            <Text style={{ flex: 1, color: textColor, fontSize: 16, lineHeight: 22 }}>{answer.answer_text}</Text>
+            <Text style={{ flex: 1, color: finalTextColor, fontSize: 16, lineHeight: 22, textDecorationLine: isEliminated ? 'line-through' : 'none' }}>{answer.answer_text}</Text>
             {isSubmitted && isCorrect && <Text style={{ color: colors.success, fontSize: 20, marginLeft: 8 }}>✓</Text>}
             {isSubmitted && isSelected && !isCorrect && <Text style={{ color: colors.error, fontSize: 20, marginLeft: 8 }}>✗</Text>}
           </View>
