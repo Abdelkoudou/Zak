@@ -5,6 +5,10 @@ module.exports = {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   presets: [require("nativewind/preset")],
+  // Disable aspect-ratio utilities to avoid react-native-css-interop parsing bug
+  corePlugins: {
+    aspectRatio: false,
+  },
   theme: {
     extend: {
       colors: {
