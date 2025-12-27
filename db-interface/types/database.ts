@@ -31,6 +31,7 @@ export interface Course {
   year: string;
   speciality: string;
   module_name: string;
+  sub_discipline?: string;
   createdAt: Date;
 }
 
