@@ -1,15 +1,25 @@
 import { supabase } from '@/lib/supabase';
 import { Course } from '@/types/database';
 
-export async function getCourses(year: string, speciality: string, moduleName: string) {
+export async function getCourses(year: string, speciality: string, moduleName: string, subDiscipline?: string) {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('courses')
             .select('*')
             .eq('year', year)
             .eq('speciality', speciality)
-            .eq('module_name', moduleName)
-            .order('name');
+            .eq('module_name', moduleName);
+
+        if (subDiscipline) {
+            query = query.eq('sub_discipline', subDiscipline);
+        } else {
+            // If subDiscipline is not provided, we might want to fetch those where it's null
+            // or just all courses for the module. The user said "only show the cours on the sub module".
+            // So if sub-module is selected, filter by it.
+            query = query.is('sub_discipline', null);
+        }
+
+        const { data, error } = await query.order('name');
 
         if (error) throw error;
 
@@ -21,6 +31,7 @@ export async function getCourses(year: string, speciality: string, moduleName: s
                 year: c.year,
                 speciality: c.speciality,
                 module_name: c.module_name,
+                sub_discipline: c.sub_discipline,
                 createdAt: new Date(c.created_at),
             })) as Course[],
         };
@@ -39,17 +50,25 @@ export async function createCourse(course: {
     year: string;
     speciality: string;
     module_name: string;
+    sub_discipline?: string;
 }) {
     try {
         // Check if course already exists
-        const { data: existing } = await supabase
+        let query = supabase
             .from('courses')
             .select('id')
             .eq('name', course.name)
             .eq('year', course.year)
             .eq('speciality', course.speciality)
-            .eq('module_name', course.module_name)
-            .single();
+            .eq('module_name', course.module_name);
+
+        if (course.sub_discipline) {
+            query = query.eq('sub_discipline', course.sub_discipline);
+        } else {
+            query = query.is('sub_discipline', null);
+        }
+
+        const { data: existing } = await query.single();
 
         if (existing) {
             return { success: true, data: existing };
@@ -63,6 +82,7 @@ export async function createCourse(course: {
                     year: course.year,
                     speciality: course.speciality,
                     module_name: course.module_name,
+                    sub_discipline: course.sub_discipline || null,
                 },
             ])
             .select()
@@ -78,6 +98,7 @@ export async function createCourse(course: {
                 year: data.year,
                 speciality: data.speciality,
                 module_name: data.module_name,
+                sub_discipline: data.sub_discipline,
                 createdAt: new Date(data.created_at),
             } as Course,
         };

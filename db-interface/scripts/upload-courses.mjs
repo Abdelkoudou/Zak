@@ -17,8 +17,9 @@ const currentDir = process.cwd(); // Assuming this is c:\Users\MOZ\Desktop\qcm\q
 const COURS_FILE_PATH = path.join(currentDir, '..', 'cours');
 
 function cleanCourseName(name) {
+  // Remove leading symbols like *, →, but keep numbers
   return name
-    .replace(/^[\s*→\d.-]+/, '')
+    .replace(/^[\s*→]+/, '')
     .trim();
 }
 
@@ -28,10 +29,20 @@ async function uploadCourses() {
       console.error('File not found:', COURS_FILE_PATH);
       process.exit(1);
   }
+
+  // Clear existing courses to avoid duplicates with different names (with/without numbers)
+  console.log('Clearing existing courses...');
+  const { error: clearError } = await supabase.from('courses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (clearError) {
+      console.error('Error clearing courses:', clearError.message);
+      // Continue anyway, maybe it's fine
+  }
+
   const content = fs.readFileSync(COURS_FILE_PATH, 'utf-8');
   const lines = content.split('\n');
 
   let currentModule = '';
+  let currentSubDiscipline = '';
   let currentYear = '2';
   const speciality = 'Médecine';
   const coursesToInsert = [];
@@ -42,21 +53,32 @@ async function uploadCourses() {
 
     if (line.includes('🔴 Unité 01: Cardio')) {
       currentModule = 'Appareil Cardio-vasculaire et Respiratoire';
+      currentSubDiscipline = '';
       continue;
     } else if (line.includes('🔴 Unité 03: l’appareil urinaire')) {
       currentModule = 'Appareil Urinaire';
+      currentSubDiscipline = '';
       continue;
     } else if (line.includes('Unité 04: Appareil Endocrinien')) {
       currentModule = 'Appareil Endocrinien et de la Reproduction';
+      currentSubDiscipline = '';
       continue;
     }
 
     if (line.includes('Embryologie du tube digestif')) {
         currentModule = 'Appareil Digestif';
+        currentSubDiscipline = '';
     }
 
     if (line.endsWith(':') || line.startsWith('*') && line.endsWith(':') || line.startsWith('→')) {
         const lowerLine = line.toLowerCase();
+        if (lowerLine.includes('anatomie')) currentSubDiscipline = 'Anatomie';
+        else if (lowerLine.includes('histologie')) currentSubDiscipline = 'Histologie';
+        else if (lowerLine.includes('physiologie')) currentSubDiscipline = 'Physiologie';
+        else if (lowerLine.includes('biochimie')) currentSubDiscipline = 'Biochimie';
+        else if (lowerLine.includes('biophysique')) currentSubDiscipline = 'Biophysique';
+        
+        // Skip adding the header as a course
         if (lowerLine.includes('anatomie') || 
             lowerLine.includes('histologie') || 
             lowerLine.includes('physiologie') || 
@@ -73,7 +95,8 @@ async function uploadCourses() {
           name: cleanName,
           year: currentYear,
           speciality: speciality,
-          module_name: currentModule
+          module_name: currentModule,
+          sub_discipline: currentSubDiscipline || null
         });
       }
     }
@@ -89,7 +112,7 @@ async function uploadCourses() {
   const { data, error } = await supabase
     .from('courses')
     .upsert(coursesToInsert, { 
-        onConflict: 'name,year,speciality,module_name',
+        onConflict: 'name,year,speciality,module_name,sub_discipline',
         ignoreDuplicates: true 
     });
 

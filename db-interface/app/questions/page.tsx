@@ -135,7 +135,8 @@ export default function QuestionsPage() {
         const result = await getCourses(
           formData.year,
           formData.speciality,
-          formData.moduleId
+          formData.moduleId,
+          formData.subDisciplineId
         );
         if (result.success) {
           setAvailableCourses(result.data.map((c: any) => c.name));
@@ -146,7 +147,7 @@ export default function QuestionsPage() {
       }
     };
     fetchCourses();
-  }, [formData.year, formData.speciality, formData.moduleId]);
+  }, [formData.year, formData.speciality, formData.moduleId, formData.subDisciplineId]);
 
   const loadQuestions = async () => {
     setLoading(true);
@@ -205,7 +206,8 @@ export default function QuestionsPage() {
             name: coursName,
             year: formData.year,
             speciality: formData.speciality || 'Médecine',
-            module_name: formData.moduleId
+            module_name: formData.moduleId,
+            sub_discipline: formData.subDisciplineId
         });
     }
 
