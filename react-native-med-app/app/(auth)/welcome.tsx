@@ -14,8 +14,6 @@ import {
   PREMIUM_EASING,
   PREMIUM_SPRING,
   PREMIUM_INITIAL,
-  createFloatingAnimation,
-  createGlowPulse,
 } from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -71,13 +69,36 @@ export default function WelcomeScreen() {
   const floatingY3 = useRef(new Animated.Value(0)).current
   const glowPulse = useRef(new Animated.Value(0.2)).current
   const breathingScale = useRef(new Animated.Value(1)).current
+  
+  // Store animation references for cleanup
+  const animationsRef = useRef<Animated.CompositeAnimation[]>([])
 
   // ========== Ambient Animations (Continuous) ==========
   useEffect(() => {
-    // Multiple floating elements at different speeds
-    createFloatingAnimation(floatingY1, 12).start()
+    // Clear any existing animations
+    animationsRef.current.forEach(anim => anim.stop())
+    animationsRef.current = []
     
-    Animated.loop(
+    // Create floating animation 1
+    const floating1 = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY1, {
+          toValue: -12,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatingY1, {
+          toValue: 12,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+      ])
+    )
+    
+    // Create floating animation 2
+    const floating2 = Animated.loop(
       Animated.sequence([
         Animated.timing(floatingY2, {
           toValue: -18,
@@ -92,9 +113,10 @@ export default function WelcomeScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start()
+    )
     
-    Animated.loop(
+    // Create floating animation 3
+    const floating3 = Animated.loop(
       Animated.sequence([
         Animated.timing(floatingY3, {
           toValue: -8,
@@ -109,13 +131,28 @@ export default function WelcomeScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start()
+    )
 
-    // Glow pulse
-    createGlowPulse(glowPulse, 0.15, 0.5).start()
+    // Create glow pulse animation
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 0.5,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0.15,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: true,
+        }),
+      ])
+    )
     
-    // Logo breathing
-    Animated.loop(
+    // Create breathing animation
+    const breathing = Animated.loop(
       Animated.sequence([
         Animated.timing(breathingScale, {
           toValue: 1.03,
@@ -130,7 +167,17 @@ export default function WelcomeScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start()
+    )
+    
+    // Store references and start animations
+    animationsRef.current = [floating1, floating2, floating3, glow, breathing]
+    animationsRef.current.forEach(anim => anim.start())
+    
+    // Cleanup: stop all animations when component unmounts or tab loses focus
+    return () => {
+      animationsRef.current.forEach(anim => anim.stop())
+      animationsRef.current = []
+    }
   }, [])
 
   // ========== Entrance Animation Sequence ==========

@@ -2,7 +2,7 @@
 // Home Screen - Premium UI with Dark Mode Support
 // ============================================================================
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { 
   View, 
   Text, 
@@ -25,6 +25,7 @@ import { WebHeader } from '@/components/ui/WebHeader'
 import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 import { BookIcon } from '@/components/icons/ResultIcons'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { useWebVisibility } from '@/lib/useWebVisibility'
 
 export default function HomeScreen() {
   const { user } = useAuth()
@@ -35,11 +36,18 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-20)).current
   const statsScale = useRef(new Animated.Value(0.95)).current
   const statsOpacity = useRef(new Animated.Value(0)).current
+  
+  // Track running animations for cleanup
+  const runningAnimations = useRef<Animated.CompositeAnimation[]>([])
+  // Track last data load time to prevent rapid reloads
+  const lastLoadTime = useRef<number>(0)
+  const DATA_LOAD_COOLDOWN = 5000 // 5 seconds
 
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
@@ -51,12 +59,21 @@ export default function HomeScreen() {
   const columnCount = isDesktop ? 3 : isTablet ? 2 : 1
   const showWebHeader = isWeb && width >= 768
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     if (!user) {
       setIsLoading(false)
       return
     }
+    
+    // Prevent rapid reloads unless forced
+    const now = Date.now()
+    if (!force && now - lastLoadTime.current < DATA_LOAD_COOLDOWN) {
+      setRefreshing(false)
+      return
+    }
+    
     try {
+      lastLoadTime.current = now
       const yearToLoad = user.year_of_study || '1'
       const [modulesResult, statsResult] = await Promise.all([
         getModulesWithCounts(yearToLoad),
@@ -69,30 +86,76 @@ export default function HomeScreen() {
     } finally {
       setIsLoading(false)
       setRefreshing(false)
+      setHasInitiallyLoaded(true)
     }
   }, [user])
 
+  // Handle visibility changes on web
+  useWebVisibility({
+    debounceMs: 200,
+    onVisibilityChange: useCallback((isVisible: boolean, hiddenDuration: number) => {
+      // Only reload data if hidden for more than 60 seconds
+      if (isVisible && hiddenDuration > 60000 && hasInitiallyLoaded) {
+        loadData(true)
+      }
+    }, [loadData, hasInitiallyLoaded]),
+  })
+
+  const runEntranceAnimations = useCallback(() => {
+    // Stop any running animations first
+    runningAnimations.current.forEach(anim => anim.stop())
+    runningAnimations.current = []
+    
+    // Reset values
+    headerOpacity.setValue(0)
+    headerSlide.setValue(-20)
+    statsScale.setValue(0.95)
+    statsOpacity.setValue(0)
+
+    const headerAnim = Animated.parallel([
+      Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
+      Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+    ])
+    
+    runningAnimations.current.push(headerAnim)
+    headerAnim.start()
+
+    // Delayed stats animation
+    const statsTimer = setTimeout(() => {
+      const statsAnim = Animated.parallel([
+        Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
+        Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+      ])
+      runningAnimations.current.push(statsAnim)
+      statsAnim.start()
+    }, 100)
+    
+    return () => {
+      clearTimeout(statsTimer)
+      runningAnimations.current.forEach(anim => anim.stop())
+      runningAnimations.current = []
+    }
+  }, [])
+
+  // Initial load
+  useEffect(() => {
+    loadData(true)
+  }, [user?.id])
+
   useFocusEffect(
     useCallback(() => {
-      headerOpacity.setValue(0)
-      headerSlide.setValue(-20)
-      statsScale.setValue(0.95)
-      statsOpacity.setValue(0)
-
-      Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-        Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-      ]).start()
-
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-          Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-        ]).start()
-      }, 100)
-
-      loadData()
-    }, [loadData])
+      // On native, run animations on focus
+      // On web, only run on initial mount (not on tab visibility changes)
+      if (!isWeb || !hasInitiallyLoaded) {
+        const cleanup = runEntranceAnimations()
+        return cleanup
+      }
+      
+      return () => {
+        // Cleanup animations when losing focus
+        runningAnimations.current.forEach(anim => anim.stop())
+      }
+    }, [isWeb, hasInitiallyLoaded, runEntranceAnimations])
   )
 
   const onRefresh = useCallback(() => {
@@ -205,11 +268,7 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}>Vos Modules</Text>
                   <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>{modules.length} modules disponibles</Text>
                 </View>
-                {modules.length > 6 && (
-                  <Pressable>
-                    <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Voir tout →</Text>
-                  </Pressable>
-                )}
+                
               </View>
             </FadeInView>
 

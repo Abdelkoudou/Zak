@@ -2,11 +2,12 @@
 // Authentication Context
 // ============================================================================
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { AppState, AppStateStatus, Platform } from 'react-native'
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react'
+import { Platform } from 'react-native'
 import { User, RegisterFormData, ProfileUpdateData } from '@/types'
 import * as authService from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { useWebVisibility } from '@/lib/useWebVisibility'
 
 // ============================================================================
 // Types
@@ -42,6 +43,13 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Track if we're currently checking session to prevent duplicate calls
+  const isCheckingSession = useRef(false)
+  // Track last successful session check time
+  const lastSessionCheck = useRef<number>(0)
+  // Minimum time between session checks (30 seconds)
+  const SESSION_CHECK_COOLDOWN = 30000
 
   // Check for existing session on mount
   useEffect(() => {
@@ -84,26 +92,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  // Re-check session when app comes to foreground or tab gets focus
-  useEffect(() => {
-    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      // On web, 'active' corresponds to the tab gaining focus
-      if (nextAppState === 'active') {
-        try {
-          // Verify session validity and refresh tokens if needed
-          await checkSession()
-        } catch (error) {
-          // Error re-validating session on focus silently handled
-        }
-      }
-    }
-
-    const subscription = AppState.addEventListener('change', handleAppStateChange)
+  // Handle visibility changes with debouncing
+  const handleVisibilityChange = useCallback(async (isVisible: boolean, hiddenDuration: number) => {
+    // Only check session when becoming visible after being hidden for a while
+    if (!isVisible) return
     
-    return () => {
-      subscription.remove()
+    // Skip if hidden for less than 30 seconds (quick tab switch)
+    if (hiddenDuration < SESSION_CHECK_COOLDOWN) return
+    
+    // Skip if we checked recently
+    const timeSinceLastCheck = Date.now() - lastSessionCheck.current
+    if (timeSinceLastCheck < SESSION_CHECK_COOLDOWN) return
+    
+    // Skip if already checking
+    if (isCheckingSession.current) return
+    
+    try {
+      isCheckingSession.current = true
+      await checkSession()
+    } catch {
+      // Silently handle errors
+    } finally {
+      isCheckingSession.current = false
     }
   }, [])
+
+  // Use the web visibility hook for proper tab visibility handling
+  useWebVisibility({
+    debounceMs: 200,
+    onVisibilityChange: handleVisibilityChange,
+  })
 
   // Check for existing session
   const checkSession = async () => {
@@ -112,6 +130,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // This avoids unnecessary re-renders during mount
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
+      lastSessionCheck.current = Date.now()
     } catch {
       setUser(null)
     } finally {

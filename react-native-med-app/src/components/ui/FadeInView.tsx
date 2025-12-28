@@ -3,7 +3,7 @@
 // ============================================================================
 
 import React, { useEffect, useRef, useCallback } from 'react'
-import { Animated, ViewStyle } from 'react-native'
+import { Animated, ViewStyle, Platform } from 'react-native'
 import { useFocusEffect } from 'expo-router'
 import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING } from '@/lib/premiumAnimations'
 
@@ -15,6 +15,7 @@ interface FadeInViewProps {
   duration?: number
   animation?: AnimationType
   style?: ViewStyle
+  /** Whether to replay animation on screen focus (default: true on native, false on web) */
   replayOnFocus?: boolean
 }
 
@@ -24,14 +25,22 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
   duration = PREMIUM_TIMING.quick,
   animation = 'slideUp',
   style,
-  replayOnFocus = true,
+  // Default to false on web to prevent animations replaying on tab visibility changes
+  replayOnFocus = Platform.OS !== 'web',
 }) => {
   const opacity = useRef(new Animated.Value(0)).current
   const translateY = useRef(new Animated.Value(animation === 'slideUp' ? 15 : animation === 'slideDown' ? -15 : 0)).current
   const translateX = useRef(new Animated.Value(animation === 'slideLeft' ? 15 : animation === 'slideRight' ? -15 : 0)).current
   const scale = useRef(new Animated.Value(animation === 'scale' ? 0.92 : 1)).current
+  const hasAnimated = useRef(false)
+  const currentAnimation = useRef<Animated.CompositeAnimation | null>(null)
 
   const runAnimation = useCallback(() => {
+    // Stop any running animation first
+    if (currentAnimation.current) {
+      currentAnimation.current.stop()
+    }
+    
     // Reset values
     opacity.setValue(0)
     if (animation === 'slideUp') translateY.setValue(15)
@@ -88,24 +97,41 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
       )
     }
 
-    Animated.parallel(animations).start()
+    currentAnimation.current = Animated.parallel(animations)
+    currentAnimation.current.start(() => {
+      hasAnimated.current = true
+    })
   }, [animation, delay, duration])
 
-  // Run on focus if enabled
+  // Run on focus if enabled (primarily for native)
   useFocusEffect(
     useCallback(() => {
       if (replayOnFocus) {
         runAnimation()
       }
+      
+      return () => {
+        // Cleanup: stop animation when losing focus
+        if (currentAnimation.current) {
+          currentAnimation.current.stop()
+        }
+      }
     }, [replayOnFocus, runAnimation])
   )
 
-  // Also run on initial mount
+  // Run on initial mount (for web or when replayOnFocus is false)
   useEffect(() => {
-    if (!replayOnFocus) {
+    if (!replayOnFocus && !hasAnimated.current) {
       runAnimation()
     }
-  }, [])
+    
+    return () => {
+      // Cleanup on unmount
+      if (currentAnimation.current) {
+        currentAnimation.current.stop()
+      }
+    }
+  }, [replayOnFocus, runAnimation])
 
   const animatedStyle = {
     opacity,
