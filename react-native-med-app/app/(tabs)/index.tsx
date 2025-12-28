@@ -13,9 +13,8 @@ import {
   Pressable,
   Platform,
   ImageBackground,
-  StyleSheet
+  Image
 } from 'react-native'
-import { BlurView } from 'expo-blur'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -56,12 +55,11 @@ export default function HomeScreen() {
 
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
-  const isLargeDesktop = width >= 1440
   const isTablet = width >= 768 && width < 1024
   const isMobile = width < 768
   
-  const contentMaxWidth = isLargeDesktop ? 1400 : 1200
-  const statsMaxWidth = isLargeDesktop ? 900 : isDesktop ? 800 : 600
+  const contentMaxWidth = 1200
+  const statsMaxWidth = isDesktop ? 1000 : 800
   const columnCount = isDesktop ? 3 : isTablet ? 2 : 1
   const showWebHeader = isWeb && width >= 768
 
@@ -201,29 +199,29 @@ export default function HomeScreen() {
             source={HeaderImg} 
             style={{
               width: '100%',
-              paddingTop: showWebHeader ? (isLargeDesktop ? 60 : 48) : 40,
-              paddingBottom: isLargeDesktop ? 140 : isDesktop ? 120 : 100,
+              paddingTop: showWebHeader ? 48 : 40,
+              paddingBottom: isDesktop ? 120 : 100,
               alignItems: 'center',
             }}
             imageStyle={{
               resizeMode: 'cover',
-              borderBottomLeftRadius: isLargeDesktop ? 56 : isDesktop ? 48 : 32,
-              borderBottomRightRadius: isLargeDesktop ? 56 : isDesktop ? 48 : 32,
+              borderBottomLeftRadius: isDesktop ? 48 : 32,
+              borderBottomRightRadius: isDesktop ? 48 : 32,
             }}
           >
-            <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isLargeDesktop ? 48 : isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
+            <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
               <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                <View style={{ marginBottom: isLargeDesktop ? 20 : 14 }}>
-                  <Text style={{ color: '#09B2AD', fontSize: isLargeDesktop ? 22 : isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 6 }}>
+                <View style={{ marginBottom: 14 }}>
+                  <Text style={{ color: '#09B2AD', fontSize: isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 4 }}>
                     Bienvenue
                   </Text>
-                  <Text style={{ color: '#1E1E1E', fontSize: isLargeDesktop ? 48 : isDesktop ? 36 : 28, fontWeight: '800', letterSpacing: -0.5 }}>
+                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 36 : 28, fontWeight: '800', letterSpacing: -0.5 }}>
                     {user?.full_name || 'Étudiant'}
                   </Text>
                 </View>
                 
-                <View style={{ backgroundColor: 'rgba(9, 178, 173, 0.15)', borderRadius: 24, paddingHorizontal: isLargeDesktop ? 20 : 16, paddingVertical: isLargeDesktop ? 10 : 8 }}>
-                  <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: isLargeDesktop ? 15 : 13 }}>{getYearLabel()}</Text>
+                <View style={{ backgroundColor: 'rgba(9, 178, 173, 0.15)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
+                  <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
                 </View>
               </View>
             </Animated.View>
@@ -231,38 +229,31 @@ export default function HomeScreen() {
         </View>
 
         {/* Content Container */}
-        <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isLargeDesktop ? 48 : isDesktop ? 32 : 24 }}>
+        <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Stats Cards */}
-          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isLargeDesktop ? -70 : isDesktop ? -60 : -45, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
+          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -60 : -45, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
             {isLoading ? (
               <StatsSkeleton />
             ) : stats ? (
               <View style={{ 
-                borderRadius: isLargeDesktop ? 36 : isDesktop ? 32 : 24, 
-                overflow: 'hidden',
+                backgroundColor: 'rgba(255, 255, 255, 0.85)', 
+                borderRadius: isDesktop ? 32 : 24, 
+                padding: isDesktop ? 28 : 20, 
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.12,
-                shadowRadius: 24,
-                elevation: 10,
+                shadowOffset: { width: 0, height: 10 },
+                shadowOpacity: 0.15,
+                shadowRadius: 20,
+                elevation: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.5)',
+                // @ts-ignore
+                backdropFilter: 'blur(20px)',
               }}>
-                <BlurView 
-                  intensity={Platform.OS === 'web' ? 40 : 80} 
-                  tint="light"
-                  style={{
-                    padding: isLargeDesktop ? 36 : isDesktop ? 28 : 20,
-                    borderRadius: isLargeDesktop ? 36 : isDesktop ? 32 : 24,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255, 255, 255, 0.6)',
-                    backgroundColor: Platform.OS === 'web' ? 'rgba(255, 255, 255, 0.85)' : 'transparent',
-                  }}
-                >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                    <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isLargeDesktop ? 36 : isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                    <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isLargeDesktop ? 36 : isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                    <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isLargeDesktop ? 36 : isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                  </View>
-                </BlurView>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                  <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                  <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                </View>
               </View>
             ) : null}
           </Animated.View>

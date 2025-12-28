@@ -20,12 +20,12 @@ export { AnimatedListItem, AnimatedFlatList, AnimatedGrid } from './AnimatedList
 
 // Premium Web Components
 export { WebHeader } from './WebHeader'
-export { 
-  PremiumCard, 
-  PremiumButton, 
-  StatsCard, 
-  ModuleCard, 
-  SectionHeader, 
+export {
+  PremiumCard,
+  PremiumButton,
+  StatsCard,
+  ModuleCard,
+  SectionHeader,
   EmptyState,
-  AnimatedCounter 
+  AnimatedCounter
 } from './PremiumComponents'
