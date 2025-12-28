@@ -6,7 +6,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { Platform } from 'react-native'
 import { User, RegisterFormData, ProfileUpdateData } from '@/types'
 import * as authService from '@/lib/auth'
-import { supabase, ensureValidSession } from '@/lib/supabase'
+import { supabase, ensureValidSession, getStoredSessionSync } from '@/lib/supabase'
 import { useWebVisibility } from '@/lib/useWebVisibility'
 
 // ============================================================================
@@ -52,23 +52,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const SESSION_CHECK_COOLDOWN = Platform.OS === 'web' ? 5000 : 30000
   // Track if initial load is complete
   const initialLoadComplete = useRef(false)
+  // Track if we've subscribed to auth changes
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
 
   // Check for existing session on mount
   useEffect(() => {
     let isMounted = true
     
-    // Safety timeout: ensure loading state is cleared after 5 seconds
+    // Safety timeout: ensure loading state is cleared after 8 seconds (increased for slow networks)
     const safetyTimeout = setTimeout(() => {
       if (isMounted && isLoading) {
         console.warn('[Auth] Safety timeout triggered - forcing loading state to false')
         setIsLoading(false)
         initialLoadComplete.current = true
       }
-    }, 5000)
+    }, 8000)
 
     const init = async () => {
       try {
+        // On web, check if there's a stored session before making async calls
+        // This helps prevent the flash of login screen on refresh
+        if (Platform.OS === 'web') {
+          const hasStoredSession = getStoredSessionSync()
+          console.log('[Auth] Web init - has stored session:', hasStoredSession)
+        }
+        
         await checkSession()
+      } catch (error) {
+        console.error('[Auth] Init error:', error)
+        setIsLoading(false)
       } finally {
         if (isMounted) {
           clearTimeout(safetyTimeout)
@@ -87,16 +99,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('[Auth] Auth state changed:', event)
 
         if (event === 'SIGNED_IN' && session) {
-          await refreshUser()
+          // Don't refresh if we're already loading (prevents double fetch on init)
+          if (!isLoading) {
+            await refreshUser()
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Token was refreshed, ensure user data is still valid
-          console.log('[Auth] Token refreshed')
+          console.log('[Auth] Token refreshed successfully')
+        } else if (event === 'INITIAL_SESSION') {
+          // This is fired when Supabase loads the initial session from storage
+          console.log('[Auth] Initial session loaded:', !!session)
+          if (session && !user) {
+            await refreshUser()
+          } else if (!session) {
+            setUser(null)
+            setIsLoading(false)
+          }
         }
       }
     )
+    
+    subscriptionRef.current = subscription
 
     return () => {
       isMounted = false
@@ -110,53 +136,78 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Only handle when becoming visible
     if (!isVisible) return
     
-    // Always try to recover session on web when tab becomes visible
-    // This is critical for fixing the "infinite loading" issue
-    if (Platform.OS === 'web' && initialLoadComplete.current) {
-      // Skip if we checked very recently (within 2 seconds)
-      const timeSinceLastCheck = Date.now() - lastSessionCheck.current
-      if (timeSinceLastCheck < 2000) return
+    // Only handle on web after initial load is complete
+    if (Platform.OS !== 'web' || !initialLoadComplete.current) return
+    
+    // Skip if we checked very recently (within 3 seconds)
+    const timeSinceLastCheck = Date.now() - lastSessionCheck.current
+    if (timeSinceLastCheck < 3000) {
+      console.log('[Auth] Skipping visibility check - too recent')
+      return
+    }
+    
+    // Skip if already checking
+    if (isCheckingSession.current) {
+      console.log('[Auth] Skipping visibility check - already checking')
+      return
+    }
+    
+    console.log('[Auth] Tab became visible, checking session...', { hiddenDuration })
+    
+    try {
+      isCheckingSession.current = true
       
-      // Skip if already checking
-      if (isCheckingSession.current) return
+      // First, check if there's a stored session
+      const hasStoredSession = getStoredSessionSync()
       
-      console.log('[Auth] Tab became visible, checking session...', { hiddenDuration })
+      if (!hasStoredSession) {
+        // No stored session - if we have a user, they've been logged out
+        if (user) {
+          console.warn('[Auth] No stored session but user exists - clearing user')
+          setUser(null)
+        }
+        lastSessionCheck.current = Date.now()
+        return
+      }
       
-      try {
-        isCheckingSession.current = true
-        
-        // First, ensure the Supabase session is valid
-        const isValid = await ensureValidSession()
-        
-        if (!isValid && user) {
-          // Session is invalid but we have a user - this is the bug!
-          // The session was lost while the tab was hidden
-          console.warn('[Auth] Session invalid but user exists - attempting recovery')
-          
-          // Try to get a fresh session
-          const { data: { session } } = await supabase.auth.getSession()
-          
-          if (!session) {
-            // Session is truly gone - user needs to re-login
-            console.warn('[Auth] Session recovery failed - user must re-login')
+      // There's a stored session, verify it's still valid
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('[Auth] Error getting session on visibility change:', error.message)
+        // Don't clear user on transient errors
+        lastSessionCheck.current = Date.now()
+        return
+      }
+      
+      if (!session) {
+        // Session is gone but storage had something - might be corrupted
+        console.warn('[Auth] Session not found despite stored data')
+        if (user) {
+          // Try to refresh the session
+          const { error: refreshError } = await supabase.auth.refreshSession()
+          if (refreshError) {
+            console.warn('[Auth] Session refresh failed - user must re-login')
             setUser(null)
-          } else {
-            // Session exists, refresh user data
-            await refreshUser()
-          }
-        } else if (isValid && user) {
-          // Session is valid, optionally refresh user data if hidden for a while
-          if (hiddenDuration > 60000) {
-            await refreshUser()
           }
         }
-        
-        lastSessionCheck.current = Date.now()
-      } catch (error) {
-        console.error('[Auth] Error during visibility change handling:', error)
-      } finally {
-        isCheckingSession.current = false
+      } else if (user) {
+        // Session exists and we have a user - optionally refresh user data if hidden for a while
+        if (hiddenDuration > 60000) {
+          console.log('[Auth] Refreshing user data after long hidden duration')
+          await refreshUser()
+        }
+      } else {
+        // Session exists but no user - this shouldn't happen, refresh user
+        console.log('[Auth] Session exists but no user - refreshing')
+        await refreshUser()
       }
+      
+      lastSessionCheck.current = Date.now()
+    } catch (error) {
+      console.error('[Auth] Error during visibility change handling:', error)
+    } finally {
+      isCheckingSession.current = false
     }
   }, [user])
 
