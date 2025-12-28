@@ -15,6 +15,7 @@ import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { showConfirm } from '@/lib/alerts'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -185,10 +186,13 @@ export default function PracticeScreen() {
   }
 
   const finishPractice = async () => {
-    Alert.alert('Terminer la session', 'Voulez-vous terminer cette session de pratique ?', [
-      { text: 'Continuer', style: 'cancel' },
-      { text: 'Terminer', onPress: async () => { await saveResults() } },
-    ])
+    showConfirm(
+      'Terminer la session',
+      'Voulez-vous terminer cette session de pratique ?',
+      async () => { await saveResults() },
+      'Terminer',
+      'Continuer'
+    )
   }
 
   const saveResults = async () => {

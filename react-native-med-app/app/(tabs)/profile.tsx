@@ -25,6 +25,7 @@ import { YEARS } from '@/constants'
 import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
+import { showConfirm } from '@/lib/alerts'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -87,21 +88,21 @@ export default function ProfileScreen() {
   }, [loadData])
 
   const handleSignOut = () => {
-    Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { 
-        text: 'Déconnexion', 
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const result = await signOut()
-            if (result?.error) Alert.alert('Erreur', result.error)
-          } catch {
-            Alert.alert('Erreur', 'Une erreur est survenue')
-          }
+    showConfirm(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      async () => {
+        try {
+          const result = await signOut()
+          if (result?.error) Alert.alert('Erreur', result.error)
+        } catch {
+          Alert.alert('Erreur', 'Une erreur est survenue')
         }
       },
-    ])
+      'Déconnexion',
+      'Annuler',
+      'destructive'
+    )
   }
 
   const getYearLabel = () => YEARS.find(y => y.value === user?.year_of_study)?.label || ''
