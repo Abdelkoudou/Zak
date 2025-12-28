@@ -44,20 +44,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Check for existing session on mount
   useEffect(() => {
-    checkSession()
+    let isMounted = true
+    
+    // Safety timeout: ensure loading state is cleared after 5 seconds
+    const safetyTimeout = setTimeout(() => {
+      if (isMounted) {
+        setIsLoading(false)
+      }
+    }, 5000)
+
+    const init = async () => {
+      await checkSession()
+      if (isMounted) {
+        clearTimeout(safetyTimeout)
+      }
+    }
+
+    init()
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return
+
         if (event === 'SIGNED_IN' && session) {
           await refreshUser()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
+          setIsLoading(false)
         }
       }
     )
 
     return () => {
+      isMounted = false
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [])
@@ -65,7 +86,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Check for existing session
   const checkSession = async () => {
     try {
-      setIsLoading(true)
+      // Don't set isLoading(true) here if it's already true from initial state
+      // This avoids unnecessary re-renders during mount
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
     } catch {

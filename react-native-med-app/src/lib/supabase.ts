@@ -13,10 +13,13 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
 // Check if we're in a browser/native environment (not SSR)
 const isClient = typeof window !== 'undefined' || Platform.OS !== 'web'
 
-// Create a custom storage adapter that handles SSR
+// Create a custom storage adapter that handles SSR and optimizes for web/native
 const customStorage = {
   getItem: async (key: string): Promise<string | null> => {
     if (!isClient) return null
+    if (Platform.OS === 'web') {
+      return localStorage.getItem(key)
+    }
     try {
       return await AsyncStorage.getItem(key)
     } catch {
@@ -25,18 +28,26 @@ const customStorage = {
   },
   setItem: async (key: string, value: string): Promise<void> => {
     if (!isClient) return
+    if (Platform.OS === 'web') {
+      localStorage.setItem(key, value)
+      return
+    }
     try {
       await AsyncStorage.setItem(key, value)
     } catch {
-      // Ignore storage errors during SSR
+      // Ignore storage errors
     }
   },
   removeItem: async (key: string): Promise<void> => {
     if (!isClient) return
+    if (Platform.OS === 'web') {
+      localStorage.removeItem(key)
+      return
+    }
     try {
       await AsyncStorage.removeItem(key)
     } catch {
-      // Ignore storage errors during SSR
+      // Ignore storage errors
     }
   },
 }
