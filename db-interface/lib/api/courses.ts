@@ -12,11 +12,6 @@ export async function getCourses(year: string, speciality: string, moduleName: s
 
         if (subDiscipline) {
             query = query.eq('sub_discipline', subDiscipline);
-        } else {
-            // If subDiscipline is not provided, we might want to fetch those where it's null
-            // or just all courses for the module. The user said "only show the cours on the sub module".
-            // So if sub-module is selected, filter by it.
-            query = query.is('sub_discipline', null);
         }
 
         const { data, error } = await query.order('name');
