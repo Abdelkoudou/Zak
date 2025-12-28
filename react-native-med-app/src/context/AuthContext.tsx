@@ -3,6 +3,7 @@
 // ============================================================================
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { AppState, AppStateStatus, Platform } from 'react-native'
 import { User, RegisterFormData, ProfileUpdateData } from '@/types'
 import * as authService from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
@@ -80,6 +81,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isMounted = false
       clearTimeout(safetyTimeout)
       subscription.unsubscribe()
+    }
+  }, [])
+
+  // Re-check session when app comes to foreground or tab gets focus
+  useEffect(() => {
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      // On web, 'active' corresponds to the tab gaining focus
+      if (nextAppState === 'active') {
+        try {
+          // Verify session validity and refresh tokens if needed
+          await checkSession()
+        } catch (error) {
+          // Error re-validating session on focus silently handled
+        }
+      }
+    }
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange)
+    
+    return () => {
+      subscription.remove()
     }
   }, [])
 
