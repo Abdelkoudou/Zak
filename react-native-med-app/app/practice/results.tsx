@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useRef, useCallback } from 'react'
-import { View, Text, TouchableOpacity, Animated, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Animated, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
@@ -82,8 +82,13 @@ export default function ResultsScreen() {
     <>
       <Stack.Screen options={{ title: 'Résultat', headerBackVisible: false, headerStyle: { backgroundColor: colors.card }, headerTintColor: colors.text }} />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom', 'left', 'right']}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
           {/* Score Circle */}
           <FadeInView animation="scale" delay={0}>
             <View style={{ alignItems: 'center', marginBottom: 32 }}>
@@ -157,12 +162,12 @@ export default function ResultsScreen() {
 
           {/* Action Buttons */}
           <FadeInView animation="slideUp" delay={900}>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 12, paddingBottom: 20 }}>
               <AnimatedActionButton title="Pratiquer à nouveau" onPress={() => router.back()} variant="primary" colors={colors} />
               <AnimatedActionButton title="Retour à l'accueil" onPress={() => router.replace('/(tabs)')} variant="ghost" colors={colors} />
             </View>
           </FadeInView>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </>
   )

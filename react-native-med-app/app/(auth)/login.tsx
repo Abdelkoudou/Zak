@@ -501,8 +501,8 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView 
-          style={{ flex: 1 }} 
-          contentContainerStyle={{ flexGrow: 1 }}
+          style={{ flex: 1, overflow: 'hidden' }} 
+          contentContainerStyle={{ flexGrow: 1, maxWidth: '100%', overflow: 'hidden' }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -630,6 +630,7 @@ export default function LoginScreen() {
             alignSelf: 'center', 
             width: '100%',
             marginTop: -24,
+            overflow: 'hidden',
           }}>
             {/* Welcome Card */}
             <Animated.View style={{

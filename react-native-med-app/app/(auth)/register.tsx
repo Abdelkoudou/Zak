@@ -182,8 +182,8 @@ export default function RegisterScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
-          style={{ flex: 1 }} 
-          contentContainerStyle={{ paddingBottom: 40 }} 
+          style={{ flex: 1, overflow: 'hidden' }} 
+          contentContainerStyle={{ paddingBottom: 40, maxWidth: '100%', overflow: 'hidden' }} 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
@@ -287,6 +287,7 @@ export default function RegisterScreen() {
             alignSelf: 'center',
             opacity: formOpacity,
             transform: [{ translateY: formSlide }],
+            overflow: 'hidden',
           }}>
             {/* Error Message */}
             {error && (

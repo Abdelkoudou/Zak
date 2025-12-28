@@ -91,15 +91,13 @@ export async function ensureValidSession(): Promise<boolean> {
         // Token is about to expire, try to refresh
         const { error: refreshError } = await supabase.auth.refreshSession()
         if (refreshError) {
-          console.warn('[Supabase] Failed to refresh session:', refreshError.message)
           return false
         }
       }
     }
     
     return true
-  } catch (error) {
-    console.error('[Supabase] Error in ensureValidSession:', error)
+  } catch {
     return false
   }
 }

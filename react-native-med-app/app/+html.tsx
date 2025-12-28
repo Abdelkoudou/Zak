@@ -26,6 +26,13 @@ export default function Root({ children }: PropsWithChildren) {
         */}
         <ScrollViewStyleReset />
 
+        <style dangerouslySetInnerHTML={{ __html: `
+          html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+            position: relative;
+          }
+        ` }} />
         {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
       <body>{children}</body>

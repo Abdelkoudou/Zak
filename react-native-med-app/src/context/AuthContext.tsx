@@ -62,7 +62,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Safety timeout: ensure loading state is cleared after 8 seconds (increased for slow networks)
     const safetyTimeout = setTimeout(() => {
       if (isMounted && isLoading) {
-        console.warn('[Auth] Safety timeout triggered - forcing loading state to false')
         setIsLoading(false)
         initialLoadComplete.current = true
       }
@@ -70,13 +69,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const init = async () => {
       try {
-        // On web, check if there's a stored session before making async calls
-        // This helps prevent the flash of login screen on refresh
-        if (Platform.OS === 'web') {
-          const hasStoredSession = getStoredSessionSync()
-          console.log('[Auth] Web init - has stored session:', hasStoredSession)
-        }
-        
         await checkSession()
       } catch (error) {
         console.error('[Auth] Init error:', error)
@@ -95,8 +87,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return
-        
-        console.log('[Auth] Auth state changed:', event)
 
         if (event === 'SIGNED_IN' && session) {
           // Don't refresh if we're already loading (prevents double fetch on init)
@@ -108,10 +98,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Token was refreshed, ensure user data is still valid
-          console.log('[Auth] Token refreshed successfully')
         } else if (event === 'INITIAL_SESSION') {
           // This is fired when Supabase loads the initial session from storage
-          console.log('[Auth] Initial session loaded:', !!session)
           if (session && !user) {
             await refreshUser()
           } else if (!session) {
@@ -141,18 +129,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     // Skip if we checked very recently (within 3 seconds)
     const timeSinceLastCheck = Date.now() - lastSessionCheck.current
-    if (timeSinceLastCheck < 3000) {
-      console.log('[Auth] Skipping visibility check - too recent')
-      return
-    }
+    if (timeSinceLastCheck < 3000) return
     
     // Skip if already checking
-    if (isCheckingSession.current) {
-      console.log('[Auth] Skipping visibility check - already checking')
-      return
-    }
-    
-    console.log('[Auth] Tab became visible, checking session...', { hiddenDuration })
+    if (isCheckingSession.current) return
     
     try {
       isCheckingSession.current = true
@@ -163,7 +143,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!hasStoredSession) {
         // No stored session - if we have a user, they've been logged out
         if (user) {
-          console.warn('[Auth] No stored session but user exists - clearing user')
           setUser(null)
         }
         lastSessionCheck.current = Date.now()
@@ -174,7 +153,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
-        console.error('[Auth] Error getting session on visibility change:', error.message)
         // Don't clear user on transient errors
         lastSessionCheck.current = Date.now()
         return
@@ -182,30 +160,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (!session) {
         // Session is gone but storage had something - might be corrupted
-        console.warn('[Auth] Session not found despite stored data')
         if (user) {
           // Try to refresh the session
           const { error: refreshError } = await supabase.auth.refreshSession()
           if (refreshError) {
-            console.warn('[Auth] Session refresh failed - user must re-login')
             setUser(null)
           }
         }
       } else if (user) {
         // Session exists and we have a user - optionally refresh user data if hidden for a while
         if (hiddenDuration > 60000) {
-          console.log('[Auth] Refreshing user data after long hidden duration')
           await refreshUser()
         }
       } else {
         // Session exists but no user - this shouldn't happen, refresh user
-        console.log('[Auth] Session exists but no user - refreshing')
         await refreshUser()
       }
       
       lastSessionCheck.current = Date.now()
     } catch (error) {
-      console.error('[Auth] Error during visibility change handling:', error)
+      // Silent fail - don't disrupt user experience
     } finally {
       isCheckingSession.current = false
     }

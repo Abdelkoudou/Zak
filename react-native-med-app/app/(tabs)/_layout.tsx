@@ -25,31 +25,35 @@ export default function TabsLayout() {
         tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 98 : 92,
-          paddingBottom: Platform.OS === 'ios' ? 34 : 26,
-          paddingTop: 14,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
+          height: Platform.OS === 'ios' ? 100 : 90,
+          paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+          paddingTop: 12,
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          elevation: 0,
-          shadowColor: '#09B2AD',
-          shadowOffset: { width: 0, height: -4 },
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -8 },
           shadowOpacity: 0.15,
-          shadowRadius: 12,
+          shadowRadius: 15,
         } : { display: 'none' },
-        tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+        tabBarActiveTintColor: '#1E1E1E',
+        tabBarInactiveTintColor: 'rgba(30, 30, 30, 0.5)',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 10,
+          marginTop: 2,
           letterSpacing: 0.3,
         },
         tabBarIconStyle: {
           marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
         },
         tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
@@ -118,7 +122,6 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
       justifyContent: 'center',
       opacity: opacityAnim,
       transform: [{ scale: scaleAnim }],
-      marginBottom: 2,
     }}>
       {children}
     </Animated.View>
@@ -152,13 +155,12 @@ function AnimatedTabButton(props: any) {
       {...props}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[props.style, { flex: 1, alignItems: 'center' }]}
+      style={[props.style, { flex: 1, alignItems: 'center', justifyContent: 'center' }]}
     >
       <Animated.View style={{ 
         alignItems: 'center', 
         justifyContent: 'center',
         transform: [{ scale: scaleAnim }],
-        paddingTop: 4,
       }}>
         {props.children}
       </Animated.View>

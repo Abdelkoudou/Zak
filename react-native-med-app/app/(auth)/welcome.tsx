@@ -496,9 +496,9 @@ export default function WelcomeScreen() {
   // ========== Mobile/Tablet Layout ==========
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <ScrollView 
-        style={{ flex: 1 }} 
-        contentContainerStyle={{ flexGrow: 1 }}
+        <ScrollView 
+        style={{ flex: 1, overflow: 'hidden' }} 
+        contentContainerStyle={{ flexGrow: 1, maxWidth: '100%', overflow: 'hidden' }}
         showsVerticalScrollIndicator={false}
       >
         {/* Top Gradient Header */}
@@ -630,6 +630,7 @@ export default function WelcomeScreen() {
           paddingHorizontal: 24,
           alignSelf: 'center',
           marginTop: -40,
+          overflow: 'hidden',
         }}>
           {/* Tagline Card */}
           <Animated.View style={{

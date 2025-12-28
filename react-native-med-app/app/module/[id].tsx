@@ -169,8 +169,12 @@ export default function ModuleDetailScreen() {
     <>
       <Stack.Screen options={{ title: module.name, headerShown: false }} />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom', 'left', 'right']}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
           {/* Module Header */}
           <Animated.View style={{
             backgroundColor: colors.primary,
@@ -275,7 +279,7 @@ export default function ModuleDetailScreen() {
             </FadeInView>
           )}
 
-          <View style={{ height: 140 }} />
+          <View style={{ height: 100 }} />
         </ScrollView>
 
         {/* Start Button */}
@@ -289,7 +293,7 @@ export default function ModuleDetailScreen() {
           borderTopColor: colors.border,
           paddingHorizontal: 24,
           paddingVertical: 16,
-          paddingBottom: 32,
+          paddingBottom: Platform.OS === 'web' ? 16 : 32,
         }}>
           <AnimatedButton title="Commencer la pratique" onPress={startPractice} disabled={!canStartPractice()} variant="primary" size="lg" />
         </View>

@@ -267,7 +267,7 @@ export default function PracticeScreen() {
         }} 
       />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom']}>
         {/* Progress Bar */}
         <View style={{ height: 4, backgroundColor: colors.backgroundSecondary }}>
           <Animated.View style={{ height: '100%', backgroundColor: colors.primary, width: progressWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }} />
@@ -374,7 +374,7 @@ export default function PracticeScreen() {
 
         {/* Bottom Actions */}
         <FadeInView animation="slideUp" delay={200} replayOnFocus={false}>
-          <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 24, paddingVertical: 16 }}>
+          <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 24, paddingVertical: 16, paddingBottom: Platform.OS === 'web' ? 16 : 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AnimatedNavButton label="← Précédent" onPress={goToPrevious} disabled={currentIndex === 0} colors={colors} />
               {!isSubmitted ? (

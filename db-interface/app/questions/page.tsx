@@ -271,6 +271,7 @@ export default function QuestionsPage() {
           questionText: '',
           cours: [''],
           imageUrl: undefined,
+          explanation: '',
           answers: [
             { optionLabel: 'A', answerText: '', isCorrect: false },
             { optionLabel: 'B', answerText: '', isCorrect: false },
