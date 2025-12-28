@@ -7,6 +7,9 @@ import { Tabs } from 'expo-router'
 import { View, useWindowDimensions, Animated, Pressable, Platform } from 'react-native'
 import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
   const isWeb = Platform.OS === 'web'
@@ -99,12 +102,12 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
         toValue: focused ? 1.15 : 1,
         friction: 6,
         tension: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacityAnim, {
         toValue: focused ? 1 : 0.5,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }, [focused])
@@ -131,7 +134,7 @@ function AnimatedTabButton(props: any) {
       toValue: 0.92,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -140,7 +143,7 @@ function AnimatedTabButton(props: any) {
       toValue: 1,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 

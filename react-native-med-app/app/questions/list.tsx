@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -13,6 +13,9 @@ import { Card, Badge, LoadingSpinner, Button, FadeInView, CardSkeleton } from '@
 import { BRAND_THEME } from '@/constants/theme'
 import { EXAM_TYPES, YEARS } from '@/constants'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function QuestionsListScreen() {
   const { 
@@ -303,7 +306,7 @@ function AnimatedFilterChip({
     Animated.timing(scale, {
       toValue: 0.95,
       duration: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -312,7 +315,7 @@ function AnimatedFilterChip({
       toValue: 1,
       friction: 3,
       tension: 200,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -368,14 +371,14 @@ function AnimatedQuestionCard({
         duration: ANIMATION_DURATION.normal,
         delay: Math.min(index * 50, 300),
         easing: ANIMATION_EASING.smooth,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(translateY, {
         toValue: 0,
         duration: ANIMATION_DURATION.normal,
         delay: Math.min(index * 50, 300),
         easing: ANIMATION_EASING.premium,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }, [index])
@@ -384,7 +387,7 @@ function AnimatedQuestionCard({
     Animated.timing(scale, {
       toValue: 0.98,
       duration: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -393,7 +396,7 @@ function AnimatedQuestionCard({
       toValue: 1,
       friction: 3,
       tension: 200,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 

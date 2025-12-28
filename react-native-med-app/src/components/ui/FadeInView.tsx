@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useCallback } from 'react'
 import { Animated, ViewStyle, Platform } from 'react-native'
 import { useFocusEffect } from 'expo-router'
-import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING } from '@/lib/premiumAnimations'
+import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING, USE_NATIVE_DRIVER } from '@/lib/premiumAnimations'
 
 type AnimationType = 'fade' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'scale'
 
@@ -60,7 +60,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
         duration,
         delay,
         easing: PREMIUM_EASING.appleSmooth,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]
 
@@ -70,7 +70,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
           toValue: 0,
           delay,
           ...PREMIUM_SPRING.snappy,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         })
       )
     }
@@ -81,7 +81,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
           toValue: 0,
           delay,
           ...PREMIUM_SPRING.snappy,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         })
       )
     }
@@ -92,7 +92,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
           toValue: 1,
           delay,
           ...PREMIUM_SPRING.bouncy,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         })
       )
     }

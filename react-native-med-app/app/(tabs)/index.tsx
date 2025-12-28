@@ -24,7 +24,7 @@ import { FadeInView, StatsSkeleton, ListSkeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 import { BookIcon } from '@/components/icons/ResultIcons'
-import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
 import { useWebVisibility } from '@/lib/useWebVisibility'
 
 export default function HomeScreen() {
@@ -113,8 +113,8 @@ export default function HomeScreen() {
     statsOpacity.setValue(0)
 
     const headerAnim = Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-      Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+      Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
     ])
     
     runningAnimations.current.push(headerAnim)
@@ -123,8 +123,8 @@ export default function HomeScreen() {
     // Delayed stats animation
     const statsTimer = setTimeout(() => {
       const statsAnim = Animated.parallel([
-        Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-        Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+        Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
       ])
       runningAnimations.current.push(statsAnim)
       statsAnim.start()
@@ -318,11 +318,11 @@ function ModuleCard({ module, onPress, isDesktop, colors, isDark }: { module: Mo
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.timing(scaleAnim, { toValue: 0.98, duration: ANIMATION_DURATION.instant, easing: ANIMATION_EASING.smooth, useNativeDriver: true }).start()
+    Animated.timing(scaleAnim, { toValue: 0.98, duration: ANIMATION_DURATION.instant, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   const handlePressOut = () => {
-    Animated.timing(scaleAnim, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }).start()
+    Animated.timing(scaleAnim, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   return (

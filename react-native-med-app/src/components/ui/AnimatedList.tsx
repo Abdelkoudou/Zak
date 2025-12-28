@@ -3,8 +3,11 @@
 // ============================================================================
 
 import React, { useEffect, useRef } from 'react'
-import { Animated, View, ViewStyle, FlatList, FlatListProps } from 'react-native'
+import { Animated, View, ViewStyle, FlatList, FlatListProps, Platform } from 'react-native'
 import { ANIMATION_DURATION } from '@/lib/animations'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 // ============================================================================
 // Animated List Item - Individual item with entrance animation
@@ -35,21 +38,21 @@ export const AnimatedListItem: React.FC<AnimatedListItemProps> = ({
         toValue: 1,
         duration: ANIMATION_DURATION.normal,
         delay,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.spring(translateY, {
         toValue: 0,
         friction: 8,
         tension: 80,
         delay,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.spring(scale, {
         toValue: 1,
         friction: 8,
         tension: 80,
         delay,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }, [index])

@@ -2,21 +2,27 @@
 // Module Detail Screen - Premium UI with Dark Mode Support
 // ============================================================================
 
-import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable } from 'react-native'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
+import { useAuth } from '@/context/AuthContext'
 import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
 import { getQuestionCount } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
 import { FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
 import { QcmExamIcon, BookQcmIcon, ChevronLeftIcon } from '@/components/icons'
+import { useWebVisibility } from '@/lib/useWebVisibility'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function ModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { colors, isDark } = useTheme()
+  const { user, isLoading: authLoading } = useAuth()
   
   const [module, setModule] = useState<Module | null>(null)
   const [cours, setCours] = useState<string[]>([])
@@ -27,21 +33,45 @@ export default function ModuleDetailScreen() {
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
   const [availableExamTypes, setAvailableExamTypes] = useState<{ type: ExamType; count: number }[]>([])
   const [coursWithCounts, setCoursWithCounts] = useState<{ name: string; count: number }[]>([])
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-20)).current
+  const lastLoadTime = useRef<number>(0)
+  const LOAD_COOLDOWN = 5000
+
+  // Handle visibility changes on web
+  useWebVisibility({
+    debounceMs: 200,
+    onVisibilityChange: useCallback((isVisible: boolean, hiddenDuration: number) => {
+      // Reload data if hidden for more than 60 seconds
+      if (isVisible && hiddenDuration > 60000 && hasLoaded && id) {
+        loadModule(true)
+      }
+    }, [hasLoaded, id]),
+  })
 
   useEffect(() => {
-    loadModule()
+    if (id && !authLoading) {
+      loadModule(true)
+    }
     Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
-  }, [id])
+  }, [id, authLoading])
 
-  const loadModule = async () => {
+  const loadModule = async (force = false) => {
     if (!id) return
+    
+    // Prevent rapid reloads unless forced
+    const now = Date.now()
+    if (!force && hasLoaded && now - lastLoadTime.current < LOAD_COOLDOWN) {
+      return
+    }
+    
     try {
+      lastLoadTime.current = now
       const { module: moduleData } = await getModuleById(id)
       setModule(moduleData)
       if (moduleData) {
@@ -52,6 +82,7 @@ export default function ModuleDetailScreen() {
         await loadExamTypesWithCounts(moduleData)
         await loadCoursWithCounts(moduleData.name, coursData)
       }
+      setHasLoaded(true)
     } catch {
       // Error loading module
     } finally {
@@ -274,10 +305,10 @@ function AnimatedModeCard({ isSelected, onPress, icon, title, subtitle, colors, 
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   return (
@@ -322,10 +353,10 @@ function AnimatedOptionCard({ isSelected, onPress, title, count, colors, isDark 
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   return (

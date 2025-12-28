@@ -9,6 +9,9 @@ import { useAuth } from '@/context/AuthContext'
 import { BRAND_THEME } from '@/constants/theme'
 import { HomeIcon, ResourcesIcon, ProfileIcon, SavesIcon } from '@/components/icons'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 const Logo = require('@/assets/images/logo.png')
 
 interface NavItem {
@@ -168,7 +171,7 @@ function NavLink({ item, isActive, onPress }: { item: NavItem; isActive: boolean
       toValue: 0.95,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -177,7 +180,7 @@ function NavLink({ item, isActive, onPress }: { item: NavItem; isActive: boolean
       toValue: 1,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 

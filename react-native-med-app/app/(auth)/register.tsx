@@ -31,6 +31,9 @@ import { BRAND_THEME } from '@/constants/theme'
 import { FadeInView, AnimatedButton } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 const Logo = require('@/assets/images/logo.png')
 
 export default function RegisterScreen() {
@@ -76,13 +79,13 @@ export default function RegisterScreen() {
           toValue: -10,
           duration: 2000,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY, {
           toValue: 0,
           duration: 2000,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -93,13 +96,13 @@ export default function RegisterScreen() {
           toValue: 0.6,
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(glowPulse, {
           toValue: 0.3,
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -109,13 +112,13 @@ export default function RegisterScreen() {
     // Premium entrance sequence
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.spring(headerSlide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: true }),
-        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(headerSlide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
       Animated.parallel([
-        Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.spring(formSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+        Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(formSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
     ]).start()
   }, [])

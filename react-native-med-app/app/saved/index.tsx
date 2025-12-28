@@ -12,6 +12,10 @@ import { QuestionWithAnswers } from '@/types'
 import { FadeInView, StaggeredList, ListSkeleton } from '@/components/ui'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { useWebVisibility } from '@/lib/useWebVisibility'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -19,32 +23,72 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function SavedQuestionsScreen() {
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   
   const [questions, setQuestions] = useState<QuestionWithAnswers[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [hasLoaded, setHasLoaded] = useState(false)
+  
+  // Track last load time to prevent rapid reloads
+  const lastLoadTime = useRef<number>(0)
+  const LOAD_COOLDOWN = 5000
 
-  const loadQuestions = useCallback(async () => {
-    if (!user) return
+  const loadQuestions = useCallback(async (force = false) => {
+    if (!user) {
+      setIsLoading(false)
+      return
+    }
+    
+    // Prevent rapid reloads unless forced
+    const now = Date.now()
+    if (!force && hasLoaded && now - lastLoadTime.current < LOAD_COOLDOWN) {
+      setRefreshing(false)
+      return
+    }
 
     try {
+      lastLoadTime.current = now
       const { questions: data } = await getSavedQuestions(user.id)
       setQuestions(data)
+      setHasLoaded(true)
     } catch (error) {
       console.error('Error loading saved questions:', error)
     } finally {
       setIsLoading(false)
       setRefreshing(false)
     }
-  }, [user])
+  }, [user, hasLoaded])
 
+  // Handle visibility changes on web
+  useWebVisibility({
+    debounceMs: 200,
+    onVisibilityChange: useCallback((isVisible: boolean, hiddenDuration: number) => {
+      // Reload data if hidden for more than 60 seconds
+      if (isVisible && hiddenDuration > 60000 && hasLoaded && user) {
+        loadQuestions(true)
+      }
+    }, [loadQuestions, hasLoaded, user]),
+  })
+
+  // Load on focus (native) or initial mount (web)
   useFocusEffect(
     useCallback(() => {
-      loadQuestions()
-    }, [loadQuestions])
+      // On web, only load on initial mount, not on every focus
+      if (Platform.OS === 'web' && hasLoaded) {
+        return
+      }
+      loadQuestions(true)
+    }, [loadQuestions, hasLoaded])
   )
+
+  // Also load when user changes
+  useEffect(() => {
+    if (user && !authLoading) {
+      loadQuestions(true)
+    }
+  }, [user?.id, authLoading])
 
   const onRefresh = useCallback(() => {
     setRefreshing(true)
@@ -176,7 +220,7 @@ function SavedQuestionCard({
     Animated.timing(scale, {
       toValue: 0.98,
       duration: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -185,7 +229,7 @@ function SavedQuestionCard({
       toValue: 1,
       friction: 3,
       tension: 200,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -194,13 +238,13 @@ function SavedQuestionCard({
       Animated.timing(deleteScale, {
         toValue: 0.8,
         duration: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.spring(deleteScale, {
         toValue: 1,
         friction: 3,
         tension: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start(() => onUnsave())
   }

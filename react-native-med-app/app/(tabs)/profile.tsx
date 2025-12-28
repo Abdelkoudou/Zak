@@ -26,6 +26,9 @@ import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 export default function ProfileScreen() {
   const { user, signOut, getDeviceSessions } = useAuth()
   const { colors, isDark, toggleTheme } = useTheme()
@@ -67,8 +70,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadData()
     Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }, [loadData])
 

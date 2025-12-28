@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useRef, useCallback } from 'react'
-import { View, Text, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, TouchableOpacity, Animated, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
@@ -11,6 +11,9 @@ import { Card, FadeInView } from '@/components/ui'
 import { ANIMATION_EASING } from '@/lib/animations'
 import { Ionicons } from '@expo/vector-icons'
 import { CorrectIcon, FalseIcon, FileIcon } from '@/components/icons/ResultIcons'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function ResultsScreen() {
   const { total, correct, score, time, moduleName } = useLocalSearchParams<{
@@ -41,7 +44,7 @@ export default function ResultsScreen() {
 
       Animated.sequence([
         Animated.delay(200),
-        Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: true }),
+        Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
 
       Animated.timing(progressWidth, {
@@ -55,7 +58,7 @@ export default function ResultsScreen() {
       if (scoreNum >= 60) {
         Animated.sequence([
           Animated.delay(800),
-          Animated.timing(celebrationOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(celebrationOpacity, { toValue: 1, duration: 300, useNativeDriver: USE_NATIVE_DRIVER }),
         ]).start()
       }
     }, [])
@@ -172,7 +175,7 @@ function AnimatedStatItem({ label, value, icon, delay = 0, colors }: { label: st
   useFocusEffect(
     useCallback(() => {
       scale.setValue(0)
-      Animated.spring(scale, { toValue: 1, friction: 5, tension: 100, delay, useNativeDriver: true }).start()
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 100, delay, useNativeDriver: USE_NATIVE_DRIVER }).start()
     }, [delay])
   )
 
@@ -189,8 +192,8 @@ function AnimatedStatItem({ label, value, icon, delay = 0, colors }: { label: st
 function AnimatedActionButton({ title, onPress, variant = 'primary', colors }: { title: string; onPress: () => void; variant?: 'primary' | 'ghost'; colors: any }) {
   const scale = useRef(new Animated.Value(1)).current
 
-  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   if (variant === 'ghost') {
     return (

@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import { FadeInView, LoadingSpinner } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
-import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
 
 export default function ForgotPasswordScreen() {
   const { resetPassword } = useAuth()
@@ -48,13 +48,13 @@ export default function ForgotPasswordScreen() {
           toValue: 1,
           friction: 4,
           tension: 100,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(successRotate, {
           toValue: 1,
           duration: 600,
           easing: ANIMATION_EASING.premium,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start()
     }
@@ -64,7 +64,7 @@ export default function ForgotPasswordScreen() {
     Animated.timing(buttonScale, {
       toValue: 0.97,
       duration: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -73,7 +73,7 @@ export default function ForgotPasswordScreen() {
       toValue: 1,
       friction: 3,
       tension: 200,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 

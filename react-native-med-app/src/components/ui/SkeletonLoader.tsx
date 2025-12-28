@@ -3,8 +3,11 @@
 // ============================================================================
 
 import React, { useEffect, useRef } from 'react'
-import { View, Animated, ViewStyle } from 'react-native'
+import { View, Animated, ViewStyle, Platform } from 'react-native'
 import { BRAND_THEME } from '@/constants/theme'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 interface SkeletonProps {
   width?: number | string
@@ -27,12 +30,12 @@ export const Skeleton: React.FC<SkeletonProps> = ({
         Animated.timing(shimmerValue, {
           toValue: 1,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(shimmerValue, {
           toValue: 0,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     )

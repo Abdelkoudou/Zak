@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Animated } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Animated, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -15,6 +15,9 @@ import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function PracticeScreen() {
   const { moduleId, moduleName, examType, subDiscipline, cours } = useLocalSearchParams<{
@@ -47,8 +50,8 @@ export default function PracticeScreen() {
     questionFade.setValue(0)
     questionSlide.setValue(20)
     Animated.parallel([
-      Animated.timing(questionFade, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-      Animated.timing(questionSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+      Animated.timing(questionFade, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(questionSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }, [])
 
@@ -65,8 +68,8 @@ export default function PracticeScreen() {
 
   const animateSavePress = () => {
     Animated.sequence([
-      Animated.timing(saveButtonScale, { toValue: 0.8, duration: 100, useNativeDriver: true }),
-      Animated.spring(saveButtonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }),
+      Animated.timing(saveButtonScale, { toValue: 0.8, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(saveButtonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }
 
@@ -391,11 +394,11 @@ function AnimatedAnswerOption({ answer, index, isSelected, isEliminated, isCorre
   const slideIn = useRef(new Animated.Value(30)).current
   
   useEffect(() => {
-    Animated.timing(slideIn, { toValue: 0, duration: ANIMATION_DURATION.normal, delay: index * 50, easing: ANIMATION_EASING.premium, useNativeDriver: true }).start()
+    Animated.timing(slideIn, { toValue: 0, duration: ANIMATION_DURATION.normal, delay: index * 50, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }, [index])
 
-  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   // If eliminated, override styles to look disabled/crossed out
   const finalCardBg = isEliminated ? colors.background : cardBg
@@ -433,8 +436,8 @@ function AnimatedAnswerOption({ answer, index, isSelected, isEliminated, isCorre
 function AnimatedNavButton({ label, onPress, disabled, colors }: { label: string; onPress: () => void; disabled: boolean; colors: any }) {
   const scale = useRef(new Animated.Value(1)).current
 
-  const handlePressIn = () => { if (!disabled) Animated.timing(scale, { toValue: 0.95, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { if (!disabled) Animated.timing(scale, { toValue: 0.95, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>

@@ -25,6 +25,7 @@ import {
   PREMIUM_TIMING,
   PREMIUM_EASING,
   PREMIUM_SPRING,
+  USE_NATIVE_DRIVER,
   createFloatingAnimation,
   createGlowPulse,
 } from '@/lib/premiumAnimations'
@@ -93,13 +94,13 @@ export default function LoginScreen() {
           toValue: -15,
           duration: PREMIUM_TIMING.ambient * 1.1,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY2, {
           toValue: 15,
           duration: PREMIUM_TIMING.ambient * 1.1,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -112,13 +113,13 @@ export default function LoginScreen() {
           toValue: 1.02,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(breathingScale, {
           toValue: 1,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -135,62 +136,62 @@ export default function LoginScreen() {
       Animated.spring(logoScale, {
         toValue: 1,
         ...PREMIUM_SPRING.stiff,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoOpacity, {
         toValue: 1,
         duration: 150,
         easing: PREMIUM_EASING.elegantOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoRotate, {
         toValue: 1,
         duration: 200,
         easing: PREMIUM_EASING.dramaticEntrance,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
     
     // Phase 2: Header (160ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(headerSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(headerSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay)
     
     // Phase 3: Welcome card (320ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(cardSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(cardScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(cardSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(cardScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 2)
     
     // Phase 4: Both inputs together (480ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(input1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(input1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.timing(input2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(input2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(input1Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(input1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(input2Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(input2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 3)
     
     // Phase 5: Forgot + Button (640ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(forgotOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.timing(buttonOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(buttonSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(buttonScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(forgotOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(buttonOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(buttonSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(buttonScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 4)
     
     // Phase 6: Footer (800ms, completes ~1000ms)
     setTimeout(() => {
-      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: USE_NATIVE_DRIVER }).start()
     }, staggerDelay * 5)
   }, [])
 

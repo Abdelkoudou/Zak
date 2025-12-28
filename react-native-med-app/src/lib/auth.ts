@@ -167,12 +167,20 @@ export async function signOut(): Promise<{ error: string | null }> {
 
 export async function getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
   try {
+    // First, try to get the session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-    if (sessionError || !session) {
+    if (sessionError) {
+      console.error('[Auth] Session error:', sessionError.message)
+      return { user: null, error: sessionError.message }
+    }
+    
+    if (!session) {
+      // No session - user is not logged in
       return { user: null, error: null }
     }
 
+    // Session exists, fetch user profile
     const { data: userProfile, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -180,11 +188,18 @@ export async function getCurrentUser(): Promise<{ user: User | null; error: stri
       .single()
 
     if (fetchError) {
+      // If we get a PGRST116 error (no rows), the user profile doesn't exist
+      if (fetchError.code === 'PGRST116') {
+        console.warn('[Auth] User profile not found for session user')
+        return { user: null, error: 'User profile not found' }
+      }
+      console.error('[Auth] Error fetching user profile:', fetchError.message)
       return { user: null, error: fetchError.message }
     }
 
     return { user: userProfile as User, error: null }
   } catch (error) {
+    console.error('[Auth] Unexpected error in getCurrentUser:', error)
     return { user: null, error: 'An unexpected error occurred' }
   }
 }

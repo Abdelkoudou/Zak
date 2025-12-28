@@ -6,7 +6,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { Platform } from 'react-native'
 import { User, RegisterFormData, ProfileUpdateData } from '@/types'
 import * as authService from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { supabase, ensureValidSession } from '@/lib/supabase'
 import { useWebVisibility } from '@/lib/useWebVisibility'
 
 // ============================================================================
@@ -48,8 +48,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isCheckingSession = useRef(false)
   // Track last successful session check time
   const lastSessionCheck = useRef<number>(0)
-  // Minimum time between session checks (30 seconds)
-  const SESSION_CHECK_COOLDOWN = 30000
+  // Minimum time between session checks (5 seconds for web, 30 seconds for native)
+  const SESSION_CHECK_COOLDOWN = Platform.OS === 'web' ? 5000 : 30000
+  // Track if initial load is complete
+  const initialLoadComplete = useRef(false)
 
   // Check for existing session on mount
   useEffect(() => {
@@ -57,15 +59,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     // Safety timeout: ensure loading state is cleared after 5 seconds
     const safetyTimeout = setTimeout(() => {
-      if (isMounted) {
+      if (isMounted && isLoading) {
+        console.warn('[Auth] Safety timeout triggered - forcing loading state to false')
         setIsLoading(false)
+        initialLoadComplete.current = true
       }
     }, 5000)
 
     const init = async () => {
-      await checkSession()
-      if (isMounted) {
-        clearTimeout(safetyTimeout)
+      try {
+        await checkSession()
+      } finally {
+        if (isMounted) {
+          clearTimeout(safetyTimeout)
+          initialLoadComplete.current = true
+        }
       }
     }
 
@@ -75,12 +83,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!isMounted) return
+        
+        console.log('[Auth] Auth state changed:', event)
 
         if (event === 'SIGNED_IN' && session) {
           await refreshUser()
         } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setIsLoading(false)
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // Token was refreshed, ensure user data is still valid
+          console.log('[Auth] Token refreshed')
         }
       }
     )
@@ -92,49 +105,82 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  // Handle visibility changes with debouncing
+  // Handle visibility changes - CRITICAL for web tab switching
   const handleVisibilityChange = useCallback(async (isVisible: boolean, hiddenDuration: number) => {
-    // Only check session when becoming visible after being hidden for a while
+    // Only handle when becoming visible
     if (!isVisible) return
     
-    // Skip if hidden for less than 30 seconds (quick tab switch)
-    if (hiddenDuration < SESSION_CHECK_COOLDOWN) return
-    
-    // Skip if we checked recently
-    const timeSinceLastCheck = Date.now() - lastSessionCheck.current
-    if (timeSinceLastCheck < SESSION_CHECK_COOLDOWN) return
-    
-    // Skip if already checking
-    if (isCheckingSession.current) return
-    
-    try {
-      isCheckingSession.current = true
-      await checkSession()
-    } catch {
-      // Silently handle errors
-    } finally {
-      isCheckingSession.current = false
+    // Always try to recover session on web when tab becomes visible
+    // This is critical for fixing the "infinite loading" issue
+    if (Platform.OS === 'web' && initialLoadComplete.current) {
+      // Skip if we checked very recently (within 2 seconds)
+      const timeSinceLastCheck = Date.now() - lastSessionCheck.current
+      if (timeSinceLastCheck < 2000) return
+      
+      // Skip if already checking
+      if (isCheckingSession.current) return
+      
+      console.log('[Auth] Tab became visible, checking session...', { hiddenDuration })
+      
+      try {
+        isCheckingSession.current = true
+        
+        // First, ensure the Supabase session is valid
+        const isValid = await ensureValidSession()
+        
+        if (!isValid && user) {
+          // Session is invalid but we have a user - this is the bug!
+          // The session was lost while the tab was hidden
+          console.warn('[Auth] Session invalid but user exists - attempting recovery')
+          
+          // Try to get a fresh session
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (!session) {
+            // Session is truly gone - user needs to re-login
+            console.warn('[Auth] Session recovery failed - user must re-login')
+            setUser(null)
+          } else {
+            // Session exists, refresh user data
+            await refreshUser()
+          }
+        } else if (isValid && user) {
+          // Session is valid, optionally refresh user data if hidden for a while
+          if (hiddenDuration > 60000) {
+            await refreshUser()
+          }
+        }
+        
+        lastSessionCheck.current = Date.now()
+      } catch (error) {
+        console.error('[Auth] Error during visibility change handling:', error)
+      } finally {
+        isCheckingSession.current = false
+      }
     }
-  }, [])
+  }, [user])
 
   // Use the web visibility hook for proper tab visibility handling
   useWebVisibility({
-    debounceMs: 200,
+    debounceMs: 100, // Quick response for better UX
     onVisibilityChange: handleVisibilityChange,
   })
 
   // Check for existing session
   const checkSession = async () => {
+    if (isCheckingSession.current) return
+    
     try {
-      // Don't set isLoading(true) here if it's already true from initial state
-      // This avoids unnecessary re-renders during mount
+      isCheckingSession.current = true
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
       lastSessionCheck.current = Date.now()
-    } catch {
+    } catch (error) {
+      console.error('[Auth] Error checking session:', error)
       setUser(null)
     } finally {
       setIsLoading(false)
+      isCheckingSession.current = false
     }
   }
 
@@ -143,8 +189,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
-    } catch {
-      // Error refreshing user silently handled
+    } catch (error) {
+      console.error('[Auth] Error refreshing user:', error)
     }
   }
 

@@ -3,7 +3,11 @@
 // Creates a jaw-dropping, premium user experience
 // ============================================================================
 
-import { Animated, Easing } from 'react-native'
+import { Animated, Easing, Platform } from 'react-native'
+
+// Use native driver only on native platforms, not on web
+// CRITICAL: This must be used in ALL animation calls to prevent web warnings
+export const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 // ============================================================================
 // Premium Timing Constants - Carefully Tuned for Delight
@@ -86,19 +90,19 @@ export function createLogoEntrance(
     Animated.spring(scale, {
       toValue: 1,
       ...PREMIUM_SPRING.bouncy,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.timing(opacity, {
       toValue: 1,
       duration: PREMIUM_TIMING.elegant,
       easing: PREMIUM_EASING.elegantOut,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.timing(rotate, {
       toValue: 1,
       duration: PREMIUM_TIMING.dramatic,
       easing: PREMIUM_EASING.dramaticEntrance,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
   ])
 }
@@ -119,13 +123,13 @@ export function createTextReveal(
       duration: PREMIUM_TIMING.smooth,
       delay,
       easing: PREMIUM_EASING.elegantOut,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.spring(translateY, {
       toValue: 0,
       delay,
       ...PREMIUM_SPRING.gentle,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
   ])
 }
@@ -145,19 +149,19 @@ export function createButtonEntrance(
       duration: PREMIUM_TIMING.smooth,
       delay,
       easing: PREMIUM_EASING.appleSmooth,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.spring(translateY, {
       toValue: 0,
       delay,
       ...PREMIUM_SPRING.snappy,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.spring(scale, {
       toValue: 1,
       delay,
       ...PREMIUM_SPRING.gentle,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
   ])
 }
@@ -177,13 +181,13 @@ export function createFloatingAnimation(
         toValue: -amplitude,
         duration: PREMIUM_TIMING.ambient,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(translateY, {
         toValue: amplitude,
         duration: PREMIUM_TIMING.ambient,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -204,13 +208,13 @@ export function createGlowPulse(
         toValue: maxOpacity,
         duration: PREMIUM_TIMING.ambient * 0.8,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacity, {
         toValue: minOpacity,
         duration: PREMIUM_TIMING.ambient * 0.8,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -231,13 +235,13 @@ export function createBreathingAnimation(
         toValue: maxScale,
         duration: PREMIUM_TIMING.ambient,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(scale, {
         toValue: minScale,
         duration: PREMIUM_TIMING.ambient,
         easing: PREMIUM_EASING.gentleSine,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -256,12 +260,12 @@ export function createShimmerAnimation(
         toValue: width,
         duration: PREMIUM_TIMING.luxurious * 2,
         easing: PREMIUM_EASING.appleSmooth,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(translateX, {
         toValue: -width,
         duration: 0,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -277,7 +281,7 @@ export function createPremiumPress(
   return Animated.spring(scale, {
     toValue: pressed ? 0.95 : 1,
     ...PREMIUM_SPRING.snappy,
-    useNativeDriver: true,
+    useNativeDriver: USE_NATIVE_DRIVER,
   })
 }
 
@@ -296,19 +300,19 @@ export function createCardEntrance(
       duration: PREMIUM_TIMING.elegant,
       delay,
       easing: PREMIUM_EASING.elegantOut,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.spring(translateY, {
       toValue: 0,
       delay,
       ...PREMIUM_SPRING.gentle,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.spring(scale, {
       toValue: 1,
       delay,
       ...PREMIUM_SPRING.gentle,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
   ])
 }
@@ -333,24 +337,24 @@ export const PREMIUM_INITIAL = {
   logoScale: 0.3,
   logoOpacity: 0,
   logoRotate: 0,
-  
+
   // Text reveal
   textOpacity: 0,
   textTranslateY: 30,
-  
+
   // Button entrance
   buttonOpacity: 0,
   buttonTranslateY: 50,
   buttonScale: 0.9,
-  
+
   // Card entrance
   cardOpacity: 0,
   cardTranslateY: 40,
   cardScale: 0.95,
-  
+
   // Floating elements
   floatingY: 0,
-  
+
   // Glow
   glowOpacity: 0.2,
 } as const
