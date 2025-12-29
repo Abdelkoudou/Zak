@@ -79,7 +79,11 @@ export default function ExportPage() {
       setIsOwner(true);
 
       // 2. Fetch Export Status
-      const response = await fetch('/api/export');
+      const response = await fetch('/api/export', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
       if (!response.ok) throw new Error('Failed to fetch export status');
       
       const result = await response.json();

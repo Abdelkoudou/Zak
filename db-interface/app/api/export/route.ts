@@ -1,7 +1,16 @@
-// API route to export questions from database to JSON and upload to Supabase Storage
+/**
+ * API route to export questions from database to JSON and upload to Supabase Storage
+ * Secured with owner-only access and rate limiting
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, verifyOwner } from '@/lib/supabase-admin';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import {
+  requireAuthenticatedOwner,
+  applyRateLimit,
+  sanitizeError,
+  successResponse,
+  errorResponse,
+} from '@/lib/security/api-utils';
 
 interface ModuleQuestions {
   [key: string]: any[];
@@ -28,32 +37,13 @@ interface QuestionWithAnswers {
 // POST /api/export - Export all questions to JSON and upload to Supabase Storage
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin authentication
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Apply rate limiting for export operations (more restrictive)
+    const rateLimitResult = await applyRateLimit(request, 'export');
+    if (rateLimitResult.error) return rateLimitResult.error;
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { isOwner } = await verifyOwner(user.id);
-    if (!isOwner) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden - Owner access required' },
-        { status: 403 }
-      );
-    }
+    // Require authenticated owner
+    const authResult = await requireAuthenticatedOwner(request);
+    if (authResult.error) return authResult.error;
 
     console.log('🔄 Starting export process...');
 
@@ -71,10 +61,7 @@ export async function POST(request: NextRequest) {
     if (questionsError) throw questionsError;
 
     if (!questions || questions.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: 'No questions found in database'
-      });
+      return errorResponse('No questions found in database', 404, rateLimitResult.headers);
     }
 
     console.log(`📊 Found ${questions.length} questions`);
@@ -117,30 +104,30 @@ export async function POST(request: NextRequest) {
           version: '1.0.0',
           module: moduleQuestions[0].module_name,
           study_year: moduleQuestions[0].year,
-          exam_types: [...new Set(moduleQuestions.map(q => q.exam_type))],
+          exam_types: [...new Set(moduleQuestions.map((q) => q.exam_type))],
           last_updated: new Date().toISOString(),
           questions_count: moduleQuestions.length,
-          questions: moduleQuestions.map(q => ({
+          questions: moduleQuestions.map((q) => ({
             id: `${q.year}_${q.module_name}_${q.number}`,
             year: q.year,
             study_year: q.year,
             module: q.module_name,
-            cours: (q as any).cours || [], // Include cours array
+            cours: (q as any).cours || [],
             sub_discipline: q.sub_discipline,
             exam_type: q.exam_type,
             number: q.number,
             question_text: q.question_text,
             explanation: q.explanation,
-            image_url: q.image_url || null,
+            image_url: (q as any).image_url || null,
             answers: q.answers
               .sort((a: any, b: any) => a.display_order - b.display_order)
               .map((a: any) => ({
                 label: a.option_label,
                 text: a.answer_text,
                 is_correct: a.is_correct,
-                display_order: a.display_order
-              }))
-          }))
+                display_order: a.display_order,
+              })),
+          })),
         };
 
         // Convert to JSON
@@ -154,7 +141,7 @@ export async function POST(request: NextRequest) {
           .from('questions')
           .upload(filePath, blob, {
             contentType: 'application/json',
-            upsert: true // Replace if exists
+            upsert: true,
           });
 
         if (uploadError) {
@@ -171,7 +158,7 @@ export async function POST(request: NextRequest) {
           size: blob.size,
           questions_count: moduleQuestions.length,
           last_updated: new Date().toISOString(),
-          path: filePath
+          path: filePath,
         };
 
         totalUploaded++;
@@ -180,59 +167,62 @@ export async function POST(request: NextRequest) {
 
     // Create and upload version.json
     const versionData = {
-      version: '1.1.0', // Bump version
+      version: '1.1.0',
       last_updated: new Date().toISOString(),
       total_questions: questions.length,
       total_modules: totalUploaded,
       modules: uploadedModules,
-      module_metadata: allModules, // Add complete module list with IDs
+      module_metadata: allModules,
       changelog: [
         {
           version: '1.1.0',
           date: new Date().toISOString().split('T')[0],
-          changes: `Exported ${questions.length} questions across ${totalUploaded} modules (with metadata)`
-        }
-      ]
+          changes: `Exported ${questions.length} questions across ${totalUploaded} modules (with metadata)`,
+        },
+      ],
     };
 
     const versionBlob = new Blob([JSON.stringify(versionData, null, 2)], {
-      type: 'application/json'
+      type: 'application/json',
     });
 
     const { error: versionError } = await supabaseAdmin.storage
       .from('questions')
       .upload('version.json', versionBlob, {
         contentType: 'application/json',
-        upsert: true
+        upsert: true,
       });
 
     if (versionError) throw versionError;
 
     console.log('✅ Uploaded version.json');
 
-    return NextResponse.json({
-      success: true,
-      message: `Successfully exported ${questions.length} questions to ${totalUploaded} modules`,
-      data: {
+    return successResponse(
+      {
         total_questions: questions.length,
         total_modules: totalUploaded,
         modules: Object.keys(uploadedModules),
-        version: versionData.version
-      }
-    });
-
-  } catch (error: any) {
-    console.error('❌ Export error:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Export failed' },
-      { status: 500 }
+        version: versionData.version,
+      },
+      rateLimitResult.headers
     );
+  } catch (error) {
+    console.error('❌ Export error:', error);
+    return errorResponse(sanitizeError(error), 500);
   }
 }
 
 // GET /api/export/status - Check export status and list uploaded files
 export async function GET(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = await applyRateLimit(request);
+    if (rateLimitResult.error) return rateLimitResult.error;
+
+    // Require authenticated owner for status check
+    const authResult = await requireAuthenticatedOwner(request);
+    if (authResult.error) return authResult.error;
+
     // List all files in questions bucket
     const { data: files, error } = await supabaseAdmin.storage
       .from('questions')
@@ -251,24 +241,20 @@ export async function GET(request: NextRequest) {
       version = JSON.parse(text);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        files: files?.map(f => ({
+    return successResponse(
+      {
+        files: files?.map((f) => ({
           name: f.name,
           size: f.metadata?.size,
-          updated: f.updated_at
+          updated: f.updated_at,
         })),
         version: version,
-        storage_url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/questions/`
-      }
-    });
-
-  } catch (error: any) {
-    console.error('Error getting export status:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
+        storage_url: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/questions/`,
+      },
+      rateLimitResult.headers
     );
+  } catch (error) {
+    console.error('Error getting export status:', error);
+    return errorResponse(sanitizeError(error), 500);
   }
 }
