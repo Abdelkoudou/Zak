@@ -36,6 +36,9 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedModule, setSelectedModule] = useState('');
+  const [selectedSubDiscipline, setSelectedSubDiscipline] = useState('');
 
   const [formData, setFormData] = useState({
     speciality: 'Médecine',
@@ -65,11 +68,18 @@ export default function CoursesPage() {
   }, []);
 
   const filteredCourses = useMemo(() => {
-    return courses.filter(course => 
-      course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.module_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [courses, searchQuery]);
+    return courses.filter(course => {
+      const matchesSearch = 
+        course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.module_name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesYear = selectedYear ? course.year === selectedYear : true;
+      const matchesModule = selectedModule ? course.module_name === selectedModule : true;
+      const matchesSubDiscipline = selectedSubDiscipline ? course.sub_discipline === selectedSubDiscipline : true;
+
+      return matchesSearch && matchesYear && matchesModule && matchesSubDiscipline;
+    });
+  }, [courses, searchQuery, selectedYear, selectedModule, selectedSubDiscipline]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,15 +314,55 @@ export default function CoursesPage() {
         {/* Right Column: Course List */}
         <div className="lg:col-span-8 space-y-4 md:space-y-6">
             {/* Search Bar */}
-            <div className="bg-white dark:bg-slate-900 rounded-2xl md:rounded-3xl p-2 border border-slate-200 dark:border-white/5 shadow-sm flex items-center gap-2">
-                <div className="pl-3 md:pl-4 text-slate-400 text-lg">🔍</div>
-                <input 
-                    type="text" 
-                    placeholder="Rechercher..." 
-                    className="flex-1 bg-transparent border-none outline-none py-2 md:py-3 px-2 text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400 text-sm md:text-base"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            {/* Search and Filters */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl md:rounded-3xl p-3 md:p-4 border border-slate-200 dark:border-white/5 shadow-sm space-y-3">
+                {/* Search Bar */}
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950/50 rounded-xl px-2 py-1 border border-slate-100 dark:border-white/5">
+                    <div className="pl-2 text-slate-400 text-lg">🔍</div>
+                    <input 
+                        type="text" 
+                        placeholder="Rechercher..." 
+                        className="flex-1 bg-transparent border-none outline-none py-2 px-2 text-slate-700 dark:text-slate-200 font-medium placeholder:text-slate-400 text-sm"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-3">
+                    <select
+                        value={selectedYear}
+                        onChange={e => setSelectedYear(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
+                    >
+                        <option value="">Toutes les années</option>
+                        {[1, 2, 3, 4, 5].map(y => (
+                            <option key={y} value={y}>{y}{y === 1 ? 'er' : 'ème'} Année</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={selectedModule}
+                        onChange={e => setSelectedModule(e.target.value)}
+                        className="flex-[2] px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
+                    >
+                        <option value="">Tous les modules</option>
+                        {MODULES.map(mod => (
+                            <option key={mod} value={mod}>{mod}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={selectedSubDiscipline}
+                        onChange={e => setSelectedSubDiscipline(e.target.value)}
+                        className="flex-1 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
+                    >
+                        <option value="">Toute sous-discipline</option>
+                        {SUB_DISCIPLINES.map(sub => (
+                            <option key={sub} value={sub}>{sub}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
           <div className="bg-white dark:bg-slate-900 rounded-2xl md:rounded-[2.5rem] shadow-sm border border-slate-200 dark:border-white/5 overflow-hidden">

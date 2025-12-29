@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Animated, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -12,10 +12,9 @@ import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
 import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
-import { Card, Badge, LoadingSpinner, Button, FadeInView } from '@/components/ui'
+import { Card, Badge, LoadingSpinner, Button, FadeInView, ConfirmModal } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
-import { showConfirm } from '@/lib/alerts'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -40,6 +39,7 @@ export default function PracticeScreen() {
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [startTime] = useState(new Date())
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
   
   const questionFade = useRef(new Animated.Value(0)).current
@@ -185,14 +185,32 @@ export default function PracticeScreen() {
     })
   }
 
-  const finishPractice = async () => {
-    showConfirm(
-      'Terminer la session',
-      'Voulez-vous terminer cette session de pratique ?',
-      async () => { await saveResults() },
-      'Terminer',
-      'Continuer'
-    )
+  const finishPractice = () => {
+    setShowEndSessionModal(true)
+  }
+
+  const handleConfirmEndSession = async () => {
+    setShowEndSessionModal(false)
+    await saveResults()
+  }
+
+  const handleCancelEndSession = () => {
+    setShowEndSessionModal(false)
+  }
+
+  const getEndSessionMessage = () => {
+    const answeredCount = submittedQuestions.size
+    const unansweredCount = questions.length - answeredCount
+    
+    if (answeredCount === 0) {
+      return 'Vous n\'avez répondu à aucune question. Voulez-vous vraiment quitter ?'
+    }
+    
+    let message = `Vous avez répondu à ${answeredCount}/${questions.length} questions.`
+    if (unansweredCount > 0) {
+      message += `\n\n${unansweredCount} questions non répondues seront ignorées.`
+    }
+    return message
   }
 
   const saveResults = async () => {
@@ -265,6 +283,19 @@ export default function PracticeScreen() {
             </TouchableOpacity>
           )
         }} 
+      />
+      
+      {/* End Session Confirmation Modal */}
+      <ConfirmModal
+        visible={showEndSessionModal}
+        title="Terminer la session"
+        message={getEndSessionMessage()}
+        confirmText="Terminer"
+        cancelText="Continuer"
+        variant="destructive"
+        icon="🏁"
+        onConfirm={handleConfirmEndSession}
+        onCancel={handleCancelEndSession}
       />
       
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom']}>
@@ -375,6 +406,25 @@ export default function PracticeScreen() {
         {/* Bottom Actions */}
         <FadeInView animation="slideUp" delay={200} replayOnFocus={false}>
           <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 24, paddingVertical: 16, paddingBottom: Platform.OS === 'web' ? 16 : 24 }}>
+            {/* End Session Button */}
+            <TouchableOpacity 
+              onPress={finishPractice}
+              style={{ 
+                backgroundColor: colors.errorLight, 
+                paddingVertical: 10, 
+                paddingHorizontal: 16, 
+                borderRadius: 8, 
+                alignItems: 'center',
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: colors.error
+              }}
+            >
+              <Text style={{ color: colors.error, fontWeight: '600', fontSize: 14 }}>
+                🛑 Terminer la session ({submittedQuestions.size}/{questions.length} répondues)
+              </Text>
+            </TouchableOpacity>
+            
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AnimatedNavButton label="← Précédent" onPress={goToPrevious} disabled={currentIndex === 0} colors={colors} />
               {!isSubmitted ? (

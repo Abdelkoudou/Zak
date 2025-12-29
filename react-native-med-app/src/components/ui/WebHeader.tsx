@@ -99,7 +99,7 @@ export function WebHeader() {
               color: BRAND_THEME.colors.gray[500],
               fontWeight: '500',
             }}>
-              Préparation médicale
+              Study Everywhere
             </Text>
           </View>
         </TouchableOpacity>

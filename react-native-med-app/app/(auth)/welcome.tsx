@@ -18,7 +18,7 @@ import {
 } from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../assets/icon.png')
 
 export default function WelcomeScreen() {
   const { width } = useWindowDimensions()
@@ -412,7 +412,7 @@ export default function WelcomeScreen() {
               opacity: subtitleOpacity,
               transform: [{ translateY: subtitleSlide }],
             }}>
-              La plateforme de préparation aux examens médicaux pour les étudiants algériens
+              FMC App • Study Everywhere
             </Animated.Text>
           </Animated.View>
         </LinearGradient>

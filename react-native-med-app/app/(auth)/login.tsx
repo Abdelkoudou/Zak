@@ -14,7 +14,7 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useNavigation } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -31,15 +31,24 @@ import {
 } from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../assets/icon.png')
 
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth()
   const { width } = useWindowDimensions()
+  const navigation = useNavigation()
   
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
   const isTablet = width >= 768 && width < 1024
+  
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/(auth)/welcome')
+    }
+  }
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -361,7 +370,7 @@ export default function LoginScreen() {
             {/* Back Button */}
             <TouchableOpacity 
               style={{ marginBottom: 36 }}
-              onPress={() => router.back()}
+              onPress={handleGoBack}
             >
               <View style={{
                 width: 52,
@@ -546,7 +555,7 @@ export default function LoginScreen() {
             {/* Back Button */}
             <TouchableOpacity 
               style={{ marginBottom: 20 }}
-              onPress={() => router.back()}
+              onPress={handleGoBack}
             >
               <View style={{
                 width: 44,

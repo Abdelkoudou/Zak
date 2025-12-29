@@ -25,9 +25,9 @@ export default function TabsLayout() {
         tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 100 : 90,
-          paddingBottom: Platform.OS === 'ios' ? 34 : 24,
-          paddingTop: 12,
+          height: Platform.OS === 'ios' ? 100 : Platform.OS === 'web' ? 70 : 90,
+          paddingBottom: Platform.OS === 'ios' ? 34 : Platform.OS === 'web' ? 10 : 24,
+          paddingTop: Platform.OS === 'web' ? 10 : 12,
           borderTopLeftRadius: 32,
           borderTopRightRadius: 32,
           position: 'absolute',
@@ -45,7 +45,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 2,
+          marginTop: Platform.OS === 'web' ? 4 : 2,
           letterSpacing: 0.3,
         },
         tabBarIconStyle: {
@@ -54,6 +54,7 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           alignItems: 'center',
           justifyContent: 'center',
+          paddingVertical: Platform.OS === 'web' ? 4 : 0,
         },
         tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
@@ -161,6 +162,8 @@ function AnimatedTabButton(props: any) {
         alignItems: 'center', 
         justifyContent: 'center',
         transform: [{ scale: scaleAnim }],
+        flexDirection: 'column',
+        gap: Platform.OS === 'web' ? 2 : 0,
       }}>
         {props.children}
       </Animated.View>

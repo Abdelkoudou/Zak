@@ -282,9 +282,12 @@ export default function ProfileScreen() {
                       </View>
                     )}
                     <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-                        ℹ️ Vous pouvez utiliser l'application sur 2 appareils maximum.
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 14, marginRight: 8 }}>ℹ️</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18, flex: 1, textAlign: 'center' }}>
+                          Vous pouvez utiliser l'application sur 2 appareils maximum.
+                        </Text>
+                      </View>
                     </View>
                   </ThemedCard>
                 </View>

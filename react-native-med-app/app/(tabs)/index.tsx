@@ -13,10 +13,12 @@ import {
   Pressable,
   Platform,
   ImageBackground,
-  Image
+  Image,
+  StyleSheet
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
+import { BlurView } from 'expo-blur'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getModulesWithCounts } from '@/lib/modules'
@@ -212,7 +214,7 @@ export default function HomeScreen() {
             <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
               <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                 <View style={{ marginBottom: 14 }}>
-                  <Text style={{ color: '#09B2AD', fontSize: isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 4 }}>
+                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 4 }}>
                     Bienvenue
                   </Text>
                   <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 36 : 28, fontWeight: '800', letterSpacing: -0.5 }}>
@@ -220,9 +222,27 @@ export default function HomeScreen() {
                   </Text>
                 </View>
                 
-                <View style={{ backgroundColor: 'rgba(9, 178, 173, 0.15)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                  <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
-                </View>
+                {Platform.OS === 'web' ? (
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    borderRadius: 20,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    // @ts-ignore
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}>
+                    <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                  </View>
+                ) : (
+                  <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+                    <BlurView intensity={40} tint="light" style={{ borderRadius: 20, overflow: 'hidden' }}>
+                      <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)', paddingHorizontal: 16, paddingVertical: 8 }}>
+                        <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                      </View>
+                    </BlurView>
+                  </View>
+                )}
               </View>
             </Animated.View>
           </ImageBackground>
@@ -236,24 +256,52 @@ export default function HomeScreen() {
               <StatsSkeleton />
             ) : stats ? (
               <View style={{ 
-                backgroundColor: 'rgba(255, 255, 255, 0.85)', 
-                borderRadius: isDesktop ? 32 : 24, 
-                padding: isDesktop ? 28 : 20, 
+                borderRadius: 17, 
+                overflow: 'hidden',
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 10 },
-                shadowOpacity: 0.15,
-                shadowRadius: 20,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
                 elevation: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-                // @ts-ignore
-                backdropFilter: 'blur(20px)',
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                  <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                  <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                </View>
+                {Platform.OS === 'web' ? (
+                  // Web: CSS backdrop-filter
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    borderRadius: 17,
+                    padding: isDesktop ? 28 : 20,
+                    // @ts-ignore
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                    </View>
+                  </View>
+                ) : (
+                  // Native: expo-blur BlurView
+                  <BlurView 
+                    intensity={60} 
+                    tint="light"
+                    style={{ 
+                      borderRadius: 17,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <View style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      padding: isDesktop ? 28 : 20,
+                    }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      </View>
+                    </View>
+                  </BlurView>
+                )}
               </View>
             ) : null}
           </Animated.View>

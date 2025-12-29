@@ -16,10 +16,9 @@ import {
   Animated,
   Easing,
   Pressable,
-  FlatList,
   Image
 } from 'react-native'
-import { Link, router } from 'expo-router'
+import { Link, router, useNavigation } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -34,14 +33,23 @@ import { ChevronLeftIcon } from '@/components/icons'
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../assets/icon.png')
 
 export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
   const { width } = useWindowDimensions()
+  const navigation = useNavigation()
   const isDesktop = width >= 768
   const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = 600
+  
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/(auth)/welcome')
+    }
+  }
   
   // Premium Animations
   const headerOpacity = useRef(new Animated.Value(0)).current
@@ -182,11 +190,12 @@ export default function RegisterScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
-          style={{ flex: 1, overflow: 'hidden' }} 
-          contentContainerStyle={{ paddingBottom: 40, maxWidth: '100%', overflow: 'hidden' }} 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
+          bounces={true}
         >
           {/* Premium Gradient Header */}
           <LinearGradient
@@ -227,7 +236,7 @@ export default function RegisterScreen() {
 
             {/* Back Button */}
             <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
-              <TouchableOpacity style={{ marginBottom: 16 }} onPress={() => router.back()}>
+              <TouchableOpacity style={{ marginBottom: 16 }} onPress={handleGoBack}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
                   <ChevronLeftIcon size={22} color="#ffffff" strokeWidth={2.5} />
                 </View>
@@ -287,7 +296,6 @@ export default function RegisterScreen() {
             alignSelf: 'center',
             opacity: formOpacity,
             transform: [{ translateY: formSlide }],
-            overflow: 'hidden',
           }}>
             {/* Error Message */}
             {error && (
@@ -477,22 +485,29 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
           position: 'absolute',
           top: '100%',
           width: '100%',
-          maxHeight: scrollable ? 200 : undefined,
+          maxHeight: scrollable ? 250 : undefined,
           ...BRAND_THEME.shadows.lg,
           zIndex: 100,
+          overflow: 'hidden',
         }}>
           {scrollable ? (
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(item.value)}>
-                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-              style={{ maxHeight: 200 }}
+            <ScrollView 
+              style={{ maxHeight: 250 }}
               nestedScrollEnabled={true}
-            />
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {options.map((opt) => (
+                <TouchableOpacity 
+                  key={opt.value} 
+                  style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} 
+                  onPress={() => onSelect(opt.value)}
+                >
+                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : (
             options.map((opt) => (
               <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>
