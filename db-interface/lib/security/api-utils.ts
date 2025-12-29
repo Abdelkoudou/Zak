@@ -3,7 +3,7 @@
  * Provides consistent security patterns across all API routes
  */
 import { NextResponse } from 'next/server';
-import { ZodError, ZodSchema } from 'zod';
+import { ZodError, ZodSchema, ZodIssue } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { verifyAdminUser, verifyOwner } from '@/lib/supabase-admin';
 import { checkRateLimit, getRateLimitHeaders } from './rate-limit';
@@ -17,7 +17,8 @@ import { checkRateLimit, getRateLimitHeaders } from './rate-limit';
 export function sanitizeError(error: unknown): string {
   // Handle Zod validation errors
   if (error instanceof ZodError) {
-    const messages = error.errors.map((e) => {
+    const issues = error.issues as ZodIssue[];
+    const messages = issues.map((e) => {
       const path = e.path.join('.');
       return path ? `${path}: ${e.message}` : e.message;
     });
