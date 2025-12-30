@@ -226,11 +226,12 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
           style={{ flex: 1 }} 
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }} 
+          contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }} 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
           bounces={true}
+          alwaysBounceVertical={true}
         >
           {/* Premium Gradient Header */}
           <LinearGradient

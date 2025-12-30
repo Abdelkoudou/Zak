@@ -515,10 +515,12 @@ export default function LoginScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView 
-          style={{ flex: 1, overflow: 'hidden' }} 
-          contentContainerStyle={{ flexGrow: 1, maxWidth: '100%', overflow: 'hidden' }}
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={true}
+          alwaysBounceVertical={true}
         >
           {/* Top Gradient Header */}
           <LinearGradient
@@ -636,7 +638,6 @@ export default function LoginScreen() {
 
           {/* Form Section */}
           <View style={{ 
-            flex: 1, 
             paddingHorizontal: 24, 
             paddingTop: 32,
             paddingBottom: 32, 
@@ -644,7 +645,6 @@ export default function LoginScreen() {
             alignSelf: 'center', 
             width: '100%',
             marginTop: -24,
-            overflow: 'hidden',
           }}>
             {/* Welcome Card */}
             <Animated.View style={{
@@ -767,7 +767,7 @@ export default function LoginScreen() {
             </Animated.View>
 
             {/* Footer */}
-            <Animated.View style={{ marginTop: 'auto', paddingTop: 24, alignItems: 'center', opacity: footerOpacity }}>
+            <View style={{ paddingTop: 24, alignItems: 'center' }}>
               <Text style={{
                 fontSize: 13,
                 color: BRAND_THEME.colors.gray[400],
@@ -775,7 +775,7 @@ export default function LoginScreen() {
               }}>
                 🔒 Connexion sécurisée
               </Text>
-            </Animated.View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useState, useRef, useCallback } from 'react'
-import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Animated } from 'react-native'
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Animated, ScrollView } from 'react-native'
 import { Link, useFocusEffect } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useAuth } from '@/context/AuthContext'
@@ -155,7 +155,15 @@ export default function ForgotPasswordScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          alwaysBounceVertical={true}
+        >
+          <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
           {/* Header */}
           <FadeInView animation="slideUp" delay={0}>
             <View style={{ marginBottom: 32 }}>
@@ -263,7 +271,8 @@ export default function ForgotPasswordScreen() {
               </TouchableOpacity>
             </Animated.View>
           </FadeInView>
-        </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
