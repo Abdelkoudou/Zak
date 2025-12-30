@@ -5,7 +5,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams, router, Stack } from 'expo-router'
+import { useLocalSearchParams, router, Stack, useNavigation } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth } from '@/context/AuthContext'
 import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
@@ -22,6 +22,7 @@ export default function ModuleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { colors, isDark } = useTheme()
   const { user, isLoading: authLoading } = useAuth()
+  const navigation = useNavigation()
   
   const [module, setModule] = useState<Module | null>(null)
   const [cours, setCours] = useState<string[]>([])
@@ -37,6 +38,18 @@ export default function ModuleDetailScreen() {
   const headerOpacity = useRef(new Animated.Value(0)).current
   const lastLoadTime = useRef<number>(0)
   const LOAD_COOLDOWN = 5000
+
+  // Check if we can go back
+  const canGoBack = navigation.canGoBack()
+
+  const handleGoBack = () => {
+    if (canGoBack) {
+      router.back()
+    } else {
+      // Navigate to home/modules tab if no history
+      router.replace('/(tabs)')
+    }
+  }
 
   useWebVisibility({
     debounceMs: 200,
@@ -170,7 +183,7 @@ export default function ModuleDetailScreen() {
             {/* Back Button + Title */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
               <TouchableOpacity 
-                onPress={() => router.back()} 
+                onPress={handleGoBack} 
                 style={{ marginRight: 12 }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >

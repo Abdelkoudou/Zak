@@ -114,7 +114,7 @@ export default function ResultsScreen() {
               </Animated.View>
               
               <FadeInView animation="slideUp" delay={400}>
-                <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, marginBottom: 4 }}>{getScoreMessage()}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, marginBottom: 4, textAlign: 'center' }}>{getScoreMessage()}</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 16, textAlign: 'center' }}>{moduleName}</Text>
               </FadeInView>
             </View>
