@@ -9,7 +9,7 @@ import { useLocalSearchParams, router, Stack, useNavigation } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth } from '@/context/AuthContext'
 import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
-import { getQuestionCount } from '@/lib/questions'
+import { getQuestionCount, getExamYears } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
 import { FadeInView, Skeleton, AnimatedButton } from '@/components/ui'
@@ -30,8 +30,10 @@ export default function ModuleDetailScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedMode, setSelectedMode] = useState<'exam' | 'cours'>('exam')
   const [selectedExamType, setSelectedExamType] = useState<ExamType | null>(null)
+  const [selectedExamYear, setSelectedExamYear] = useState<number | null>(null)
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
   const [availableExamTypes, setAvailableExamTypes] = useState<{ type: ExamType; count: number }[]>([])
+  const [availableExamYears, setAvailableExamYears] = useState<{ year: number; count: number }[]>([])
   const [coursWithCounts, setCoursWithCounts] = useState<{ name: string; count: number }[]>([])
   const [hasLoaded, setHasLoaded] = useState(false)
 
@@ -124,16 +126,36 @@ export default function ModuleDetailScreen() {
     }
   }
 
+  const loadExamYearsForType = async (examType: ExamType) => {
+    if (!module) return
+    try {
+      const { years } = await getExamYears(module.name, examType)
+      setAvailableExamYears(years)
+    } catch {
+      setAvailableExamYears([])
+    }
+  }
+
+  const handleExamTypeSelect = async (examType: ExamType) => {
+    setSelectedExamType(examType)
+    setSelectedExamYear(null) // Reset year when type changes
+    await loadExamYearsForType(examType)
+  }
+
   const startPractice = async () => {
     if (!module) return
     const params: Record<string, string> = { moduleName: module.name }
     if (selectedMode === 'exam' && selectedExamType) {
       params.examType = selectedExamType
+      if (selectedExamYear) {
+        params.examYear = selectedExamYear.toString()
+      }
     } else if (selectedMode === 'cours' && selectedCours) {
       params.cours = selectedCours
     }
     const filters: any = { module_name: module.name }
     if (params.examType) filters.exam_type = params.examType
+    if (params.examYear) filters.exam_year = parseInt(params.examYear)
     if (params.cours) filters.cours = params.cours
     const { count } = await getQuestionCount(filters)
     if (count === 0) {
@@ -144,7 +166,12 @@ export default function ModuleDetailScreen() {
   }
 
   const canStartPractice = () => {
-    if (selectedMode === 'exam') return !!selectedExamType
+    if (selectedMode === 'exam') {
+      // Must select exam type, and if years are available, must select one
+      if (!selectedExamType) return false
+      if (availableExamYears.length > 0 && !selectedExamYear) return false
+      return true
+    }
     if (selectedMode === 'cours') return !!selectedCours
     return false
   }
@@ -255,7 +282,7 @@ export default function ModuleDetailScreen() {
               {/* Selon les Cours */}
               {cours.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null) }}
+                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null); setSelectedExamYear(null); setAvailableExamYears([]) }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -301,8 +328,36 @@ export default function ModuleDetailScreen() {
                 <FadeInView key={type} delay={150 + index * 50} animation="slideUp">
                   <SelectableCard
                     isSelected={selectedExamType === type}
-                    onPress={() => setSelectedExamType(type)}
+                    onPress={() => handleExamTypeSelect(type)}
                     title={type}
+                    subtitle={`${count} question${count !== 1 ? 's' : ''}`}
+                    colors={colors}
+                    isDark={isDark}
+                  />
+                </FadeInView>
+              ))}
+            </View>
+          )}
+
+          {/* Exam Years List - shown after selecting exam type */}
+          {selectedMode === 'exam' && selectedExamType && availableExamYears.length > 0 && (
+            <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+              <FadeInView delay={100} animation="slideUp">
+                <Text style={{ 
+                  fontSize: 16, 
+                  fontWeight: '600', 
+                  color: colors.text, 
+                  marginBottom: 12 
+                }}>
+                  Sélectionner l'année d'examen (Promo)
+                </Text>
+              </FadeInView>
+              {availableExamYears.map(({ year, count }, index) => (
+                <FadeInView key={year} delay={150 + index * 50} animation="slideUp">
+                  <SelectableCard
+                    isSelected={selectedExamYear === year}
+                    onPress={() => setSelectedExamYear(year)}
+                    title={`Promo ${year}`}
                     subtitle={`${count} question${count !== 1 ? 's' : ''}`}
                     colors={colors}
                     isDark={isDark}

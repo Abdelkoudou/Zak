@@ -16,6 +16,7 @@ export interface QuestionFilters {
   sub_discipline?: string
   cours?: string
   year?: YearLevel
+  exam_year?: number
   limit?: number
   offset?: number
 }
@@ -78,6 +79,9 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
     }
     if (filters.year) {
       query = query.eq('year', filters.year)
+    }
+    if (filters.exam_year) {
+      query = query.eq('exam_year', filters.exam_year)
     }
 
     // Order by number
@@ -263,6 +267,9 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
     if (filters.cours) {
       query = query.contains('cours', [filters.cours])
     }
+    if (filters.exam_year) {
+      query = query.eq('exam_year', filters.exam_year)
+    }
 
     const { count, error } = await query
 
@@ -273,5 +280,49 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
     return { count: count || 0, error: null }
   } catch (error) {
     return { count: 0, error: 'Failed to fetch question count' }
+  }
+}
+
+// ============================================================================
+// Get Available Exam Years for a Module/Exam Type
+// ============================================================================
+
+export async function getExamYears(
+  moduleName: string,
+  examType?: ExamType
+): Promise<{ years: { year: number; count: number }[]; error: string | null }> {
+  try {
+    let query = supabase
+      .from('questions')
+      .select('exam_year')
+      .eq('module_name', moduleName)
+      .not('exam_year', 'is', null)
+
+    if (examType) {
+      query = query.eq('exam_type', examType)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      return { years: [], error: error.message }
+    }
+
+    // Count occurrences of each year
+    const yearCounts: Record<number, number> = {}
+    for (const item of data || []) {
+      if (item.exam_year) {
+        yearCounts[item.exam_year] = (yearCounts[item.exam_year] || 0) + 1
+      }
+    }
+
+    // Convert to array and sort descending (newest first)
+    const years = Object.entries(yearCounts)
+      .map(([year, count]) => ({ year: parseInt(year), count }))
+      .sort((a, b) => b.year - a.year)
+
+    return { years, error: null }
+  } catch (error) {
+    return { years: [], error: 'Failed to fetch exam years' }
   }
 }
