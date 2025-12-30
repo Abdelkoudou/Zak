@@ -27,8 +27,20 @@ import { FACULTIES } from '@/constants/faculty'
 import { WILAYAS } from '@/constants/regions'
 import { YearLevel, Speciality, RegisterFormData } from '@/types'
 import { BRAND_THEME } from '@/constants/theme'
-import { FadeInView, AnimatedButton } from '@/components/ui'
+import { FadeInView, AnimatedButton, PasswordStrengthIndicator } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePasswordMatch, 
+  validateActivationCode,
+  validateRequired,
+  validateSelection,
+  getPasswordStrength,
+  sanitizeEmail,
+  sanitizeActivationCode,
+  sanitizeText
+} from '@/lib/validation'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -132,27 +144,50 @@ export default function RegisterScreen() {
   }, [])
 
   const handleRegister = async () => {
-    if (!fullName.trim()) { setError('Veuillez entrer votre nom complet'); return }
-    if (!email.trim()) { setError('Veuillez entrer votre email'); return }
-    if (!password || password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères'); return }
-    if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas'); return }
-    if (!speciality) { setError('Veuillez sélectionner votre spécialité'); return }
-    if (!yearOfStudy) { setError('Veuillez sélectionner votre année d\'étude'); return }
-    if (!faculty) { setError('Veuillez sélectionner votre faculté / annexe'); return }
-    if (!region) { setError('Veuillez sélectionner votre wilaya'); return }
-    if (!activationCode.trim()) { setError('Veuillez entrer votre code d\'activation'); return }
+    // Validate full name
+    const nameValidation = validateRequired(fullName, 'votre nom complet')
+    if (!nameValidation.isValid) { setError(nameValidation.error); return }
+    
+    // Validate email format
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) { setError(emailValidation.error); return }
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) { setError(passwordValidation.error); return }
+    
+    // Validate password confirmation
+    const matchValidation = validatePasswordMatch(password, confirmPassword)
+    if (!matchValidation.isValid) { setError(matchValidation.error); return }
+    
+    // Validate selections
+    const specialityValidation = validateSelection(speciality, 'votre spécialité')
+    if (!specialityValidation.isValid) { setError(specialityValidation.error); return }
+    
+    const yearValidation = validateSelection(yearOfStudy, 'votre année d\'étude')
+    if (!yearValidation.isValid) { setError(yearValidation.error); return }
+    
+    const facultyValidation = validateSelection(faculty, 'votre faculté / annexe')
+    if (!facultyValidation.isValid) { setError(facultyValidation.error); return }
+    
+    const regionValidation = validateSelection(region, 'votre wilaya')
+    if (!regionValidation.isValid) { setError(regionValidation.error); return }
+    
+    // Validate activation code format
+    const codeValidation = validateActivationCode(activationCode)
+    if (!codeValidation.isValid) { setError(codeValidation.error); return }
 
     setError(null)
     const formData: RegisterFormData = {
-      email: email.trim(),
+      email: sanitizeEmail(email),
       password,
       confirmPassword,
-      full_name: fullName.trim(),
+      full_name: sanitizeText(fullName),
       speciality: speciality as Speciality,
       year_of_study: yearOfStudy as YearLevel,
       faculty,
       region,
-      activation_code: activationCode.trim().toUpperCase(),
+      activation_code: sanitizeActivationCode(activationCode),
     }
     const { error: registerError, needsEmailVerification } = await signUp(formData)
     if (registerError) { setError(registerError) }
@@ -325,6 +360,7 @@ export default function RegisterScreen() {
                   <View style={isDesktop ? { flex: 1 } : {}}>
                     <FormLabel>Mot de passe *</FormLabel>
                     <FormInput placeholder="Minimum 8 caractères" value={password} onChangeText={setPassword} secureTextEntry />
+                    <PasswordStrengthIndicator password={password} />
                   </View>
                   <View style={isDesktop ? { flex: 1 } : {}}>
                     <FormLabel>Confirmer *</FormLabel>

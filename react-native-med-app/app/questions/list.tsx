@@ -81,7 +81,9 @@ export default function QuestionsListScreen() {
         setPage(prev => prev + 1)
       }
     } catch (error) {
-      console.error('Error loading questions:', error)
+      if (__DEV__) {
+        console.error('Error loading questions:', error)
+      }
     } finally {
       setIsLoading(false)
     }

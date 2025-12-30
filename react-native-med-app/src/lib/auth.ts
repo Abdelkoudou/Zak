@@ -3,8 +3,8 @@
 // ============================================================================
 
 import { supabase, getRedirectUrl } from './supabase'
-import * as Device from 'expo-device'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
+import { getDeviceId, getDeviceName } from './deviceId'
 
 // ============================================================================
 // Sign Up
@@ -287,24 +287,6 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
 // Device Management
 // ============================================================================
 
-async function getDeviceId(): Promise<string> {
-  // Use device info to create a unique identifier
-  const deviceType = Device.deviceType
-  const deviceName = Device.deviceName || 'Unknown Device'
-  const osName = Device.osName || 'Unknown OS'
-  const osVersion = Device.osVersion || ''
-
-  // Create a simple hash from device info
-  const deviceString = `${deviceType}-${deviceName}-${osName}-${osVersion}`
-  return deviceString.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)
-}
-
-async function getDeviceName(): Promise<string> {
-  const deviceName = Device.deviceName || 'Unknown Device'
-  const osName = Device.osName || ''
-  return `${deviceName} (${osName})`
-}
-
 export async function registerDevice(userId: string): Promise<{ error: string | null }> {
   try {
     const deviceId = await getDeviceId()
@@ -322,11 +304,17 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
       })
 
     if (error) {
+      if (__DEV__) {
+        console.error('[Auth] Error registering device:', error.message)
+      }
       return { error: error.message }
     }
 
     return { error: null }
   } catch (error) {
+    if (__DEV__) {
+      console.error('[Auth] Failed to register device:', error)
+    }
     return { error: 'Failed to register device' }
   }
 }

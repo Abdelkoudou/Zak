@@ -10,6 +10,7 @@ export { Badge } from './Badge'
 export { LoadingSpinner } from './LoadingSpinner'
 export { Alert } from './Alert'
 export { ConfirmModal } from './ConfirmModal'
+export { PasswordStrengthIndicator } from './PasswordStrengthIndicator'
 
 // Animated Components
 export { AnimatedCard } from './AnimatedCard'

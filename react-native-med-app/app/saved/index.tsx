@@ -54,7 +54,9 @@ export default function SavedQuestionsScreen() {
       setQuestions(data)
       setHasLoaded(true)
     } catch (error) {
-      console.error('Error loading saved questions:', error)
+      if (__DEV__) {
+        console.error('Error loading saved questions:', error)
+      }
     } finally {
       setIsLoading(false)
       setRefreshing(false)

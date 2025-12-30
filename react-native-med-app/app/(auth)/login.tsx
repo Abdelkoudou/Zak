@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext'
 import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
+import { validateEmail } from '@/lib/validation'
 import {
   PREMIUM_TIMING,
   PREMIUM_EASING,
@@ -205,17 +206,21 @@ export default function LoginScreen() {
   }, [])
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      setError('Veuillez entrer votre email')
+    // Validate email format
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error)
       return
     }
+    
+    // Validate password is not empty
     if (!password) {
       setError('Veuillez entrer votre mot de passe')
       return
     }
 
     setError(null)
-    const { error: loginError } = await signIn(email.trim(), password)
+    const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
     
     if (loginError) {
       setError(loginError)

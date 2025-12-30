@@ -71,7 +71,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await checkSession()
       } catch (error) {
-        console.error('[Auth] Init error:', error)
+        if (__DEV__) {
+          console.error('[Auth] Init error:', error)
+        }
         setIsLoading(false)
       } finally {
         if (isMounted) {
@@ -201,7 +203,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(currentUser)
       lastSessionCheck.current = Date.now()
     } catch (error) {
-      console.error('[Auth] Error checking session:', error)
+      if (__DEV__) {
+        console.error('[Auth] Error checking session:', error)
+      }
       setUser(null)
     } finally {
       setIsLoading(false)
@@ -215,7 +219,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: currentUser } = await authService.getCurrentUser()
       setUser(currentUser)
     } catch (error) {
-      console.error('[Auth] Error refreshing user:', error)
+      if (__DEV__) {
+        console.error('[Auth] Error refreshing user:', error)
+      }
     }
   }
 

@@ -11,6 +11,7 @@ import { FadeInView, LoadingSpinner } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
+import { validateEmail } from '@/lib/validation'
 
 export default function ForgotPasswordScreen() {
   const { resetPassword } = useAuth()
@@ -26,15 +27,17 @@ export default function ForgotPasswordScreen() {
   const buttonScale = useRef(new Animated.Value(1)).current
 
   const handleResetPassword = async () => {
-    if (!email.trim()) {
-      setError('Veuillez entrer votre email')
+    // Validate email format
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error)
       return
     }
 
     setError(null)
     setIsLoading(true)
     
-    const { error: resetError } = await resetPassword(email.trim())
+    const { error: resetError } = await resetPassword(email.trim().toLowerCase())
     
     setIsLoading(false)
     

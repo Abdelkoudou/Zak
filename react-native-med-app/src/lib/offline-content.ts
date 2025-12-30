@@ -67,7 +67,9 @@ export const OfflineContentService = {
 
             return { hasUpdate: remoteDate > localDate, remoteVersion };
         } catch (error: any) {
-            console.error('Check for updates failed:', error);
+            if (__DEV__) {
+                console.error('Check for updates failed:', error);
+            }
             return { hasUpdate: false, remoteVersion: null, error: error.message || 'Unknown error' };
         }
     },
@@ -103,7 +105,9 @@ export const OfflineContentService = {
             // Save new version file
             await FileSystem.writeAsStringAsync(VERSION_FILE, JSON.stringify(remoteVersion));
         } catch (error) {
-            console.error('Download updates failed:', error);
+            if (__DEV__) {
+                console.error('Download updates failed:', error);
+            }
             throw error;
         }
     },
@@ -134,7 +138,9 @@ export const OfflineContentService = {
             const content = await FileSystem.readAsStringAsync(localPath);
             return JSON.parse(content);
         } catch (error) {
-            console.error(`Failed to load local module ${moduleName}:`, error);
+            if (__DEV__) {
+                console.error(`Failed to load local module ${moduleName}:`, error);
+            }
             return null;
         }
     },
@@ -185,13 +191,17 @@ export const OfflineContentService = {
                     }
                 } catch (e) {
                     // Skip invalid files
-                    console.log(`Skipping invalid file: ${filename}`);
+                    if (__DEV__) {
+                        console.log(`Skipping invalid file: ${filename}`);
+                    }
                 }
             }
 
             return modules;
         } catch (e) {
-            console.error('Failed to build module metadata from files:', e);
+            if (__DEV__) {
+                console.error('Failed to build module metadata from files:', e);
+            }
             return [];
         }
     },
