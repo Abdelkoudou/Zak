@@ -88,7 +88,7 @@ export async function createQuestion(data: CreateQuestionData) {
   }
 }
 
-// Get all questions with filters
+// Get all questions with filters (handles pagination to bypass 1000 row limit)
 export async function getQuestions(filters?: {
   year?: string;
   module_name?: string;
@@ -97,37 +97,55 @@ export async function getQuestions(filters?: {
   cours?: string;
 }) {
   try {
-    let query = supabase
-      .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `)
-      .order('number', { ascending: true });
+    const PAGE_SIZE = 1000;
+    let allData: QuestionWithAnswers[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (filters?.year) {
-      query = query.eq('year', filters.year);
-    }
-    if (filters?.module_name) {
-      query = query.eq('module_name', filters.module_name);
-    }
-    if (filters?.sub_discipline) {
-      query = query.eq('sub_discipline', filters.sub_discipline);
-    }
-    if (filters?.exam_type) {
-      query = query.eq('exam_type', filters.exam_type);
-    }
-    if (filters?.cours) {
-      query = query.contains('cours', [filters.cours]);
-    }
+    while (hasMore) {
+      let query = supabase
+        .from('questions')
+        .select(`
+          *,
+          answers (*)
+        `)
+        .order('created_at', { ascending: true })
+        .order('number', { ascending: true })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-    const { data, error } = await query;
+      if (filters?.year) {
+        query = query.eq('year', filters.year);
+      }
+      if (filters?.module_name) {
+        query = query.eq('module_name', filters.module_name);
+      }
+      if (filters?.sub_discipline) {
+        query = query.eq('sub_discipline', filters.sub_discipline);
+      }
+      if (filters?.exam_type) {
+        query = query.eq('exam_type', filters.exam_type);
+      }
+      if (filters?.cours) {
+        query = query.contains('cours', [filters.cours]);
+      }
 
-    if (error) throw error;
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        allData = [...allData, ...(data as QuestionWithAnswers[])];
+        // If we got less than PAGE_SIZE, we've reached the end
+        hasMore = data.length === PAGE_SIZE;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
 
     return {
       success: true,
-      data: data as QuestionWithAnswers[],
+      data: allData,
     };
   } catch (error: any) {
     console.error('Error fetching questions:', error);

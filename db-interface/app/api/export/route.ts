@@ -47,24 +47,43 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 Starting export process...');
 
-    // Get all questions with answers
-    const { data: questions, error: questionsError } = await supabaseAdmin
-      .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `)
-      .order('year', { ascending: true })
-      .order('module_name', { ascending: true })
-      .order('number', { ascending: true });
+    // Get all questions with answers (with pagination to handle >1000 rows)
+    const PAGE_SIZE = 1000;
+    let allQuestions: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (questionsError) throw questionsError;
+    while (hasMore) {
+      const { data: questions, error: questionsError } = await supabaseAdmin
+        .from('questions')
+        .select(`
+          *,
+          answers (*)
+        `)
+        .order('year', { ascending: true })
+        .order('module_name', { ascending: true })
+        .order('number', { ascending: true })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+      if (questionsError) throw questionsError;
+
+      if (questions && questions.length > 0) {
+        allQuestions = [...allQuestions, ...questions];
+        hasMore = questions.length === PAGE_SIZE;
+        page++;
+        console.log(`📊 Fetched page ${page}: ${questions.length} questions (total: ${allQuestions.length})`);
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const questions = allQuestions;
 
     if (!questions || questions.length === 0) {
       return errorResponse('No questions found in database', 404, rateLimitResult.headers);
     }
 
-    console.log(`📊 Found ${questions.length} questions`);
+    console.log(`📊 Found ${questions.length} questions total`);
 
     // Get all modules for metadata
     const { data: allModules, error: modulesError } = await supabaseAdmin
