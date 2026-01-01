@@ -7,6 +7,9 @@ import { Tabs } from 'expo-router'
 import { View, useWindowDimensions, Animated, Pressable, Platform } from 'react-native'
 import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
   const isWeb = Platform.OS === 'web'
@@ -22,31 +25,36 @@ export default function TabsLayout() {
         tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 98 : 92,
-          paddingBottom: Platform.OS === 'ios' ? 34 : 26,
-          paddingTop: 14,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
+          height: Platform.OS === 'ios' ? 100 : Platform.OS === 'web' ? 70 : 90,
+          paddingBottom: Platform.OS === 'ios' ? 34 : Platform.OS === 'web' ? 10 : 24,
+          paddingTop: Platform.OS === 'web' ? 10 : 12,
+          borderTopLeftRadius: 32,
+          borderTopRightRadius: 32,
           position: 'absolute',
           bottom: 0,
           left: 0,
           right: 0,
-          elevation: 0,
-          shadowColor: '#09B2AD',
-          shadowOffset: { width: 0, height: -4 },
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -8 },
           shadowOpacity: 0.15,
-          shadowRadius: 12,
+          shadowRadius: 15,
         } : { display: 'none' },
-        tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
+        tabBarActiveTintColor: '#1E1E1E',
+        tabBarInactiveTintColor: 'rgba(30, 30, 30, 0.5)',
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
-          marginTop: 10,
+          marginTop: Platform.OS === 'web' ? 4 : 2,
           letterSpacing: 0.3,
         },
         tabBarIconStyle: {
           marginBottom: 0,
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: Platform.OS === 'web' ? 4 : 0,
         },
         tabBarButton: showTabBar ? (props) => <AnimatedTabButton {...props} /> : () => null,
       }}
@@ -99,12 +107,12 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
         toValue: focused ? 1.15 : 1,
         friction: 6,
         tension: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(opacityAnim, {
         toValue: focused ? 1 : 0.5,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }, [focused])
@@ -115,7 +123,6 @@ function AnimatedTabIcon({ children, focused }: { children: React.ReactNode; foc
       justifyContent: 'center',
       opacity: opacityAnim,
       transform: [{ scale: scaleAnim }],
-      marginBottom: 2,
     }}>
       {children}
     </Animated.View>
@@ -131,7 +138,7 @@ function AnimatedTabButton(props: any) {
       toValue: 0.92,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -140,7 +147,7 @@ function AnimatedTabButton(props: any) {
       toValue: 1,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -149,13 +156,14 @@ function AnimatedTabButton(props: any) {
       {...props}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[props.style, { flex: 1, alignItems: 'center' }]}
+      style={[props.style, { flex: 1, alignItems: 'center', justifyContent: 'center' }]}
     >
       <Animated.View style={{ 
         alignItems: 'center', 
         justifyContent: 'center',
         transform: [{ scale: scaleAnim }],
-        paddingTop: 4,
+        flexDirection: 'column',
+        gap: Platform.OS === 'web' ? 2 : 0,
       }}>
         {props.children}
       </Animated.View>

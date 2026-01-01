@@ -6,7 +6,7 @@ interface IconProps {
   color?: string
 }
 
-export function CorrectIcon({ size = 36, color = 'black' }: IconProps) {
+export function CorrectIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36" fill="none">
       <Path
@@ -17,7 +17,7 @@ export function CorrectIcon({ size = 36, color = 'black' }: IconProps) {
   )
 }
 
-export function FalseIcon({ size = 36, color = 'black' }: IconProps) {
+export function FalseIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36" fill="none">
       <Path
@@ -28,7 +28,7 @@ export function FalseIcon({ size = 36, color = 'black' }: IconProps) {
   )
 }
 
-export function FileIcon({ size = 35, color = 'black' }: IconProps) {
+export function FileIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -39,7 +39,7 @@ export function FileIcon({ size = 35, color = 'black' }: IconProps) {
   )
 }
 
-export function SavesIcon({ size = 31, color = 'black' }: IconProps) {
+export function SavesIcon({ size = 31, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 31 31" fill="none">
       <Path
@@ -53,7 +53,7 @@ export function SavesIcon({ size = 31, color = 'black' }: IconProps) {
   )
 }
 
-export function GoalIcon({ size = 35, color = 'black' }: IconProps) {
+export function GoalIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -72,7 +72,7 @@ export function GoalIcon({ size = 35, color = 'black' }: IconProps) {
   )
 }
 
-export function BookIcon({ size = 47, color = 'black' }: IconProps) {
+export function BookIcon({ size = 47, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 47 47" fill="none">
       <Path

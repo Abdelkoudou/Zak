@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useRef, useCallback } from 'react'
-import { View, Text, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, TouchableOpacity, Animated, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
@@ -11,6 +11,9 @@ import { Card, FadeInView } from '@/components/ui'
 import { ANIMATION_EASING } from '@/lib/animations'
 import { Ionicons } from '@expo/vector-icons'
 import { CorrectIcon, FalseIcon, FileIcon } from '@/components/icons/ResultIcons'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function ResultsScreen() {
   const { total, correct, score, time, moduleName } = useLocalSearchParams<{
@@ -41,7 +44,7 @@ export default function ResultsScreen() {
 
       Animated.sequence([
         Animated.delay(200),
-        Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: true }),
+        Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
 
       Animated.timing(progressWidth, {
@@ -55,7 +58,7 @@ export default function ResultsScreen() {
       if (scoreNum >= 60) {
         Animated.sequence([
           Animated.delay(800),
-          Animated.timing(celebrationOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.timing(celebrationOpacity, { toValue: 1, duration: 300, useNativeDriver: USE_NATIVE_DRIVER }),
         ]).start()
       }
     }, [])
@@ -79,8 +82,13 @@ export default function ResultsScreen() {
     <>
       <Stack.Screen options={{ title: 'Résultat', headerBackVisible: false, headerStyle: { backgroundColor: colors.card }, headerTintColor: colors.text }} />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-        <View style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 32 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom', 'left', 'right']}>
+        <ScrollView 
+          style={{ flex: 1 }} 
+          contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 32, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+        >
           {/* Score Circle */}
           <FadeInView animation="scale" delay={0}>
             <View style={{ alignItems: 'center', marginBottom: 32 }}>
@@ -106,7 +114,7 @@ export default function ResultsScreen() {
               </Animated.View>
               
               <FadeInView animation="slideUp" delay={400}>
-                <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, marginBottom: 4 }}>{getScoreMessage()}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '600', color: colors.text, marginBottom: 4, textAlign: 'center' }}>{getScoreMessage()}</Text>
                 <Text style={{ color: colors.textMuted, fontSize: 16, textAlign: 'center' }}>{moduleName}</Text>
               </FadeInView>
             </View>
@@ -154,12 +162,12 @@ export default function ResultsScreen() {
 
           {/* Action Buttons */}
           <FadeInView animation="slideUp" delay={900}>
-            <View style={{ gap: 12 }}>
+            <View style={{ gap: 12, paddingBottom: 20 }}>
               <AnimatedActionButton title="Pratiquer à nouveau" onPress={() => router.back()} variant="primary" colors={colors} />
               <AnimatedActionButton title="Retour à l'accueil" onPress={() => router.replace('/(tabs)')} variant="ghost" colors={colors} />
             </View>
           </FadeInView>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </>
   )
@@ -172,7 +180,7 @@ function AnimatedStatItem({ label, value, icon, delay = 0, colors }: { label: st
   useFocusEffect(
     useCallback(() => {
       scale.setValue(0)
-      Animated.spring(scale, { toValue: 1, friction: 5, tension: 100, delay, useNativeDriver: true }).start()
+      Animated.spring(scale, { toValue: 1, friction: 5, tension: 100, delay, useNativeDriver: USE_NATIVE_DRIVER }).start()
     }, [delay])
   )
 
@@ -189,8 +197,8 @@ function AnimatedStatItem({ label, value, icon, delay = 0, colors }: { label: st
 function AnimatedActionButton({ title, onPress, variant = 'primary', colors }: { title: string; onPress: () => void; variant?: 'primary' | 'ghost'; colors: any }) {
   const scale = useRef(new Animated.Value(1)).current
 
-  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   if (variant === 'ghost') {
     return (

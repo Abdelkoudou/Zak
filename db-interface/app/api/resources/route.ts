@@ -1,13 +1,31 @@
-// API route for resources CRUD operations
-// Uses service role key to bypass RLS (server-side only)
-
+/**
+ * API route for resources CRUD operations
+ * Secured with authentication, authorization, validation, and rate limiting
+ */
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin, verifyAdminUser } from '@/lib/supabase-admin';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import {
+  validateBody,
+  validateParam,
+  requireAuthenticatedAdmin,
+  applyRateLimit,
+  sanitizeError,
+  successResponse,
+  errorResponse,
+} from '@/lib/security/api-utils';
+import { createResourceSchema, uuidSchema } from '@/lib/security/validation';
 
-// GET /api/resources - List all resources
+// GET /api/resources - List all resources (requires admin auth)
 export async function GET(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = await applyRateLimit(request);
+    if (rateLimitResult.error) return rateLimitResult.error;
+
+    // Require authenticated admin
+    const authResult = await requireAuthenticatedAdmin(request);
+    if (authResult.error) return authResult.error;
+
     const { data: resources, error } = await supabaseAdmin
       .from('course_resources')
       .select('*')
@@ -15,51 +33,29 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, data: resources });
-  } catch (error: any) {
+    return successResponse(resources, rateLimitResult.headers);
+  } catch (error) {
     console.error('Error fetching resources:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return errorResponse(sanitizeError(error), 500);
   }
 }
 
 // POST /api/resources - Create new resource
 export async function POST(request: NextRequest) {
   try {
-    // Get user session
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - No auth token' },
-        { status: 401 }
-      );
-    }
+    // Apply rate limiting for write operations
+    const rateLimitResult = await applyRateLimit(request, 'write');
+    if (rateLimitResult.error) return rateLimitResult.error;
 
-    // Verify session with anon client
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Require authenticated admin
+    const authResult = await requireAuthenticatedAdmin(request);
+    if (authResult.error) return authResult.error;
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized - Invalid token' },
-        { status: 401 }
-      );
-    }
+    // Validate request body
+    const bodyResult = await validateBody(request, createResourceSchema);
+    if (bodyResult.error) return bodyResult.error;
 
-    // Verify user is admin
-    const { isAdmin, role } = await verifyAdminUser(user.id);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: `Forbidden - Role '${role}' cannot create resources` },
-        { status: 403 }
-      );
-    }
-
-    // Parse request body
-    const body = await request.json();
-    const { resource } = body;
+    const { resource } = bodyResult.data;
 
     // Insert resource using admin client (bypasses RLS)
     const resourceData = {
@@ -74,7 +70,7 @@ export async function POST(request: NextRequest) {
       cours: resource.cours || null,
       unity_name: resource.unity_name || null,
       module_type: resource.module_type,
-      created_by: user.id,
+      created_by: authResult.user.id,
     };
 
     const { data: newResource, error: resourceError } = await supabaseAdmin
@@ -85,75 +81,42 @@ export async function POST(request: NextRequest) {
 
     if (resourceError) throw resourceError;
 
-    return NextResponse.json({
-      success: true,
-      data: newResource,
-    });
-  } catch (error: any) {
+    return successResponse(newResource, rateLimitResult.headers);
+  } catch (error) {
     console.error('Error creating resource:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return errorResponse(sanitizeError(error), 500);
   }
 }
 
-// DELETE /api/resources - Delete resource
+// DELETE /api/resources?id=xxx - Delete resource
 export async function DELETE(request: NextRequest) {
   try {
-    // Get user session
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+    // Apply rate limiting for write operations
+    const rateLimitResult = await applyRateLimit(request, 'write');
+    if (rateLimitResult.error) return rateLimitResult.error;
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Require authenticated admin
+    const authResult = await requireAuthenticatedAdmin(request);
+    if (authResult.error) return authResult.error;
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Verify user is admin
-    const { isAdmin } = await verifyAdminUser(user.id);
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
-      );
-    }
-
-    // Get resource ID from URL
+    // Validate resource ID
     const url = new URL(request.url);
-    const id = url.searchParams.get('id');
+    const idParam = url.searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'Resource ID required' },
-        { status: 400 }
-      );
-    }
+    const idResult = validateParam(idParam, uuidSchema, 'Resource ID');
+    if (idResult.error) return idResult.error;
 
     // Delete resource
     const { error } = await supabaseAdmin
       .from('course_resources')
       .delete()
-      .eq('id', id);
+      .eq('id', idResult.data);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
+    return successResponse({ deleted: true }, rateLimitResult.headers);
+  } catch (error) {
     console.error('Error deleting resource:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return errorResponse(sanitizeError(error), 500);
   }
 }

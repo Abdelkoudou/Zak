@@ -10,13 +10,18 @@ import { Platform } from 'react-native'
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
 
-// Check if we're in a browser/native environment (not SSR)
-const isClient = typeof window !== 'undefined' || Platform.OS !== 'web'
+// Check if we're in a browser environment
+const isWeb = Platform.OS === 'web'
+const isBrowser = typeof window !== 'undefined'
 
-// Create a custom storage adapter that handles SSR
-const customStorage = {
+// For web: Use localStorage directly (synchronous) - this is CRITICAL for session persistence
+// Supabase expects synchronous storage on web to properly rehydrate sessions on page load
+// Using an async wrapper causes race conditions where the session appears empty on refresh
+const webStorage = isBrowser ? window.localStorage : undefined
+
+// For native: Use AsyncStorage (async is fine on native)
+const nativeStorage = {
   getItem: async (key: string): Promise<string | null> => {
-    if (!isClient) return null
     try {
       return await AsyncStorage.getItem(key)
     } catch {
@@ -24,19 +29,17 @@ const customStorage = {
     }
   },
   setItem: async (key: string, value: string): Promise<void> => {
-    if (!isClient) return
     try {
       await AsyncStorage.setItem(key, value)
     } catch {
-      // Ignore storage errors during SSR
+      // Ignore storage errors
     }
   },
   removeItem: async (key: string): Promise<void> => {
-    if (!isClient) return
     try {
       await AsyncStorage.removeItem(key)
     } catch {
-      // Ignore storage errors during SSR
+      // Ignore storage errors
     }
   },
 }
@@ -51,13 +54,63 @@ export const getRedirectUrl = () => {
   return Linking.createURL('auth/callback')
 }
 
+// Create Supabase client with platform-specific storage
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: customStorage,
-    autoRefreshToken: isClient,
-    persistSession: isClient,
-    detectSessionInUrl: false,
+    // CRITICAL: Use synchronous localStorage on web, async storage on native
+    storage: isWeb ? webStorage : nativeStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: isWeb, // Enable on web to handle OAuth callbacks and page refreshes
+    // Use a consistent storage key
+    storageKey: 'sb-auth-token',
+    // PKCE flow is more secure for web
+    flowType: isWeb ? 'pkce' : 'implicit',
+  },
+  // Add global error handling
+  global: {
+    headers: {
+      'x-client-info': `fmc-app/${Platform.OS}`,
+    },
   },
 })
+
+// Helper function to ensure session is valid before making requests
+export async function ensureValidSession(): Promise<boolean> {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error || !session) {
+      return false
+    }
+    
+    // Check if token is about to expire (within 60 seconds)
+    const expiresAt = session.expires_at
+    if (expiresAt) {
+      const now = Math.floor(Date.now() / 1000)
+      if (expiresAt - now < 60) {
+        // Token is about to expire, try to refresh
+        const { error: refreshError } = await supabase.auth.refreshSession()
+        if (refreshError) {
+          return false
+        }
+      }
+    }
+    
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Helper to get session synchronously from localStorage on web (for initial load)
+export function getStoredSessionSync(): boolean {
+  if (!isWeb || !isBrowser) return false
+  try {
+    const stored = window.localStorage.getItem('sb-auth-token')
+    return stored !== null && stored !== ''
+  } catch {
+    return false
+  }
+}
 
 export default supabase

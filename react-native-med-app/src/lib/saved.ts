@@ -65,7 +65,7 @@ export async function isQuestionSaved(userId: string, questionId: string): Promi
       .select('id')
       .eq('user_id', userId)
       .eq('question_id', questionId)
-      .single()
+      .maybeSingle()
 
     if (error || !data) {
       return false
@@ -102,9 +102,9 @@ export async function getSavedQuestionIds(userId: string): Promise<{ ids: string
 // Get Saved Questions with Details
 // ============================================================================
 
-export async function getSavedQuestions(userId: string, moduleName?: string): Promise<{ 
-  questions: QuestionWithAnswers[]; 
-  error: string | null 
+export async function getSavedQuestions(userId: string, moduleName?: string): Promise<{
+  questions: QuestionWithAnswers[];
+  error: string | null
 }> {
   try {
     // Get saved question IDs
@@ -182,12 +182,12 @@ export async function getSavedQuestionsCount(userId: string): Promise<{ count: n
 // Toggle Save Question
 // ============================================================================
 
-export async function toggleSaveQuestion(userId: string, questionId: string): Promise<{ 
-  isSaved: boolean; 
-  error: string | null 
+export async function toggleSaveQuestion(userId: string, questionId: string): Promise<{
+  isSaved: boolean;
+  error: string | null
 }> {
   const saved = await isQuestionSaved(userId, questionId)
-  
+
   if (saved) {
     const { error } = await unsaveQuestion(userId, questionId)
     return { isSaved: false, error }

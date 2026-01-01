@@ -10,6 +10,7 @@ import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
+import { AppVisibilityProvider } from '@/context/AppVisibilityContext'
 import { supabase } from '@/lib/supabase'
 
 // Conditionally import native-only modules
@@ -94,10 +95,12 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RootLayoutContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <AppVisibilityProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RootLayoutContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </AppVisibilityProvider>
   )
 }

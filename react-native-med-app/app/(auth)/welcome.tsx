@@ -14,12 +14,11 @@ import {
   PREMIUM_EASING,
   PREMIUM_SPRING,
   PREMIUM_INITIAL,
-  createFloatingAnimation,
-  createGlowPulse,
+  USE_NATIVE_DRIVER,
 } from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../assets/icon.png')
 
 export default function WelcomeScreen() {
   const { width } = useWindowDimensions()
@@ -71,66 +70,115 @@ export default function WelcomeScreen() {
   const floatingY3 = useRef(new Animated.Value(0)).current
   const glowPulse = useRef(new Animated.Value(0.2)).current
   const breathingScale = useRef(new Animated.Value(1)).current
+  
+  // Store animation references for cleanup
+  const animationsRef = useRef<Animated.CompositeAnimation[]>([])
 
   // ========== Ambient Animations (Continuous) ==========
   useEffect(() => {
-    // Multiple floating elements at different speeds
-    createFloatingAnimation(floatingY1, 12).start()
+    // Clear any existing animations
+    animationsRef.current.forEach(anim => anim.stop())
+    animationsRef.current = []
     
-    Animated.loop(
+    // Create floating animation 1
+    const floating1 = Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatingY1, {
+          toValue: -12,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+        Animated.timing(floatingY1, {
+          toValue: 12,
+          duration: PREMIUM_TIMING.ambient,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+      ])
+    )
+    
+    // Create floating animation 2
+    const floating2 = Animated.loop(
       Animated.sequence([
         Animated.timing(floatingY2, {
           toValue: -18,
           duration: PREMIUM_TIMING.ambient * 1.2,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY2, {
           toValue: 18,
           duration: PREMIUM_TIMING.ambient * 1.2,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
-    ).start()
+    )
     
-    Animated.loop(
+    // Create floating animation 3
+    const floating3 = Animated.loop(
       Animated.sequence([
         Animated.timing(floatingY3, {
           toValue: -8,
           duration: PREMIUM_TIMING.ambient * 0.8,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY3, {
           toValue: 8,
           duration: PREMIUM_TIMING.ambient * 0.8,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
-    ).start()
+    )
 
-    // Glow pulse
-    createGlowPulse(glowPulse, 0.15, 0.5).start()
+    // Create glow pulse animation
+    const glow = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 0.5,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0.15,
+          duration: PREMIUM_TIMING.ambient * 0.8,
+          easing: PREMIUM_EASING.gentleSine,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        }),
+      ])
+    )
     
-    // Logo breathing
-    Animated.loop(
+    // Create breathing animation
+    const breathing = Animated.loop(
       Animated.sequence([
         Animated.timing(breathingScale, {
           toValue: 1.03,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(breathingScale, {
           toValue: 1,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
-    ).start()
+    )
+    
+    // Store references and start animations
+    animationsRef.current = [floating1, floating2, floating3, glow, breathing]
+    animationsRef.current.forEach(anim => anim.start())
+    
+    // Cleanup: stop all animations when component unmounts or tab loses focus
+    return () => {
+      animationsRef.current.forEach(anim => anim.stop())
+      animationsRef.current = []
+    }
   }, [])
 
   // ========== Entrance Animation Sequence ==========
@@ -144,77 +192,77 @@ export default function WelcomeScreen() {
       Animated.spring(logoScale, {
         toValue: 1,
         ...PREMIUM_SPRING.stiff,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoOpacity, {
         toValue: 1,
         duration: 150,
         easing: PREMIUM_EASING.elegantOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoRotate, {
         toValue: 1,
         duration: 200,
         easing: PREMIUM_EASING.dramaticEntrance,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoGlow, {
         toValue: 1,
         duration: 200,
         easing: PREMIUM_EASING.elegantOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
     
     // Phase 2: Title + Badge (140ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(titleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(titleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(titleScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.timing(badgeOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(badgeScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(titleOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(titleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(titleScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(badgeOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(badgeScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay)
     
     // Phase 3: Subtitle (280ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(subtitleOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(subtitleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(subtitleOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(subtitleSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 2)
     
     // Phase 4: Tagline card (420ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(taglineOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(taglineSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(taglineScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(taglineOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(taglineSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(taglineScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 3)
     
     // Phase 5: First button (560ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(button1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(button1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(button1Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(button1Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(button1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(button1Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 4)
     
     // Phase 6: Second button (700ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(button2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(button2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(button2Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(button2Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(button2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(button2Scale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 5)
     
     // Phase 7: Footer (840ms, completes ~1000ms)
     setTimeout(() => {
-      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: USE_NATIVE_DRIVER }).start()
     }, staggerDelay * 6)
   }, [])
 
@@ -364,7 +412,7 @@ export default function WelcomeScreen() {
               opacity: subtitleOpacity,
               transform: [{ translateY: subtitleSlide }],
             }}>
-              La plateforme de préparation aux examens médicaux pour les étudiants algériens
+              FMC App • Study Everywhere
             </Animated.Text>
           </Animated.View>
         </LinearGradient>
@@ -448,10 +496,12 @@ export default function WelcomeScreen() {
   // ========== Mobile/Tablet Layout ==========
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-      <ScrollView 
+        <ScrollView 
         style={{ flex: 1 }} 
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={true}
       >
         {/* Top Gradient Header */}
         <LinearGradient
@@ -576,7 +626,6 @@ export default function WelcomeScreen() {
 
         {/* Content Section */}
         <View style={{ 
-          flex: 1, 
           width: '100%', 
           maxWidth: contentMaxWidth, 
           paddingHorizontal: 24,

@@ -51,7 +51,7 @@ export function ProfileIcon({ size = 24, color = '#ffffff' }: IconProps) {
 }
 
 // Saves/Bookmark Icon - Floppy disk style
-export function SavesIcon({ size = 24, color = '#000000', strokeWidth = 2.5 }: IconProps) {
+export function SavesIcon({ size = 24, color = '#1E1E1E', strokeWidth = 2.5 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 31 31" fill="none">
       <Path
@@ -67,7 +67,7 @@ export function SavesIcon({ size = 24, color = '#000000', strokeWidth = 2.5 }: I
 
 
 // Book/QCM Parcours Icon - Open book style
-export function BookQcmIcon({ size = 24, color = '#000000' }: IconProps) {
+export function BookQcmIcon({ size = 24, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 47 47" fill="none">
       <Path
@@ -81,7 +81,7 @@ export function BookQcmIcon({ size = 24, color = '#000000' }: IconProps) {
 }
 
 // QCM Exam Icon - Document with pencil
-export function QcmExamIcon({ size = 24, color = '#000000' }: IconProps) {
+export function QcmExamIcon({ size = 24, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 32 34" fill="none">
       <Path
@@ -93,7 +93,7 @@ export function QcmExamIcon({ size = 24, color = '#000000' }: IconProps) {
 }
 
 // Goal/Target Icon - Bullseye with arrow
-export function GoalIcon({ size = 24, color = '#000000' }: IconProps) {
+export function GoalIcon({ size = 24, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -113,7 +113,7 @@ export function GoalIcon({ size = 24, color = '#000000' }: IconProps) {
 }
 
 // File/Document Icon - Document with edit
-export function FileIcon({ size = 24, color = '#000000' }: IconProps) {
+export function FileIcon({ size = 24, color = '#1E1E1E' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -125,7 +125,7 @@ export function FileIcon({ size = 24, color = '#000000' }: IconProps) {
 }
 
 // Chevron Left Icon - Back arrow
-export function ChevronLeftIcon({ size = 24, color = '#000000', strokeWidth = 2.5 }: IconProps) {
+export function ChevronLeftIcon({ size = 24, color = '#1E1E1E', strokeWidth = 2.5 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path

@@ -2,7 +2,7 @@
 // Home Screen - Premium UI with Dark Mode Support
 // ============================================================================
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { 
   View, 
   Text, 
@@ -11,10 +11,14 @@ import {
   useWindowDimensions,
   Animated,
   Pressable,
-  Platform
+  Platform,
+  ImageBackground,
+  Image,
+  StyleSheet
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
+import { BlurView } from 'expo-blur'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getModulesWithCounts } from '@/lib/modules'
@@ -24,7 +28,10 @@ import { FadeInView, StatsSkeleton, ListSkeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 import { BookIcon } from '@/components/icons/ResultIcons'
-import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
+import { useWebVisibility } from '@/lib/useWebVisibility'
+
+const HeaderImg = require('../../assets/images/images/Header.png')
 
 export default function HomeScreen() {
   const { user } = useAuth()
@@ -35,11 +42,18 @@ export default function HomeScreen() {
   const [stats, setStats] = useState<UserStatistics | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-20)).current
   const statsScale = useRef(new Animated.Value(0.95)).current
   const statsOpacity = useRef(new Animated.Value(0)).current
+  
+  // Track running animations for cleanup
+  const runningAnimations = useRef<Animated.CompositeAnimation[]>([])
+  // Track last data load time to prevent rapid reloads
+  const lastLoadTime = useRef<number>(0)
+  const DATA_LOAD_COOLDOWN = 5000 // 5 seconds
 
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
@@ -51,12 +65,21 @@ export default function HomeScreen() {
   const columnCount = isDesktop ? 3 : isTablet ? 2 : 1
   const showWebHeader = isWeb && width >= 768
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (force = false) => {
     if (!user) {
       setIsLoading(false)
       return
     }
+    
+    // Prevent rapid reloads unless forced
+    const now = Date.now()
+    if (!force && now - lastLoadTime.current < DATA_LOAD_COOLDOWN) {
+      setRefreshing(false)
+      return
+    }
+    
     try {
+      lastLoadTime.current = now
       const yearToLoad = user.year_of_study || '1'
       const [modulesResult, statsResult] = await Promise.all([
         getModulesWithCounts(yearToLoad),
@@ -69,30 +92,76 @@ export default function HomeScreen() {
     } finally {
       setIsLoading(false)
       setRefreshing(false)
+      setHasInitiallyLoaded(true)
     }
   }, [user])
 
+  // Handle visibility changes on web
+  useWebVisibility({
+    debounceMs: 200,
+    onVisibilityChange: useCallback((isVisible: boolean, hiddenDuration: number) => {
+      // Only reload data if hidden for more than 60 seconds
+      if (isVisible && hiddenDuration > 60000 && hasInitiallyLoaded) {
+        loadData(true)
+      }
+    }, [loadData, hasInitiallyLoaded]),
+  })
+
+  const runEntranceAnimations = useCallback(() => {
+    // Stop any running animations first
+    runningAnimations.current.forEach(anim => anim.stop())
+    runningAnimations.current = []
+    
+    // Reset values
+    headerOpacity.setValue(0)
+    headerSlide.setValue(-20)
+    statsScale.setValue(0.95)
+    statsOpacity.setValue(0)
+
+    const headerAnim = Animated.parallel([
+      Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
+    ])
+    
+    runningAnimations.current.push(headerAnim)
+    headerAnim.start()
+
+    // Delayed stats animation
+    const statsTimer = setTimeout(() => {
+      const statsAnim = Animated.parallel([
+        Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
+      ])
+      runningAnimations.current.push(statsAnim)
+      statsAnim.start()
+    }, 100)
+    
+    return () => {
+      clearTimeout(statsTimer)
+      runningAnimations.current.forEach(anim => anim.stop())
+      runningAnimations.current = []
+    }
+  }, [])
+
+  // Initial load
+  useEffect(() => {
+    loadData(true)
+  }, [user?.id])
+
   useFocusEffect(
     useCallback(() => {
-      headerOpacity.setValue(0)
-      headerSlide.setValue(-20)
-      statsScale.setValue(0.95)
-      statsOpacity.setValue(0)
-
-      Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-        Animated.timing(headerSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-      ]).start()
-
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.timing(statsOpacity, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }),
-          Animated.timing(statsScale, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-        ]).start()
-      }, 100)
-
-      loadData()
-    }, [loadData])
+      // On native, run animations on focus
+      // On web, only run on initial mount (not on tab visibility changes)
+      if (!isWeb || !hasInitiallyLoaded) {
+        const cleanup = runEntranceAnimations()
+        return cleanup
+      }
+      
+      return () => {
+        // Cleanup animations when losing focus
+        runningAnimations.current.forEach(anim => anim.stop())
+      }
+    }, [isWeb, hasInitiallyLoaded, runEntranceAnimations])
   )
 
   const onRefresh = useCallback(() => {
@@ -127,72 +196,112 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
       >
         {/* Hero Section */}
-        <View style={{
-          backgroundColor: colors.primary,
-          width: '100%',
-          alignItems: 'center',
-          borderBottomLeftRadius: isDesktop ? 48 : 32,
-          borderBottomRightRadius: isDesktop ? 48 : 32,
-          paddingTop: showWebHeader ? 48 : 40,
-          paddingBottom: isDesktop ? 90 : 70,
-          overflow: 'hidden',
-          position: 'relative',
-        }}>
-          {/* Decorative Elements */}
-          <View style={{ position: 'absolute', top: -60, right: isDesktop ? '10%' : -40, width: isDesktop ? 200 : 160, height: isDesktop ? 200 : 160, borderRadius: 100, backgroundColor: 'rgba(255, 255, 255, 0.06)' }} />
-          <View style={{ position: 'absolute', bottom: -30, left: isDesktop ? '5%' : -20, width: isDesktop ? 140 : 100, height: isDesktop ? 140 : 100, borderRadius: 70, backgroundColor: 'rgba(255, 255, 255, 0.04)' }} />
-
-          <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'center' : 'flex-start', justifyContent: 'space-between' }}>
-              <View style={{ marginBottom: isDesktop ? 0 : 14 }}>
-                <Text style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: isDesktop ? 18 : 15, fontWeight: '500', marginBottom: 6 }}>
-                  {getGreeting()} 👋
-                </Text>
-                <Text style={{ color: '#ffffff', fontSize: isDesktop ? 40 : 28, fontWeight: '800', letterSpacing: -1 }}>
-                  {user?.full_name || 'Étudiant'}
-                </Text>
-              </View>
-              
-              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
-                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                  <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 14 }}>📚 {getYearLabel()}</Text>
+        <View style={{ width: '100%', position: 'relative' }}>
+          <ImageBackground 
+            source={HeaderImg} 
+            style={{
+              width: '100%',
+              paddingTop: showWebHeader ? 48 : 40,
+              paddingBottom: isDesktop ? 120 : 100,
+              alignItems: 'center',
+            }}
+            imageStyle={{
+              resizeMode: 'cover',
+              borderBottomLeftRadius: isDesktop ? 48 : 32,
+              borderBottomRightRadius: isDesktop ? 48 : 32,
+            }}
+          >
+            <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
+              <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                <View style={{ marginBottom: 14 }}>
+                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 4 }}>
+                    Bienvenue
+                  </Text>
+                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 36 : 28, fontWeight: '800', letterSpacing: -0.5 }}>
+                    {user?.full_name || 'Étudiant'}
+                  </Text>
                 </View>
-                {user?.speciality && (
-                  <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                    <Text style={{ color: '#ffffff', fontWeight: '600', fontSize: 14 }}>🏥 {user.speciality}</Text>
+                
+                {Platform.OS === 'web' ? (
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    borderRadius: 20,
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    // @ts-ignore
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}>
+                    <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                  </View>
+                ) : (
+                  <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+                    <BlurView intensity={40} tint="light" style={{ borderRadius: 20, overflow: 'hidden' }}>
+                      <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)', paddingHorizontal: 16, paddingVertical: 8 }}>
+                        <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                      </View>
+                    </BlurView>
                   </View>
                 )}
               </View>
-            </View>
-          </Animated.View>
+            </Animated.View>
+          </ImageBackground>
         </View>
 
         {/* Content Container */}
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Stats Cards */}
-          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -50 : -35, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
+          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -60 : -45, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
             {isLoading ? (
               <StatsSkeleton />
             ) : stats ? (
               <View style={{ 
-                backgroundColor: colors.card, 
-                borderRadius: isDesktop ? 28 : 20, 
-                padding: isDesktop ? 28 : 20, 
+                borderRadius: 17, 
+                overflow: 'hidden',
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: isDark ? 0.3 : 0.15,
-                shadowRadius: 8,
-                elevation: 5,
-                borderWidth: 1,
-                borderColor: colors.border,
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+                elevation: 8,
               }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-                  <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 30 : 26} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                  {!isMobile && <View style={{ width: 1, height: 50, backgroundColor: colors.border }} />}
-                  <StatItem label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 30 : 26} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                  {!isMobile && <View style={{ width: 1, height: 50, backgroundColor: colors.border }} />}
-                  <StatItem label="Sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 30 : 26} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                </View>
+                {Platform.OS === 'web' ? (
+                  // Web: CSS backdrop-filter
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    borderRadius: 17,
+                    padding: isDesktop ? 28 : 20,
+                    // @ts-ignore
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                  }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                    </View>
+                  </View>
+                ) : (
+                  // Native: expo-blur BlurView
+                  <BlurView 
+                    intensity={60} 
+                    tint="light"
+                    style={{ 
+                      borderRadius: 17,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <View style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      padding: isDesktop ? 28 : 20,
+                    }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      </View>
+                    </View>
+                  </BlurView>
+                )}
               </View>
             ) : null}
           </Animated.View>
@@ -205,11 +314,7 @@ export default function HomeScreen() {
                   <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}>Vos Modules</Text>
                   <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>{modules.length} modules disponibles</Text>
                 </View>
-                {modules.length > 6 && (
-                  <Pressable>
-                    <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>Voir tout →</Text>
-                  </Pressable>
-                )}
+                
               </View>
             </FadeInView>
 
@@ -259,11 +364,11 @@ function ModuleCard({ module, onPress, isDesktop, colors, isDark }: { module: Mo
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.timing(scaleAnim, { toValue: 0.98, duration: ANIMATION_DURATION.instant, easing: ANIMATION_EASING.smooth, useNativeDriver: true }).start()
+    Animated.timing(scaleAnim, { toValue: 0.98, duration: ANIMATION_DURATION.instant, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   const handlePressOut = () => {
-    Animated.timing(scaleAnim, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: true }).start()
+    Animated.timing(scaleAnim, { toValue: 1, duration: ANIMATION_DURATION.fast, easing: ANIMATION_EASING.smooth, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   return (

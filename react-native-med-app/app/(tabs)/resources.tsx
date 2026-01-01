@@ -23,6 +23,9 @@ import { CourseResource, ResourceType } from '@/types'
 import { FadeInView, Skeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 export default function ResourcesScreen() {
   const { user } = useAuth()
   const { colors, isDark } = useTheme()
@@ -72,8 +75,8 @@ export default function ResourcesScreen() {
   useEffect(() => {
     loadResources()
     Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }, [loadResources])
 
@@ -210,10 +213,10 @@ function AnimatedFilterChip({ label, isSelected, onPress, colors }: { label: str
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.95, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 0.95, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   return (
@@ -236,10 +239,10 @@ function AnimatedResourceCard({ resource, onPress, colors, isDark }: { resource:
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 0.98, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: true }).start()
+    Animated.spring(scaleAnim, { toValue: 1, friction: 8, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }
 
   const getResourceIcon = (type: ResourceType) => {

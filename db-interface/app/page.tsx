@@ -130,13 +130,13 @@ export default function Home() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-          Tableau de Bord
-        </h1>
-        <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-          Interface d&apos;administration • FMC APP
-        </p>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#09B2AD] to-[#0A9B97] rounded-3xl p-8 text-white">
+        <h2 className="text-white/80 font-medium text-lg">Bienvenue</h2>
+        <h1 className="text-4xl font-black tracking-tight">Tableau de Bord</h1>
+        <div className="inline-flex mt-4 px-4 py-2 bg-white/20 rounded-full font-semibold text-sm">
+          FMC APP • Administration
+        </div>
       </div>
 
       {/* Main Statistics */}

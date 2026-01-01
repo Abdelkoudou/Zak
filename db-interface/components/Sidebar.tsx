@@ -16,6 +16,7 @@ const navigation = [
 ];
 
 const ownerOnlyNavigation = [
+  { name: 'Courses', href: '/courses', icon: '📝', badge: 'Owner' },
   { name: 'Codes d\'Activation', href: '/activation-codes', icon: '🔑', badge: 'Owner' },
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
   { name: 'Export JSON', href: '/export', icon: '📤', badge: 'Owner' },
@@ -108,9 +109,9 @@ export default function Sidebar() {
       <div
         className={`
           fixed md:sticky top-0 md:h-screen md:left-0 z-50
-          w-72 ${isDark ? 'bg-dark-300' : 'bg-white'} border-r ${isDark ? 'border-dark-100' : 'border-slate-200'} p-6
+          w-72 h-[100dvh] md:h-screen ${isDark ? 'bg-dark-300' : 'bg-white'} border-r ${isDark ? 'border-dark-100' : 'border-slate-200'} p-6
           transform transition-transform duration-300 ease-in-out
-          md:transform-none shadow-xl md:shadow-none flex flex-col
+          md:transform-none shadow-xl md:shadow-none flex flex-col overflow-y-auto
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
@@ -133,7 +134,7 @@ export default function Sidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="space-y-1.5 mt-4 md:mt-0 flex-1">
+        <nav className="space-y-1.5 mt-4 md:mt-0 flex-1 overflow-y-auto min-h-0">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -204,7 +205,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Theme Toggle */}
-        <div className={`mt-auto pt-6 border-t ${isDark ? 'border-dark-100' : 'border-slate-200'}`}>
+        <div className={`mt-4 pt-4 border-t ${isDark ? 'border-dark-100' : 'border-slate-200'} flex-shrink-0`}>
           <button
             onClick={toggleTheme}
             className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl ${isDark ? 'bg-dark-400 hover:bg-dark-100' : 'bg-slate-50 hover:bg-slate-100'} ${isDark ? 'text-slate-400' : 'text-slate-600'} border ${isDark ? 'border-dark-100' : 'border-slate-200'} transition-all duration-300 group shadow-sm hover:shadow-md`}

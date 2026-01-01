@@ -10,10 +10,14 @@ import {
   ActivityIndicator, 
   ViewStyle, 
   TextStyle,
-  View 
+  View,
+  Platform
 } from 'react-native'
 import { BRAND_THEME } from '@/constants/theme'
 import { PREMIUM_SPRING } from '@/lib/premiumAnimations'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 interface AnimatedButtonProps {
   title: string
@@ -49,12 +53,12 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
         Animated.spring(scale, {
           toValue: 0.96,
           ...PREMIUM_SPRING.snappy,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(shadowOpacity, {
           toValue: 0.05,
           duration: 100,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start()
     }
@@ -65,12 +69,12 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
       Animated.spring(scale, {
         toValue: 1,
         ...PREMIUM_SPRING.bouncy,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(shadowOpacity, {
         toValue: variant === 'primary' ? 0.15 : 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }

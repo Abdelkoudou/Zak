@@ -15,6 +15,9 @@ import {
 } from 'react-native'
 import { BRAND_THEME } from '@/constants/theme'
 
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
 // ============================================================================
 // Premium Card with Glassmorphism
 // ============================================================================
@@ -44,7 +47,7 @@ export function PremiumCard({
         toValue: 0.98,
         friction: 8,
         tension: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start()
     }
   }
@@ -55,7 +58,7 @@ export function PremiumCard({
         toValue: 1,
         friction: 8,
         tension: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start()
     }
   }
@@ -172,7 +175,7 @@ export function PremiumButton({
         toValue: 0.97,
         friction: 8,
         tension: 100,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }).start()
     }
   }
@@ -182,7 +185,7 @@ export function PremiumButton({
       toValue: 1,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -401,7 +404,7 @@ export function ModuleCard({ name, questionCount, progress, onPress }: ModuleCar
       toValue: 0.98,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 
@@ -410,7 +413,7 @@ export function ModuleCard({ name, questionCount, progress, onPress }: ModuleCar
       toValue: 1,
       friction: 8,
       tension: 100,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start()
   }
 

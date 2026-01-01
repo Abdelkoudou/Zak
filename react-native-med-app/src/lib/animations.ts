@@ -3,10 +3,14 @@
 // Smooth, delightful animations for a premium user experience
 // ============================================================================
 
-import { Animated, Easing } from 'react-native'
+import { Animated, Easing, Platform } from 'react-native'
 import { useCallback, useRef } from 'react'
 import { useFocusEffect } from 'expo-router'
 import { PREMIUM_TIMING, PREMIUM_EASING, PREMIUM_SPRING } from './premiumAnimations'
+
+// Use native driver only on native platforms, not on web
+// CRITICAL: This must be used in ALL animation calls to prevent web warnings
+export const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 // ============================================================================
 // Animation Timing Presets (Legacy - use PREMIUM_TIMING instead)
@@ -27,11 +31,11 @@ export const ANIMATION_EASING = {
   easeIn: Easing.in(Easing.ease),
   easeOut: Easing.out(Easing.ease),
   easeInOut: Easing.inOut(Easing.ease),
-  
+
   // Bounce effects
   bounce: Easing.bounce,
   elastic: Easing.elastic(1),
-  
+
   // Premium easings (mapped from premiumAnimations)
   smooth: PREMIUM_EASING.appleSmooth,
   snappy: PREMIUM_EASING.snappy,
@@ -62,17 +66,17 @@ export function useAnimateOnFocus() {
           toValue: 1,
           duration: PREMIUM_TIMING.quick,
           easing: PREMIUM_EASING.appleSmooth,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.spring(translateY, {
           toValue: 0,
           ...PREMIUM_SPRING.snappy,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.spring(scale, {
           toValue: 1,
           ...PREMIUM_SPRING.gentle,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]).start()
 
@@ -114,13 +118,13 @@ export function useStaggerAnimateOnFocus(itemCount: number, staggerDelay = 50) {
             duration: PREMIUM_TIMING.quick,
             delay: index * staggerDelay,
             easing: PREMIUM_EASING.appleSmooth,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
           Animated.spring(anim.translateY, {
             toValue: 0,
             delay: index * staggerDelay,
             ...PREMIUM_SPRING.snappy,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
         ])
       )
@@ -149,7 +153,7 @@ export function createFadeIn(
     duration,
     delay,
     easing: ANIMATION_EASING.smooth,
-    useNativeDriver: true,
+    useNativeDriver: USE_NATIVE_DRIVER,
   })
 }
 
@@ -164,7 +168,7 @@ export function createFadeOut(
     toValue: 0,
     duration,
     easing: ANIMATION_EASING.smooth,
-    useNativeDriver: true,
+    useNativeDriver: USE_NATIVE_DRIVER,
   })
 }
 
@@ -183,14 +187,14 @@ export function createSlideUp(
       duration,
       delay,
       easing: ANIMATION_EASING.premium,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
     Animated.timing(opacity, {
       toValue: 1,
       duration,
       delay,
       easing: ANIMATION_EASING.smooth,
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }),
   ])
 }
@@ -207,7 +211,7 @@ export function createScalePress(
     toValue,
     friction: 8,
     tension: 100,
-    useNativeDriver: true,
+    useNativeDriver: USE_NATIVE_DRIVER,
   })
 }
 
@@ -225,13 +229,13 @@ export function createPulse(
         toValue: maxScale,
         duration: ANIMATION_DURATION.slow,
         easing: ANIMATION_EASING.easeInOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(scaleValue, {
         toValue: minScale,
         duration: ANIMATION_DURATION.slow,
         easing: ANIMATION_EASING.easeInOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -249,13 +253,13 @@ export function createShimmer(
         toValue: 1,
         duration: 1000,
         easing: ANIMATION_EASING.linear,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(animatedValue, {
         toValue: 0,
         duration: 1000,
         easing: ANIMATION_EASING.linear,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ])
   )
@@ -282,7 +286,7 @@ export function createSpringBounce(
     toValue,
     friction: 4,
     tension: 80,
-    useNativeDriver: true,
+    useNativeDriver: USE_NATIVE_DRIVER,
   })
 }
 

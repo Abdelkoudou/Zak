@@ -14,31 +14,42 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useNavigation } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
 import { Input, Alert as UIAlert, AnimatedButton, FadeInView } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
+import { validateEmail } from '@/lib/validation'
 import {
   PREMIUM_TIMING,
   PREMIUM_EASING,
   PREMIUM_SPRING,
+  USE_NATIVE_DRIVER,
   createFloatingAnimation,
   createGlowPulse,
 } from '@/lib/premiumAnimations'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../assets/icon.png')
 
 export default function LoginScreen() {
   const { signIn, isLoading } = useAuth()
   const { width } = useWindowDimensions()
+  const navigation = useNavigation()
   
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
   const isTablet = width >= 768 && width < 1024
+  
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/(auth)/welcome')
+    }
+  }
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -93,13 +104,13 @@ export default function LoginScreen() {
           toValue: -15,
           duration: PREMIUM_TIMING.ambient * 1.1,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY2, {
           toValue: 15,
           duration: PREMIUM_TIMING.ambient * 1.1,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -112,13 +123,13 @@ export default function LoginScreen() {
           toValue: 1.02,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(breathingScale, {
           toValue: 1,
           duration: PREMIUM_TIMING.ambient,
           easing: PREMIUM_EASING.gentleSine,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -135,77 +146,81 @@ export default function LoginScreen() {
       Animated.spring(logoScale, {
         toValue: 1,
         ...PREMIUM_SPRING.stiff,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoOpacity, {
         toValue: 1,
         duration: 150,
         easing: PREMIUM_EASING.elegantOut,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(logoRotate, {
         toValue: 1,
         duration: 200,
         easing: PREMIUM_EASING.dramaticEntrance,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
     
     // Phase 2: Header (160ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(headerSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(headerSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay)
     
     // Phase 3: Welcome card (320ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(cardSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(cardScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(cardSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(cardScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 2)
     
     // Phase 4: Both inputs together (480ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(input1Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(input1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.timing(input2Opacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(input2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(input1Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(input1Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(input2Opacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(input2Slide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 3)
     
     // Phase 5: Forgot + Button (640ms)
     setTimeout(() => {
       Animated.parallel([
-        Animated.timing(forgotOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.timing(buttonOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
-        Animated.spring(buttonSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
-        Animated.spring(buttonScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: true }),
+        Animated.timing(forgotOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.timing(buttonOpacity, { toValue: 1, duration: 120, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(buttonSlide, { toValue: 0, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(buttonScale, { toValue: 1, ...PREMIUM_SPRING.stiff, useNativeDriver: USE_NATIVE_DRIVER }),
       ]).start()
     }, staggerDelay * 4)
     
     // Phase 6: Footer (800ms, completes ~1000ms)
     setTimeout(() => {
-      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }).start()
+      Animated.timing(footerOpacity, { toValue: 1, duration: 150, useNativeDriver: USE_NATIVE_DRIVER }).start()
     }, staggerDelay * 5)
   }, [])
 
   const handleLogin = async () => {
-    if (!email.trim()) {
-      setError('Veuillez entrer votre email')
+    // Validate email format
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error)
       return
     }
+    
+    // Validate password is not empty
     if (!password) {
       setError('Veuillez entrer votre mot de passe')
       return
     }
 
     setError(null)
-    const { error: loginError } = await signIn(email.trim(), password)
+    const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
     
     if (loginError) {
       setError(loginError)
@@ -360,7 +375,7 @@ export default function LoginScreen() {
             {/* Back Button */}
             <TouchableOpacity 
               style={{ marginBottom: 36 }}
-              onPress={() => router.back()}
+              onPress={handleGoBack}
             >
               <View style={{
                 width: 52,
@@ -501,9 +516,11 @@ export default function LoginScreen() {
       >
         <ScrollView 
           style={{ flex: 1 }} 
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={true}
+          alwaysBounceVertical={true}
         >
           {/* Top Gradient Header */}
           <LinearGradient
@@ -545,7 +562,7 @@ export default function LoginScreen() {
             {/* Back Button */}
             <TouchableOpacity 
               style={{ marginBottom: 20 }}
-              onPress={() => router.back()}
+              onPress={handleGoBack}
             >
               <View style={{
                 width: 44,
@@ -621,7 +638,6 @@ export default function LoginScreen() {
 
           {/* Form Section */}
           <View style={{ 
-            flex: 1, 
             paddingHorizontal: 24, 
             paddingTop: 32,
             paddingBottom: 32, 
@@ -751,7 +767,7 @@ export default function LoginScreen() {
             </Animated.View>
 
             {/* Footer */}
-            <Animated.View style={{ marginTop: 'auto', paddingTop: 24, alignItems: 'center', opacity: footerOpacity }}>
+            <View style={{ paddingTop: 24, alignItems: 'center' }}>
               <Text style={{
                 fontSize: 13,
                 color: BRAND_THEME.colors.gray[400],
@@ -759,7 +775,7 @@ export default function LoginScreen() {
               }}>
                 🔒 Connexion sécurisée
               </Text>
-            </Animated.View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

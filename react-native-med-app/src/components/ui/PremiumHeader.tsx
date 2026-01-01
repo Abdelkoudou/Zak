@@ -3,10 +3,13 @@
 // ============================================================================
 
 import React, { useEffect, useRef } from 'react'
-import { View, Text, Animated, ViewStyle } from 'react-native'
+import { View, Text, Animated, ViewStyle, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { BRAND_THEME } from '@/constants/theme'
 import { Badge } from './Badge'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 interface PremiumHeaderProps {
   title: string
@@ -33,13 +36,13 @@ export const PremiumHeader: React.FC<PremiumHeaderProps> = ({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.spring(slideAnim, {
         toValue: 0,
         friction: 8,
         tension: 80,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start()
   }, [])

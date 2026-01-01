@@ -9,6 +9,8 @@ export { Input } from './Input'
 export { Badge } from './Badge'
 export { LoadingSpinner } from './LoadingSpinner'
 export { Alert } from './Alert'
+export { ConfirmModal } from './ConfirmModal'
+export { PasswordStrengthIndicator } from './PasswordStrengthIndicator'
 
 // Animated Components
 export { AnimatedCard } from './AnimatedCard'
@@ -20,12 +22,12 @@ export { AnimatedListItem, AnimatedFlatList, AnimatedGrid } from './AnimatedList
 
 // Premium Web Components
 export { WebHeader } from './WebHeader'
-export { 
-  PremiumCard, 
-  PremiumButton, 
-  StatsCard, 
-  ModuleCard, 
-  SectionHeader, 
+export {
+  PremiumCard,
+  PremiumButton,
+  StatsCard,
+  ModuleCard,
+  SectionHeader,
   EmptyState,
-  AnimatedCounter 
+  AnimatedCounter
 } from './PremiumComponents'

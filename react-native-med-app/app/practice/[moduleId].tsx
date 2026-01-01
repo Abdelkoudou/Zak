@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, Image, Animated } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -12,9 +12,12 @@ import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
 import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
-import { Card, Badge, LoadingSpinner, Button, FadeInView } from '@/components/ui'
+import { Card, Badge, LoadingSpinner, Button, FadeInView, ConfirmModal } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function PracticeScreen() {
   const { moduleId, moduleName, examType, subDiscipline, cours } = useLocalSearchParams<{
@@ -36,6 +39,7 @@ export default function PracticeScreen() {
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [startTime] = useState(new Date())
+  const [showEndSessionModal, setShowEndSessionModal] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
   
   const questionFade = useRef(new Animated.Value(0)).current
@@ -47,8 +51,8 @@ export default function PracticeScreen() {
     questionFade.setValue(0)
     questionSlide.setValue(20)
     Animated.parallel([
-      Animated.timing(questionFade, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
-      Animated.timing(questionSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: true }),
+      Animated.timing(questionFade, { toValue: 1, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.timing(questionSlide, { toValue: 0, duration: ANIMATION_DURATION.normal, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }, [])
 
@@ -65,8 +69,8 @@ export default function PracticeScreen() {
 
   const animateSavePress = () => {
     Animated.sequence([
-      Animated.timing(saveButtonScale, { toValue: 0.8, duration: 100, useNativeDriver: true }),
-      Animated.spring(saveButtonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }),
+      Animated.timing(saveButtonScale, { toValue: 0.8, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(saveButtonScale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }
 
@@ -98,7 +102,9 @@ export default function PracticeScreen() {
         setSavedQuestions(savedSet)
       }
     } catch (error) {
-      console.error('Error loading questions:', error)
+      if (__DEV__) {
+        console.error('Error loading questions:', error)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -181,11 +187,32 @@ export default function PracticeScreen() {
     })
   }
 
-  const finishPractice = async () => {
-    Alert.alert('Terminer la session', 'Voulez-vous terminer cette session de pratique ?', [
-      { text: 'Continuer', style: 'cancel' },
-      { text: 'Terminer', onPress: async () => { await saveResults() } },
-    ])
+  const finishPractice = () => {
+    setShowEndSessionModal(true)
+  }
+
+  const handleConfirmEndSession = async () => {
+    setShowEndSessionModal(false)
+    await saveResults()
+  }
+
+  const handleCancelEndSession = () => {
+    setShowEndSessionModal(false)
+  }
+
+  const getEndSessionMessage = () => {
+    const answeredCount = submittedQuestions.size
+    const unansweredCount = questions.length - answeredCount
+    
+    if (answeredCount === 0) {
+      return 'Vous n\'avez répondu à aucune question. Voulez-vous vraiment quitter ?'
+    }
+    
+    let message = `Vous avez répondu à ${answeredCount}/${questions.length} questions.`
+    if (unansweredCount > 0) {
+      message += `\n\n${unansweredCount} questions non répondues seront ignorées.`
+    }
+    return message
   }
 
   const saveResults = async () => {
@@ -260,7 +287,20 @@ export default function PracticeScreen() {
         }} 
       />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
+      {/* End Session Confirmation Modal */}
+      <ConfirmModal
+        visible={showEndSessionModal}
+        title="Terminer la session"
+        message={getEndSessionMessage()}
+        confirmText="Terminer"
+        cancelText="Continuer"
+        variant="destructive"
+        icon="🏁"
+        onConfirm={handleConfirmEndSession}
+        onCancel={handleCancelEndSession}
+      />
+      
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom']}>
         {/* Progress Bar */}
         <View style={{ height: 4, backgroundColor: colors.backgroundSecondary }}>
           <Animated.View style={{ height: '100%', backgroundColor: colors.primary, width: progressWidth.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] }) }} />
@@ -367,7 +407,26 @@ export default function PracticeScreen() {
 
         {/* Bottom Actions */}
         <FadeInView animation="slideUp" delay={200} replayOnFocus={false}>
-          <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 24, paddingVertical: 16 }}>
+          <View style={{ backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 24, paddingVertical: 16, paddingBottom: Platform.OS === 'web' ? 16 : 24 }}>
+            {/* End Session Button */}
+            <TouchableOpacity 
+              onPress={finishPractice}
+              style={{ 
+                backgroundColor: colors.errorLight, 
+                paddingVertical: 10, 
+                paddingHorizontal: 16, 
+                borderRadius: 8, 
+                alignItems: 'center',
+                marginBottom: 12,
+                borderWidth: 1,
+                borderColor: colors.error
+              }}
+            >
+              <Text style={{ color: colors.error, fontWeight: '600', fontSize: 14 }}>
+                🛑 Terminer la session ({submittedQuestions.size}/{questions.length} répondues)
+              </Text>
+            </TouchableOpacity>
+            
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AnimatedNavButton label="← Précédent" onPress={goToPrevious} disabled={currentIndex === 0} colors={colors} />
               {!isSubmitted ? (
@@ -391,11 +450,11 @@ function AnimatedAnswerOption({ answer, index, isSelected, isEliminated, isCorre
   const slideIn = useRef(new Animated.Value(30)).current
   
   useEffect(() => {
-    Animated.timing(slideIn, { toValue: 0, duration: ANIMATION_DURATION.normal, delay: index * 50, easing: ANIMATION_EASING.premium, useNativeDriver: true }).start()
+    Animated.timing(slideIn, { toValue: 0, duration: ANIMATION_DURATION.normal, delay: index * 50, easing: ANIMATION_EASING.premium, useNativeDriver: USE_NATIVE_DRIVER }).start()
   }, [index])
 
-  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   // If eliminated, override styles to look disabled/crossed out
   const finalCardBg = isEliminated ? colors.background : cardBg
@@ -433,8 +492,8 @@ function AnimatedAnswerOption({ answer, index, isSelected, isEliminated, isCorre
 function AnimatedNavButton({ label, onPress, disabled, colors }: { label: string; onPress: () => void; disabled: boolean; colors: any }) {
   const scale = useRef(new Animated.Value(1)).current
 
-  const handlePressIn = () => { if (!disabled) Animated.timing(scale, { toValue: 0.95, duration: 100, useNativeDriver: true }).start() }
-  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start() }
+  const handlePressIn = () => { if (!disabled) Animated.timing(scale, { toValue: 0.95, duration: 100, useNativeDriver: USE_NATIVE_DRIVER }).start() }
+  const handlePressOut = () => { Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: USE_NATIVE_DRIVER }).start() }
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>

@@ -25,6 +25,10 @@ import { YEARS } from '@/constants'
 import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
+import { showConfirm } from '@/lib/alerts'
+
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function ProfileScreen() {
   const { user, signOut, getDeviceSessions } = useAuth()
@@ -67,8 +71,8 @@ export default function ProfileScreen() {
   useEffect(() => {
     loadData()
     Animated.parallel([
-      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: true }),
+      Animated.timing(headerOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+      Animated.spring(headerSlide, { toValue: 0, friction: 8, tension: 60, useNativeDriver: USE_NATIVE_DRIVER }),
     ]).start()
   }, [loadData])
 
@@ -84,21 +88,21 @@ export default function ProfileScreen() {
   }, [loadData])
 
   const handleSignOut = () => {
-    Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
-      { text: 'Annuler', style: 'cancel' },
-      { 
-        text: 'Déconnexion', 
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const result = await signOut()
-            if (result?.error) Alert.alert('Erreur', result.error)
-          } catch {
-            Alert.alert('Erreur', 'Une erreur est survenue')
-          }
+    showConfirm(
+      'Déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      async () => {
+        try {
+          const result = await signOut()
+          if (result?.error) Alert.alert('Erreur', result.error)
+        } catch {
+          Alert.alert('Erreur', 'Une erreur est survenue')
         }
       },
-    ])
+      'Déconnexion',
+      'Annuler',
+      'destructive'
+    )
   }
 
   const getYearLabel = () => YEARS.find(y => y.value === user?.year_of_study)?.label || ''
@@ -248,7 +252,7 @@ export default function ProfileScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ width: 52, height: 52, backgroundColor: colors.primaryMuted, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
-                          <SavesIcon size={26} />
+                          <SavesIcon size={26} color="#1E1E1E" />
                         </View>
                         <View>
                           <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Questions sauvegardées</Text>
@@ -278,9 +282,12 @@ export default function ProfileScreen() {
                       </View>
                     )}
                     <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
-                      <Text style={{ color: colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
-                        ℹ️ Vous pouvez utiliser l'application sur 2 appareils maximum.
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 14, marginRight: 8 }}>ℹ️</Text>
+                        <Text style={{ color: colors.textMuted, fontSize: 12, lineHeight: 18, flex: 1, textAlign: 'center' }}>
+                          Vous pouvez utiliser l'application sur 2 appareils maximum.
+                        </Text>
+                      </View>
                     </View>
                   </ThemedCard>
                 </View>
@@ -296,14 +303,14 @@ export default function ProfileScreen() {
                     <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 14 }}>Statistiques</Text>
                     <ThemedCard colors={colors} isDark={isDark}>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 }}>
-                        <StatBox label="Total" value={stats.total_questions_attempted} icon={<FileIcon size={26} color={colors.text} />} colors={colors} />
-                        <StatBox label="Correctes" value={stats.total_correct_answers} icon={<CorrectIcon size={26} color={colors.text} />} colors={colors} />
-                        <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={26} color={colors.text} />} colors={colors} />
+                        <StatBox label="Total" value={stats.total_questions_attempted} icon={<FileIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Correctes" value={stats.total_correct_answers} icon={<CorrectIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={26} color="#1E1E1E" />} colors={colors} />
                       </View>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color={colors.text} />} colors={colors} />
-                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color={colors.text} />} colors={colors} />
-                        <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={26} color={colors.text} />} colors={colors} />
+                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={26} color="#1E1E1E" />} colors={colors} />
                       </View>
                       {stats.last_practice_date && (
                         <View style={{ paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>

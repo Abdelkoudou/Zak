@@ -86,6 +86,7 @@ export default function QuestionsPage() {
   const [listFilters, setListFilters] = useState({
     year: '',
     moduleId: '', // module_name
+    subDiscipline: '',
     cours: '',
     examType: ''
   });
@@ -98,28 +99,40 @@ export default function QuestionsPage() {
     return PREDEFINED_MODULES.filter(m => m.year === listFilters.year);
   }, [listFilters.year]);
 
+  // Get selected module for filter
+  const filterSelectedModule = useMemo(() => {
+    return filterModules.find(m => m.name === listFilters.moduleId);
+  }, [filterModules, listFilters.moduleId]);
+
+  // Get sub-disciplines for filter
+  const filterSubDisciplines = useMemo(() => {
+    if (filterSelectedModule?.hasSubDisciplines && filterSelectedModule.name) {
+      return PREDEFINED_SUBDISCIPLINES[filterSelectedModule.name] || [];
+    }
+    return [];
+  }, [filterSelectedModule]);
+
   // Fetch courses for filter
   useEffect(() => {
     const fetchFilterCourses = async () => {
       if (listFilters.year && listFilters.moduleId) {
-        // We can pass speciality if we had it in filters, but generic fetch is okay or assume Médecine
-        // Ideally we should add speciality to filters too. 
-        // For now let's try to fetch all courses for this module regardless of speciality 
-        // OR add speciality to filter. Let's add speciality to filter for completeness.
+        setFetchingCourses(true);
         const result = await getCourses(
           listFilters.year, 
-          'Médecine', // Defaulting to Médecine for now as it's the main one
-          listFilters.moduleId
+          'Médecine', 
+          listFilters.moduleId,
+          listFilters.subDiscipline || undefined
         );
         if (result.success) {
           setFilterCourses(result.data.map((c: any) => c.name));
         }
+        setFetchingCourses(false);
       } else {
         setFilterCourses([]);
       }
     };
     fetchFilterCourses();
-  }, [listFilters.year, listFilters.moduleId]);
+  }, [listFilters.year, listFilters.moduleId, listFilters.subDiscipline]);
 
   // Load questions on mount
 
@@ -155,6 +168,7 @@ export default function QuestionsPage() {
     const result = await getQuestions({
         year: listFilters.year || undefined,
         module_name: listFilters.moduleId || undefined,
+        sub_discipline: listFilters.subDiscipline || undefined,
         exam_type: listFilters.examType || undefined,
         cours: listFilters.cours || undefined
     });
@@ -257,6 +271,7 @@ export default function QuestionsPage() {
           questionText: '',
           cours: [''],
           imageUrl: undefined,
+          explanation: '',
           answers: [
             { optionLabel: 'A', answerText: '', isCorrect: false },
             { optionLabel: 'B', answerText: '', isCorrect: false },
@@ -1130,13 +1145,24 @@ export default function QuestionsPage() {
 
             <select
                 value={listFilters.moduleId}
-                onChange={e => setListFilters(prev => ({ ...prev, moduleId: e.target.value, cours: '' }))}
+                onChange={e => setListFilters(prev => ({ ...prev, moduleId: e.target.value, subDiscipline: '', cours: '' }))}
                 className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all max-w-[180px]"
                 disabled={!listFilters.year}
             >
                 <option value="">Tous les modules</option>
                 {filterModules.map(m => <option key={m.name} value={m.name}>{m.name}</option>)}
             </select>
+
+            {filterSubDisciplines.length > 0 && (
+                <select
+                    value={listFilters.subDiscipline}
+                    onChange={e => setListFilters(prev => ({ ...prev, subDiscipline: e.target.value, cours: '' }))}
+                    className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all max-w-[180px]"
+                >
+                    <option value="">Tous les sous-modules</option>
+                    {filterSubDisciplines.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+            )}
 
              <select
                 value={listFilters.cours}

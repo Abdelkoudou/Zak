@@ -74,8 +74,10 @@ export default function ContributionsPage() {
         throw new Error('Failed to fetch contributions');
       }
       
-      const data = await response.json();
-      setContributions(data);
+      const result = await response.json();
+      // Handle both old format (raw array) and new format ({ success, data })
+      const data = result.data ?? result;
+      setContributions(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -105,8 +107,10 @@ export default function ContributionsPage() {
         throw new Error('Failed to fetch details');
       }
       
-      const data = await response.json();
-      setDetails(data);
+      const result = await response.json();
+      // Handle both old format (raw array) and new format ({ success, data })
+      const data = result.data ?? result;
+      setDetails(Array.isArray(data) ? data : []);
       setSelectedUserId(userId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');

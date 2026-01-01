@@ -16,10 +16,9 @@ import {
   Animated,
   Easing,
   Pressable,
-  FlatList,
   Image
 } from 'react-native'
-import { Link, router } from 'expo-router'
+import { Link, router, useNavigation } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -28,17 +27,41 @@ import { FACULTIES } from '@/constants/faculty'
 import { WILAYAS } from '@/constants/regions'
 import { YearLevel, Speciality, RegisterFormData } from '@/types'
 import { BRAND_THEME } from '@/constants/theme'
-import { FadeInView, AnimatedButton } from '@/components/ui'
+import { FadeInView, AnimatedButton, PasswordStrengthIndicator } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
+import { 
+  validateEmail, 
+  validatePassword, 
+  validatePasswordMatch, 
+  validateActivationCode,
+  validateRequired,
+  validateSelection,
+  getPasswordStrength,
+  sanitizeEmail,
+  sanitizeActivationCode,
+  sanitizeText
+} from '@/lib/validation'
 
-const Logo = require('@/assets/images/logo.png')
+// Use native driver only on native platforms, not on web
+const USE_NATIVE_DRIVER = Platform.OS !== 'web'
+
+const Logo = require('../../assets/icon.png')
 
 export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
   const { width } = useWindowDimensions()
+  const navigation = useNavigation()
   const isDesktop = width >= 768
   const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = 600
+  
+  const handleGoBack = () => {
+    if (navigation.canGoBack()) {
+      router.back()
+    } else {
+      router.replace('/(auth)/welcome')
+    }
+  }
   
   // Premium Animations
   const headerOpacity = useRef(new Animated.Value(0)).current
@@ -76,13 +99,13 @@ export default function RegisterScreen() {
           toValue: -10,
           duration: 2000,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(floatingY, {
           toValue: 0,
           duration: 2000,
           easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -93,13 +116,13 @@ export default function RegisterScreen() {
           toValue: 0.6,
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(glowPulse, {
           toValue: 0.3,
           duration: 1500,
           easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     ).start()
@@ -109,39 +132,62 @@ export default function RegisterScreen() {
     // Premium entrance sequence
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(headerOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.spring(headerSlide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: true }),
-        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: true }),
+        Animated.timing(headerOpacity, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(headerSlide, { toValue: 0, friction: 7, tension: 50, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(logoScale, { toValue: 1, friction: 5, tension: 100, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
       Animated.parallel([
-        Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.spring(formSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: true }),
+        Animated.timing(formOpacity, { toValue: 1, duration: 400, useNativeDriver: USE_NATIVE_DRIVER }),
+        Animated.spring(formSlide, { toValue: 0, friction: 8, tension: 50, useNativeDriver: USE_NATIVE_DRIVER }),
       ]),
     ]).start()
   }, [])
 
   const handleRegister = async () => {
-    if (!fullName.trim()) { setError('Veuillez entrer votre nom complet'); return }
-    if (!email.trim()) { setError('Veuillez entrer votre email'); return }
-    if (!password || password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères'); return }
-    if (password !== confirmPassword) { setError('Les mots de passe ne correspondent pas'); return }
-    if (!speciality) { setError('Veuillez sélectionner votre spécialité'); return }
-    if (!yearOfStudy) { setError('Veuillez sélectionner votre année d\'étude'); return }
-    if (!faculty) { setError('Veuillez sélectionner votre faculté / annexe'); return }
-    if (!region) { setError('Veuillez sélectionner votre wilaya'); return }
-    if (!activationCode.trim()) { setError('Veuillez entrer votre code d\'activation'); return }
+    // Validate full name
+    const nameValidation = validateRequired(fullName, 'votre nom complet')
+    if (!nameValidation.isValid) { setError(nameValidation.error); return }
+    
+    // Validate email format
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) { setError(emailValidation.error); return }
+    
+    // Validate password strength
+    const passwordValidation = validatePassword(password)
+    if (!passwordValidation.isValid) { setError(passwordValidation.error); return }
+    
+    // Validate password confirmation
+    const matchValidation = validatePasswordMatch(password, confirmPassword)
+    if (!matchValidation.isValid) { setError(matchValidation.error); return }
+    
+    // Validate selections
+    const specialityValidation = validateSelection(speciality, 'votre spécialité')
+    if (!specialityValidation.isValid) { setError(specialityValidation.error); return }
+    
+    const yearValidation = validateSelection(yearOfStudy, 'votre année d\'étude')
+    if (!yearValidation.isValid) { setError(yearValidation.error); return }
+    
+    const facultyValidation = validateSelection(faculty, 'votre faculté / annexe')
+    if (!facultyValidation.isValid) { setError(facultyValidation.error); return }
+    
+    const regionValidation = validateSelection(region, 'votre wilaya')
+    if (!regionValidation.isValid) { setError(regionValidation.error); return }
+    
+    // Validate activation code format
+    const codeValidation = validateActivationCode(activationCode)
+    if (!codeValidation.isValid) { setError(codeValidation.error); return }
 
     setError(null)
     const formData: RegisterFormData = {
-      email: email.trim(),
+      email: sanitizeEmail(email),
       password,
       confirmPassword,
-      full_name: fullName.trim(),
+      full_name: sanitizeText(fullName),
       speciality: speciality as Speciality,
       year_of_study: yearOfStudy as YearLevel,
       faculty,
       region,
-      activation_code: activationCode.trim().toUpperCase(),
+      activation_code: sanitizeActivationCode(activationCode),
     }
     const { error: registerError, needsEmailVerification } = await signUp(formData)
     if (registerError) { setError(registerError) }
@@ -180,10 +226,12 @@ export default function RegisterScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 
           style={{ flex: 1 }} 
-          contentContainerStyle={{ paddingBottom: 40 }} 
+          contentContainerStyle={{ minHeight: '100%', paddingBottom: 60 }} 
           keyboardShouldPersistTaps="handled" 
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
+          bounces={true}
+          alwaysBounceVertical={true}
         >
           {/* Premium Gradient Header */}
           <LinearGradient
@@ -224,7 +272,7 @@ export default function RegisterScreen() {
 
             {/* Back Button */}
             <Animated.View style={{ opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
-              <TouchableOpacity style={{ marginBottom: 16 }} onPress={() => router.back()}>
+              <TouchableOpacity style={{ marginBottom: 16 }} onPress={handleGoBack}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255, 255, 255, 0.2)', alignItems: 'center', justifyContent: 'center' }}>
                   <ChevronLeftIcon size={22} color="#ffffff" strokeWidth={2.5} />
                 </View>
@@ -313,6 +361,7 @@ export default function RegisterScreen() {
                   <View style={isDesktop ? { flex: 1 } : {}}>
                     <FormLabel>Mot de passe *</FormLabel>
                     <FormInput placeholder="Minimum 8 caractères" value={password} onChangeText={setPassword} secureTextEntry />
+                    <PasswordStrengthIndicator password={password} />
                   </View>
                   <View style={isDesktop ? { flex: 1 } : {}}>
                     <FormLabel>Confirmer *</FormLabel>
@@ -473,22 +522,29 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
           position: 'absolute',
           top: '100%',
           width: '100%',
-          maxHeight: scrollable ? 200 : undefined,
+          maxHeight: scrollable ? 250 : undefined,
           ...BRAND_THEME.shadows.lg,
           zIndex: 100,
+          overflow: 'hidden',
         }}>
           {scrollable ? (
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item.value}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(item.value)}>
-                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{item.label}</Text>
-                </TouchableOpacity>
-              )}
-              style={{ maxHeight: 200 }}
+            <ScrollView 
+              style={{ maxHeight: 250 }}
               nestedScrollEnabled={true}
-            />
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              keyboardShouldPersistTaps="handled"
+            >
+              {options.map((opt) => (
+                <TouchableOpacity 
+                  key={opt.value} 
+                  style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} 
+                  onPress={() => onSelect(opt.value)}
+                >
+                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : (
             options.map((opt) => (
               <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>
