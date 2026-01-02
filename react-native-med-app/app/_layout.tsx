@@ -12,6 +12,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { AppVisibilityProvider } from '@/context/AppVisibilityContext'
 import { supabase } from '@/lib/supabase'
+import { Analytics } from '@vercel/analytics/react'
 
 // Conditionally import native-only modules
 let SplashScreen: typeof import('expo-splash-screen') | null = null
@@ -99,6 +100,7 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <RootLayoutContent />
+          {Platform.OS === 'web' && <Analytics />}
         </AuthProvider>
       </ThemeProvider>
     </AppVisibilityProvider>
