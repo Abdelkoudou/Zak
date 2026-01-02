@@ -18,6 +18,7 @@ export interface User {
   full_name: string | null
   role: UserRole
   is_paid: boolean
+  is_reviewer?: boolean  // For app store review accounts (bypasses device limits)
   subscription_expires_at: string | null
   speciality: Speciality | null
   year_of_study: YearLevel | null
