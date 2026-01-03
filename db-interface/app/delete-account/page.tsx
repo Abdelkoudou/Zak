@@ -119,7 +119,7 @@ export default function DeleteAccountPage() {
           <p className="mb-2">
             Besoin d&apos;aide ? Contactez-nous à{' '}
             <a href="mailto:support@fmcquiz.com" className="text-blue-600 hover:underline">
-              support@fmcquiz.com
+              fmc.app.contact@gmail.com
             </a>
           </p>
           <p>
