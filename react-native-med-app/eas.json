@@ -20,7 +20,7 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://tkthvgvjecihqfnknosj.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdGh2Z3ZqZWNpaHFmbmtub3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjgwOTQsImV4cCI6MjA3OTAwNDA5NH0.w6TmuCl85ChtLbzUmQDVTwLxOqjD-9HjBfg2uQZhhQI"
       },
-      "node": "18.18.0"
+      "node": "20.18.0"
     },
     "production": {
       "android": {
@@ -33,7 +33,7 @@
         "EXPO_PUBLIC_SUPABASE_URL": "https://tkthvgvjecihqfnknosj.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdGh2Z3ZqZWNpaHFmbmtub3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjgwOTQsImV4cCI6MjA3OTAwNDA5NH0.w6TmuCl85ChtLbzUmQDVTwLxOqjD-9HjBfg2uQZhhQI"
       },
-      "node": "18.18.0"
+      "node": "20.18.0"
     },
     "apk": {
       "extends": "production",
