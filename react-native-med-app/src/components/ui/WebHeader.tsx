@@ -12,7 +12,7 @@ import { HomeIcon, ResourcesIcon, ProfileIcon, SavesIcon } from '@/components/ic
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
-const Logo = require('@/assets/images/logo.png')
+const Logo = require('../../../assets/icon.png')
 
 interface NavItem {
   label: string
@@ -131,7 +131,7 @@ export function WebHeader() {
                 fontSize: 12,
                 color: BRAND_THEME.colors.gray[500],
               }}>
-                {user.year_of_study}ère Année
+                {user.year_of_study}{user.year_of_study === '1' ? 'ère' : 'ème'} Année
               </Text>
             </View>
             <View style={{

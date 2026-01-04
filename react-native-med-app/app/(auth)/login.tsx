@@ -14,7 +14,7 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native'
-import { router, useNavigation } from 'expo-router'
+import { router, useNavigation, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -34,10 +34,65 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('../../assets/icon.png')
 
+// Helper to parse URL errors (for password reset redirects)
+function parseUrlErrors(): { error: string | null; errorCode: string | null; isPasswordResetError: boolean } {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return { error: null, errorCode: null, isPasswordResetError: false }
+  }
+
+  try {
+    const hash = window.location.hash
+    const search = window.location.search
+    
+    // Parse hash parameters
+    let errorDescription = ''
+    let errorCode = ''
+    
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1))
+      errorDescription = hashParams.get('error_description') || ''
+      errorCode = hashParams.get('error_code') || ''
+    }
+    
+    // Also check query params
+    if (search) {
+      const searchParams = new URLSearchParams(search)
+      errorDescription = errorDescription || searchParams.get('error_description') || ''
+      errorCode = errorCode || searchParams.get('error_code') || ''
+    }
+    
+    if (errorDescription) {
+      // Decode and translate common errors
+      const decodedError = decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+      
+      // Map error codes to French messages
+      const errorMessages: Record<string, string> = {
+        'otp_expired': 'Le lien de réinitialisation a expiré. Veuillez demander un nouveau lien.',
+        'access_denied': 'Accès refusé. Le lien est invalide ou a expiré.',
+      }
+      
+      const friendlyMessage = errorMessages[errorCode] || decodedError
+      const isPasswordResetError = errorCode === 'otp_expired' || errorDescription.includes('expired')
+      
+      // Clear the URL hash/params after reading
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+      
+      return { error: friendlyMessage, errorCode, isPasswordResetError }
+    }
+  } catch (e) {
+    // Ignore parsing errors
+  }
+  
+  return { error: null, errorCode: null, isPasswordResetError: false }
+}
+
 export default function LoginScreen() {
-  const { signIn, isLoading } = useAuth()
+  const { signIn, resetPassword, isLoading } = useAuth()
   const { width } = useWindowDimensions()
   const navigation = useNavigation()
+  const params = useLocalSearchParams()
   
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
@@ -54,6 +109,18 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showResendLink, setShowResendLink] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+
+  // Check for URL errors on mount (password reset errors)
+  useEffect(() => {
+    const { error: urlError, isPasswordResetError } = parseUrlErrors()
+    if (urlError) {
+      setError(urlError)
+      setShowResendLink(isPasswordResetError)
+    }
+  }, [])
 
   // ========== Premium Animation Values ==========
   // Logo animations
@@ -220,12 +287,41 @@ export default function LoginScreen() {
     }
 
     setError(null)
+    setShowResendLink(false)
     const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
     
     if (loginError) {
       setError(loginError)
     } else {
       router.replace('/(tabs)')
+    }
+  }
+
+  const handleResendResetLink = async () => {
+    if (!email) {
+      setError('Veuillez entrer votre email pour recevoir un nouveau lien')
+      return
+    }
+    
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error)
+      return
+    }
+
+    setIsResending(true)
+    setError(null)
+    
+    const { error: resetError } = await resetPassword(email.trim().toLowerCase())
+    
+    setIsResending(false)
+    
+    if (resetError) {
+      setError(resetError)
+    } else {
+      setResendSuccess(true)
+      setShowResendLink(false)
+      setError(null)
     }
   }
 
@@ -399,15 +495,52 @@ export default function LoginScreen() {
               </Text>
             </View>
 
+            {/* Success Message for Resend */}
+            {resendSuccess && (
+              <FadeInView animation="scale">
+                <View style={{
+                  backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(9, 178, 173, 0.3)',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 24,
+                }}>
+                  <Text style={{ color: '#09B2AD', fontSize: 15, fontWeight: '600' }}>
+                    ✅ Un nouveau lien a été envoyé à votre email !
+                  </Text>
+                </View>
+              </FadeInView>
+            )}
+
             {/* Error */}
             {error && (
               <FadeInView animation="scale">
-                <UIAlert 
-                  variant="error"
-                  message={error}
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 24 }}
-                />
+                <View style={{ marginBottom: 24 }}>
+                  <UIAlert 
+                    variant="error"
+                    message={error}
+                    onClose={() => { setError(null); setShowResendLink(false); }}
+                  />
+                  {showResendLink && (
+                    <TouchableOpacity 
+                      style={{ 
+                        marginTop: 12, 
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
+                      onPress={handleResendResetLink}
+                      disabled={isResending}
+                    >
+                      <Text style={{ color: '#09B2AD', fontWeight: '600', fontSize: 14 }}>
+                        {isResending ? 'Envoi en cours...' : '🔄 Renvoyer un nouveau lien'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </FadeInView>
             )}
 
@@ -651,15 +784,52 @@ export default function LoginScreen() {
               </Text>
             </Animated.View>
 
+            {/* Success Message for Resend */}
+            {resendSuccess && (
+              <FadeInView animation="scale">
+                <View style={{
+                  backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(9, 178, 173, 0.3)',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 24,
+                }}>
+                  <Text style={{ color: '#09B2AD', fontSize: 15, fontWeight: '600' }}>
+                    ✅ Un nouveau lien a été envoyé à votre email !
+                  </Text>
+                </View>
+              </FadeInView>
+            )}
+
             {/* Error */}
             {error && (
               <FadeInView animation="scale">
-                <UIAlert 
-                  variant="error"
-                  message={error}
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 24 }}
-                />
+                <View style={{ marginBottom: 24 }}>
+                  <UIAlert 
+                    variant="error"
+                    message={error}
+                    onClose={() => { setError(null); setShowResendLink(false); }}
+                  />
+                  {showResendLink && (
+                    <TouchableOpacity 
+                      style={{ 
+                        marginTop: 12, 
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
+                      onPress={handleResendResetLink}
+                      disabled={isResending}
+                    >
+                      <Text style={{ color: '#09B2AD', fontWeight: '600', fontSize: 14 }}>
+                        {isResending ? 'Envoi en cours...' : '🔄 Renvoyer un nouveau lien'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </FadeInView>
             )}
 
