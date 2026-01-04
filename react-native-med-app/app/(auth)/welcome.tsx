@@ -290,8 +290,8 @@ export default function WelcomeScreen() {
             overflow: 'hidden',
           }}
         >
-          {/* Animated Decorative Elements */}
-          <Animated.View style={{ 
+          {/* Static Decorative Elements (No Animation) */}
+          <View style={{ 
             position: 'absolute', 
             top: -100, 
             right: -100, 
@@ -299,9 +299,8 @@ export default function WelcomeScreen() {
             height: 400, 
             borderRadius: 200, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY1 }],
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             bottom: -150, 
             left: -150, 
@@ -309,9 +308,8 @@ export default function WelcomeScreen() {
             height: 500, 
             borderRadius: 250, 
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            opacity: glowPulse,
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             top: '30%', 
             left: '8%', 
@@ -319,9 +317,8 @@ export default function WelcomeScreen() {
             height: 120, 
             borderRadius: 60, 
             backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            transform: [{ translateY: floatingY2 }],
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             bottom: '20%', 
             right: '15%', 
@@ -329,23 +326,17 @@ export default function WelcomeScreen() {
             height: 80, 
             borderRadius: 40, 
             backgroundColor: 'rgba(255, 255, 255, 0.04)',
-            transform: [{ translateY: floatingY3 }],
           }} />
 
-          <Animated.View style={{
-            opacity: logoOpacity,
-            transform: [
-              { scale: Animated.multiply(logoScale, breathingScale) }, 
-              { rotate: logoSpin }
-            ],
+          <View style={{
             alignItems: 'center',
             zIndex: 1,
           }}>
-            {/* Glowing Logo Container */}
-            <Animated.View style={{
+            {/* Static Logo Container (More Rounded) */}
+            <View style={{
               width: 200,
               height: 200,
-              borderRadius: 50,
+              borderRadius: 70, // Increased from 50 for more rounded appearance
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               alignItems: 'center',
               justifyContent: 'center',
@@ -354,19 +345,16 @@ export default function WelcomeScreen() {
               backdropFilter: isWeb ? 'blur(30px)' : undefined,
               shadowColor: '#ffffff',
               shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: logoGlow,
+              shadowOpacity: 0.3,
               shadowRadius: 40,
             }}>
               <Image 
                 source={Logo}
                 style={{ width: 140, height: 140, resizeMode: 'contain' }}
               />
-            </Animated.View>
+            </View>
             
-            <Animated.View style={{
-              opacity: titleOpacity,
-              transform: [{ translateY: titleSlide }, { scale: titleScale }],
-            }}>
+            <View>
               <Text style={{
                 fontSize: 56,
                 fontWeight: '900',
@@ -380,11 +368,9 @@ export default function WelcomeScreen() {
               }}>
                 FMC APP
               </Text>
-            </Animated.View>
+            </View>
             
-            <Animated.View style={{
-              opacity: badgeOpacity,
-              transform: [{ scale: badgeScale }],
+            <View style={{
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               paddingHorizontal: 20,
               paddingVertical: 8,
@@ -400,21 +386,19 @@ export default function WelcomeScreen() {
               }}>
                 Premium Medical Learning
               </Text>
-            </Animated.View>
+            </View>
             
-            <Animated.Text style={{
+            <Text style={{
               fontSize: 20,
               color: 'rgba(255, 255, 255, 0.9)',
               textAlign: 'center',
               lineHeight: 32,
               maxWidth: 420,
               fontWeight: '500',
-              opacity: subtitleOpacity,
-              transform: [{ translateY: subtitleSlide }],
             }}>
               FMC App • Study Everywhere
-            </Animated.Text>
-          </Animated.View>
+            </Text>
+          </View>
         </LinearGradient>
 
         {/* Right Side - Form */}
@@ -426,10 +410,7 @@ export default function WelcomeScreen() {
           backgroundColor: '#ffffff',
         }}>
           <View style={{ width: '100%', maxWidth: 460 }}>
-            <Animated.View style={{
-              opacity: titleOpacity,
-              transform: [{ translateY: titleSlide }],
-            }}>
+            <View>
               <Text style={{
                 fontSize: 42,
                 fontWeight: '900',
@@ -439,54 +420,44 @@ export default function WelcomeScreen() {
               }}>
                 Bienvenue 👋
               </Text>
-            </Animated.View>
+            </View>
             
-            <Animated.Text style={{
+            <Text style={{
               fontSize: 18,
               color: BRAND_THEME.colors.gray[500],
               marginBottom: 48,
               lineHeight: 28,
-              opacity: subtitleOpacity,
-              transform: [{ translateY: subtitleSlide }],
             }}>
-              Connectez-vous pour accéder à vos cours et commencer à pratiquer
-            </Animated.Text>
+              Connectez-vous 
+            </Text>
 
-            {/* Animated Buttons */}
-            <Animated.View style={{ 
-              marginBottom: 16,
-              opacity: button1Opacity,
-              transform: [{ translateY: button1Slide }, { scale: button1Scale }],
-            }}>
+            {/* Static Buttons */}
+            <View style={{ marginBottom: 16 }}>
               <AnimatedButton 
                 title="Créer un compte" 
                 onPress={() => router.push('/(auth)/register')}
                 variant="primary"
                 size="lg"
               />
-            </Animated.View>
+            </View>
             
-            <Animated.View style={{ 
-              opacity: button2Opacity,
-              transform: [{ translateY: button2Slide }, { scale: button2Scale }],
-            }}>
+            <View>
               <AnimatedButton 
                 title="Se connecter" 
                 onPress={() => router.push('/(auth)/login')}
                 variant="secondary"
                 size="lg"
               />
-            </Animated.View>
+            </View>
 
-            <Animated.Text style={{
+            <Text style={{
               fontSize: 13,
               color: BRAND_THEME.colors.gray[400],
               textAlign: 'center',
               marginTop: 32,
-              opacity: footerOpacity,
             }}>
               🔒 Plateforme sécurisée • 🇩🇿 Curriculum français
-            </Animated.Text>
+            </Text>
           </View>
         </View>
       </View>
@@ -564,7 +535,7 @@ export default function WelcomeScreen() {
             <Animated.View style={{
               width: isTablet ? 130 : 110,
               height: isTablet ? 130 : 110,
-              borderRadius: 32,
+              borderRadius: isTablet ? 45 : 38, // Increased from 32 for more rounded appearance
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               alignItems: 'center',
               justifyContent: 'center',
