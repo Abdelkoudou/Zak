@@ -189,7 +189,7 @@ export default function ProfileScreen() {
                 </View>
                 {user?.speciality && (
                   <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>🏥 {user.speciality}</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}> {user.speciality}</Text>
                   </View>
                 )}
               </View>

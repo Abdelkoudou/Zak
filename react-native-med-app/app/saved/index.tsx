@@ -5,11 +5,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, Animated, LayoutAnimation, Platform, UIManager } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Stack, useFocusEffect } from 'expo-router'
+import { Stack, useFocusEffect, useNavigation } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { getSavedQuestions, unsaveQuestion } from '@/lib/saved'
 import { QuestionWithAnswers } from '@/types'
 import { FadeInView, StaggeredList, ListSkeleton } from '@/components/ui'
+import { ChevronLeftIcon } from '@/components/icons'
 import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 import { useWebVisibility } from '@/lib/useWebVisibility'
@@ -23,7 +24,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function SavedQuestionsScreen() {
+  const navigation = useNavigation()
   const { user, isLoading: authLoading } = useAuth()
+
   
   const [questions, setQuestions] = useState<QuestionWithAnswers[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -125,7 +128,21 @@ export default function SavedQuestionsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Questions sauvegardées' }} />
+      <Stack.Screen 
+        options={{ 
+          title: 'Questions sauvegardées',
+          headerLeft: () => (
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={{ marginRight: 16 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[900]} />
+            </TouchableOpacity>
+          )
+        }} 
+
+      />
       
       <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
         <ScrollView

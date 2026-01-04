@@ -19,6 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
 import { BlurView } from 'expo-blur'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getModulesWithCounts } from '@/lib/modules'
@@ -196,56 +197,100 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />}
       >
         {/* Hero Section */}
+        {/* Hero Section */}
         <View style={{ width: '100%', position: 'relative' }}>
-          <ImageBackground 
-            source={HeaderImg} 
-            style={{
-              width: '100%',
-              paddingTop: showWebHeader ? 48 : 40,
-              paddingBottom: isDesktop ? 120 : 100,
-              alignItems: 'center',
-            }}
-            imageStyle={{
-              resizeMode: 'cover',
-              borderBottomLeftRadius: isDesktop ? 48 : 32,
-              borderBottomRightRadius: isDesktop ? 48 : 32,
-            }}
-          >
-            <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
-              <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                <View style={{ marginBottom: 14 }}>
-                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 18 : 17, fontWeight: '600', marginBottom: 4 }}>
-                    Bienvenue
-                  </Text>
-                  <Text style={{ color: '#1E1E1E', fontSize: isDesktop ? 36 : 28, fontWeight: '800', letterSpacing: -0.5 }}>
-                    {user?.full_name || 'Étudiant'}
-                  </Text>
+          {isDesktop ? (
+             <LinearGradient
+                colors={['#0D9488', '#09B2AD', '#14B8A6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  width: '100%',
+                  paddingTop: showWebHeader ? 48 : 40,
+                  paddingBottom: 120,
+                  alignItems: 'center',
+                  borderBottomLeftRadius: 48,
+                  borderBottomRightRadius: 48,
+                }}
+             >
+                <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 32, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
+                  <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <View style={{ marginBottom: 14 }}>
+                      <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '600', marginBottom: 4 }}>
+                        Bienvenue
+                      </Text>
+                      <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '800', letterSpacing: -0.5 }}>
+                        {user?.full_name || 'Étudiant'}
+                      </Text>
+                    </View>
+                    
+                    <View style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      borderRadius: 20,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      // @ts-ignore
+                      backdropFilter: 'blur(12px)',
+                      
+                    }}>
+                      <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                    </View>
+                  </View>
+                </Animated.View>
+             </LinearGradient>
+          ) : (
+            <ImageBackground 
+              source={HeaderImg} 
+              style={{
+                width: '100%',
+                backgroundColor: '#0D9488', // Brand Teal fill
+                paddingTop: showWebHeader ? 48 : 80,
+                paddingBottom: 100,
+                alignItems: 'center',
+              }}
+              imageStyle={{
+                resizeMode: 'cover',
+                borderBottomLeftRadius: 32,
+                borderBottomRightRadius: 32,
+                top: 90, // Push waves down to start at blur section
+              }}
+            >
+              <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
+                <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <View style={{ marginBottom: 14 }}>
+                    <Text style={{ color: '#1E1E1E', fontSize: 17, fontWeight: '600', marginBottom: 4 }}>
+                      Bienvenue
+                    </Text>
+                    <Text style={{ color: '#1E1E1E', fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>
+                      {user?.full_name || 'Étudiant'}
+                    </Text>
+                  </View>
+                  
+                  {Platform.OS === 'web' ? (
+                    <View style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                      borderRadius: 20,
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      // @ts-ignore
+                      backdropFilter: 'blur(12px)',
+                      
+                    }}>
+                      <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                    </View>
+                  ) : (
+                    <View style={{ borderRadius: 20, overflow: 'hidden' }}>
+                      <BlurView intensity={40} tint="light" style={{ borderRadius: 20, overflow: 'hidden' }}>
+                        <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)', paddingHorizontal: 16, paddingVertical: 8 }}>
+                          <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
+                        </View>
+                      </BlurView>
+                    </View>
+                  )}
                 </View>
-                
-                {Platform.OS === 'web' ? (
-                  <View style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                    borderRadius: 20,
-                    paddingHorizontal: 16,
-                    paddingVertical: 8,
-                    // @ts-ignore
-                    backdropFilter: 'blur(12px)',
-                    WebkitBackdropFilter: 'blur(12px)',
-                  }}>
-                    <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
-                  </View>
-                ) : (
-                  <View style={{ borderRadius: 20, overflow: 'hidden' }}>
-                    <BlurView intensity={40} tint="light" style={{ borderRadius: 20, overflow: 'hidden' }}>
-                      <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)', paddingHorizontal: 16, paddingVertical: 8 }}>
-                        <Text style={{ color: '#1E1E1E', fontWeight: '700', fontSize: 13 }}>{getYearLabel()}</Text>
-                      </View>
-                    </BlurView>
-                  </View>
-                )}
-              </View>
-            </Animated.View>
-          </ImageBackground>
+              </Animated.View>
+            </ImageBackground>
+          )}
         </View>
 
         {/* Content Container */}
@@ -267,37 +312,37 @@ export default function HomeScreen() {
                 {Platform.OS === 'web' ? (
                   // Web: CSS backdrop-filter
                   <View style={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                    backgroundColor: isDark ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)',
                     borderRadius: 17,
                     padding: isDesktop ? 28 : 20,
                     // @ts-ignore
                     backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
+                    
                   }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
                     </View>
                   </View>
                 ) : (
                   // Native: expo-blur BlurView
                   <BlurView 
                     intensity={60} 
-                    tint="light"
+                    tint={isDark ? "dark" : "light"}
                     style={{ 
                       borderRadius: 17,
                       overflow: 'hidden',
                     }}
                   >
                     <View style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      backgroundColor: isDark ? 'rgba(30, 30, 30, 0.4)' : 'rgba(255, 255, 255, 0.4)',
                       padding: isDesktop ? 28 : 20,
                     }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color="#1E1E1E" />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
                       </View>
                     </View>
                   </BlurView>
