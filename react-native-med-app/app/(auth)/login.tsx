@@ -253,8 +253,8 @@ export default function LoginScreen() {
             overflow: 'hidden',
           }}
         >
-          {/* Animated Decorative Elements */}
-          <Animated.View style={{ 
+          {/* Static Decorative Elements (No Animation) */}
+          <View style={{ 
             position: 'absolute', 
             top: -80, 
             right: -80, 
@@ -262,9 +262,8 @@ export default function LoginScreen() {
             height: 300, 
             borderRadius: 150, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY1 }],
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             bottom: -100, 
             left: -100, 
@@ -272,9 +271,8 @@ export default function LoginScreen() {
             height: 400, 
             borderRadius: 200, 
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            opacity: glowPulse,
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             top: '50%', 
             left: '5%', 
@@ -282,21 +280,16 @@ export default function LoginScreen() {
             height: 80, 
             borderRadius: 40, 
             backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            transform: [{ translateY: floatingY2 }],
           }} />
 
-          <Animated.View style={{
-            opacity: logoOpacity,
-            transform: [
-              { scale: Animated.multiply(logoScale, breathingScale) }, 
-              { rotate: logoSpin }
-            ],
+          <View style={{
             alignItems: 'center',
           }}>
+            {/* Static Logo Container (More Rounded) */}
             <View style={{
               width: 160,
               height: 160,
-              borderRadius: 40,
+              borderRadius: 55, // Increased from 40 for more rounded appearance
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               alignItems: 'center',
               justifyContent: 'center',
@@ -314,9 +307,7 @@ export default function LoginScreen() {
               />
             </View>
             
-            <Animated.View style={{
-              opacity: headerOpacity,
-              transform: [{ translateY: headerSlide }],
+            <View style={{
               alignItems: 'center',
             }}>
               <Text style={{
@@ -360,8 +351,8 @@ export default function LoginScreen() {
               }}>
                 Votre compagnon pour réussir vos examens médicaux
               </Text>
-            </Animated.View>
-          </Animated.View>
+            </View>
+          </View>
         </LinearGradient>
 
         {/* Right Side - Form */}
@@ -389,10 +380,7 @@ export default function LoginScreen() {
               </View>
             </TouchableOpacity>
 
-            <Animated.View style={{
-              opacity: cardOpacity,
-              transform: [{ translateY: cardSlide }, { scale: cardScale }],
-            }}>
+            <View>
               <Text style={{
                 fontSize: 38,
                 fontWeight: '900',
@@ -409,7 +397,7 @@ export default function LoginScreen() {
               }}>
                 Connectez-vous pour continuer votre apprentissage
               </Text>
-            </Animated.View>
+            </View>
 
             {/* Error */}
             {error && (
@@ -424,11 +412,7 @@ export default function LoginScreen() {
             )}
 
             {/* Form */}
-            <Animated.View style={{ 
-              marginBottom: 20,
-              opacity: input1Opacity,
-              transform: [{ translateY: input1Slide }],
-            }}>
+            <View style={{ marginBottom: 20 }}>
               <Input
                 label="Adresse email"
                 placeholder="votre@email.com"
@@ -436,13 +420,9 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>}
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ 
-              marginBottom: 24,
-              opacity: input2Opacity,
-              transform: [{ translateY: input2Slide }],
-            }}>
+            <View style={{ marginBottom: 24 }}>
               <Input
                 label="Mot de passe"
                 placeholder="••••••••"
@@ -451,9 +431,9 @@ export default function LoginScreen() {
                 secureTextEntry
                 leftIcon={<Text style={{ fontSize: 18 }}>🔒</Text>}
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ opacity: forgotOpacity }}>
+            <View>
               <TouchableOpacity 
                 style={{ marginBottom: 32, alignSelf: 'flex-start' }}
                 onPress={() => router.push('/(auth)/forgot-password')}
@@ -466,12 +446,9 @@ export default function LoginScreen() {
                   Mot de passe oublié ?
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{
-              opacity: buttonOpacity,
-              transform: [{ translateY: buttonSlide }, { scale: buttonScale }],
-            }}>
+            <View>
               <AnimatedButton 
                 title="Se connecter"
                 onPress={handleLogin}
@@ -479,14 +456,13 @@ export default function LoginScreen() {
                 variant="primary"
                 size="lg"
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ 
+            <View style={{ 
               flexDirection: 'row', 
               justifyContent: 'center',
               alignItems: 'center',
               marginTop: 32,
-              opacity: footerOpacity,
             }}>
               <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>
                 Pas encore de compte ?{' '}
@@ -500,7 +476,7 @@ export default function LoginScreen() {
                   S'inscrire
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           </View>
         </View>
       </View>
@@ -588,7 +564,7 @@ export default function LoginScreen() {
               <View style={{
                 width: isTablet ? 90 : 75,
                 height: isTablet ? 90 : 75,
-                borderRadius: 22,
+                borderRadius: isTablet ? 32 : 26, // Increased from 22 for more rounded appearance
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 alignItems: 'center',
                 justifyContent: 'center',

@@ -164,8 +164,20 @@ export default function RegisterScreen() {
     const specialityValidation = validateSelection(speciality, 'votre spécialité')
     if (!specialityValidation.isValid) { setError(specialityValidation.error); return }
     
+    // Check if speciality is available
+    if (speciality === 'Pharmacie' || speciality === 'Dentaire') {
+      setError('Cette spécialité sera bientôt disponible. Veuillez sélectionner Médecine pour le moment.');
+      return;
+    }
+    
     const yearValidation = validateSelection(yearOfStudy, 'votre année d\'étude')
     if (!yearValidation.isValid) { setError(yearValidation.error); return }
+    
+    // Check if year is available for the selected speciality
+    if (speciality === 'Médecine' && yearOfStudy !== '2') {
+      setError('Seule la 2ème année de Médecine est actuellement disponible. Les autres années seront bientôt disponibles.');
+      return;
+    }
     
     const facultyValidation = validateSelection(faculty, 'votre faculté / annexe')
     if (!facultyValidation.isValid) { setError(facultyValidation.error); return }
@@ -318,7 +330,7 @@ export default function RegisterScreen() {
                 color: 'rgba(255, 255, 255, 0.85)',
                 fontWeight: '600',
               }}>
-                Rejoignez FMC APP aujourd'hui
+                Rejoignez FMC APP et optimiser votre révision
               </Text>
             </Animated.View>
           </LinearGradient>
@@ -378,8 +390,21 @@ export default function RegisterScreen() {
                       placeholder="Sélectionner"
                       isOpen={showSpeciality}
                       onToggle={() => { setShowSpeciality(!showSpeciality); setShowYear(false); setShowFaculty(false); setShowRegion(false) }}
-                      options={SPECIALITIES.map(s => ({ value: s.value, label: s.label }))}
-                      onSelect={(v) => { setSpeciality(v as Speciality); setShowSpeciality(false) }}
+                      options={SPECIALITIES.map(s => ({ 
+                        value: s.value, 
+                        label: s.value === 'Pharmacie' || s.value === 'Dentaire' 
+                          ? `${s.label} (Bientôt disponible)` 
+                          : s.label,
+                        disabled: s.value === 'Pharmacie' || s.value === 'Dentaire'
+                      }))}
+                      onSelect={(v) => { 
+                        setSpeciality(v as Speciality); 
+                        setShowSpeciality(false);
+                        // Reset year when changing speciality
+                        if (v !== 'Médecine') {
+                          setYearOfStudy('');
+                        }
+                      }}
                     />
                   </View>
                   <View style={[isDesktop ? { flex: 1 } : {}, { zIndex: 10 }]}>
@@ -389,7 +414,20 @@ export default function RegisterScreen() {
                       placeholder="Sélectionner"
                       isOpen={showYear}
                       onToggle={() => { setShowYear(!showYear); setShowSpeciality(false); setShowFaculty(false); setShowRegion(false) }}
-                      options={YEARS.map(y => ({ value: y.value, label: y.label }))}
+                      options={YEARS.map(y => {
+                        // If Médecine is selected, only allow 2ème année
+                        if (speciality === 'Médecine') {
+                          return {
+                            value: y.value,
+                            label: y.value === '2' 
+                              ? y.label 
+                              : `${y.label} (Bientôt disponible)`,
+                            disabled: y.value !== '2'
+                          };
+                        }
+                        // For other specialities (when they become available), show all years
+                        return { value: y.value, label: y.label, disabled: false };
+                      })}
                       onSelect={(v) => { setYearOfStudy(v as YearLevel); setShowYear(false) }}
                     />
                   </View>
@@ -482,14 +520,15 @@ function FormInput(props: any) {
 }
 
 // Form Dropdown
-function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable }: {
+function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable, disabledOptions }: {
   value: string
   placeholder: string
   isOpen: boolean
   onToggle: () => void
-  options: { value: string; label: string }[]
+  options: { value: string; label: string; disabled?: boolean }[]
   onSelect: (value: string) => void
   scrollable?: boolean
+  disabledOptions?: string[]
 }) {
   return (
     <View>
@@ -538,17 +577,45 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
               {options.map((opt) => (
                 <TouchableOpacity 
                   key={opt.value} 
-                  style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} 
-                  onPress={() => onSelect(opt.value)}
+                  style={{ 
+                    paddingHorizontal: 16, 
+                    paddingVertical: 14, 
+                    borderBottomWidth: 1, 
+                    borderBottomColor: BRAND_THEME.colors.gray[100],
+                    opacity: opt.disabled ? 0.5 : 1,
+                  }} 
+                  onPress={() => !opt.disabled && onSelect(opt.value)}
+                  disabled={opt.disabled}
                 >
-                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+                  <Text style={{ 
+                    color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
+                    fontSize: 15 
+                  }}>
+                    {opt.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           ) : (
             options.map((opt) => (
-              <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>
-                <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+              <TouchableOpacity 
+                key={opt.value} 
+                style={{ 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 14, 
+                  borderBottomWidth: 1, 
+                  borderBottomColor: BRAND_THEME.colors.gray[100],
+                  opacity: opt.disabled ? 0.5 : 1,
+                }} 
+                onPress={() => !opt.disabled && onSelect(opt.value)}
+                disabled={opt.disabled}
+              >
+                <Text style={{ 
+                  color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
+                  fontSize: 15 
+                }}>
+                  {opt.label}
+                </Text>
               </TouchableOpacity>
             ))
           )}

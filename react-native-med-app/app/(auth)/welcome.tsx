@@ -456,7 +456,7 @@ export default function WelcomeScreen() {
               textAlign: 'center',
               marginTop: 32,
             }}>
-              🔒 Plateforme sécurisée • 🇩🇿 Curriculum français
+              🔒 Plateforme sécurisée 
             </Text>
           </View>
         </View>
