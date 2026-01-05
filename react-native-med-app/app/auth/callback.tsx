@@ -87,14 +87,27 @@ export default function AuthCallbackScreen() {
         return
       }
 
-      // If we have a code (PKCE flow), Supabase should have already exchanged it
-      // We just need to check the session and determine the type
-      if (code || accessToken) {
-        // Wait a moment for Supabase to process the code exchange
-        await new Promise(resolve => setTimeout(resolve, 500))
+      // PKCE Flow: If we have a code, we need to exchange it for a session
+      // This is required when detectSessionInUrl is false
+      if (code) {
+        console.log('[Auth Callback] Exchanging PKCE code for session...')
+        const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        
+        if (exchangeError) {
+          console.error('[Auth Callback] Code exchange failed:', exchangeError.message)
+          const isExpired = exchangeError.message?.includes('expired') || 
+                           exchangeError.message?.includes('invalid') ||
+                           exchangeError.message?.includes('code')
+          setIsExpiredLink(isExpired)
+          setStatus('error')
+          setMessage(getErrorMessage(exchangeError.message, 'otp_expired'))
+          return
+        }
+        
+        console.log('[Auth Callback] Code exchange successful, session established')
       }
 
-      // If we have tokens directly in the URL, set the session manually
+      // If we have tokens directly in the URL (implicit flow), set the session manually
       if (accessToken && refreshToken) {
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
@@ -128,13 +141,25 @@ export default function AuthCallbackScreen() {
       }
 
       // Determine if this is a password recovery flow
+      // With PKCE, we check the session's AMR (Authentication Methods Reference) claims
+      // or the recovery_sent_at timestamp on the user object
+      const userAny = session.user as any
       const isRecovery = 
         type === 'recovery' || 
         type === 'password_recovery' ||
-        // @ts-ignore - Check AMR claims for recovery
-        session.user?.amr?.some((a: any) => a.method === 'recovery') ||
-        (session.user?.recovery_sent_at && 
-          new Date(session.user.recovery_sent_at).getTime() > Date.now() - 3600000)
+        // Check AMR claims for recovery method
+        userAny?.amr?.some((a: any) => a.method === 'recovery' || a.method === 'otp') ||
+        // Check if recovery was recently sent (within last hour)
+        (userAny?.recovery_sent_at && 
+          new Date(userAny.recovery_sent_at).getTime() > Date.now() - 3600000) ||
+        // Check user_metadata or app_metadata for recovery flag
+        userAny?.user_metadata?.recovery_flow === true
+
+      console.log('[Auth Callback] Is recovery flow:', isRecovery, {
+        type,
+        amr: userAny?.amr,
+        recovery_sent_at: userAny?.recovery_sent_at
+      })
 
       if (isRecovery) {
         setStatus('success')
