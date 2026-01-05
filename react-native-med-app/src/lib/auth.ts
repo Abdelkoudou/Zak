@@ -95,29 +95,67 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 // Sign In
 // ============================================================================
 
+// Helper function to add timeout to promises
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
+    )
+  ])
+}
+
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    console.log('[Auth] Starting sign in for:', email)
+    
+    // Add 15 second timeout to prevent endless loading
+    const authResult = await withTimeout(
+      supabase.auth.signInWithPassword({
+        email,
+        password,
+      }),
+      15000,
+      'La connexion a pris trop de temps. Veuillez réessayer.'
+    )
+    
+    const authData = authResult.data
+    const authError = authResult.error
+
+    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, error: authError?.message })
 
     if (authError) {
+      console.error('[Auth] Sign in error:', authError.message)
       return { user: null, error: authError.message }
     }
 
     if (!authData.user) {
+      console.error('[Auth] No user returned from sign in')
       return { user: null, error: 'Failed to sign in' }
     }
 
+    console.log('[Auth] Fetching user profile...')
+    
     // Fetch user profile first to check if they're a reviewer
-    const { data: userProfile, error: fetchError } = await supabase
+    const profilePromise = supabase
       .from('users')
       .select('*')
       .eq('id', authData.user.id)
       .single()
+    
+    const profileResult = await withTimeout(
+      Promise.resolve(profilePromise),
+      10000,
+      'Impossible de charger le profil. Veuillez réessayer.'
+    )
+    
+    const userProfile = profileResult.data
+    const fetchError = profileResult.error
+
+    console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
 
     if (fetchError) {
+      console.error('[Auth] Profile fetch error:', fetchError.message)
       return { user: null, error: fetchError.message }
     }
 
@@ -125,10 +163,16 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     const isReviewer = (userProfile as any).is_reviewer === true
 
     if (!isReviewer) {
+      console.log('[Auth] Checking device sessions...')
       // Check device count before registering new device
       const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
       const currentDeviceId = await getDeviceId()
       const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
+
+      console.log('[Auth] Device check:', { 
+        sessionCount: sessions.length, 
+        isCurrentRegistered: isCurrentDeviceRegistered 
+      })
 
       // If this is a new device and user already has 2 devices, block login
       if (!isCurrentDeviceRegistered && sessions.length >= 2) {
@@ -141,12 +185,15 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       }
     }
 
+    console.log('[Auth] Registering device...')
     // Register/update device session
     await registerDevice(authData.user.id)
 
+    console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
-  } catch (error) {
-    return { user: null, error: 'An unexpected error occurred' }
+  } catch (error: any) {
+    console.error('[Auth] Unexpected sign in error:', error)
+    return { user: null, error: error?.message || 'An unexpected error occurred' }
   }
 }
 

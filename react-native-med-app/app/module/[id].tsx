@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useNavigation } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth } from '@/context/AuthContext'
-import { getModuleById, getModuleCours, getModuleQuestionCount } from '@/lib/modules'
+import { getModuleById, getModuleCours, getModuleQuestionCount, getModuleCoursesStructure } from '@/lib/modules'
 import { getQuestionCount, getExamYears } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
@@ -35,6 +35,12 @@ export default function ModuleDetailScreen() {
   const [availableExamTypes, setAvailableExamTypes] = useState<{ type: ExamType; count: number }[]>([])
   const [availableExamYears, setAvailableExamYears] = useState<{ year: number; count: number }[]>([])
   const [coursWithCounts, setCoursWithCounts] = useState<{ name: string; count: number }[]>([])
+  
+  // New state for Sub-disciplines
+  const [subDisciplines, setSubDisciplines] = useState<string[]>([])
+  const [selectedSubDiscipline, setSelectedSubDiscipline] = useState<string | null>(null)
+  const [courseStructure, setCourseStructure] = useState<Record<string, string | null>>({})
+  
   const [hasLoaded, setHasLoaded] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
@@ -84,6 +90,20 @@ export default function ModuleDetailScreen() {
       if (moduleData) {
         const { count } = await getModuleQuestionCount(moduleData.name)
         setQuestionCount(count)
+        
+        // Load structure first to get sub-disciplines
+        const { structure } = await getModuleCoursesStructure(moduleData.name)
+        const structureMap: Record<string, string | null> = {}
+        const uniqueSubs = new Set<string>()
+        
+        structure.forEach(item => {
+          structureMap[item.name] = item.sub_discipline
+          if (item.sub_discipline) uniqueSubs.add(item.sub_discipline)
+        })
+        
+        setCourseStructure(structureMap)
+        setSubDisciplines(Array.from(uniqueSubs).sort())
+
         const { cours: coursData } = await getModuleCours(moduleData.name)
         setCours(coursData)
         await loadExamTypesWithCounts(moduleData)
@@ -175,6 +195,14 @@ export default function ModuleDetailScreen() {
     if (selectedMode === 'cours') return !!selectedCours
     return false
   }
+  
+  // Filter courses based on selected sub-discipline
+  const filteredCoursWithCounts = selectedMode === 'cours' 
+    ? coursWithCounts.filter(c => {
+        if (!selectedSubDiscipline) return true; // Show all if no sub-discipline selected
+        return courseStructure[c.name] === selectedSubDiscipline;
+      })
+    : [];
 
   if (isLoading) {
     return (
@@ -251,38 +279,10 @@ export default function ModuleDetailScreen() {
               gap: 12,
               marginBottom: 24,
             }}>
-              {/* Selon les Controles */}
-              <TouchableOpacity
-                onPress={() => { setSelectedMode('exam'); setSelectedCours(null) }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  borderRadius: 24,
-                  backgroundColor: selectedMode === 'exam' ? colors.primaryMuted : colors.card,
-                  borderWidth: 1.5,
-                  borderColor: selectedMode === 'exam' ? colors.primary : colors.border,
-                }}
-              >
-                <QcmExamIcon 
-                  size={18} 
-                  color={selectedMode === 'exam' ? colors.primary : colors.textSecondary} 
-                />
-                <Text style={{ 
-                  marginLeft: 8,
-                  fontSize: 14, 
-                  fontWeight: '600',
-                  color: selectedMode === 'exam' ? colors.primary : colors.textSecondary,
-                }}>
-                  Selon les Controles
-                </Text>
-              </TouchableOpacity>
-
               {/* Selon les Cours */}
               {cours.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null); setSelectedExamYear(null); setAvailableExamYears([]) }}
+                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null); setSelectedExamYear(null); setAvailableExamYears([]); setSelectedCours(null); setSelectedSubDiscipline(null); }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -308,6 +308,35 @@ export default function ModuleDetailScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
+              {/* Selon les Controles */}
+              <TouchableOpacity
+                onPress={() => { setSelectedMode('exam'); setSelectedCours(null); setSelectedSubDiscipline(null); }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 24,
+                  backgroundColor: selectedMode === 'exam' ? colors.primaryMuted : colors.card,
+                  borderWidth: 1.5,
+                  borderColor: selectedMode === 'exam' ? colors.primary : colors.border,
+                }}
+              >
+                <QcmExamIcon 
+                  size={18} 
+                  color={selectedMode === 'exam' ? colors.primary : colors.textSecondary} 
+                />
+                <Text style={{ 
+                  marginLeft: 8,
+                  fontSize: 14, 
+                  fontWeight: '600',
+                  color: selectedMode === 'exam' ? colors.primary : colors.textSecondary,
+                }}>
+                  Selon les Controles
+                </Text>
+              </TouchableOpacity>
+
+              
             </View>
           </Animated.View>
 
@@ -357,7 +386,7 @@ export default function ModuleDetailScreen() {
                   <SelectableCard
                     isSelected={selectedExamYear === year}
                     onPress={() => setSelectedExamYear(year)}
-                    title={`Promo ${year}`}
+                    title={`M${year-2000}`}
                     subtitle={`${count} question${count !== 1 ? 's' : ''}`}
                     colors={colors}
                     isDark={isDark}
@@ -368,48 +397,109 @@ export default function ModuleDetailScreen() {
           )}
 
           {/* Cours List */}
-          {selectedMode === 'cours' && coursWithCounts.length > 0 && (
+          {selectedMode === 'cours' && (
             <View style={{ paddingHorizontal: 20 }}>
-              <FadeInView delay={100} animation="slideUp">
-                <Text style={{ 
-                  fontSize: 16, 
-                  fontWeight: '600', 
-                  color: colors.text, 
-                  marginBottom: 12 
-                }}>
-                  Sélectionner un cours
-                </Text>
-              </FadeInView>
-              {coursWithCounts.map(({ name, count }, index) => (
-                <FadeInView key={name} delay={150 + index * 50} animation="slideUp">
-                  <SelectableCard
-                    isSelected={selectedCours === name}
-                    onPress={() => setSelectedCours(name)}
-                    title={name}
-                    subtitle={`${count} question${count !== 1 ? 's' : ''}`}
-                    colors={colors}
-                    isDark={isDark}
-                  />
+              {/* Sub-discipline Filter */}
+              {subDisciplines.length > 0 && (
+                <FadeInView delay={100} animation="slideUp" style={{ marginBottom: 16 }}>
+                  <Text style={{ 
+                    fontSize: 16, 
+                    fontWeight: '600', 
+                    color: colors.text, 
+                    marginBottom: 12 
+                  }}>
+                    Filtrer par discipline
+                  </Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, paddingHorizontal: 20 }}>
+                    <TouchableOpacity
+                      onPress={() => setSelectedSubDiscipline(null)}
+                      style={{
+                        paddingHorizontal: 16,
+                        paddingVertical: 8,
+                        borderRadius: 20,
+                        backgroundColor: selectedSubDiscipline === null ? colors.primary : colors.card,
+                        marginRight: 8,
+                        borderWidth: 1,
+                        borderColor: selectedSubDiscipline === null ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ 
+                        color: selectedSubDiscipline === null ? '#fff' : colors.text,
+                        fontWeight: '600',
+                        fontSize: 14,
+                      }}>
+                        Tous
+                      </Text>
+                    </TouchableOpacity>
+                    {subDisciplines.map((sub) => (
+                      <TouchableOpacity
+                        key={sub}
+                        onPress={() => setSelectedSubDiscipline(sub)}
+                        style={{
+                          paddingHorizontal: 16,
+                          paddingVertical: 8,
+                          borderRadius: 20,
+                          backgroundColor: selectedSubDiscipline === sub ? colors.primary : colors.card,
+                          marginRight: 8,
+                          borderWidth: 1,
+                          borderColor: selectedSubDiscipline === sub ? colors.primary : colors.border,
+                        }}
+                      >
+                        <Text style={{ 
+                          color: selectedSubDiscipline === sub ? '#fff' : colors.text,
+                          fontWeight: '600',
+                          fontSize: 14,
+                        }}>
+                          {sub}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 </FadeInView>
-              ))}
+              )}
+
+              {filteredCoursWithCounts.length > 0 ? (
+                <>
+                  <FadeInView delay={100} animation="slideUp">
+                    <Text style={{ 
+                      fontSize: 16, 
+                      fontWeight: '600', 
+                      color: colors.text, 
+                      marginBottom: 12 
+                    }}>
+                      Sélectionner un cours
+                    </Text>
+                  </FadeInView>
+                  {filteredCoursWithCounts.map(({ name, count }, index) => (
+                    <FadeInView key={name} delay={150 + index * 50} animation="slideUp">
+                      <SelectableCard
+                        isSelected={selectedCours === name}
+                        onPress={() => setSelectedCours(name)}
+                        title={name}
+                        subtitle={`${count} question${count !== 1 ? 's' : ''}`}
+                        colors={colors}
+                        isDark={isDark}
+                      />
+                    </FadeInView>
+                  ))}
+                </>
+              ) : (
+                <FadeInView delay={200} animation="scale" style={{ marginTop: 20, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 40, marginBottom: 12 }}>�</Text>
+                  <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
+                    Aucun cours disponible pour cette sélection
+                  </Text>
+                </FadeInView>
+              )}
             </View>
           )}
 
           {/* Empty States */}
           {selectedMode === 'exam' && availableExamTypes.length === 0 && !isLoading && (
             <FadeInView delay={200} animation="scale" style={{ paddingHorizontal: 20, marginTop: 40, alignItems: 'center' }}>
-              <Text style={{ fontSize: 40, marginBottom: 12 }}>📋</Text>
+              <Text style={{ fontSize: 40, marginBottom: 12 }}>�</Text>
               <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
                 Aucun examen disponible pour ce module
-              </Text>
-            </FadeInView>
-          )}
-
-          {selectedMode === 'cours' && coursWithCounts.length === 0 && !isLoading && (
-            <FadeInView delay={200} animation="scale" style={{ paddingHorizontal: 20, marginTop: 40, alignItems: 'center' }}>
-              <Text style={{ fontSize: 40, marginBottom: 12 }}>📖</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
-                Aucun cours disponible pour ce module
               </Text>
             </FadeInView>
           )}

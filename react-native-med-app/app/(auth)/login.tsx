@@ -288,11 +288,15 @@ export default function LoginScreen() {
 
     setError(null)
     setShowResendLink(false)
+    
+    console.log('[Login] Starting login...')
     const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
+    console.log('[Login] Login result:', { hasError: !!loginError, error: loginError })
     
     if (loginError) {
       setError(loginError)
     } else {
+      console.log('[Login] Success, redirecting to tabs...')
       router.replace('/(tabs)')
     }
   }

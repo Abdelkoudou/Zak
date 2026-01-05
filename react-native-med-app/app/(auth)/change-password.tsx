@@ -43,21 +43,27 @@ export default function ChangePasswordScreen() {
     setIsLoading(true)
 
     try {
+      console.log('[ChangePassword] Updating password...')
       const { error: updateError } = await supabase.auth.updateUser({
         password: password,
       })
 
       if (updateError) {
+        console.error('[ChangePassword] Update error:', updateError.message)
         setError(updateError.message)
         setIsLoading(false)
         return
       }
 
+      console.log('[ChangePassword] Password updated, signing out...')
       // Sign out after password change to clear the recovery session
       // This ensures the user logs in fresh with their new password
       await supabase.auth.signOut()
 
+      console.log('[ChangePassword] Sign out complete, showing success')
+      setIsLoading(false)
       setSuccess(true)
+      
       // Animate success state
       Animated.parallel([
         Animated.spring(successScale, {
@@ -78,8 +84,8 @@ export default function ChangePasswordScreen() {
         router.replace('/(auth)/login')
       }, 2000)
     } catch (err) {
+      console.error('[ChangePassword] Unexpected error:', err)
       setError('Une erreur est survenue. Veuillez réessayer.')
-    } finally {
       setIsLoading(false)
     }
   }
