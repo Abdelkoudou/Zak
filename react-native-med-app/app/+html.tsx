@@ -34,6 +34,7 @@ export default function Root({ children }: PropsWithChildren) {
           }
         ` }} />
         {/* Add any additional <head> elements that you want globally available on web... */}
+        <script defer src="/_vercel/insights/script.js" />
       </head>
       <body>{children}</body>
     </html>

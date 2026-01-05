@@ -341,6 +341,13 @@ export default function ActivationCodesPage() {
             Génération & Gestion de Licences • FMC APP
           </p>
         </div>
+        <button
+          onClick={() => router.push('/payments')}
+          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
+        >
+          <span>💳</span>
+          <span>Paiements en Ligne</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-white/5 p-1.5 rounded-[1.5rem] border border-slate-200 dark:border-white/5">

@@ -291,3 +291,76 @@ export interface ActivationCodesDashboard {
   facultyStats: FacultyStats[];
   recentCodes: ActivationKey[];
 }
+
+
+// ============================================================================
+// Online Payments System Types (Chargily Pay Integration)
+// ============================================================================
+
+export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'canceled' | 'refunded';
+export type PaymentSource = 'manual' | 'online';
+
+export interface OnlinePayment {
+  id: string;
+  checkoutId: string;
+  invoiceId?: string;
+  customerEmail: string;
+  customerName?: string;
+  customerPhone?: string;
+  amount: number;  // In centimes
+  currency: string;
+  status: PaymentStatus;
+  paymentMethod?: string;
+  durationDays: number;
+  activationKeyId?: string;
+  activationKey?: {
+    keyCode: string;
+    isUsed: boolean;
+  };
+  userId?: string;
+  checkoutUrl?: string;
+  successUrl?: string;
+  failureUrl?: string;
+  metadata?: Record<string, unknown>;
+  webhookPayload?: Record<string, unknown>;
+  createdAt: Date;
+  paidAt?: Date;
+  updatedAt: Date;
+}
+
+export interface OnlinePaymentStats {
+  totalPayments: number;
+  successfulPayments: number;
+  pendingPayments: number;
+  failedPayments: number;
+  canceledPayments: number;
+  totalRevenueCentimes: number;
+  totalRevenue: number;
+  uniqueCustomers: number;
+  lastPaymentAt?: Date;
+}
+
+export interface CreateCheckoutRequest {
+  customerEmail: string;
+  customerName?: string;
+  customerPhone?: string;
+  duration: '30' | '90' | '180' | '365';
+  locale?: 'ar' | 'en' | 'fr';
+}
+
+export interface CreateCheckoutResponse {
+  success: boolean;
+  checkoutId: string;
+  checkoutUrl: string;
+  amount: number;
+  currency: string;
+  duration: string;
+}
+
+export interface SubscriptionPlan {
+  duration: string;
+  durationDays: number;
+  amount: number;
+  amountFormatted: string;
+  label: string;
+}

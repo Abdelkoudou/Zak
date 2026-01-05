@@ -1,0 +1,228 @@
+/**
+ * Create Chargily Checkout API
+ * 
+ * Creates a new Chargily checkout session and stores the payment record.
+ * Returns the checkout URL for redirecting the user to payment.
+ * 
+ * SECURITY:
+ * - Rate limited per email and IP
+ * - Input validation and sanitization
+ * - Validates subscription duration against allowed values
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getChargilyClient, SUBSCRIPTION_PRICES, SubscriptionDuration } from '@/lib/chargily';
+import {
+  isRateLimited,
+  isValidEmail,
+  isValidPhone,
+  sanitizeString,
+  isValidDuration,
+  getSecurityHeaders,
+  RATE_LIMITS,
+} from '@/lib/security/payment-security';
+
+// Create Supabase admin client
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface CreateCheckoutRequest {
+  customerEmail: string;
+  customerName?: string;
+  customerPhone?: string;
+  duration: SubscriptionDuration;
+  locale?: 'ar' | 'en' | 'fr';
+}
+
+// ============================================================================
+// Helper to get client IP
+// ============================================================================
+
+function getClientIP(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  const realIP = request.headers.get('x-real-ip');
+  if (realIP) {
+    return realIP;
+  }
+  return 'unknown';
+}
+
+// ============================================================================
+// POST /api/payments/create-checkout
+// ============================================================================
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: CreateCheckoutRequest = await request.json();
+    const clientIP = getClientIP(request);
+    
+    // Sanitize inputs
+    const customerEmail = body.customerEmail?.toLowerCase().trim();
+    const customerName = sanitizeString(body.customerName);
+    const customerPhone = body.customerPhone?.replace(/\s/g, '');
+    const duration = body.duration;
+    
+    // Validate required fields
+    if (!customerEmail) {
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Validate email format
+    if (!isValidEmail(customerEmail)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Validate duration
+    if (!duration || !isValidDuration(duration)) {
+      return NextResponse.json(
+        { error: 'Invalid subscription duration' },
+        { status: 400, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Validate phone if provided
+    if (customerPhone && !isValidPhone(customerPhone)) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Rate limiting per email
+    const emailRateLimitKey = `create:email:${customerEmail}`;
+    if (isRateLimited(emailRateLimitKey, RATE_LIMITS.CREATE_PER_EMAIL.maxRequests, RATE_LIMITS.CREATE_PER_EMAIL.windowMs)) {
+      return NextResponse.json(
+        { error: 'Too many payment attempts. Please try again later.' },
+        { status: 429, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Rate limiting per IP
+    const ipRateLimitKey = `create:ip:${clientIP}`;
+    if (isRateLimited(ipRateLimitKey, RATE_LIMITS.CREATE_PER_IP.maxRequests, RATE_LIMITS.CREATE_PER_IP.windowMs)) {
+      return NextResponse.json(
+        { error: 'Too many requests from this IP. Please try again later.' },
+        { status: 429, headers: getSecurityHeaders() }
+      );
+    }
+    
+    // Get subscription price (validated above)
+    const subscription = SUBSCRIPTION_PRICES[duration];
+    const durationDays = parseInt(duration);
+    
+    // Build URLs
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
+    const successUrl = `${baseUrl}/payment/success`;
+    const failureUrl = `${baseUrl}/payment/failure`;
+    const webhookEndpoint = `${baseUrl}/api/webhooks/chargily`;
+    
+    // Create Chargily checkout
+    const chargily = getChargilyClient();
+    
+    const checkout = await chargily.createCheckout({
+      amount: subscription.amount,
+      currency: 'dzd',
+      customerEmail: customerEmail,
+      customerName: customerName || undefined,
+      customerPhone: customerPhone || undefined,
+      successUrl,
+      failureUrl,
+      webhookEndpoint,
+      description: `Abonnement MCQ Med App - ${subscription.label}`,
+      locale: body.locale || 'fr',
+      metadata: {
+        duration_days: duration,
+        source: 'web',
+        customer_email: customerEmail,
+        customer_name: customerName || '',
+      },
+    });
+    
+    // Store payment record in database
+    const { error: insertError } = await supabaseAdmin
+      .from('online_payments')
+      .insert({
+        checkout_id: checkout.id,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        customer_phone: customerPhone || null,
+        amount: subscription.amount,
+        currency: 'dzd',
+        duration_days: durationDays,
+        checkout_url: checkout.checkout_url,
+        success_url: successUrl,
+        failure_url: failureUrl,
+        status: 'pending',
+        metadata: {
+          duration_label: subscription.label,
+          locale: body.locale || 'fr',
+          source: 'web',
+          client_ip: clientIP,
+        },
+      });
+    
+    if (insertError) {
+      console.error('[Create Checkout] Error storing payment record:', insertError);
+      // Continue anyway - the checkout was created successfully
+    }
+    
+    return NextResponse.json({
+      success: true,
+      checkoutId: checkout.id,
+      checkoutUrl: checkout.checkout_url,
+      amount: subscription.amount,
+      currency: 'dzd',
+      duration: duration,
+    }, { headers: getSecurityHeaders() });
+    
+  } catch (error) {
+    console.error('[Create Checkout] Error:', error);
+    
+    // Don't expose internal error details
+    return NextResponse.json(
+      { error: 'Failed to create checkout. Please try again.' },
+      { status: 500, headers: getSecurityHeaders() }
+    );
+  }
+}
+
+// ============================================================================
+// GET - Get available subscription plans
+// ============================================================================
+
+export async function GET() {
+  const plans = Object.entries(SUBSCRIPTION_PRICES).map(([duration, price]) => ({
+    duration,
+    durationDays: parseInt(duration),
+    amount: price.amount,
+    amountFormatted: `${price.amount / 100} DA`,
+    label: price.label,
+  }));
+  
+  return NextResponse.json({
+    plans,
+    currency: 'dzd',
+  }, { headers: getSecurityHeaders() });
+}

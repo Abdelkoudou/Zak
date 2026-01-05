@@ -14,7 +14,7 @@ import {
   useWindowDimensions,
   Animated,
 } from 'react-native'
-import { router, useNavigation } from 'expo-router'
+import { router, useNavigation, useLocalSearchParams } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -34,10 +34,65 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const Logo = require('../../assets/icon.png')
 
+// Helper to parse URL errors (for password reset redirects)
+function parseUrlErrors(): { error: string | null; errorCode: string | null; isPasswordResetError: boolean } {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') {
+    return { error: null, errorCode: null, isPasswordResetError: false }
+  }
+
+  try {
+    const hash = window.location.hash
+    const search = window.location.search
+    
+    // Parse hash parameters
+    let errorDescription = ''
+    let errorCode = ''
+    
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1))
+      errorDescription = hashParams.get('error_description') || ''
+      errorCode = hashParams.get('error_code') || ''
+    }
+    
+    // Also check query params
+    if (search) {
+      const searchParams = new URLSearchParams(search)
+      errorDescription = errorDescription || searchParams.get('error_description') || ''
+      errorCode = errorCode || searchParams.get('error_code') || ''
+    }
+    
+    if (errorDescription) {
+      // Decode and translate common errors
+      const decodedError = decodeURIComponent(errorDescription.replace(/\+/g, ' '))
+      
+      // Map error codes to French messages
+      const errorMessages: Record<string, string> = {
+        'otp_expired': 'Le lien de réinitialisation a expiré. Veuillez demander un nouveau lien.',
+        'access_denied': 'Accès refusé. Le lien est invalide ou a expiré.',
+      }
+      
+      const friendlyMessage = errorMessages[errorCode] || decodedError
+      const isPasswordResetError = errorCode === 'otp_expired' || errorDescription.includes('expired')
+      
+      // Clear the URL hash/params after reading
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname)
+      }
+      
+      return { error: friendlyMessage, errorCode, isPasswordResetError }
+    }
+  } catch (e) {
+    // Ignore parsing errors
+  }
+  
+  return { error: null, errorCode: null, isPasswordResetError: false }
+}
+
 export default function LoginScreen() {
-  const { signIn, isLoading } = useAuth()
+  const { signIn, resetPassword, isLoading } = useAuth()
   const { width } = useWindowDimensions()
   const navigation = useNavigation()
+  const params = useLocalSearchParams()
   
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 1024
@@ -54,6 +109,18 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [showResendLink, setShowResendLink] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+
+  // Check for URL errors on mount (password reset errors)
+  useEffect(() => {
+    const { error: urlError, isPasswordResetError } = parseUrlErrors()
+    if (urlError) {
+      setError(urlError)
+      setShowResendLink(isPasswordResetError)
+    }
+  }, [])
 
   // ========== Premium Animation Values ==========
   // Logo animations
@@ -220,12 +287,41 @@ export default function LoginScreen() {
     }
 
     setError(null)
+    setShowResendLink(false)
     const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
     
     if (loginError) {
       setError(loginError)
     } else {
       router.replace('/(tabs)')
+    }
+  }
+
+  const handleResendResetLink = async () => {
+    if (!email) {
+      setError('Veuillez entrer votre email pour recevoir un nouveau lien')
+      return
+    }
+    
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error)
+      return
+    }
+
+    setIsResending(true)
+    setError(null)
+    
+    const { error: resetError } = await resetPassword(email.trim().toLowerCase())
+    
+    setIsResending(false)
+    
+    if (resetError) {
+      setError(resetError)
+    } else {
+      setResendSuccess(true)
+      setShowResendLink(false)
+      setError(null)
     }
   }
 
@@ -253,8 +349,8 @@ export default function LoginScreen() {
             overflow: 'hidden',
           }}
         >
-          {/* Animated Decorative Elements */}
-          <Animated.View style={{ 
+          {/* Static Decorative Elements (No Animation) */}
+          <View style={{ 
             position: 'absolute', 
             top: -80, 
             right: -80, 
@@ -262,9 +358,8 @@ export default function LoginScreen() {
             height: 300, 
             borderRadius: 150, 
             backgroundColor: 'rgba(255, 255, 255, 0.08)',
-            transform: [{ translateY: floatingY1 }],
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             bottom: -100, 
             left: -100, 
@@ -272,9 +367,8 @@ export default function LoginScreen() {
             height: 400, 
             borderRadius: 200, 
             backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            opacity: glowPulse,
           }} />
-          <Animated.View style={{ 
+          <View style={{ 
             position: 'absolute', 
             top: '50%', 
             left: '5%', 
@@ -282,21 +376,16 @@ export default function LoginScreen() {
             height: 80, 
             borderRadius: 40, 
             backgroundColor: 'rgba(255, 255, 255, 0.06)',
-            transform: [{ translateY: floatingY2 }],
           }} />
 
-          <Animated.View style={{
-            opacity: logoOpacity,
-            transform: [
-              { scale: Animated.multiply(logoScale, breathingScale) }, 
-              { rotate: logoSpin }
-            ],
+          <View style={{
             alignItems: 'center',
           }}>
+            {/* Static Logo Container (More Rounded) */}
             <View style={{
               width: 160,
               height: 160,
-              borderRadius: 40,
+              borderRadius: 55, // Increased from 40 for more rounded appearance
               backgroundColor: 'rgba(255, 255, 255, 0.2)',
               alignItems: 'center',
               justifyContent: 'center',
@@ -314,9 +403,7 @@ export default function LoginScreen() {
               />
             </View>
             
-            <Animated.View style={{
-              opacity: headerOpacity,
-              transform: [{ translateY: headerSlide }],
+            <View style={{
               alignItems: 'center',
             }}>
               <Text style={{
@@ -360,8 +447,8 @@ export default function LoginScreen() {
               }}>
                 Votre compagnon pour réussir vos examens médicaux
               </Text>
-            </Animated.View>
-          </Animated.View>
+            </View>
+          </View>
         </LinearGradient>
 
         {/* Right Side - Form */}
@@ -389,10 +476,7 @@ export default function LoginScreen() {
               </View>
             </TouchableOpacity>
 
-            <Animated.View style={{
-              opacity: cardOpacity,
-              transform: [{ translateY: cardSlide }, { scale: cardScale }],
-            }}>
+            <View>
               <Text style={{
                 fontSize: 38,
                 fontWeight: '900',
@@ -409,26 +493,59 @@ export default function LoginScreen() {
               }}>
                 Connectez-vous pour continuer votre apprentissage
               </Text>
-            </Animated.View>
+            </View>
+
+            {/* Success Message for Resend */}
+            {resendSuccess && (
+              <FadeInView animation="scale">
+                <View style={{
+                  backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(9, 178, 173, 0.3)',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 24,
+                }}>
+                  <Text style={{ color: '#09B2AD', fontSize: 15, fontWeight: '600' }}>
+                    ✅ Un nouveau lien a été envoyé à votre email !
+                  </Text>
+                </View>
+              </FadeInView>
+            )}
 
             {/* Error */}
             {error && (
               <FadeInView animation="scale">
-                <UIAlert 
-                  variant="error"
-                  message={error}
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 24 }}
-                />
+                <View style={{ marginBottom: 24 }}>
+                  <UIAlert 
+                    variant="error"
+                    message={error}
+                    onClose={() => { setError(null); setShowResendLink(false); }}
+                  />
+                  {showResendLink && (
+                    <TouchableOpacity 
+                      style={{ 
+                        marginTop: 12, 
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
+                      onPress={handleResendResetLink}
+                      disabled={isResending}
+                    >
+                      <Text style={{ color: '#09B2AD', fontWeight: '600', fontSize: 14 }}>
+                        {isResending ? 'Envoi en cours...' : '🔄 Renvoyer un nouveau lien'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </FadeInView>
             )}
 
             {/* Form */}
-            <Animated.View style={{ 
-              marginBottom: 20,
-              opacity: input1Opacity,
-              transform: [{ translateY: input1Slide }],
-            }}>
+            <View style={{ marginBottom: 20 }}>
               <Input
                 label="Adresse email"
                 placeholder="votre@email.com"
@@ -436,13 +553,9 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 leftIcon={<Text style={{ fontSize: 18 }}>📧</Text>}
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ 
-              marginBottom: 24,
-              opacity: input2Opacity,
-              transform: [{ translateY: input2Slide }],
-            }}>
+            <View style={{ marginBottom: 24 }}>
               <Input
                 label="Mot de passe"
                 placeholder="••••••••"
@@ -451,9 +564,9 @@ export default function LoginScreen() {
                 secureTextEntry
                 leftIcon={<Text style={{ fontSize: 18 }}>🔒</Text>}
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ opacity: forgotOpacity }}>
+            <View>
               <TouchableOpacity 
                 style={{ marginBottom: 32, alignSelf: 'flex-start' }}
                 onPress={() => router.push('/(auth)/forgot-password')}
@@ -466,12 +579,9 @@ export default function LoginScreen() {
                   Mot de passe oublié ?
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{
-              opacity: buttonOpacity,
-              transform: [{ translateY: buttonSlide }, { scale: buttonScale }],
-            }}>
+            <View>
               <AnimatedButton 
                 title="Se connecter"
                 onPress={handleLogin}
@@ -479,14 +589,13 @@ export default function LoginScreen() {
                 variant="primary"
                 size="lg"
               />
-            </Animated.View>
+            </View>
 
-            <Animated.View style={{ 
+            <View style={{ 
               flexDirection: 'row', 
               justifyContent: 'center',
               alignItems: 'center',
               marginTop: 32,
-              opacity: footerOpacity,
             }}>
               <Text style={{ color: BRAND_THEME.colors.gray[500], fontSize: 15 }}>
                 Pas encore de compte ?{' '}
@@ -500,7 +609,7 @@ export default function LoginScreen() {
                   S'inscrire
                 </Text>
               </TouchableOpacity>
-            </Animated.View>
+            </View>
           </View>
         </View>
       </View>
@@ -588,7 +697,7 @@ export default function LoginScreen() {
               <View style={{
                 width: isTablet ? 90 : 75,
                 height: isTablet ? 90 : 75,
-                borderRadius: 22,
+                borderRadius: isTablet ? 32 : 26, // Increased from 22 for more rounded appearance
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -675,15 +784,52 @@ export default function LoginScreen() {
               </Text>
             </Animated.View>
 
+            {/* Success Message for Resend */}
+            {resendSuccess && (
+              <FadeInView animation="scale">
+                <View style={{
+                  backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(9, 178, 173, 0.3)',
+                  borderRadius: 16,
+                  padding: 16,
+                  marginBottom: 24,
+                }}>
+                  <Text style={{ color: '#09B2AD', fontSize: 15, fontWeight: '600' }}>
+                    ✅ Un nouveau lien a été envoyé à votre email !
+                  </Text>
+                </View>
+              </FadeInView>
+            )}
+
             {/* Error */}
             {error && (
               <FadeInView animation="scale">
-                <UIAlert 
-                  variant="error"
-                  message={error}
-                  onClose={() => setError(null)}
-                  style={{ marginBottom: 24 }}
-                />
+                <View style={{ marginBottom: 24 }}>
+                  <UIAlert 
+                    variant="error"
+                    message={error}
+                    onClose={() => { setError(null); setShowResendLink(false); }}
+                  />
+                  {showResendLink && (
+                    <TouchableOpacity 
+                      style={{ 
+                        marginTop: 12, 
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderRadius: 12,
+                        alignItems: 'center',
+                      }}
+                      onPress={handleResendResetLink}
+                      disabled={isResending}
+                    >
+                      <Text style={{ color: '#09B2AD', fontWeight: '600', fontSize: 14 }}>
+                        {isResending ? 'Envoi en cours...' : '🔄 Renvoyer un nouveau lien'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </FadeInView>
             )}
 

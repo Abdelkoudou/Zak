@@ -139,10 +139,9 @@ export default function ResourcesScreen() {
         alignItems: 'center',
       }}>
         <View style={{ width: '100%', maxWidth: contentMaxWidth }}>
-          <View style={{ flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'center' : 'flex-start', justifyContent: 'space-between' }}>
+          <View style={{ alignItems: isDesktop ? 'center' : 'flex-start', justifyContent: 'space-between' }}>
             <View style={{ marginBottom: isDesktop ? 0 : 16 }}>
               <Text style={{ fontSize: isDesktop ? 32 : 26, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.5 }}>Ressources</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 15 }}>Cours et documents pour vos études • {user.year_of_study}ère Année</Text>
             </View>
 
             {/* Type Filter */}
@@ -150,8 +149,6 @@ export default function ResourcesScreen() {
               <AnimatedFilterChip label="Tous" isSelected={selectedType === 'all'} onPress={() => setSelectedType('all')} colors={colors} />
               <AnimatedFilterChip label="📁 Drive" isSelected={selectedType === 'google_drive'} onPress={() => setSelectedType('google_drive')} colors={colors} />
               <AnimatedFilterChip label="💬 Telegram" isSelected={selectedType === 'telegram'} onPress={() => setSelectedType('telegram')} colors={colors} />
-              <AnimatedFilterChip label="📺 YouTube" isSelected={selectedType === 'youtube'} onPress={() => setSelectedType('youtube')} colors={colors} />
-              <AnimatedFilterChip label="📄 PDF" isSelected={selectedType === 'pdf'} onPress={() => setSelectedType('pdf')} colors={colors} />
             </ScrollView>
           </View>
         </View>

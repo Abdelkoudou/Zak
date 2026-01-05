@@ -8,17 +8,16 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform, 
   ScrollView, 
   useWindowDimensions,
   Animated,
   Easing,
-  Pressable,
   Image
 } from 'react-native'
-import { Link, router, useNavigation } from 'expo-router'
+import { router, useNavigation, useLocalSearchParams } from 'expo-router'
+import * as Linking from 'expo-linking'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -36,7 +35,6 @@ import {
   validateActivationCode,
   validateRequired,
   validateSelection,
-  getPasswordStrength,
   sanitizeEmail,
   sanitizeActivationCode,
   sanitizeText
@@ -51,8 +49,8 @@ export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
   const { width } = useWindowDimensions()
   const navigation = useNavigation()
+  const searchParams = useLocalSearchParams<{ code?: string }>()
   const isDesktop = width >= 768
-  const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = 600
   
   const handleGoBack = () => {
@@ -83,6 +81,7 @@ export default function RegisterScreen() {
   const [region, setRegion] = useState('')
   const [activationCode, setActivationCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [codeFromDeepLink, setCodeFromDeepLink] = useState(false)
 
   // Dropdown visibility
   const [showSpeciality, setShowSpeciality] = useState(false)
@@ -90,6 +89,54 @@ export default function RegisterScreen() {
   const [showFaculty, setShowFaculty] = useState(false)
   const [showRegion, setShowRegion] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
+
+  // Handle deep link code parameter
+  useEffect(() => {
+    // Check URL params from expo-router
+    if (searchParams.code) {
+      setActivationCode(searchParams.code)
+      setCodeFromDeepLink(true)
+    }
+    
+    // For web: also check window.location for query params
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const codeFromUrl = urlParams.get('code')
+      if (codeFromUrl) {
+        setActivationCode(codeFromUrl)
+        setCodeFromDeepLink(true)
+      }
+    }
+    
+    // Also handle direct deep links (for native)
+    if (Platform.OS !== 'web') {
+      const handleDeepLink = (event: { url: string }) => {
+        const { queryParams } = Linking.parse(event.url)
+        if (queryParams?.code && typeof queryParams.code === 'string') {
+          setActivationCode(queryParams.code)
+          setCodeFromDeepLink(true)
+        }
+      }
+      
+      // Check initial URL
+      Linking.getInitialURL().then((url) => {
+        if (url) {
+          const { queryParams } = Linking.parse(url)
+          if (queryParams?.code && typeof queryParams.code === 'string') {
+            setActivationCode(queryParams.code)
+            setCodeFromDeepLink(true)
+          }
+        }
+      })
+      
+      // Listen for incoming links
+      const subscription = Linking.addEventListener('url', handleDeepLink)
+      
+      return () => {
+        subscription.remove()
+      }
+    }
+  }, [searchParams.code])
 
   // Floating animation
   useEffect(() => {
@@ -164,8 +211,20 @@ export default function RegisterScreen() {
     const specialityValidation = validateSelection(speciality, 'votre spécialité')
     if (!specialityValidation.isValid) { setError(specialityValidation.error); return }
     
+    // Check if speciality is available
+    if (speciality === 'Pharmacie' || speciality === 'Dentaire') {
+      setError('Cette spécialité sera bientôt disponible. Veuillez sélectionner Médecine pour le moment.');
+      return;
+    }
+    
     const yearValidation = validateSelection(yearOfStudy, 'votre année d\'étude')
     if (!yearValidation.isValid) { setError(yearValidation.error); return }
+    
+    // Check if year is available for the selected speciality
+    if (speciality === 'Médecine' && yearOfStudy !== '2') {
+      setError('Seule la 2ème année de Médecine est actuellement disponible. Les autres années seront bientôt disponibles.');
+      return;
+    }
     
     const facultyValidation = validateSelection(faculty, 'votre faculté / annexe')
     if (!facultyValidation.isValid) { setError(facultyValidation.error); return }
@@ -318,7 +377,7 @@ export default function RegisterScreen() {
                 color: 'rgba(255, 255, 255, 0.85)',
                 fontWeight: '600',
               }}>
-                Rejoignez FMC APP aujourd'hui
+                Rejoignez FMC APP et optimiser votre révision
               </Text>
             </Animated.View>
           </LinearGradient>
@@ -378,8 +437,21 @@ export default function RegisterScreen() {
                       placeholder="Sélectionner"
                       isOpen={showSpeciality}
                       onToggle={() => { setShowSpeciality(!showSpeciality); setShowYear(false); setShowFaculty(false); setShowRegion(false) }}
-                      options={SPECIALITIES.map(s => ({ value: s.value, label: s.label }))}
-                      onSelect={(v) => { setSpeciality(v as Speciality); setShowSpeciality(false) }}
+                      options={SPECIALITIES.map(s => ({ 
+                        value: s.value, 
+                        label: s.value === 'Pharmacie' || s.value === 'Dentaire' 
+                          ? `${s.label} (Bientôt disponible)` 
+                          : s.label,
+                        disabled: s.value === 'Pharmacie' || s.value === 'Dentaire'
+                      }))}
+                      onSelect={(v) => { 
+                        setSpeciality(v as Speciality); 
+                        setShowSpeciality(false);
+                        // Reset year when changing speciality
+                        if (v !== 'Médecine') {
+                          setYearOfStudy('');
+                        }
+                      }}
                     />
                   </View>
                   <View style={[isDesktop ? { flex: 1 } : {}, { zIndex: 10 }]}>
@@ -389,7 +461,20 @@ export default function RegisterScreen() {
                       placeholder="Sélectionner"
                       isOpen={showYear}
                       onToggle={() => { setShowYear(!showYear); setShowSpeciality(false); setShowFaculty(false); setShowRegion(false) }}
-                      options={YEARS.map(y => ({ value: y.value, label: y.label }))}
+                      options={YEARS.map(y => {
+                        // If Médecine is selected, only allow 2ème année
+                        if (speciality === 'Médecine') {
+                          return {
+                            value: y.value,
+                            label: y.value === '2' 
+                              ? y.label 
+                              : `${y.label} (Bientôt disponible)`,
+                            disabled: y.value !== '2'
+                          };
+                        }
+                        // For other specialities (when they become available), show all years
+                        return { value: y.value, label: y.label, disabled: false };
+                      })}
                       onSelect={(v) => { setYearOfStudy(v as YearLevel); setShowYear(false) }}
                     />
                   </View>
@@ -410,7 +495,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View style={[isDesktop ? { flex: 1 } : {}, { zIndex: 10 }]}>
-                    <FormLabel>Wilaya *</FormLabel>
+                    <FormLabel>Wilaya de residence *</FormLabel>
                     <FormDropdown
                       value={region}
                       placeholder="Sélectionner"
@@ -426,7 +511,75 @@ export default function RegisterScreen() {
                 {/* Activation Code */}
                 <View style={{ zIndex: 30 }}>
                   <FormLabel>Code d'activation *</FormLabel>
-                  <FormInput placeholder="FMC-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
+                  <View style={{ position: 'relative' }}>
+                    <FormInput 
+                      placeholder="FMC-XXXX-XXXX" 
+                      value={activationCode} 
+                      onChangeText={(text: string) => {
+                        setActivationCode(text)
+                        setCodeFromDeepLink(false)
+                      }} 
+                      autoCapitalize="characters"
+                      style={codeFromDeepLink ? {
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        borderColor: '#09B2AD',
+                        borderWidth: 2,
+                      } : undefined}
+                    />
+                    {codeFromDeepLink && (
+                      <View style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: [{ translateY: -10 }],
+                        backgroundColor: '#09B2AD',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 8,
+                      }}>
+                        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                          ✓ Auto-rempli
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {codeFromDeepLink ? (
+                    <Text style={{ 
+                      color: '#09B2AD', 
+                      fontSize: 12, 
+                      marginTop: 4,
+                      fontWeight: '500',
+                    }}>
+                      Code d'activation reçu depuis votre achat en ligne
+                    </Text>
+                  ) : (
+                    <TouchableOpacity 
+                      onPress={() => {
+                        // URL to the buy page (db-interface deployed)
+                        const buyUrl = 'https://fmc-interface.vercel.app/buy'
+                        if (Platform.OS === 'web') {
+                          window.open(buyUrl, '_blank')
+                        } else {
+                          Linking.openURL(buyUrl)
+                        }
+                      }}
+                      style={{ marginTop: 8 }}
+                    >
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        alignSelf: 'flex-start',
+                      }}>
+                        <Text style={{ color: '#3B82F6', fontSize: 13, fontWeight: '600' }}>
+                          🛒 Acheter un code d'activation
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
@@ -482,14 +635,15 @@ function FormInput(props: any) {
 }
 
 // Form Dropdown
-function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable }: {
+function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable, disabledOptions }: {
   value: string
   placeholder: string
   isOpen: boolean
   onToggle: () => void
-  options: { value: string; label: string }[]
+  options: { value: string; label: string; disabled?: boolean }[]
   onSelect: (value: string) => void
   scrollable?: boolean
+  disabledOptions?: string[]
 }) {
   return (
     <View>
@@ -538,17 +692,45 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
               {options.map((opt) => (
                 <TouchableOpacity 
                   key={opt.value} 
-                  style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} 
-                  onPress={() => onSelect(opt.value)}
+                  style={{ 
+                    paddingHorizontal: 16, 
+                    paddingVertical: 14, 
+                    borderBottomWidth: 1, 
+                    borderBottomColor: BRAND_THEME.colors.gray[100],
+                    opacity: opt.disabled ? 0.5 : 1,
+                  }} 
+                  onPress={() => !opt.disabled && onSelect(opt.value)}
+                  disabled={opt.disabled}
                 >
-                  <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+                  <Text style={{ 
+                    color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
+                    fontSize: 15 
+                  }}>
+                    {opt.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           ) : (
             options.map((opt) => (
-              <TouchableOpacity key={opt.value} style={{ paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100] }} onPress={() => onSelect(opt.value)}>
-                <Text style={{ color: BRAND_THEME.colors.gray[900], fontSize: 15 }}>{opt.label}</Text>
+              <TouchableOpacity 
+                key={opt.value} 
+                style={{ 
+                  paddingHorizontal: 16, 
+                  paddingVertical: 14, 
+                  borderBottomWidth: 1, 
+                  borderBottomColor: BRAND_THEME.colors.gray[100],
+                  opacity: opt.disabled ? 0.5 : 1,
+                }} 
+                onPress={() => !opt.disabled && onSelect(opt.value)}
+                disabled={opt.disabled}
+              >
+                <Text style={{ 
+                  color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
+                  fontSize: 15 
+                }}>
+                  {opt.label}
+                </Text>
               </TouchableOpacity>
             ))
           )}

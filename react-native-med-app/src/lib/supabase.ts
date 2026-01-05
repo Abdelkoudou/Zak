@@ -45,13 +45,13 @@ const nativeStorage = {
 }
 
 // Create the redirect URL for deep linking (lazy load expo-linking)
-export const getRedirectUrl = () => {
+export const getRedirectUrl = (path: string = 'auth/callback') => {
   if (Platform.OS === 'web') {
-    return typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : '/auth/callback'
+    return typeof window !== 'undefined' ? `${window.location.origin}/${path}` : `/${path}`
   }
   // Only import expo-linking on native
   const Linking = require('expo-linking')
-  return Linking.createURL('auth/callback')
+  return Linking.createURL(path)
 }
 
 // Create Supabase client with platform-specific storage
@@ -61,7 +61,10 @@ export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKe
     storage: isWeb ? webStorage : nativeStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: isWeb, // Enable on web to handle OAuth callbacks and page refreshes
+    // IMPORTANT: Disable automatic URL detection to handle errors gracefully in our callback page
+    // When enabled, Supabase tries to exchange the code before our page loads,
+    // and if it fails (e.g., OTP expired), it returns raw JSON instead of letting us handle the error
+    detectSessionInUrl: false,
     // Use a consistent storage key
     storageKey: 'sb-auth-token',
     // PKCE flow is more secure for web

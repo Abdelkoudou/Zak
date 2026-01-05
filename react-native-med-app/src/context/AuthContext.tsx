@@ -100,6 +100,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false)
         } else if (event === 'TOKEN_REFRESHED' && session) {
           // Token was refreshed, ensure user data is still valid
+        } else if (event === 'PASSWORD_RECOVERY' && session) {
+          // Password recovery event - user clicked reset link
+          // Don't set user here, let the callback page handle the redirect
+          setIsLoading(false)
         } else if (event === 'INITIAL_SESSION') {
           // This is fired when Supabase loads the initial session from storage
           if (session && !user) {
@@ -107,6 +111,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           } else if (!session) {
             setUser(null)
             setIsLoading(false)
+          }
+        } else if (event === 'USER_UPDATED') {
+          // User was updated (e.g., password changed)
+          if (session) {
+            await refreshUser()
           }
         }
       }

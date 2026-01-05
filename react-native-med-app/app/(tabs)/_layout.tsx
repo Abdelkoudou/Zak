@@ -5,6 +5,7 @@
 import { useRef, useEffect } from 'react'
 import { Tabs } from 'expo-router'
 import { View, useWindowDimensions, Animated, Pressable, Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { HomeIcon, ResourcesIcon, ProfileIcon } from '@/components/icons'
 
 // Use native driver only on native platforms, not on web
@@ -12,11 +13,17 @@ const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function TabsLayout() {
   const { width } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
   const isWeb = Platform.OS === 'web'
   const isDesktop = width >= 768
   
   // Hide tab bar on desktop web (use header navigation instead)
   const showTabBar = !isWeb || !isDesktop
+  
+  // Calculate tab bar height accounting for safe area (edge-to-edge on Android 15)
+  const baseHeight = Platform.OS === 'ios' ? 66 : Platform.OS === 'web' ? 70 : 66
+  const bottomPadding = Platform.OS === 'ios' ? insets.bottom : Platform.OS === 'web' ? 10 : Math.max(insets.bottom, 24)
+  const tabBarHeight = baseHeight + bottomPadding
 
   return (
     <Tabs
@@ -25,8 +32,8 @@ export default function TabsLayout() {
         tabBarStyle: showTabBar ? {
           backgroundColor: '#09B2AD',
           borderTopWidth: 0,
-          height: Platform.OS === 'ios' ? 100 : Platform.OS === 'web' ? 70 : 90,
-          paddingBottom: Platform.OS === 'ios' ? 34 : Platform.OS === 'web' ? 10 : 24,
+          height: tabBarHeight,
+          paddingBottom: bottomPadding,
           paddingTop: Platform.OS === 'web' ? 10 : 12,
           borderTopLeftRadius: 32,
           borderTopRightRadius: 32,

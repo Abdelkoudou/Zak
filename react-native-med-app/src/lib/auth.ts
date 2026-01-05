@@ -110,25 +110,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: 'Failed to sign in' }
     }
 
-    // Check device count before registering new device
-    const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
-    const currentDeviceId = await getDeviceId()
-    const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
-
-    // If this is a new device and user already has 2 devices, block login
-    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
-      // Sign out the user immediately
-      await supabase.auth.signOut()
-      return {
-        user: null,
-        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
-      }
-    }
-
-    // Register/update device session
-    await registerDevice(authData.user.id)
-
-    // Fetch user profile
+    // Fetch user profile first to check if they're a reviewer
     const { data: userProfile, error: fetchError } = await supabase
       .from('users')
       .select('*')
@@ -138,6 +120,29 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     if (fetchError) {
       return { user: null, error: fetchError.message }
     }
+
+    // Skip device limit check for reviewer accounts (for app store review)
+    const isReviewer = (userProfile as any).is_reviewer === true
+
+    if (!isReviewer) {
+      // Check device count before registering new device
+      const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
+      const currentDeviceId = await getDeviceId()
+      const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
+
+      // If this is a new device and user already has 2 devices, block login
+      if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+        // Sign out the user immediately
+        await supabase.auth.signOut()
+        return {
+          user: null,
+          error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
+        }
+      }
+    }
+
+    // Register/update device session
+    await registerDevice(authData.user.id)
 
     return { user: userProfile as User, error: null }
   } catch (error) {
