@@ -495,7 +495,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View style={[isDesktop ? { flex: 1 } : {}, { zIndex: 10 }]}>
-                    <FormLabel>Wilaya de residence *</FormLabel>
+                    <FormLabel>Wilaya / residence *</FormLabel>
                     <FormDropdown
                       value={region}
                       placeholder="Sélectionner"
