@@ -8,17 +8,16 @@ import {
   Text, 
   TextInput, 
   TouchableOpacity, 
-  ActivityIndicator, 
   KeyboardAvoidingView, 
   Platform, 
   ScrollView, 
   useWindowDimensions,
   Animated,
   Easing,
-  Pressable,
   Image
 } from 'react-native'
-import { Link, router, useNavigation } from 'expo-router'
+import { router, useNavigation, useLocalSearchParams } from 'expo-router'
+import * as Linking from 'expo-linking'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '@/context/AuthContext'
@@ -36,7 +35,6 @@ import {
   validateActivationCode,
   validateRequired,
   validateSelection,
-  getPasswordStrength,
   sanitizeEmail,
   sanitizeActivationCode,
   sanitizeText
@@ -51,8 +49,8 @@ export default function RegisterScreen() {
   const { signUp, isLoading } = useAuth()
   const { width } = useWindowDimensions()
   const navigation = useNavigation()
+  const searchParams = useLocalSearchParams<{ code?: string }>()
   const isDesktop = width >= 768
-  const isTablet = width >= 768 && width < 1024
   const contentMaxWidth = 600
   
   const handleGoBack = () => {
@@ -83,6 +81,7 @@ export default function RegisterScreen() {
   const [region, setRegion] = useState('')
   const [activationCode, setActivationCode] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [codeFromDeepLink, setCodeFromDeepLink] = useState(false)
 
   // Dropdown visibility
   const [showSpeciality, setShowSpeciality] = useState(false)
@@ -90,6 +89,54 @@ export default function RegisterScreen() {
   const [showFaculty, setShowFaculty] = useState(false)
   const [showRegion, setShowRegion] = useState(false)
   const [showEmailVerification, setShowEmailVerification] = useState(false)
+
+  // Handle deep link code parameter
+  useEffect(() => {
+    // Check URL params from expo-router
+    if (searchParams.code) {
+      setActivationCode(searchParams.code)
+      setCodeFromDeepLink(true)
+    }
+    
+    // For web: also check window.location for query params
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      const codeFromUrl = urlParams.get('code')
+      if (codeFromUrl) {
+        setActivationCode(codeFromUrl)
+        setCodeFromDeepLink(true)
+      }
+    }
+    
+    // Also handle direct deep links (for native)
+    if (Platform.OS !== 'web') {
+      const handleDeepLink = (event: { url: string }) => {
+        const { queryParams } = Linking.parse(event.url)
+        if (queryParams?.code && typeof queryParams.code === 'string') {
+          setActivationCode(queryParams.code)
+          setCodeFromDeepLink(true)
+        }
+      }
+      
+      // Check initial URL
+      Linking.getInitialURL().then((url) => {
+        if (url) {
+          const { queryParams } = Linking.parse(url)
+          if (queryParams?.code && typeof queryParams.code === 'string') {
+            setActivationCode(queryParams.code)
+            setCodeFromDeepLink(true)
+          }
+        }
+      })
+      
+      // Listen for incoming links
+      const subscription = Linking.addEventListener('url', handleDeepLink)
+      
+      return () => {
+        subscription.remove()
+      }
+    }
+  }, [searchParams.code])
 
   // Floating animation
   useEffect(() => {
@@ -464,7 +511,75 @@ export default function RegisterScreen() {
                 {/* Activation Code */}
                 <View style={{ zIndex: 30 }}>
                   <FormLabel>Code d'activation *</FormLabel>
-                  <FormInput placeholder="FMC-XXXX-XXXX" value={activationCode} onChangeText={setActivationCode} autoCapitalize="characters" />
+                  <View style={{ position: 'relative' }}>
+                    <FormInput 
+                      placeholder="FMC-XXXX-XXXX" 
+                      value={activationCode} 
+                      onChangeText={(text: string) => {
+                        setActivationCode(text)
+                        setCodeFromDeepLink(false)
+                      }} 
+                      autoCapitalize="characters"
+                      style={codeFromDeepLink ? {
+                        backgroundColor: 'rgba(9, 178, 173, 0.1)',
+                        borderColor: '#09B2AD',
+                        borderWidth: 2,
+                      } : undefined}
+                    />
+                    {codeFromDeepLink && (
+                      <View style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: [{ translateY: -10 }],
+                        backgroundColor: '#09B2AD',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 8,
+                      }}>
+                        <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>
+                          ✓ Auto-rempli
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {codeFromDeepLink ? (
+                    <Text style={{ 
+                      color: '#09B2AD', 
+                      fontSize: 12, 
+                      marginTop: 4,
+                      fontWeight: '500',
+                    }}>
+                      Code d'activation reçu depuis votre achat en ligne
+                    </Text>
+                  ) : (
+                    <TouchableOpacity 
+                      onPress={() => {
+                        // URL to the buy page (db-interface deployed)
+                        const buyUrl = 'http://localhost:3005/buy'
+                        if (Platform.OS === 'web') {
+                          window.open(buyUrl, '_blank')
+                        } else {
+                          Linking.openURL(buyUrl)
+                        }
+                      }}
+                      style={{ marginTop: 8 }}
+                    >
+                      <View style={{ 
+                        flexDirection: 'row', 
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 10,
+                        alignSelf: 'flex-start',
+                      }}>
+                        <Text style={{ color: '#3B82F6', fontSize: 13, fontWeight: '600' }}>
+                          🛒 Acheter un code d'activation
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
