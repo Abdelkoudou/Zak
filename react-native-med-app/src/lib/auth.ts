@@ -234,8 +234,14 @@ export async function updateProfile(userId: string, data: ProfileUpdateData): Pr
 
 export async function resetPassword(email: string): Promise<{ error: string | null }> {
   try {
-    const redirectUrl = getRedirectUrl()
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    // Get redirect URL and ensure no whitespace
+    const redirectUrl = getRedirectUrl('auth/callback').trim()
+    
+    if (__DEV__) {
+      console.log('[Auth] Reset password redirect URL:', JSON.stringify(redirectUrl))
+    }
+    
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: redirectUrl,
     })
     if (error) {

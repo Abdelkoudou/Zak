@@ -47,11 +47,17 @@ const nativeStorage = {
 // Create the redirect URL for deep linking (lazy load expo-linking)
 export const getRedirectUrl = (path: string = 'auth/callback') => {
   if (Platform.OS === 'web') {
-    return typeof window !== 'undefined' ? `${window.location.origin}/${path}` : `/${path}`
+    if (typeof window !== 'undefined') {
+      // Ensure no trailing/leading spaces and proper URL format
+      const origin = window.location.origin.trim()
+      const cleanPath = path.trim().replace(/^\//, '') // Remove leading slash if present
+      return `${origin}/${cleanPath}`
+    }
+    return `/${path.trim()}`
   }
   // Only import expo-linking on native
   const Linking = require('expo-linking')
-  return Linking.createURL(path)
+  return Linking.createURL(path.trim())
 }
 
 // Create Supabase client with platform-specific storage
