@@ -12,10 +12,8 @@ export default function BuyLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr">
-      <body className="bg-gray-50">
-        <main>{children}</main>
-      </body>
-    </html>
+    <main className="w-full">
+      {children}
+    </main>
   )
 }
