@@ -556,7 +556,7 @@ export default function RegisterScreen() {
                     <TouchableOpacity 
                       onPress={() => {
                         // URL to the buy page (db-interface deployed)
-                        const buyUrl = 'http://localhost:3005/buy'
+                        const buyUrl = 'https://fmc-interface.vercel.app/buy'
                         if (Platform.OS === 'web') {
                           window.open(buyUrl, '_blank')
                         } else {
