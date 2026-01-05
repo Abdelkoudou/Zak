@@ -13,8 +13,8 @@ export default function BuyLayout({
 }) {
   return (
     <html lang="fr">
-      <body>
-        {children}
+      <body className="bg-gray-50">
+        <main>{children}</main>
       </body>
     </html>
   )
