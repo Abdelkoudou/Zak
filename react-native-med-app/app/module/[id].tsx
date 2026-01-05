@@ -97,8 +97,9 @@ export default function ModuleDetailScreen() {
         const uniqueSubs = new Set<string>()
         
         structure.forEach(item => {
-          structureMap[item.name] = item.sub_discipline
-          if (item.sub_discipline) uniqueSubs.add(item.sub_discipline)
+          const sub = item.sub_discipline ? item.sub_discipline.trim() : null
+          structureMap[item.name] = sub
+          if (sub) uniqueSubs.add(sub)
         })
         
         setCourseStructure(structureMap)
