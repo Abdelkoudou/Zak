@@ -243,11 +243,12 @@ export default function HomeScreen() {
               source={HeaderImg} 
               style={{
                 width: '100%',
-                backgroundColor: '#0D9488', // Brand Teal fill
+                backgroundColor: '#09B2AD', // Brand Teal fill
                 paddingTop: showWebHeader ? 48 : 80,
                 paddingBottom: 100,
                 alignItems: 'center',
               }}
+              
               imageStyle={{
                 resizeMode: 'cover',
                 borderBottomLeftRadius: 32,
