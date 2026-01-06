@@ -403,7 +403,7 @@ export default function LoginScreen() {
             }}>
               <Image 
                 source={Logo}
-                style={{ width: 110, height: 110, resizeMode: 'contain' }}
+                style={{ width: 110, height: 110, resizeMode: 'contain', borderRadius: 36 }}
               />
             </View>
             
@@ -716,7 +716,8 @@ export default function LoginScreen() {
                   style={{ 
                     width: isTablet ? 60 : 50, 
                     height: isTablet ? 60 : 50, 
-                    resizeMode: 'contain' 
+                    resizeMode: 'contain',
+                    borderRadius: isTablet ? 20 : 16,
                   }}
                 />
               </View>

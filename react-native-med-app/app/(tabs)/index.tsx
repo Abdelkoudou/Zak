@@ -358,7 +358,9 @@ export default function HomeScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <View>
                   <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
-                  <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>{modules.length} modules disponibles</Text>
+                  <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>
+                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules disponibles
+                  </Text>
                 </View>
                 
               </View>

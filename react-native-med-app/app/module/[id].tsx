@@ -103,7 +103,11 @@ export default function ModuleDetailScreen() {
         })
         
         setCourseStructure(structureMap)
-        setSubDisciplines(Array.from(uniqueSubs).sort())
+        const sortedSubs = Array.from(uniqueSubs).sort()
+        setSubDisciplines(sortedSubs)
+        if (sortedSubs.length > 0) {
+          setSelectedSubDiscipline(sortedSubs[0])
+        }
 
         const { cours: coursData } = await getModuleCours(moduleData.name)
         setCours(coursData)
@@ -283,7 +287,14 @@ export default function ModuleDetailScreen() {
               {/* Selon les Cours */}
               {cours.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => { setSelectedMode('cours'); setSelectedExamType(null); setSelectedExamYear(null); setAvailableExamYears([]); setSelectedCours(null); setSelectedSubDiscipline(null); }}
+                  onPress={() => { 
+                    setSelectedMode('cours'); 
+                    setSelectedExamType(null); 
+                    setSelectedExamYear(null); 
+                    setAvailableExamYears([]); 
+                    setSelectedCours(null); 
+                    if (subDisciplines.length > 0) setSelectedSubDiscipline(subDisciplines[0]);
+                  }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -333,7 +344,7 @@ export default function ModuleDetailScreen() {
                   fontWeight: '600',
                   color: selectedMode === 'exam' ? colors.primary : colors.textSecondary,
                 }}>
-                  Selon les Controles
+                  Selon les Contrôles
                 </Text>
               </TouchableOpacity>
 
@@ -409,29 +420,10 @@ export default function ModuleDetailScreen() {
                     color: colors.text, 
                     marginBottom: 12 
                   }}>
-                    Filtrer par discipline
+                    Filtrer par  Module
                   </Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, paddingHorizontal: 20 }}>
-                    <TouchableOpacity
-                      onPress={() => setSelectedSubDiscipline(null)}
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: selectedSubDiscipline === null ? colors.primary : colors.card,
-                        marginRight: 8,
-                        borderWidth: 1,
-                        borderColor: selectedSubDiscipline === null ? colors.primary : colors.border,
-                      }}
-                    >
-                      <Text style={{ 
-                        color: selectedSubDiscipline === null ? '#fff' : colors.text,
-                        fontWeight: '600',
-                        fontSize: 14,
-                      }}>
-                        Tous
-                      </Text>
-                    </TouchableOpacity>
+
                     {subDisciplines.map((sub) => (
                       <TouchableOpacity
                         key={sub}

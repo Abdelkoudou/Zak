@@ -4,7 +4,7 @@ export const FACULTIES = [
     { label: '🏫 Annexe d\'Oum El Bouaghi', value: 'annexe_oum_el_bouaghi' },
     { label: '🏫 Annexe de Khenchela', value: 'annexe_khenchela' },
     { label: '🏫 Annexe de Souk Ahras', value: 'annexe_souk_ahras' },
-    { label: '🏫 autre faculte', value: 'autre faculté /annexe  ' },
+    { label: '🏫 Autre faculté /annexe', value: 'autre faculté /annexe  ' },
  
 
 ] as const;
