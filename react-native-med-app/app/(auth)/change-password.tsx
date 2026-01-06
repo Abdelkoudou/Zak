@@ -44,9 +44,17 @@ export default function ChangePasswordScreen() {
 
     try {
       console.log('[ChangePassword] Updating password...')
-      const { error: updateError } = await supabase.auth.updateUser({
+      
+      // Add timeout to prevent endless loading
+      const updatePromise = supabase.auth.updateUser({
         password: password,
       })
+      
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('La mise à jour a pris trop de temps. Veuillez réessayer.')), 15000)
+      })
+      
+      const { error: updateError } = await Promise.race([updatePromise, timeoutPromise])
 
       if (updateError) {
         console.error('[ChangePassword] Update error:', updateError.message)
@@ -55,10 +63,20 @@ export default function ChangePasswordScreen() {
         return
       }
 
-      console.log('[ChangePassword] Password updated, signing out...')
+      console.log('[ChangePassword] Password updated successfully!')
+      
       // Sign out after password change to clear the recovery session
       // This ensures the user logs in fresh with their new password
-      await supabase.auth.signOut()
+      console.log('[ChangePassword] Signing out...')
+      try {
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise((resolve) => setTimeout(resolve, 5000)) // 5 second timeout for signout
+        ])
+      } catch (signOutError) {
+        console.warn('[ChangePassword] Sign out warning:', signOutError)
+        // Continue anyway - password was changed successfully
+      }
 
       console.log('[ChangePassword] Sign out complete, showing success')
       setIsLoading(false)
@@ -83,9 +101,9 @@ export default function ChangePasswordScreen() {
       setTimeout(() => {
         router.replace('/(auth)/login')
       }, 2000)
-    } catch (err) {
+    } catch (err: any) {
       console.error('[ChangePassword] Unexpected error:', err)
-      setError('Une erreur est survenue. Veuillez réessayer.')
+      setError(err?.message || 'Une erreur est survenue. Veuillez réessayer.')
       setIsLoading(false)
     }
   }
