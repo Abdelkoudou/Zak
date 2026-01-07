@@ -2,22 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-
-const MODULES = [
-  'Appareil Cardio-vasculaire et Respiratoire',
-  'Appareil Urinaire',
-  'Appareil Digestif',
-  'Appareil Endocrinien et de la Reproduction',
-  'Immunologie'
-];
-
-const SUB_DISCIPLINES = [
-  'Anatomie',
-  'Histologie',
-  'Physiologie',
-  'Biochimie',
-  'Biophysique'
-];
+import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
 
 interface Course {
   id: string;
@@ -36,17 +21,47 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedModule, setSelectedModule] = useState('');
-  const [selectedSubDiscipline, setSelectedSubDiscipline] = useState('');
+  const [selectedYearFilter, setSelectedYearFilter] = useState('');
+  const [selectedModuleFilter, setSelectedModuleFilter] = useState('');
+  const [selectedSubDisciplineFilter, setSelectedSubDisciplineFilter] = useState('');
 
   const [formData, setFormData] = useState({
     speciality: 'Médecine',
-    year: '2',
-    module_name: MODULES[0],
+    year: '1',
+    module_name: '',
     sub_discipline: '',
     name: ''
   });
+
+  // Get modules for selected year
+  const availableModules = useMemo(() => {
+    return PREDEFINED_MODULES.filter(m => m.year === formData.year);
+  }, [formData.year]);
+
+  // Get selected module details
+  const selectedModuleDetails = useMemo(() => {
+    return availableModules.find(m => m.name === formData.module_name);
+  }, [availableModules, formData.module_name]);
+
+  // Get sub-disciplines if module has them
+  const availableSubDisciplines = useMemo(() => {
+    if (selectedModuleDetails?.hasSubDisciplines && selectedModuleDetails.name) {
+      return PREDEFINED_SUBDISCIPLINES[selectedModuleDetails.name] || [];
+    }
+    return [];
+  }, [selectedModuleDetails]);
+
+  // Get all unique modules from courses for filter
+  const allModulesInCourses = useMemo(() => {
+    const moduleNames = new Set(courses.map(c => c.module_name));
+    return Array.from(moduleNames).sort();
+  }, [courses]);
+
+  // Get all unique sub-disciplines from courses for filter
+  const allSubDisciplinesInCourses = useMemo(() => {
+    const subDisciplines = new Set(courses.filter(c => c.sub_discipline).map(c => c.sub_discipline));
+    return Array.from(subDisciplines).sort() as string[];
+  }, [courses]);
 
   const fetchCourses = async () => {
     setFetching(true);
@@ -73,13 +88,13 @@ export default function CoursesPage() {
         course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.module_name.toLowerCase().includes(searchQuery.toLowerCase());
       
-      const matchesYear = selectedYear ? course.year === selectedYear : true;
-      const matchesModule = selectedModule ? course.module_name === selectedModule : true;
-      const matchesSubDiscipline = selectedSubDiscipline ? course.sub_discipline === selectedSubDiscipline : true;
+      const matchesYear = selectedYearFilter ? course.year === selectedYearFilter : true;
+      const matchesModule = selectedModuleFilter ? course.module_name === selectedModuleFilter : true;
+      const matchesSubDiscipline = selectedSubDisciplineFilter ? course.sub_discipline === selectedSubDisciplineFilter : true;
 
       return matchesSearch && matchesYear && matchesModule && matchesSubDiscipline;
     });
-  }, [courses, searchQuery, selectedYear, selectedModule, selectedSubDiscipline]);
+  }, [courses, searchQuery, selectedYearFilter, selectedModuleFilter, selectedSubDisciplineFilter]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,8 +183,8 @@ export default function CoursesPage() {
   const resetForm = () => {
     setFormData({
       speciality: 'Médecine',
-      year: '2',
-      module_name: MODULES[0],
+      year: '1',
+      module_name: '',
       sub_discipline: '',
       name: ''
     });
@@ -223,7 +238,7 @@ export default function CoursesPage() {
                       <label className="block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Année</label>
                       <select
                         value={formData.year}
-                        onChange={e => setFormData({ ...formData, year: e.target.value })}
+                        onChange={e => setFormData({ ...formData, year: e.target.value, module_name: '', sub_discipline: '' })}
                         className="w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-sm"
                       >
                         {[1, 2, 3, 4, 5].map(y => (
@@ -246,30 +261,48 @@ export default function CoursesPage() {
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Module</label>
                   <select
                     value={formData.module_name}
-                    onChange={e => setFormData({ ...formData, module_name: e.target.value })}
+                    onChange={e => setFormData({ ...formData, module_name: e.target.value, sub_discipline: '' })}
                     className="w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-sm"
+                    required
                   >
-                    {MODULES.map(mod => (
-                      <option key={mod} value={mod}>{mod}</option>
+                    <option value="">Sélectionner un module</option>
+                    {availableModules.map(mod => (
+                      <option key={mod.name} value={mod.name}>
+                        {mod.type === 'uei' && '🟢 UEI: '}
+                        {mod.type === 'standalone' && '🟡 '}
+                        {mod.type === 'annual' && '🔵 '}
+                        {mod.type === 'semestrial' && '🔵 '}
+                        {mod.name}
+                      </option>
                     ))}
                   </select>
+                  {selectedModuleDetails && (
+                    <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-1.5 ml-1">
+                      {selectedModuleDetails.type === 'uei' && '🟢 Unité d\'Enseignement Intégré (UEI)'}
+                      {selectedModuleDetails.type === 'standalone' && '🟡 Module Autonome'}
+                      {selectedModuleDetails.type === 'annual' && '🔵 Module Annuel'}
+                      {selectedModuleDetails.type === 'semestrial' && '🔵 Module Semestriel'}
+                    </p>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
-                    Sous-Discipline <span className="text-slate-300 font-normal normal-case tracking-normal">(Optionnel)</span>
-                  </label>
-                  <select
-                    value={formData.sub_discipline}
-                    onChange={e => setFormData({ ...formData, sub_discipline: e.target.value })}
-                    className="w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-sm"
-                  >
-                    <option value="">Aucune</option>
-                    {SUB_DISCIPLINES.map(sub => (
-                      <option key={sub} value={sub}>{sub}</option>
-                    ))}
-                  </select>
-                </div>
+                {availableSubDisciplines.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                      Sous-Discipline <span className="text-slate-300 font-normal normal-case tracking-normal">(Optionnel)</span>
+                    </label>
+                    <select
+                      value={formData.sub_discipline}
+                      onChange={e => setFormData({ ...formData, sub_discipline: e.target.value })}
+                      className="w-full px-3 md:px-4 py-2.5 md:py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 focus:ring-2 focus:ring-primary-500 outline-none transition-all font-medium text-sm"
+                    >
+                      <option value="">Aucune</option>
+                      {availableSubDisciplines.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-[10px] md:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Nom du Cours</label>
@@ -331,8 +364,8 @@ export default function CoursesPage() {
                 {/* Filters */}
                 <div className="flex flex-col md:flex-row gap-3">
                     <select
-                        value={selectedYear}
-                        onChange={e => setSelectedYear(e.target.value)}
+                        value={selectedYearFilter}
+                        onChange={e => setSelectedYearFilter(e.target.value)}
                         className="flex-1 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
                     >
                         <option value="">Toutes les années</option>
@@ -342,23 +375,23 @@ export default function CoursesPage() {
                     </select>
 
                     <select
-                        value={selectedModule}
-                        onChange={e => setSelectedModule(e.target.value)}
+                        value={selectedModuleFilter}
+                        onChange={e => setSelectedModuleFilter(e.target.value)}
                         className="flex-[2] px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
                     >
                         <option value="">Tous les modules</option>
-                        {MODULES.map(mod => (
+                        {allModulesInCourses.map(mod => (
                             <option key={mod} value={mod}>{mod}</option>
                         ))}
                     </select>
 
                     <select
-                        value={selectedSubDiscipline}
-                        onChange={e => setSelectedSubDiscipline(e.target.value)}
+                        value={selectedSubDisciplineFilter}
+                        onChange={e => setSelectedSubDisciplineFilter(e.target.value)}
                         className="flex-1 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 font-medium text-sm outline-none focus:ring-2 focus:ring-primary-100"
                     >
                         <option value="">Toute sous-discipline</option>
-                        {SUB_DISCIPLINES.map(sub => (
+                        {allSubDisciplinesInCourses.map(sub => (
                             <option key={sub} value={sub}>{sub}</option>
                         ))}
                     </select>
