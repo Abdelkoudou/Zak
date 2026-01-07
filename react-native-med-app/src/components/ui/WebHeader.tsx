@@ -53,7 +53,7 @@ export function WebHeader() {
       paddingVertical: 12,
       // @ts-ignore - web-specific styles
       backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
+      
       position: 'sticky',
       top: 0,
       zIndex: 100,
@@ -74,7 +74,7 @@ export function WebHeader() {
           <View style={{
             width: 44,
             height: 44,
-            borderRadius: 12,
+            borderRadius: 16,
             backgroundColor: 'rgba(9, 178, 173, 0.1)',
             alignItems: 'center',
             justifyContent: 'center',
@@ -82,7 +82,7 @@ export function WebHeader() {
           }}>
             <Image 
               source={Logo}
-              style={{ width: 32, height: 32, resizeMode: 'contain' }}
+              style={{ width: 32, height: 32, resizeMode: 'contain', borderRadius: 10 }}
             />
           </View>
           <View>
