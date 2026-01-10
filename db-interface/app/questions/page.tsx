@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
 import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
-import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion } from '@/lib/api/questions';
+import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion, getQuestionById } from '@/lib/api/questions';
 import { getCourses, createCourse } from '@/lib/api/courses';
 import { getModules } from '@/lib/api/modules';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 
 export default function QuestionsPage() {
+  const searchParams = useSearchParams();
+  const editQuestionId = searchParams.get('edit');
+  
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -139,6 +143,19 @@ export default function QuestionsPage() {
   useEffect(() => {
     loadQuestions();
   }, []);
+
+  // Handle edit query parameter from URL (e.g., from reports page)
+  useEffect(() => {
+    const loadQuestionForEdit = async () => {
+      if (editQuestionId) {
+        const result = await getQuestionById(editQuestionId);
+        if (result.success && result.data) {
+          editQuestion(result.data);
+        }
+      }
+    };
+    loadQuestionForEdit();
+  }, [editQuestionId]);
 
   // Fetch courses when dependencies change
   useEffect(() => {

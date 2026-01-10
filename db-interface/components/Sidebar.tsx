@@ -20,6 +20,7 @@ const ownerOnlyNavigation = [
   { name: 'Codes d\'Activation', href: '/activation-codes', icon: '🔑', badge: 'Owner' },
   { name: 'Paiements', href: '/payments', icon: '💳', badge: 'Owner' },
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
+  { name: 'Signalements', href: '/reports', icon: '🚩', badge: 'Owner' },
   { name: 'Export JSON', href: '/export', icon: '📤', badge: 'Owner' },
 ];
 

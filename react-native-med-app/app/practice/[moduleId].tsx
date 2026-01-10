@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform, TextInput, Modal } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -11,6 +11,7 @@ import { useTheme } from '@/context/ThemeContext'
 import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
 import { toggleSaveQuestion, getSavedQuestionIds } from '@/lib/saved'
+import { submitQuestionReport, ReportType, REPORT_TYPE_LABELS } from '@/lib/reports'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView, ConfirmModal } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
@@ -42,6 +43,11 @@ export default function PracticeScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [startTime] = useState(new Date())
   const [showEndSessionModal, setShowEndSessionModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null)
+  const [reportDescription, setReportDescription] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportedQuestions, setReportedQuestions] = useState<Set<string>>(new Set())
   const scrollRef = useRef<ScrollView>(null)
   
   const questionFade = useRef(new Animated.Value(0)).current
@@ -214,6 +220,42 @@ export default function PracticeScreen() {
     setShowEndSessionModal(false)
   }
 
+  // Report handlers
+  const openReportModal = () => {
+    setSelectedReportType(null)
+    setReportDescription('')
+    setShowReportModal(true)
+  }
+
+  const closeReportModal = () => {
+    setShowReportModal(false)
+    setSelectedReportType(null)
+    setReportDescription('')
+  }
+
+  const handleSubmitReport = async () => {
+    if (!user || !currentQuestion || !selectedReportType) return
+    
+    setReportSubmitting(true)
+    const { success, error } = await submitQuestionReport(
+      user.id,
+      currentQuestion.id,
+      selectedReportType,
+      reportDescription
+    )
+    setReportSubmitting(false)
+
+    if (success) {
+      setReportedQuestions(prev => new Set([...prev, currentQuestion.id]))
+      closeReportModal()
+    } else {
+      // Show error (could use alert or toast)
+      if (error) {
+        alert(error)
+      }
+    }
+  }
+
   const getEndSessionMessage = () => {
     const answeredCount = submittedQuestions.size
     const skippedCount = skippedQuestions.size
@@ -317,6 +359,142 @@ export default function PracticeScreen() {
         onConfirm={handleConfirmEndSession}
         onCancel={handleCancelEndSession}
       />
+
+      {/* Report Question Modal */}
+      <Modal
+        visible={showReportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeReportModal}
+      >
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: 24
+        }}>
+          <View style={{ 
+            backgroundColor: colors.card, 
+            borderRadius: 24, 
+            padding: 24, 
+            width: '100%',
+            maxWidth: 400,
+            maxHeight: '80%'
+          }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 24, marginRight: 12 }}>🚩</Text>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, flex: 1 }}>
+                Signaler la question
+              </Text>
+              <TouchableOpacity onPress={closeReportModal} style={{ padding: 4 }}>
+                <Text style={{ fontSize: 24, color: colors.textMuted }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Report Type Selection */}
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 12 }}>
+              Type de problème
+            </Text>
+            <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+              {(Object.keys(REPORT_TYPE_LABELS) as ReportType[]).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setSelectedReportType(type)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    backgroundColor: selectedReportType === type ? colors.primaryMuted : colors.backgroundSecondary,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    borderWidth: 2,
+                    borderColor: selectedReportType === type ? colors.primary : 'transparent'
+                  }}
+                >
+                  <View style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: selectedReportType === type ? colors.primary : colors.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12
+                  }}>
+                    {selectedReportType === type && (
+                      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
+                    )}
+                  </View>
+                  <Text style={{ 
+                    color: selectedReportType === type ? colors.primary : colors.text, 
+                    fontSize: 15,
+                    fontWeight: selectedReportType === type ? '600' : '400'
+                  }}>
+                    {REPORT_TYPE_LABELS[type]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Description Input */}
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginTop: 16, marginBottom: 8 }}>
+              Description (optionnel)
+            </Text>
+            <TextInput
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              placeholder="Décrivez le problème..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderRadius: 12,
+                padding: 12,
+                color: colors.text,
+                fontSize: 15,
+                minHeight: 80,
+                textAlignVertical: 'top'
+              }}
+            />
+
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+              <TouchableOpacity
+                onPress={closeReportModal}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  backgroundColor: colors.backgroundSecondary,
+                  alignItems: 'center'
+                }}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 15 }}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSubmitReport}
+                disabled={!selectedReportType || reportSubmitting}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  backgroundColor: selectedReportType ? colors.primary : colors.border,
+                  alignItems: 'center',
+                  opacity: reportSubmitting ? 0.7 : 1
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
+                  {reportSubmitting ? 'Envoi...' : 'Envoyer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom']}>
         {/* Progress Bar */}
@@ -331,7 +509,25 @@ export default function PracticeScreen() {
               <Badge label={`Q${currentQuestion.number}`} variant="primary" style={{ marginRight: 8 }} />
               {currentQuestion.exam_type && <Badge label={currentQuestion.exam_type} variant="secondary" />}
             </View>
-            <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
+            <Animated.View style={{ transform: [{ scale: saveButtonScale }], flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* Report Button */}
+              <TouchableOpacity 
+                onPress={openReportModal}
+                disabled={reportedQuestions.has(currentQuestion.id)}
+                style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 20, 
+                  backgroundColor: reportedQuestions.has(currentQuestion.id) ? colors.warningLight : colors.backgroundSecondary, 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  opacity: reportedQuestions.has(currentQuestion.id) ? 0.6 : 1
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 18 }}>{reportedQuestions.has(currentQuestion.id) ? '✓' : '🚩'}</Text>
+              </TouchableOpacity>
+              {/* Save Button */}
               <TouchableOpacity 
                 onPress={toggleSave}
                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isSaved ? colors.primaryLight : colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center' }}
