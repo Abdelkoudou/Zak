@@ -10,7 +10,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
-import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
+import { toggleSaveQuestion, getSavedQuestionIds } from '@/lib/saved'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView, ConfirmModal } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
@@ -20,10 +20,11 @@ import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function PracticeScreen() {
-  const { moduleId, moduleName, examType, subDiscipline, cours } = useLocalSearchParams<{
+  const { moduleId, moduleName, examType, examYear, subDiscipline, cours } = useLocalSearchParams<{
     moduleId: string
     moduleName: string
     examType?: string
+    examYear?: string
     subDiscipline?: string
     cours?: string
   }>()
@@ -88,18 +89,18 @@ export default function PracticeScreen() {
     try {
       const filters: any = { module_name: moduleName }
       if (examType) filters.exam_type = examType
+      if (examYear) filters.exam_year = parseInt(examYear)
       if (subDiscipline) filters.sub_discipline = subDiscipline
       if (cours) filters.cours = cours
 
       const { questions: data } = await getQuestions(filters)
       setQuestions(data)
 
+      // Fetch all saved question IDs in one call instead of N separate calls
       if (user) {
-        const savedSet = new Set<string>()
-        for (const q of data) {
-          const saved = await isQuestionSaved(user.id, q.id)
-          if (saved) savedSet.add(q.id)
-        }
+        const { ids: savedIds } = await getSavedQuestionIds(user.id)
+        const questionIdSet = new Set(data.map(q => q.id))
+        const savedSet = new Set(savedIds.filter(id => questionIdSet.has(id)))
         setSavedQuestions(savedSet)
       }
     } catch (error) {
@@ -325,7 +326,7 @@ export default function PracticeScreen() {
 
         <ScrollView ref={scrollRef} style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 16 }}>
           {/* Question Header */}
-          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Badge label={`Q${currentQuestion.number}`} variant="primary" style={{ marginRight: 8 }} />
               {currentQuestion.exam_type && <Badge label={currentQuestion.exam_type} variant="secondary" />}
@@ -339,6 +340,24 @@ export default function PracticeScreen() {
                 <Text style={{ fontSize: 20 }}>{isSaved ? '💾' : '📥'}</Text>
               </TouchableOpacity>
             </Animated.View>
+          </Animated.View>
+
+          {/* Filter Summary - Compact inline */}
+          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{moduleName}</Text>
+              {(examType || examYear || cours) && <Text style={{ color: colors.border, fontSize: 10 }}>›</Text>}
+              {examType && <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>{examType}</Text>}
+              {examYear && (
+                <>
+                  {examType && <Text style={{ color: colors.border, fontSize: 10 }}>•</Text>}
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>M{parseInt(examYear) - 2000}</Text>
+                </>
+              )}
+              {cours && (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }} numberOfLines={1}>{cours}</Text>
+              )}
+            </View>
           </Animated.View>
 
           {/* Question Text */}
@@ -429,18 +448,26 @@ export default function PracticeScreen() {
             <TouchableOpacity 
               onPress={finishPractice}
               style={{ 
-                backgroundColor: colors.errorLight, 
-                paddingVertical: 10, 
-                paddingHorizontal: 16, 
-                borderRadius: 8, 
+                flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 8, 
+                paddingHorizontal: 12, 
+                borderRadius: 20, 
+                alignSelf: 'center',
                 marginBottom: 12,
-                borderWidth: 1,
-                borderColor: colors.error
+                backgroundColor: colors.backgroundSecondary,
               }}
             >
-              <Text style={{ color: colors.error, fontWeight: '600', fontSize: 14 }}>
-                🛑 Terminer la session ({submittedQuestions.size}/{questions.length} répondues)
+              <View style={{ 
+                width: 6, 
+                height: 6, 
+                borderRadius: 3, 
+                backgroundColor: colors.textMuted,
+                marginRight: 8 
+              }} />
+              <Text style={{ color: colors.textSecondary, fontWeight: '500', fontSize: 13 }}>
+                Terminer ({submittedQuestions.size}/{questions.length})
               </Text>
             </TouchableOpacity>
             
