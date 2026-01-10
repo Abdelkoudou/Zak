@@ -3,16 +3,41 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Security headers following OWASP best practices
+const securityHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+};
+
 export async function middleware(req: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: req.headers,
     },
   });
+  
+  // Add security headers to all responses
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+
+  // Validate environment variables are set
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[Middleware] Missing Supabase environment variables');
+    const errorUrl = new URL('/login', req.url);
+    errorUrl.searchParams.set('error', 'configuration_error');
+    return NextResponse.redirect(errorUrl);
+  }
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -103,6 +128,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
   }
+
+  // Ensure security headers are on final response
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
 
   return response;
 }

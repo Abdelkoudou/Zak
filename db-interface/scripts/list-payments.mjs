@@ -2,14 +2,52 @@
  * List all payments in the database
  * 
  * Usage: node scripts/list-payments.mjs
+ * 
+ * SECURITY: Credentials are loaded from .env.local file
  */
 
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const supabase = createClient(
-  'https://tkthvgvjecihqfnknosj.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdGh2Z3ZqZWNpaHFmbmtub3NqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzQyODA5NCwiZXhwIjoyMDc5MDA0MDk0fQ.zGNgmAqA9ir7G0tDDL2GDOukGti6aiZsezGCo1V5S4Y'
-);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env.local
+function loadEnv() {
+  try {
+    const envPath = path.resolve(__dirname, '../.env.local');
+    if (fs.existsSync(envPath)) {
+      const envConfig = fs.readFileSync(envPath, 'utf8');
+      envConfig.split('\n').forEach(line => {
+        const match = line.match(/^([^#=]+)=(.*)$/);
+        if (match) {
+          const key = match[1].trim();
+          const value = match[2].trim().replace(/^["']|["']$/g, '');
+          if (key && !key.startsWith('#')) {
+            process.env[key] = value;
+          }
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Could not read .env.local:', e.message);
+  }
+}
+
+loadEnv();
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing Supabase environment variables in .env.local');
+  console.error('Required: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function listPayments() {
   const { data, error } = await supabase

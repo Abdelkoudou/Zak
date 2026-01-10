@@ -7,8 +7,18 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
+// Get environment variables - NEVER use hardcoded fallbacks for security
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+
+// Validate configuration
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
+if (!isConfigured) {
+  const errorMsg = 'Missing Supabase credentials. Please configure EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in .env'
+  console.error('⚠️ SECURITY:', errorMsg)
+  // In production builds, this would cause the app to fail early rather than silently
+}
 
 // Check if we're in a browser environment
 const isWeb = Platform.OS === 'web'
@@ -61,7 +71,8 @@ export const getRedirectUrl = (path: string = 'auth/callback') => {
 }
 
 // Create Supabase client with platform-specific storage
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+// Use empty strings as fallback only for build time - will fail at runtime if not configured
+export const supabase: SupabaseClient = createClient(supabaseUrl || '', supabaseAnonKey || '', {
   auth: {
     // CRITICAL: Use synchronous localStorage on web, async storage on native
     storage: isWeb ? webStorage : nativeStorage,

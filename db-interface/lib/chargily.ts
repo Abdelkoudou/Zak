@@ -206,35 +206,56 @@ export class ChargilyClient {
 // ============================================================================
 
 /**
- * Verify Chargily webhook signature
- * Note: Chargily uses a simple signature based on the secret key
+ * Verify Chargily webhook signature using timing-safe comparison
+ * Note: Chargily uses HMAC-SHA256 for webhook signatures
+ * SECURITY: Uses constant-time comparison to prevent timing attacks
  */
 export async function verifyWebhookSignature(
   payload: string,
   signature: string,
   secret: string
 ): Promise<boolean> {
-  // Chargily uses HMAC-SHA256 for webhook signatures
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  
-  const signatureBuffer = await crypto.subtle.sign(
-    'HMAC',
-    key,
-    encoder.encode(payload)
-  );
-  
-  const computedSignature = Array.from(new Uint8Array(signatureBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  
-  return computedSignature === signature;
+  try {
+    // Validate inputs
+    if (!payload || !signature || !secret) {
+      return false;
+    }
+    
+    // Chargily uses HMAC-SHA256 for webhook signatures
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    
+    const signatureBuffer = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(payload)
+    );
+    
+    const computedSignature = Array.from(new Uint8Array(signatureBuffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+    
+    // Timing-safe comparison to prevent timing attacks
+    if (computedSignature.length !== signature.length) {
+      return false;
+    }
+    
+    let result = 0;
+    for (let i = 0; i < computedSignature.length; i++) {
+      result |= computedSignature.charCodeAt(i) ^ signature.charCodeAt(i);
+    }
+    
+    return result === 0;
+  } catch (error) {
+    console.error('[Webhook] Signature verification error:', error);
+    return false;
+  }
 }
 
 // ============================================================================

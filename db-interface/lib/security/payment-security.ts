@@ -159,13 +159,17 @@ export function isValidPhone(phone: string | undefined | null): boolean {
 
 /**
  * Get security headers for payment responses
+ * Following OWASP security best practices
  */
 export function getSecurityHeaders(): Record<string, string> {
   return {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
-    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
     'Pragma': 'no-cache',
+    'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
   };
 }
 

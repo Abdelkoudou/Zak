@@ -2,24 +2,29 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 
-// Get environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
+// Get environment variables - NEVER use fallback values for security
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Check if credentials are configured
-const isConfigured = 
-  process.env.NEXT_PUBLIC_SUPABASE_URL && 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-  !process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder');
+const isConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 
-if (!isConfigured && typeof window !== 'undefined') {
-  // Only warn in browser environment during development
+// Throw error in production if not configured
+if (!isConfigured) {
+  const errorMsg = 'Missing Supabase credentials. Please configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local';
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(errorMsg);
+  }
+  if (typeof window !== 'undefined') {
+    console.error('⚠️ ' + errorMsg);
+  }
 }
 
 // Create Supabase client for browser with session management
+// Use empty strings as fallback only for build time - will fail at runtime if not configured
 export const supabase = createBrowserClient(
-  supabaseUrl,
-  supabaseAnonKey,
+  supabaseUrl || '',
+  supabaseAnonKey || '',
   {
     auth: {
       // Auto-refresh tokens before expiry
