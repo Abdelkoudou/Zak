@@ -1,0 +1,121 @@
+// ============================================================================
+// Device Authentication - Web Interface
+// ============================================================================
+
+import { supabase } from '@/lib/supabase'
+import { getDeviceId, getDeviceName } from '@/lib/deviceId'
+
+export interface DeviceSession {
+  id: string
+  user_id: string
+  device_id: string
+  device_name: string | null
+  last_active_at: string
+  created_at: string
+}
+
+// ============================================================================
+// Device Management
+// ============================================================================
+
+/**
+ * Register or update device session for web interface
+ */
+export async function registerDevice(userId: string): Promise<{ error: string | null }> {
+  try {
+    const deviceId = await getDeviceId()
+    const deviceName = await getDeviceName()
+
+    const { error } = await supabase
+      .from('device_sessions')
+      .upsert({
+        user_id: userId,
+        device_id: deviceId,
+        device_name: deviceName,
+        last_active_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id,device_id',
+      })
+
+    if (error) {
+      console.error('[DeviceAuth] Error registering device:', error.message)
+      return { error: error.message }
+    }
+
+    console.log('[DeviceAuth] Device registered successfully')
+    return { error: null }
+  } catch (error) {
+    console.error('[DeviceAuth] Failed to register device:', error)
+    return { error: 'Failed to register device' }
+  }
+}
+
+/**
+ * Get user's device sessions
+ */
+export async function getDeviceSessions(userId: string): Promise<{ sessions: DeviceSession[]; error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('device_sessions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('last_active_at', { ascending: false })
+
+    if (error) {
+      console.error('[DeviceAuth] Error fetching device sessions:', error.message)
+      return { sessions: [], error: error.message }
+    }
+
+    return { sessions: data || [], error: null }
+  } catch (error) {
+    console.error('[DeviceAuth] Failed to fetch device sessions:', error)
+    return { sessions: [], error: 'Failed to fetch device sessions' }
+  }
+}
+
+/**
+ * Check if user has reached device limit (2 devices)
+ * Returns true if user can login, false if device limit reached
+ */
+export async function checkDeviceLimit(userId: string): Promise<{ canLogin: boolean; error: string | null }> {
+  try {
+    const { sessions, error } = await getDeviceSessions(userId)
+    
+    if (error) {
+      return { canLogin: false, error }
+    }
+
+    const currentDeviceId = await getDeviceId()
+    const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
+
+    // If this is a new device and user already has 2 devices, block login
+    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+      return { 
+        canLogin: false, 
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.' 
+      }
+    }
+
+    return { canLogin: true, error: null }
+  } catch (error) {
+    console.error('[DeviceAuth] Error checking device limit:', error)
+    return { canLogin: false, error: 'Failed to check device limit' }
+  }
+}
+
+/**
+ * Update device activity timestamp
+ */
+export async function updateDeviceActivity(userId: string): Promise<void> {
+  try {
+    const deviceId = await getDeviceId()
+    
+    await supabase
+      .from('device_sessions')
+      .update({ last_active_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .eq('device_id', deviceId)
+  } catch (error) {
+    console.error('[DeviceAuth] Failed to update device activity:', error)
+  }
+}

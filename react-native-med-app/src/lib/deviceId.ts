@@ -2,7 +2,7 @@
 // Device ID Generation - Backward Compatible
 // ============================================================================
 
-import { Platform } from 'react-native'
+import { Platform, Dimensions } from 'react-native'
 import * as Device from 'expo-device'
 
 // Storage key for device ID
@@ -43,40 +43,39 @@ async function getSecureStorage() {
 }
 
 // ============================================================================
-// Device ID Generation - Deterministic (Backward Compatible)
+// Device ID Generation - Unified Approach
 // ============================================================================
 
 /**
  * Generate a deterministic device ID from device info
- * This matches the ORIGINAL implementation to maintain backward compatibility
- * with existing device_sessions in the database
+ * This creates a unified ID that should be similar whether accessing
+ * via mobile app or web browser on the same device
  */
 function generateDeterministicDeviceId(): string {
-  const deviceType = Device.deviceType
-  const deviceName = Device.deviceName || 'Unknown Device'
+  // Get screen dimensions (use consistent orientation - always width >= height)
+  const screen = Dimensions.get('screen')
+  const screenWidth = Math.max(screen.width, screen.height)  // Always use larger dimension as width
+  const screenHeight = Math.min(screen.width, screen.height) // Always use smaller dimension as height
+  const screenInfo = `${screenWidth}x${screenHeight}`
+  
+  // Get OS name
   const osName = Device.osName || 'Unknown OS'
-  const osVersion = Device.osVersion || ''
-
-  // Create a simple hash from device info (matches original implementation)
-  const deviceString = `${deviceType}-${deviceName}-${osName}-${osVersion}`
-  return deviceString.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)
-}
-
-/**
- * Generate device ID for web platform
- */
-function generateWebDeviceId(): string {
-  // For web, create a fingerprint from available browser info
-  if (typeof navigator !== 'undefined') {
-    const userAgent = navigator.userAgent || ''
-    const language = navigator.language || ''
-    const platform = navigator.platform || ''
-    
-    const fingerprint = `web-${platform}-${language}-${userAgent.substring(0, 50)}`
-    return fingerprint.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 50)
+  
+  // Create a device string that focuses on hardware characteristics
+  // This should match the web version for the same device
+  const deviceString = `${osName}-${screenInfo}`
+  
+  // Create a hash-like identifier (same algorithm as web)
+  let hash = 0
+  for (let i = 0; i < deviceString.length; i++) {
+    const char = deviceString.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
   }
   
-  return 'web-unknown'
+  // Convert to positive string - use same format as web
+  const hashString = Math.abs(hash).toString(36)
+  return `unified-${hashString}`
 }
 
 // ============================================================================
@@ -86,12 +85,12 @@ function generateWebDeviceId(): string {
 /**
  * Get or create a persistent device ID
  * 
- * BACKWARD COMPATIBILITY:
- * - Uses deterministic ID generation (same as original code)
+ * UNIFIED APPROACH:
+ * - Uses deterministic ID generation for consistency
+ * - Same algorithm for both native and web platforms
  * - Stores the ID for consistency across app restarts
- * - Existing users will get the same ID they had before
  * 
- * This ensures existing device_sessions in the database remain valid.
+ * This ensures the same device gets the same ID regardless of platform.
  */
 export async function getDeviceId(): Promise<string> {
   try {
@@ -101,18 +100,14 @@ export async function getDeviceId(): Promise<string> {
     let deviceId = await storage.getItemAsync(DEVICE_ID_KEY)
     
     if (!deviceId) {
-      // Generate deterministic ID (backward compatible with original implementation)
-      if (Platform.OS === 'web') {
-        deviceId = generateWebDeviceId()
-      } else {
-        deviceId = generateDeterministicDeviceId()
-      }
+      // Always use unified deterministic ID generation
+      deviceId = generateDeterministicDeviceId()
       
       // Store for future consistency
       await storage.setItemAsync(DEVICE_ID_KEY, deviceId)
       
       if (__DEV__) {
-        console.log('[DeviceId] Generated and stored device ID')
+        console.log('[DeviceId] Generated and stored unified device ID:', deviceId)
       }
     }
     
@@ -123,9 +118,6 @@ export async function getDeviceId(): Promise<string> {
     }
     
     // Fallback: generate without storing
-    if (Platform.OS === 'web') {
-      return generateWebDeviceId()
-    }
     return generateDeterministicDeviceId()
   }
 }
