@@ -1,5 +1,5 @@
 // ============================================================================
-// Saved Questions Screen - Premium Animations
+// Saved Questions Screen - Premium Animations with Dark Mode
 // ============================================================================
 
 import { useEffect, useState, useCallback, useRef } from 'react'
@@ -7,11 +7,11 @@ import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image, Animat
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Stack, useFocusEffect, useNavigation } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/ThemeContext'
 import { getSavedQuestions, unsaveQuestion } from '@/lib/saved'
 import { QuestionWithAnswers } from '@/types'
 import { FadeInView, StaggeredList, ListSkeleton } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
-import { BRAND_THEME } from '@/constants/theme'
 import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 import { useWebVisibility } from '@/lib/useWebVisibility'
 
@@ -26,6 +26,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function SavedQuestionsScreen() {
   const navigation = useNavigation()
   const { user, isLoading: authLoading } = useAuth()
+  const { colors, isDark } = useTheme()
 
   
   const [questions, setQuestions] = useState<QuestionWithAnswers[]>([])
@@ -117,7 +118,7 @@ export default function SavedQuestionsScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <Stack.Screen options={{ title: 'Questions sauvegardées' }} />
         <View style={{ padding: 24 }}>
           <ListSkeleton count={3} />
@@ -131,27 +132,30 @@ export default function SavedQuestionsScreen() {
       <Stack.Screen 
         options={{ 
           title: 'Questions sauvegardées',
+          headerStyle: { backgroundColor: colors.card },
+          headerTintColor: colors.text,
           headerLeft: () => (
             <TouchableOpacity 
               onPress={() => navigation.goBack()} 
               style={{ marginRight: 16 }}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <ChevronLeftIcon size={24} color={BRAND_THEME.colors.gray[900]} />
+              <ChevronLeftIcon size={24} color={colors.text} />
             </TouchableOpacity>
           )
         }} 
 
       />
       
-      <SafeAreaView style={{ flex: 1, backgroundColor: BRAND_THEME.colors.gray[50] }} edges={['bottom']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
         <ScrollView
           style={{ flex: 1 }}
           refreshControl={
             <RefreshControl 
               refreshing={refreshing} 
               onRefresh={onRefresh}
-              tintColor={BRAND_THEME.colors.primary[500]}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
             />
           }
         >
@@ -159,24 +163,30 @@ export default function SavedQuestionsScreen() {
             {questions.length === 0 ? (
               <FadeInView animation="scale" delay={100}>
                 <View style={{
-                  backgroundColor: '#ffffff',
+                  backgroundColor: colors.card,
                   borderRadius: 16,
                   padding: 32,
                   alignItems: 'center',
                   marginTop: 32,
-                  ...BRAND_THEME.shadows.md
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: isDark ? 0.3 : 0.1,
+                  shadowRadius: 4,
+                  elevation: 3,
                 }}>
                   <Text style={{ fontSize: 48, marginBottom: 16 }}>💾</Text>
                   <Text style={{
                     fontSize: 20,
                     fontWeight: 'bold',
-                    color: BRAND_THEME.colors.gray[900],
+                    color: colors.text,
                     marginBottom: 8
                   }}>
                     Aucune question sauvegardée
                   </Text>
                   <Text style={{
-                    color: BRAND_THEME.colors.gray[500],
+                    color: colors.textMuted,
                     textAlign: 'center',
                     lineHeight: 22
                   }}>
@@ -188,7 +198,7 @@ export default function SavedQuestionsScreen() {
               <>
                 <FadeInView animation="slideUp" delay={0}>
                   <Text style={{
-                    color: BRAND_THEME.colors.gray[500],
+                    color: colors.textMuted,
                     marginBottom: 16
                   }}>
                     {questions.length} question{questions.length > 1 ? 's' : ''} sauvegardée{questions.length > 1 ? 's' : ''}
@@ -203,6 +213,8 @@ export default function SavedQuestionsScreen() {
                         isExpanded={expandedId === question.id}
                         onToggle={() => toggleExpand(question.id)}
                         onUnsave={() => handleUnsave(question.id)}
+                        colors={colors}
+                        isDark={isDark}
                       />
                     </FadeInView>
                   ))}
@@ -225,11 +237,15 @@ function SavedQuestionCard({
   isExpanded,
   onToggle,
   onUnsave,
+  colors,
+  isDark,
 }: {
   question: QuestionWithAnswers
   isExpanded: boolean
   onToggle: () => void
   onUnsave: () => void
+  colors: any
+  isDark: boolean
 }) {
   const correctAnswers = question.answers.filter(a => a.is_correct)
   const scale = useRef(new Animated.Value(1)).current
@@ -271,10 +287,16 @@ function SavedQuestionCard({
   return (
     <Animated.View style={{
       transform: [{ scale }],
-      backgroundColor: '#ffffff',
+      backgroundColor: colors.card,
       borderRadius: 16,
       overflow: 'hidden',
-      ...BRAND_THEME.shadows.sm
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.2 : 0.05,
+      shadowRadius: 2,
+      elevation: 1,
     }}>
       {/* Header */}
       <TouchableOpacity 
@@ -292,14 +314,14 @@ function SavedQuestionCard({
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
             <View style={{
-              backgroundColor: BRAND_THEME.colors.primary[100],
+              backgroundColor: colors.primaryMuted,
               paddingHorizontal: 8,
               paddingVertical: 4,
               borderRadius: 6,
               marginRight: 8
             }}>
               <Text style={{
-                color: BRAND_THEME.colors.primary[700],
+                color: colors.primary,
                 fontSize: 12,
                 fontWeight: '500'
               }}>
@@ -307,13 +329,13 @@ function SavedQuestionCard({
               </Text>
             </View>
             <View style={{
-              backgroundColor: BRAND_THEME.colors.gray[100],
+              backgroundColor: colors.backgroundSecondary,
               paddingHorizontal: 8,
               paddingVertical: 4,
               borderRadius: 6
             }}>
               <Text style={{
-                color: BRAND_THEME.colors.gray[600],
+                color: colors.textSecondary,
                 fontSize: 12
               }}>
                 {question.exam_type}
@@ -329,7 +351,7 @@ function SavedQuestionCard({
         
         <Text 
           style={{
-            color: BRAND_THEME.colors.gray[900],
+            color: colors.text,
             fontSize: 15,
             lineHeight: 22
           }}
@@ -345,13 +367,13 @@ function SavedQuestionCard({
           marginTop: 12
         }}>
           <Text style={{
-            color: BRAND_THEME.colors.gray[400],
+            color: colors.textMuted,
             fontSize: 13
           }}>
             {question.module_name}
           </Text>
           <Text style={{
-            color: BRAND_THEME.colors.primary[500],
+            color: colors.primary,
             fontSize: 13,
             fontWeight: '500'
           }}>
@@ -364,7 +386,7 @@ function SavedQuestionCard({
       {isExpanded && (
         <View style={{
           borderTopWidth: 1,
-          borderTopColor: BRAND_THEME.colors.gray[100],
+          borderTopColor: colors.border,
           padding: 16
         }}>
           {/* Question Image */}
@@ -382,7 +404,7 @@ function SavedQuestionCard({
           )}
           
           <Text style={{
-            color: BRAND_THEME.colors.gray[500],
+            color: colors.textMuted,
             fontSize: 13,
             marginBottom: 12
           }}>
@@ -395,8 +417,8 @@ function SavedQuestionCard({
                   padding: 12,
                   borderRadius: 12,
                   backgroundColor: answer.is_correct 
-                    ? BRAND_THEME.colors.success[50] 
-                    : BRAND_THEME.colors.gray[50]
+                    ? colors.successLight 
+                    : colors.backgroundSecondary
                 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                     <View style={{
@@ -407,13 +429,13 @@ function SavedQuestionCard({
                       justifyContent: 'center',
                       marginRight: 8,
                       backgroundColor: answer.is_correct 
-                        ? BRAND_THEME.colors.success[500] 
-                        : BRAND_THEME.colors.gray[200]
+                        ? colors.success 
+                        : colors.border
                     }}>
                       <Text style={{
                         fontSize: 11,
                         fontWeight: 'bold',
-                        color: answer.is_correct ? '#ffffff' : BRAND_THEME.colors.gray[500]
+                        color: answer.is_correct ? '#ffffff' : colors.textMuted
                       }}>
                         {answer.option_label}
                       </Text>
@@ -423,14 +445,14 @@ function SavedQuestionCard({
                       fontSize: 14,
                       lineHeight: 20,
                       color: answer.is_correct 
-                        ? BRAND_THEME.colors.success[600] 
-                        : BRAND_THEME.colors.gray[600]
+                        ? colors.success 
+                        : colors.textSecondary
                     }}>
                       {answer.answer_text}
                     </Text>
                     {answer.is_correct && (
                       <Text style={{
-                        color: BRAND_THEME.colors.success[500],
+                        color: colors.success,
                         marginLeft: 8
                       }}>✓</Text>
                     )}

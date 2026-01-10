@@ -1,9 +1,10 @@
 // ============================================================================
-// Loading Spinner Component - Light Sea Green Brand
+// Loading Spinner Component - Light Sea Green Brand with Dark Mode
 // ============================================================================
 
 import React from 'react'
 import { View, ActivityIndicator, Text, ViewStyle, TextStyle } from 'react-native'
+import { useTheme } from '@/context/ThemeContext'
 import { BRAND_THEME } from '@/constants/theme'
 
 interface LoadingSpinnerProps {
@@ -17,12 +18,15 @@ interface LoadingSpinnerProps {
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'large',
-  color = BRAND_THEME.colors.primary[500],
+  color,
   message,
   overlay = false,
   className = '',
   style,
 }) => {
+  const { colors, isDark } = useTheme()
+  const spinnerColor = color || colors.primary
+
   const getContainerStyles = (): ViewStyle => {
     const baseStyles: ViewStyle = {
       alignItems: 'center',
@@ -38,7 +42,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backgroundColor: isDark ? 'rgba(31, 31, 31, 0.9)' : 'rgba(255, 255, 255, 0.9)',
         zIndex: 1000,
         ...style,
       }
@@ -52,14 +56,14 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   const getMessageStyles = (): TextStyle => ({
     fontSize: BRAND_THEME.typography.fontSizes.base,
-    color: BRAND_THEME.colors.gray[600],
+    color: colors.textSecondary,
     marginTop: BRAND_THEME.spacing.md,
     textAlign: 'center',
   })
 
   return (
     <View style={getContainerStyles()} className={className}>
-      <ActivityIndicator size={size} color={color} />
+      <ActivityIndicator size={size} color={spinnerColor} />
       {message && <Text style={getMessageStyles()}>{message}</Text>}
     </View>
   )

@@ -1,12 +1,12 @@
 // ============================================================================
-// Web Header - Premium Navigation for Desktop/Tablet
+// Web Header - Premium Navigation for Desktop/Tablet with Dark Mode
 // ============================================================================
 
 import { useRef, useEffect } from 'react'
 import { View, Text, TouchableOpacity, Animated, useWindowDimensions, Image, Platform } from 'react-native'
 import { router, usePathname } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
-import { BRAND_THEME } from '@/constants/theme'
+import { useTheme } from '@/context/ThemeContext'
 import { HomeIcon, ResourcesIcon, ProfileIcon, SavesIcon } from '@/components/icons'
 
 // Use native driver only on native platforms, not on web
@@ -17,12 +17,13 @@ const Logo = require('../../../assets/icon.png')
 interface NavItem {
   label: string
   path: string
-  icon: React.ReactNode
+  iconComponent: (color: string) => React.ReactNode
 }
 
 export function WebHeader() {
   const { width } = useWindowDimensions()
   const { user } = useAuth()
+  const { colors, isDark } = useTheme()
   const pathname = usePathname()
   
   // Only show on web and tablet+
@@ -31,10 +32,10 @@ export function WebHeader() {
   }
 
   const navItems: NavItem[] = [
-    { label: 'Accueil', path: '/(tabs)', icon: <HomeIcon size={20} color="currentColor" /> },
-    { label: 'Ressources', path: '/(tabs)/resources', icon: <ResourcesIcon size={20} color="currentColor" /> },
-    { label: 'Sauvegardées', path: '/saved', icon: <SavesIcon size={20} /> },
-    { label: 'Profil', path: '/(tabs)/profile', icon: <ProfileIcon size={20} color="currentColor" /> },
+    { label: 'Accueil', path: '/(tabs)', iconComponent: (color) => <HomeIcon size={20} color={color} /> },
+    { label: 'Ressources', path: '/(tabs)/resources', iconComponent: (color) => <ResourcesIcon size={20} color={color} /> },
+    { label: 'Sauvegardées', path: '/saved', iconComponent: (color) => <SavesIcon size={20} color={color} /> },
+    { label: 'Profil', path: '/(tabs)/profile', iconComponent: (color) => <ProfileIcon size={20} color={color} /> },
   ]
 
   const isActive = (path: string) => {
@@ -46,9 +47,9 @@ export function WebHeader() {
 
   return (
     <View style={{
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      backgroundColor: isDark ? 'rgba(31, 31, 31, 0.95)' : 'rgba(255, 255, 255, 0.95)',
       borderBottomWidth: 1,
-      borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+      borderBottomColor: colors.border,
       paddingHorizontal: 24,
       paddingVertical: 12,
       // @ts-ignore - web-specific styles
@@ -75,7 +76,7 @@ export function WebHeader() {
             width: 44,
             height: 44,
             borderRadius: 16,
-            backgroundColor: 'rgba(9, 178, 173, 0.1)',
+            backgroundColor: colors.primaryMuted,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 12,
@@ -89,14 +90,14 @@ export function WebHeader() {
             <Text style={{
               fontSize: 20,
               fontWeight: '800',
-              color: BRAND_THEME.colors.gray[900],
+              color: colors.text,
               letterSpacing: -0.5,
             }}>
               FMC Study
             </Text>
             <Text style={{
               fontSize: 12,
-              color: BRAND_THEME.colors.gray[500],
+              color: colors.textMuted,
               fontWeight: '500',
             }}>
               Study Everywhere
@@ -112,6 +113,7 @@ export function WebHeader() {
               item={item}
               isActive={isActive(item.path)}
               onPress={() => router.push(item.path as any)}
+              colors={colors}
             />
           ))}
         </View>
@@ -123,13 +125,13 @@ export function WebHeader() {
               <Text style={{
                 fontSize: 14,
                 fontWeight: '600',
-                color: BRAND_THEME.colors.gray[900],
+                color: colors.text,
               }}>
                 {user.full_name}
               </Text>
               <Text style={{
                 fontSize: 12,
-                color: BRAND_THEME.colors.gray[500],
+                color: colors.textMuted,
               }}>
                 {user.year_of_study}{user.year_of_study === '1' ? 'ère' : 'ème'} Année
               </Text>
@@ -138,7 +140,7 @@ export function WebHeader() {
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: '#09B2AD',
+              backgroundColor: colors.primary,
               alignItems: 'center',
               justifyContent: 'center',
             }}>
@@ -154,7 +156,7 @@ export function WebHeader() {
 }
 
 // Animated Nav Link
-function NavLink({ item, isActive, onPress }: { item: NavItem; isActive: boolean; onPress: () => void }) {
+function NavLink({ item, isActive, onPress, colors }: { item: NavItem; isActive: boolean; onPress: () => void; colors: any }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
   const bgOpacity = useRef(new Animated.Value(isActive ? 1 : 0)).current
 
@@ -184,6 +186,8 @@ function NavLink({ item, isActive, onPress }: { item: NavItem; isActive: boolean
     }).start()
   }
 
+  const iconColor = isActive ? colors.primary : colors.textSecondary
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -198,18 +202,18 @@ function NavLink({ item, isActive, onPress }: { item: NavItem; isActive: boolean
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 12,
-        backgroundColor: isActive ? 'rgba(9, 178, 173, 0.1)' : 'transparent',
+        backgroundColor: isActive ? colors.primaryMuted : 'transparent',
       }}>
         <View style={{ 
           marginRight: 8,
           opacity: isActive ? 1 : 0.6,
         }}>
-          {item.icon}
+          {item.iconComponent(iconColor)}
         </View>
         <Text style={{
           fontSize: 14,
           fontWeight: isActive ? '600' : '500',
-          color: isActive ? '#09B2AD' : BRAND_THEME.colors.gray[600],
+          color: isActive ? colors.primary : colors.textSecondary,
         }}>
           {item.label}
         </Text>

@@ -252,7 +252,7 @@ export default function ProfileScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <View style={{ width: 52, height: 52, backgroundColor: colors.primaryMuted, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
-                          <SavesIcon size={26} color="#1E1E1E" />
+                          <SavesIcon size={26} color={colors.text} />
                         </View>
                         <View>
                           <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Questions sauvegardées</Text>
@@ -303,14 +303,14 @@ export default function ProfileScreen() {
                     <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 14 }}>Statistiques</Text>
                     <ThemedCard colors={colors} isDark={isDark}>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20 }}>
-                        <StatBox label="Total" value={stats.total_questions_attempted} icon={<FileIcon size={26} color="#1E1E1E" />} colors={colors} />
-                        <StatBox label="Correctes" value={stats.total_correct_answers} icon={<CorrectIcon size={26} color="#1E1E1E" />} colors={colors} />
-                        <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Total" value={stats.total_questions_attempted} icon={<FileIcon size={26} color={colors.text} />} colors={colors} />
+                        <StatBox label="Correctes" value={stats.total_correct_answers} icon={<CorrectIcon size={26} color={colors.success} />} colors={colors} />
+                        <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={26} color={colors.error} />} colors={colors} />
                       </View>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color="#1E1E1E" />} colors={colors} />
-                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color="#1E1E1E" />} colors={colors} />
-                        <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={26} color="#1E1E1E" />} colors={colors} />
+                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color={colors.primary} />} colors={colors} />
+                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color={colors.primary} />} colors={colors} />
+                        <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={26} color={colors.text} />} colors={colors} />
                       </View>
                       {stats.last_practice_date && (
                         <View style={{ paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border }}>
