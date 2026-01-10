@@ -37,6 +37,7 @@ export default function PracticeScreen() {
   const [eliminatedAnswers, setEliminatedAnswers] = useState<Record<string, OptionLabel[]>>({})
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set())
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set())
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [startTime] = useState(new Date())
   const [showEndSessionModal, setShowEndSessionModal] = useState(false)
@@ -112,6 +113,7 @@ export default function PracticeScreen() {
 
   const currentQuestion = questions[currentIndex]
   const isSubmitted = currentQuestion ? submittedQuestions.has(currentQuestion.id) : false
+  const isSkipped = currentQuestion ? skippedQuestions.has(currentQuestion.id) : false
   const currentAnswers = currentQuestion ? selectedAnswers[currentQuestion.id] || [] : []
   const currentEliminated = currentQuestion ? eliminatedAnswers[currentQuestion.id] || [] : []
 
@@ -168,6 +170,17 @@ export default function PracticeScreen() {
     }
   }
 
+  const skipQuestion = () => {
+    if (!currentQuestion) return
+    // Mark as skipped
+    setSkippedQuestions(prev => new Set([...prev, currentQuestion.id]))
+    // Move to next question
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+      scrollRef.current?.scrollTo({ y: 0, animated: true })
+    }
+  }
+
   const goToPrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
@@ -202,15 +215,19 @@ export default function PracticeScreen() {
 
   const getEndSessionMessage = () => {
     const answeredCount = submittedQuestions.size
-    const unansweredCount = questions.length - answeredCount
+    const skippedCount = skippedQuestions.size
+    const unansweredCount = questions.length - answeredCount - skippedCount
     
     if (answeredCount === 0) {
       return 'Vous n\'avez répondu à aucune question. Voulez-vous vraiment quitter ?'
     }
     
     let message = `Vous avez répondu à ${answeredCount}/${questions.length} questions.`
+    if (skippedCount > 0) {
+      message += `\n\n${skippedCount} question${skippedCount > 1 ? 's' : ''} sautée${skippedCount > 1 ? 's' : ''}.`
+    }
     if (unansweredCount > 0) {
-      message += `\n\n${unansweredCount} questions non répondues seront ignorées.`
+      message += `\n\n${unansweredCount} question${unansweredCount > 1 ? 's' : ''} non répondue${unansweredCount > 1 ? 's' : ''} sera${unansweredCount > 1 ? 'ont' : ''} ignorée${unansweredCount > 1 ? 's' : ''}.`
     }
     return message
   }
@@ -429,13 +446,35 @@ export default function PracticeScreen() {
             
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AnimatedNavButton label="← Précédent" onPress={goToPrevious} disabled={currentIndex === 0} colors={colors} />
-              {!isSubmitted ? (
-                <Button title="Valider" onPress={submitAnswer} disabled={currentAnswers.length === 0} variant="primary" />
-              ) : currentIndex < questions.length - 1 ? (
-                <Button title="Suivant →" onPress={goToNext} variant="primary" />
-              ) : (
-                <Button title="Voir résultats" onPress={saveResults} variant="primary" />
-              )}
+              
+              {/* Skip / Validate / Next buttons */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {!isSubmitted && currentIndex < questions.length - 1 && (
+                  <TouchableOpacity
+                    onPress={skipQuestion}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      backgroundColor: colors.backgroundSecondary,
+                      borderWidth: 1,
+                      borderColor: colors.border
+                    }}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontWeight: '500', fontSize: 14 }}>
+                      Sauter
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                
+                {!isSubmitted ? (
+                  <Button title="Valider" onPress={submitAnswer} disabled={currentAnswers.length === 0} variant="primary" />
+                ) : currentIndex < questions.length - 1 ? (
+                  <Button title="Suivant →" onPress={goToNext} variant="primary" />
+                ) : (
+                  <Button title="Voir résultats" onPress={saveResults} variant="primary" />
+                )}
+              </View>
             </View>
           </View>
         </FadeInView>
