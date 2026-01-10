@@ -12,6 +12,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { AppVisibilityProvider } from '@/context/AppVisibilityContext'
 import { supabase } from '@/lib/supabase'
+import { OfflineContentService } from '@/lib/offline-content'
 
 // Conditionally import native-only modules
 let SplashScreen: typeof import('expo-splash-screen') | null = null
@@ -23,6 +24,27 @@ if (Platform.OS !== 'web') {
   SplashScreen?.preventAutoHideAsync()
 }
 
+// Silent background sync for offline content
+async function syncOfflineContent() {
+  if (Platform.OS === 'web') return
+  
+  try {
+    const { hasUpdate } = await OfflineContentService.checkForUpdates()
+    if (hasUpdate) {
+      // Download silently in background
+      await OfflineContentService.downloadUpdates()
+      if (__DEV__) {
+        console.log('✅ Offline content synced successfully')
+      }
+    }
+  } catch (error) {
+    // Silent fail - don't interrupt user experience
+    if (__DEV__) {
+      console.log('⚠️ Offline sync failed (will retry later):', error)
+    }
+  }
+}
+
 function RootLayoutContent() {
   const { isDark, colors } = useTheme()
 
@@ -30,12 +52,20 @@ function RootLayoutContent() {
     // Skip native-only code on web
     if (Platform.OS === 'web') return
 
-    // Hide splash screen after a short delay
-    const hideSplash = async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      await SplashScreen?.hideAsync()
+    // Hide splash screen after offline sync completes (or timeout)
+    const initApp = async () => {
+      try {
+        // Sync offline content during splash screen
+        await Promise.race([
+          syncOfflineContent(),
+          new Promise(resolve => setTimeout(resolve, 3000)) // Max 3s wait
+        ])
+      } finally {
+        // Always hide splash after sync attempt
+        await SplashScreen?.hideAsync()
+      }
     }
-    hideSplash()
+    initApp()
 
     // Handle deep links for auth
     const handleDeepLink = async (url: string) => {

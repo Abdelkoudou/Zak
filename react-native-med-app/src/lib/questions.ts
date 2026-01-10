@@ -32,7 +32,28 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       const year = filters.year ? parseInt(filters.year) : undefined;
       const offlineData = await OfflineContentService.getModuleContent(filters.module_name, year)
       if (offlineData) {
-        let questions = offlineData.questions as QuestionWithAnswers[];
+        // Map offline questions to expected format
+        let questions = offlineData.questions.map((q: any) => ({
+          id: q.id,
+          year: q.year || q.study_year,
+          module_name: q.module || q.module_name,
+          sub_discipline: q.sub_discipline,
+          exam_type: q.exam_type,
+          number: q.number,
+          question_text: q.question_text,
+          explanation: q.explanation,
+          image_url: q.image_url,
+          cours: q.cours || [],
+          // Map answers from offline format (label/text) to app format (option_label/answer_text)
+          answers: (q.answers || []).map((a: any) => ({
+            id: a.id || `${q.id}_${a.label || a.option_label}`,
+            question_id: q.id,
+            option_label: a.label || a.option_label,
+            answer_text: a.text || a.answer_text,
+            is_correct: a.is_correct,
+            display_order: a.display_order,
+          }))
+        })) as QuestionWithAnswers[];
 
         // Apply filters in memory
         if (filters.exam_type) {
@@ -163,6 +184,37 @@ export async function getRandomQuestions(
   count: number = 10
 ): Promise<{ questions: QuestionWithAnswers[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineData = await OfflineContentService.getModuleContent(moduleName)
+    if (offlineData && offlineData.questions.length > 0) {
+      // Map and shuffle offline questions
+      const allQuestions = offlineData.questions.map((q: any) => ({
+        id: q.id,
+        year: q.year || q.study_year,
+        module_name: q.module || q.module_name,
+        sub_discipline: q.sub_discipline,
+        exam_type: q.exam_type,
+        number: q.number,
+        question_text: q.question_text,
+        explanation: q.explanation,
+        image_url: q.image_url,
+        cours: q.cours || [],
+        answers: (q.answers || []).map((a: any) => ({
+          id: a.id || `${q.id}_${a.label || a.option_label}`,
+          question_id: q.id,
+          option_label: a.label || a.option_label,
+          answer_text: a.text || a.answer_text,
+          is_correct: a.is_correct,
+          display_order: a.display_order,
+        }))
+      })) as QuestionWithAnswers[];
+
+      // Shuffle and take random questions
+      const shuffled = allQuestions.sort(() => Math.random() - 0.5)
+      return { questions: shuffled.slice(0, count), error: null }
+    }
+
+    // Fallback to online
     // First get all question IDs for the module
     const { data: questionIds, error: idsError } = await supabase
       .from('questions')
