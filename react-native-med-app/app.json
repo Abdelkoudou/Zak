@@ -3,7 +3,7 @@
     "name": "FMC App",
     "slug": "fmc-app",
     "version": "1.4.2",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",

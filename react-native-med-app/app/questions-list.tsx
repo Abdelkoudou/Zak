@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, FlatList } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -41,6 +41,12 @@ export default function QuestionsListScreen() {
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   const [savedQuestionIds, setSavedQuestionIds] = useState<Set<string>>(new Set())
+
+  const { width } = useWindowDimensions()
+  const isTablet = width >= 768
+  const isDesktop = width >= 1024
+  const numColumns = isDesktop ? 3 : isTablet ? 2 : 1
+
 
   const ITEMS_PER_PAGE = 20
 
@@ -132,92 +138,95 @@ export default function QuestionsListScreen() {
   }
 
   const renderQuestion = ({ item: question, index }: { item: QuestionWithAnswers; index: number }) => (
-    <TouchableOpacity
-      key={question.id}
-      onPress={() => {
-        router.push({
-          pathname: '/practice/[moduleId]',
-          params: {
-            moduleId: 'single',
-            moduleName: moduleName,
-            questionId: question.id,
-            startIndex: index.toString()
-          }
-        })
-      }}
-      activeOpacity={0.7}
-    >
-      <Card variant="default" padding="md" style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-          <Text style={{
-            fontSize: 14,
-            fontWeight: '600',
-            color: BRAND_THEME.colors.primary[600]
-          }}>
-            Question {question.number}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
-            <TouchableOpacity 
-              onPress={() => handleToggleSave(question.id)}
-              style={{ marginRight: 8 }}
-            >
-              <Text style={{ fontSize: 18 }}>
-                {savedQuestionIds.has(question.id) ? '💾' : '📥'}
-              </Text>
-            </TouchableOpacity>
-            {question.exam_type && (
-              <Badge 
-                variant="secondary" 
-                size="sm"
-                label={question.exam_type}
-              />
-            )}
-            {question.year && (
-              <Badge 
-                variant="gray" 
-                size="sm"
-                label={`${question.year}ère Année`}
-              />
-            )}
+    <View style={{ flex: 1, maxWidth: numColumns > 1 ? `${100/numColumns}%` : '100%' }}>
+      <TouchableOpacity
+        key={question.id}
+        onPress={() => {
+          router.push({
+            pathname: '/practice/[moduleId]',
+            params: {
+              moduleId: 'single',
+              moduleName: moduleName,
+              questionId: question.id,
+              startIndex: index.toString()
+            }
+          })
+        }}
+        activeOpacity={0.7}
+        style={{ flex: 1, margin: numColumns > 1 ? 8 : 0, marginBottom: numColumns > 1 ? 8 : 12 }}
+      >
+        <Card variant="default" padding="md" style={{ marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <Text style={{
+              fontSize: 14,
+              fontWeight: '600',
+              color: BRAND_THEME.colors.primary[600]
+            }}>
+              Question {question.number}
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <TouchableOpacity 
+                onPress={() => handleToggleSave(question.id)}
+                style={{ marginRight: 8 }}
+              >
+                <Text style={{ fontSize: 18 }}>
+                  {savedQuestionIds.has(question.id) ? '💾' : '📥'}
+                </Text>
+              </TouchableOpacity>
+              {question.exam_type && (
+                <Badge 
+                  variant="secondary" 
+                  size="sm"
+                  label={question.exam_type}
+                />
+              )}
+              {question.year && (
+                <Badge 
+                  variant="gray" 
+                  size="sm"
+                  label={`${question.year}ère Année`}
+                />
+              )}
+            </View>
           </View>
-        </View>
-        
-        <Text style={{
-          fontSize: 16,
-          lineHeight: 24,
-          color: BRAND_THEME.colors.gray[900],
-          marginBottom: 12
-        }} numberOfLines={3}>
-          {question.question_text}
-        </Text>
-
-        {question.sub_discipline && (
-          <Badge 
-            variant="gray" 
-            size="sm"
-            label={question.sub_discipline}
-            style={{ alignSelf: 'flex-start', marginBottom: 8 }}
-          />
-        )}
-
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{
-            fontSize: 12,
-            color: BRAND_THEME.colors.gray[500]
-          }}>
-            {question.answers.length} options
-          </Text>
           
           <Text style={{
-            fontSize: 12,
-            color: BRAND_THEME.colors.primary[600],
-            fontWeight: '500'
-          }}>
-            Voir la question →
+            fontSize: 16,
+            lineHeight: 24,
+            color: BRAND_THEME.colors.gray[900],
+            marginBottom: 12
+          }} numberOfLines={3}>
+            {question.question_text}
           </Text>
-        </View>
-      </Card>
-    </TouchableOpacity>
+
+          {question.sub_discipline && (
+            <Badge 
+              variant="gray" 
+              size="sm"
+              label={question.sub_discipline}
+              style={{ alignSelf: 'flex-start', marginBottom: 8 }}
+            />
+          )}
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={{
+              fontSize: 12,
+              color: BRAND_THEME.colors.gray[500]
+            }}>
+              {question.answers.length} options
+            </Text>
+            
+            <Text style={{
+              fontSize: 12,
+              color: BRAND_THEME.colors.primary[600],
+              fontWeight: '500'
+            }}>
+              Voir la question →
+            </Text>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    </View>
   )
 
   const renderFilters = () => (
@@ -364,6 +373,9 @@ export default function QuestionsListScreen() {
       />
 
       <FlatList
+        key={numColumns} // Force re-render when columns change
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? { gap: 0, paddingHorizontal: 8 } : undefined}
         data={questions}
         renderItem={renderQuestion}
         keyExtractor={(item) => item.id}

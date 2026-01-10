@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Animated, Pressable, Platform, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useNavigation } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
@@ -23,6 +23,12 @@ export default function ModuleDetailScreen() {
   const { colors, isDark } = useTheme()
   const { user, isLoading: authLoading } = useAuth()
   const navigation = useNavigation()
+  const { width } = useWindowDimensions()
+
+  const isTablet = width >= 768
+  const isDesktop = width >= 1024
+  const numColumns = isDesktop ? 3 : isTablet ? 2 : 1
+
   
   const [module, setModule] = useState<Module | null>(null)
   const [cours, setCours] = useState<string[]>([])
@@ -365,18 +371,22 @@ export default function ModuleDetailScreen() {
                   Sélectionner un type d'examen
                 </Text>
               </FadeInView>
-              {availableExamTypes.map(({ type, count }, index) => (
-                <FadeInView key={type} delay={150 + index * 50} animation="slideUp">
-                  <SelectableCard
-                    isSelected={selectedExamType === type}
-                    onPress={() => handleExamTypeSelect(type)}
-                    title={type}
-                    subtitle={`${count} question${count !== 1 ? 's' : ''}`}
-                    colors={colors}
-                    isDark={isDark}
-                  />
-                </FadeInView>
-              ))}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
+                {availableExamTypes.map(({ type, count }, index) => (
+                  <View key={type} style={{ width: `${100 / numColumns}%`, paddingHorizontal: 6 }}>
+                    <FadeInView delay={150 + index * 50} animation="slideUp">
+                      <SelectableCard
+                        isSelected={selectedExamType === type}
+                        onPress={() => handleExamTypeSelect(type)}
+                        title={type}
+                        subtitle={`${count} question${count !== 1 ? 's' : ''}`}
+                        colors={colors}
+                        isDark={isDark}
+                      />
+                    </FadeInView>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
@@ -393,18 +403,22 @@ export default function ModuleDetailScreen() {
                   Sélectionner l'année d'examen (Promo)
                 </Text>
               </FadeInView>
-              {availableExamYears.map(({ year, count }, index) => (
-                <FadeInView key={year} delay={150 + index * 50} animation="slideUp">
-                  <SelectableCard
-                    isSelected={selectedExamYear === year}
-                    onPress={() => setSelectedExamYear(year)}
-                    title={`M${year-2000}`}
-                    subtitle={`${count} question${count !== 1 ? 's' : ''}`}
-                    colors={colors}
-                    isDark={isDark}
-                  />
-                </FadeInView>
-              ))}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
+                {availableExamYears.map(({ year, count }, index) => (
+                  <View key={year} style={{ width: `${100 / numColumns}%`, paddingHorizontal: 6 }}>
+                    <FadeInView delay={150 + index * 50} animation="slideUp">
+                      <SelectableCard
+                        isSelected={selectedExamYear === year}
+                        onPress={() => setSelectedExamYear(year)}
+                        title={`M${year-2000}`}
+                        subtitle={`${count} question${count !== 1 ? 's' : ''}`}
+                        colors={colors}
+                        isDark={isDark}
+                      />
+                    </FadeInView>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
@@ -463,18 +477,22 @@ export default function ModuleDetailScreen() {
                       Sélectionner un cours
                     </Text>
                   </FadeInView>
-                  {filteredCoursWithCounts.map(({ name, count }, index) => (
-                    <FadeInView key={name} delay={150 + index * 50} animation="slideUp">
-                      <SelectableCard
-                        isSelected={selectedCours === name}
-                        onPress={() => setSelectedCours(name)}
-                        title={name}
-                        subtitle={`${count} question${count !== 1 ? 's' : ''}`}
-                        colors={colors}
-                        isDark={isDark}
-                      />
-                    </FadeInView>
-                  ))}
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 }}>
+                    {filteredCoursWithCounts.map(({ name, count }, index) => (
+                      <View key={name} style={{ width: `${100 / numColumns}%`, paddingHorizontal: 6 }}>
+                        <FadeInView delay={150 + index * 50} animation="slideUp">
+                          <SelectableCard
+                            isSelected={selectedCours === name}
+                            onPress={() => setSelectedCours(name)}
+                            title={name}
+                            subtitle={`${count} question${count !== 1 ? 's' : ''}`}
+                            colors={colors}
+                            isDark={isDark}
+                          />
+                        </FadeInView>
+                      </View>
+                    ))}
+                  </View>
                 </>
               ) : (
                 <FadeInView delay={200} animation="scale" style={{ marginTop: 20, alignItems: 'center' }}>
