@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
@@ -10,7 +10,7 @@ import { getCourses, createCourse } from '@/lib/api/courses';
 import { getModules } from '@/lib/api/modules';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 
-export default function QuestionsPage() {
+function QuestionsPageContent() {
   const searchParams = useSearchParams();
   const editQuestionId = searchParams.get('edit');
   
@@ -138,11 +138,28 @@ export default function QuestionsPage() {
     fetchFilterCourses();
   }, [listFilters.year, listFilters.moduleId, listFilters.subDiscipline]);
 
-  // Load questions on mount
+  const loadQuestions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const result = await getQuestions({
+        year: listFilters.year || undefined,
+        module_name: listFilters.moduleId || undefined,
+        sub_discipline: listFilters.subDiscipline || undefined,
+        exam_type: listFilters.examType || undefined,
+        cours: listFilters.cours || undefined
+    });
+    if (result.success) {
+      setQuestions(result.data);
+    } else {
+      setError(result.error || 'Failed to load questions');
+    }
+    setLoading(false);
+  }, [listFilters]);
 
+  // Load questions on mount
   useEffect(() => {
     loadQuestions();
-  }, []);
+  }, [loadQuestions]);
 
   // Handle edit query parameter from URL (e.g., from reports page)
   useEffect(() => {
@@ -179,28 +196,10 @@ export default function QuestionsPage() {
     fetchCourses();
   }, [formData.year, formData.speciality, formData.moduleId, formData.subDisciplineId]);
 
-  const loadQuestions = async () => {
-    setLoading(true);
-    setError(null);
-    const result = await getQuestions({
-        year: listFilters.year || undefined,
-        module_name: listFilters.moduleId || undefined,
-        sub_discipline: listFilters.subDiscipline || undefined,
-        exam_type: listFilters.examType || undefined,
-        cours: listFilters.cours || undefined
-    });
-    if (result.success) {
-      setQuestions(result.data);
-    } else {
-      setError(result.error || 'Failed to load questions');
-    }
-    setLoading(false);
-  };
-
   // Reload when filters change
   useEffect(() => {
     loadQuestions();
-  }, [listFilters]);
+  }, [loadQuestions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1348,5 +1347,13 @@ export default function QuestionsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function QuestionsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <QuestionsPageContent />
+    </Suspense>
   );
 }

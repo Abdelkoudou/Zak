@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchUserDevices, deleteUserDevice } from '@/lib/activation-codes';
 import type { DeviceSession } from '@/types/database';
 
@@ -15,18 +15,18 @@ export default function DeviceManagerModal({ userId, userName, onClose }: Device
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDevices();
-  }, [userId]);
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     setLoading(true);
     const { data, error } = await fetchUserDevices(userId);
     if (!error) {
       setDevices(data);
     }
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
 
   const handleDelete = async (deviceId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet appareil ? L\'utilisateur pourra en connecter un nouveau.')) {

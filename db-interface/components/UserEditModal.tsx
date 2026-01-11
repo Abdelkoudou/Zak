@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchUserById, updateUser, extendSubscription, revokeSubscription, deleteAllUserDevices } from '@/lib/users';
 import { fetchUserDevices, deleteUserDevice } from '@/lib/activation-codes';
 import type { ManagedUser, UserUpdateData } from '@/lib/users';
@@ -37,11 +37,7 @@ export default function UserEditModal({ userId, onClose, onUpdate }: UserEditMod
   const [formData, setFormData] = useState<UserUpdateData>({});
   const [extensionDays, setExtensionDays] = useState(30);
 
-  useEffect(() => {
-    loadUserData();
-  }, [userId]);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     setLoading(true);
     setError('');
 
@@ -67,7 +63,11 @@ export default function UserEditModal({ userId, onClose, onUpdate }: UserEditMod
     }
 
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadUserData();
+  }, [loadUserData]);
 
   const handleSaveInfo = async () => {
     if (!user) return;
