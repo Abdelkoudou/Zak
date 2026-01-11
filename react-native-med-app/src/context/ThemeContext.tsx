@@ -223,11 +223,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     toggleTheme,
   }
 
-  // Don't render until theme is loaded to prevent flash
-  if (!isLoaded) {
-    return null
-  }
-
+  // Always render children - use default light theme while loading
+  // Returning null here causes the app to crash on startup
   return (
     <ThemeContext.Provider value={value}>
       {children}

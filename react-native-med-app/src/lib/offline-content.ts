@@ -29,9 +29,16 @@ export const OfflineContentService = {
     // Initialize directory
     async init() {
         if (Platform.OS === 'web') return;
-        const dirInfo = await FileSystem.getInfoAsync(OFFLINE_DIR);
-        if (!dirInfo.exists) {
-            await FileSystem.makeDirectoryAsync(OFFLINE_DIR, { intermediates: true });
+        try {
+            const dirInfo = await FileSystem.getInfoAsync(OFFLINE_DIR);
+            if (!dirInfo.exists) {
+                await FileSystem.makeDirectoryAsync(OFFLINE_DIR, { intermediates: true });
+            }
+        } catch (error) {
+            // Silent fail - directory creation might fail on some devices
+            if (__DEV__) {
+                console.warn('Failed to initialize offline directory:', error);
+            }
         }
     },
 

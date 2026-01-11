@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.fmcapp.mobile",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09B2AD"
