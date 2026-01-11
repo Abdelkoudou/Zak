@@ -152,6 +152,7 @@ export default function AIChatPage() {
           fallbackUsed: message.fallbackUsed,
           ragUsed: message.ragUsed,
           contextCount: message.contextCount,
+          responseTimeMs: (message as any).responseTimeMs,
         }),
       });
       if (res.ok) {
@@ -572,20 +573,23 @@ export default function AIChatPage() {
 
                         {/* Assistant Actions */}
                         {message.role === 'assistant' && (
-                            <div className="flex items-center gap-3 mt-2 ml-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="flex items-center gap-3 mt-3 ml-1">
                                 {/* Rating Star */}
-                                <div className="flex items-center gap-0.5 bg-gray-500/10 px-1.5 py-1 rounded-full">
+                                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg border transition-colors ${
+                                    isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'
+                                }`}>
+                                    <span className={`text-[10px] font-medium uppercase tracking-wider mr-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Rate:</span>
                                     {[1, 2, 3, 4, 5].map(star => (
                                     <button
                                         key={star}
                                         onClick={() => rateMessage(message.dbId!, star)}
-                                        className={`p-0.5 transition-transform hover:scale-125 ${
+                                        className={`focus:outline-none transition-transform active:scale-90 ${
                                         (message.rating || 0) >= star 
                                             ? 'text-yellow-400' 
-                                            : isDark ? 'text-gray-600 hover:text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
+                                            : isDark ? 'text-gray-600 hover:text-yellow-400' : 'text-gray-300 hover:text-yellow-400'
                                         }`}
                                     >
-                                        <svg className="w-3.5 h-3.5" fill={ (message.rating || 0) >= star ? "currentColor" : "none" } stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4" fill={ (message.rating || 0) >= star ? "currentColor" : "none" } stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                                         </svg>
                                     </button>
@@ -594,25 +598,22 @@ export default function AIChatPage() {
                                 
                                 <button 
                                     onClick={() => copyToClipboard(message.content, message.id)}
-                                    className={`flex items-center gap-1.5 text-xs font-medium transition-colors ${
-                                    copiedId === message.id ? 'text-green-500' : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                                    className={`flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
+                                    copiedId === message.id 
+                                        ? 'text-green-500 bg-green-500/10' 
+                                        : isDark ? 'text-gray-500 hover:bg-white/5 hover:text-gray-300' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                                     }`}
                                 >
                                     {copiedId === message.id ? (
-                                        <>
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                            Copied
-                                        </>
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
                                     ) : (
-                                        <>
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                            Copy
-                                        </>
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                     )}
+                                    {copiedId === message.id ? 'Copied' : 'Copy'}
                                 </button>
 
                                 {message.ragUsed && (
-                                    <div className="flex items-center gap-1 text-[10px] font-mono text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                                    <div className="flex items-center gap-1 text-[10px] font-mono text-blue-500 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20">
                                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                         RAG ({message.contextCount})
                                     </div>
