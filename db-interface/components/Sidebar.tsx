@@ -23,6 +23,9 @@ const ownerOnlyNavigation = [
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
   { name: 'Signalements', href: '/reports', icon: '🚩', badge: 'Owner' },
   { name: 'Export JSON', href: '/export', icon: '📤', badge: 'Owner' },
+  { name: 'AI Chat', href: '/ai-chat', icon: '🤖', badge: 'AI' },
+  { name: 'AI Analytics', href: '/ai-analytics', icon: '📊', badge: 'AI' },
+  { name: 'Knowledge Base', href: '/knowledge', icon: '📚', badge: 'RAG' },
 ];
 
 export default function Sidebar() {
