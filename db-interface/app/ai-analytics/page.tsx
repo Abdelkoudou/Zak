@@ -261,7 +261,7 @@ export default function AIAnalyticsPage() {
                   </p>
                   {fb.feedback && (
                     <p className={`text-xs mt-2 italic ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                      "{fb.feedback}"
+                      &ldquo;{fb.feedback}&rdquo;
                     </p>
                   )}
                   <p className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
