@@ -2,7 +2,7 @@
   "expo": {
     "name": "FMC App",
     "slug": "fmc-app",
-    "version": "1.4.2",
+    "version": "1.5.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "fmcapp",
@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.fmcapp.mobile",
-      "versionCode": 6,
+      "versionCode": 7,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09B2AD"
