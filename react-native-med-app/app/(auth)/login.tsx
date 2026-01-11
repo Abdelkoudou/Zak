@@ -288,11 +288,15 @@ export default function LoginScreen() {
 
     setError(null)
     setShowResendLink(false)
+    
+    console.log('[Login] Starting login...')
     const { error: loginError } = await signIn(email.trim().toLowerCase(), password)
+    console.log('[Login] Login result:', { hasError: !!loginError, error: loginError })
     
     if (loginError) {
       setError(loginError)
     } else {
+      console.log('[Login] Success, redirecting to tabs...')
       router.replace('/(tabs)')
     }
   }
@@ -399,7 +403,7 @@ export default function LoginScreen() {
             }}>
               <Image 
                 source={Logo}
-                style={{ width: 110, height: 110, resizeMode: 'contain' }}
+                style={{ width: 110, height: 110, resizeMode: 'contain', borderRadius: 36 }}
               />
             </View>
             
@@ -712,7 +716,8 @@ export default function LoginScreen() {
                   style={{ 
                     width: isTablet ? 60 : 50, 
                     height: isTablet ? 60 : 50, 
-                    resizeMode: 'contain' 
+                    resizeMode: 'contain',
+                    borderRadius: isTablet ? 20 : 16,
                   }}
                 />
               </View>

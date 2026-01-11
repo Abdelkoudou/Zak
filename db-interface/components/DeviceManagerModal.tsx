@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { fetchUserDevices, deleteUserDevice } from '@/lib/activation-codes';
 import type { DeviceSession } from '@/types/database';
 
@@ -15,18 +15,18 @@ export default function DeviceManagerModal({ userId, userName, onClose }: Device
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadDevices();
-  }, [userId]);
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     setLoading(true);
     const { data, error } = await fetchUserDevices(userId);
     if (!error) {
       setDevices(data);
     }
     setLoading(false);
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
 
   const handleDelete = async (deviceId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cet appareil ? L\'utilisateur pourra en connecter un nouveau.')) {
@@ -81,10 +81,10 @@ export default function DeviceManagerModal({ userId, userName, onClose }: Device
                 key={device.id} 
                 className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl group hover:border-slate-200 dark:hover:border-white/10 transition-all"
               >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{device.device_name}</h3>
-                    <span className="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 font-black uppercase tracking-wider rounded-md">Actif</span>
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="flex items-start gap-2 mb-1">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm break-all">{device.device_name}</h3>
+                    <span className="shrink-0 text-[10px] px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 font-black uppercase tracking-wider rounded-md mt-0.5">Actif</span>
                   </div>
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider">
                     Dernière activité: {new Date(device.last_active_at).toLocaleDateString('fr-FR')}
@@ -93,7 +93,7 @@ export default function DeviceManagerModal({ userId, userName, onClose }: Device
                 <button
                   onClick={() => handleDelete(device.id)}
                   disabled={deletingId === device.id}
-                  className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50"
+                  className="shrink-0 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50"
                   title="Supprimer l'appareil"
                 >
                   {deletingId === device.id ? '⏳' : '🗑️'}

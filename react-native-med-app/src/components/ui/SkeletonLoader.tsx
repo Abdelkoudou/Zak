@@ -1,10 +1,10 @@
 // ============================================================================
-// Skeleton Loader - Premium Loading States
+// Skeleton Loader - Premium Loading States with Dark Mode
 // ============================================================================
 
 import React, { useEffect, useRef } from 'react'
 import { View, Animated, ViewStyle, Platform } from 'react-native'
-import { BRAND_THEME } from '@/constants/theme'
+import { useTheme } from '@/context/ThemeContext'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -22,6 +22,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   borderRadius = 8,
   style,
 }) => {
+  const { colors } = useTheme()
   const shimmerValue = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
           width,
           height,
           borderRadius,
-          backgroundColor: BRAND_THEME.colors.gray[200],
+          backgroundColor: colors.skeleton,
           opacity,
         },
         style,
@@ -69,14 +70,22 @@ export const Skeleton: React.FC<SkeletonProps> = ({
 // ============================================================================
 
 export const CardSkeleton: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const { colors, isDark } = useTheme()
+  
   return (
     <View
       style={[
         {
-          backgroundColor: '#ffffff',
+          backgroundColor: colors.card,
           borderRadius: 17,
           padding: 20,
-          ...BRAND_THEME.shadows.sm,
+          borderWidth: 1,
+          borderColor: colors.border,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.2 : 0.05,
+          shadowRadius: 2,
+          elevation: 1,
         },
         style,
       ]}
@@ -97,13 +106,21 @@ export const CardSkeleton: React.FC<{ style?: ViewStyle }> = ({ style }) => {
 // ============================================================================
 
 export const StatsSkeleton: React.FC = () => {
+  const { colors, isDark } = useTheme()
+  
   return (
     <View
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: colors.card,
         borderRadius: 17,
         padding: 20,
-        ...BRAND_THEME.shadows.lg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: isDark ? 0.3 : 0.1,
+        shadowRadius: 12,
+        elevation: 8,
       }}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>

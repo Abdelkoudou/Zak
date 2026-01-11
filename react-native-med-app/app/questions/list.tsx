@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, FlatList, Animated, Platform, useWindowDimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
@@ -43,6 +43,12 @@ export default function QuestionsListScreen() {
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
+
+  const { width } = useWindowDimensions()
+  const isTablet = width >= 768
+  const isDesktop = width >= 1024
+  const numColumns = isDesktop ? 3 : isTablet ? 2 : 1
+
 
   const ITEMS_PER_PAGE = 20
 
@@ -112,23 +118,26 @@ export default function QuestionsListScreen() {
   }
 
   const renderQuestion = ({ item: question, index }: { item: QuestionWithAnswers; index: number }) => (
-    <AnimatedQuestionCard
-      key={question.id}
-      question={question}
-      index={index}
-      moduleName={moduleName || ''}
-      onPress={() => {
-        router.push({
-          pathname: '/practice/[moduleId]',
-          params: {
-            moduleId: 'single',
-            moduleName: moduleName,
-            questionId: question.id,
-            startIndex: index.toString()
-          }
-        })
-      }}
-    />
+    <View style={{ flex: 1, maxWidth: numColumns > 1 ? `${100/numColumns}%` : '100%' }}>
+      <AnimatedQuestionCard
+        key={question.id}
+        question={question}
+        index={index}
+        moduleName={moduleName || ''}
+        numColumns={numColumns}
+        onPress={() => {
+          router.push({
+            pathname: '/practice/[moduleId]',
+            params: {
+              moduleId: 'single',
+              moduleName: moduleName,
+              questionId: question.id,
+              startIndex: index.toString()
+            }
+          })
+        }}
+      />
+    </View>
   )
 
   const renderFilters = () => (
@@ -233,6 +242,9 @@ export default function QuestionsListScreen() {
       />
 
       <FlatList
+        key={numColumns} // Force re-render when columns change
+        numColumns={numColumns}
+        columnWrapperStyle={numColumns > 1 ? { gap: 16, paddingHorizontal: 16 } : undefined}
         data={questions}
         renderItem={renderQuestion}
         keyExtractor={(item) => item.id}
@@ -356,11 +368,13 @@ function AnimatedQuestionCard({
   index,
   moduleName,
   onPress,
+  numColumns = 1,
 }: {
   question: QuestionWithAnswers
   index: number
   moduleName: string
   onPress: () => void
+  numColumns?: number
 }) {
   const scale = useRef(new Animated.Value(1)).current
   const opacity = useRef(new Animated.Value(0)).current
@@ -407,7 +421,8 @@ function AnimatedQuestionCard({
       opacity,
       transform: [{ translateY }, { scale }],
       marginBottom: 12,
-      marginHorizontal: 16,
+      marginHorizontal: numColumns > 1 ? 0 : 16,
+      flex: 1, // Ensure card fills width in grid
     }}>
       <TouchableOpacity
         onPress={onPress}

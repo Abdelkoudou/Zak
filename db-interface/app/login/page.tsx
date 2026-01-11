@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { checkDeviceLimit, registerDevice } from '@/lib/deviceAuth';
 import Image from 'next/image';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -48,18 +49,35 @@ function LoginForm() {
 
       const { data: userData, error: userError } = await supabase
         .from('users')
-        .select('role')
+        .select('role, is_reviewer')
         .eq('id', data.user.id)
         .single();
 
       if (userError) throw new Error('Failed to verify user role.');
       if (!userData) throw new Error('User not found in users table');
 
-      const userRecord = userData as { role: string };
+      const userRecord = userData as { role: string; is_reviewer?: boolean };
 
       if (!['owner', 'admin', 'manager'].includes(userRecord.role)) {
         await supabase.auth.signOut();
         throw new Error(`Access denied. Role '${userRecord.role}' does not have admin privileges.`);
+      }
+
+      // Check device limit (skip for reviewer accounts)
+      if (!userRecord.is_reviewer) {
+        const { canLogin, error: deviceError } = await checkDeviceLimit(data.user.id);
+        
+        if (!canLogin) {
+          await supabase.auth.signOut();
+          throw new Error(deviceError || 'Device limit reached');
+        }
+
+        // Register this device
+        const { error: registerError } = await registerDevice(data.user.id);
+        if (registerError) {
+          console.warn('Failed to register device:', registerError);
+          // Don't block login for device registration errors
+        }
       }
 
       await supabase.auth.refreshSession();

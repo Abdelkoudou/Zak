@@ -347,7 +347,7 @@ export default function RegisterScreen() {
               <Animated.View style={{
                 width: 70,
                 height: 70,
-                borderRadius: 20,
+                borderRadius: 24,
                 backgroundColor: 'rgba(255, 255, 255, 0.2)',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -356,7 +356,7 @@ export default function RegisterScreen() {
               }}>
                 <Image 
                   source={Logo}
-                  style={{ width: 48, height: 48, resizeMode: 'contain' }}
+                  style={{ width: 48, height: 48, resizeMode: 'contain', borderRadius: 16 }}
                 />
               </Animated.View>
               
@@ -458,8 +458,9 @@ export default function RegisterScreen() {
                     <FormLabel>Année d'étude *</FormLabel>
                     <FormDropdown
                       value={yearOfStudy ? YEARS.find(y => y.value === yearOfStudy)?.label || '' : ''}
-                      placeholder="Sélectionner"
+                      placeholder={!speciality ? "Sélectionnez la spécialité" : "Sélectionner"}
                       isOpen={showYear}
+                      disabled={!speciality}
                       onToggle={() => { setShowYear(!showYear); setShowSpeciality(false); setShowFaculty(false); setShowRegion(false) }}
                       options={YEARS.map(y => {
                         // If Médecine is selected, only allow 2ème année
@@ -495,7 +496,7 @@ export default function RegisterScreen() {
                     />
                   </View>
                   <View style={[isDesktop ? { flex: 1 } : {}, { zIndex: 10 }]}>
-                    <FormLabel>Wilaya de residence *</FormLabel>
+                    <FormLabel>Wilaya de résidence *</FormLabel>
                     <FormDropdown
                       value={region}
                       placeholder="Sélectionner"
@@ -635,7 +636,7 @@ function FormInput(props: any) {
 }
 
 // Form Dropdown
-function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable, disabledOptions }: {
+function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable, disabledOptions, disabled }: {
   value: string
   placeholder: string
   isOpen: boolean
@@ -644,12 +645,13 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
   onSelect: (value: string) => void
   scrollable?: boolean
   disabledOptions?: string[]
+  disabled?: boolean
 }) {
   return (
     <View>
       <TouchableOpacity
         style={{
-          backgroundColor: BRAND_THEME.colors.gray[50],
+          backgroundColor: disabled ? BRAND_THEME.colors.gray[100] : BRAND_THEME.colors.gray[50],
           borderWidth: 1,
           borderColor: isOpen ? '#09B2AD' : BRAND_THEME.colors.gray[200],
           borderRadius: 14,
@@ -658,15 +660,19 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
+          opacity: disabled ? 0.6 : 1,
         }}
         onPress={onToggle}
+        disabled={disabled}
       >
         <Text style={{ color: value ? BRAND_THEME.colors.gray[900] : BRAND_THEME.colors.gray[400], fontSize: 16 }}>
           {value || placeholder}
         </Text>
-        <Text style={{ color: BRAND_THEME.colors.gray[400] }}>{isOpen ? '▲' : '▼'}</Text>
+        <Text style={{ color: BRAND_THEME.colors.gray[400] }}>
+          {disabled ? '' : (isOpen ? '▲' : '▼')}
+        </Text>
       </TouchableOpacity>
-      {isOpen && (
+      {isOpen && !disabled && (
         <View style={{
           backgroundColor: '#ffffff',
           borderWidth: 1,

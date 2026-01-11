@@ -243,11 +243,12 @@ export default function HomeScreen() {
               source={HeaderImg} 
               style={{
                 width: '100%',
-                backgroundColor: '#0D9488', // Brand Teal fill
+                backgroundColor: '#09B2AD', // Brand Teal fill
                 paddingTop: showWebHeader ? 48 : 80,
                 paddingBottom: 100,
                 alignItems: 'center',
               }}
+              
               imageStyle={{
                 resizeMode: 'cover',
                 borderBottomLeftRadius: 32,
@@ -356,8 +357,10 @@ export default function HomeScreen() {
             <FadeInView delay={150}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <View>
-                  <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}>Vos Modules</Text>
-                  <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>{modules.length} modules disponibles</Text>
+                  <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
+                  <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>
+                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules disponibles
+                  </Text>
                 </View>
                 
               </View>

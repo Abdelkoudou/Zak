@@ -16,11 +16,16 @@ const navigation = [
 ];
 
 const ownerOnlyNavigation = [
+  { name: 'Utilisateurs', href: '/users', icon: '👥', badge: 'Owner' },
   { name: 'Courses', href: '/courses', icon: '📝', badge: 'Owner' },
   { name: 'Codes d\'Activation', href: '/activation-codes', icon: '🔑', badge: 'Owner' },
   { name: 'Paiements', href: '/payments', icon: '💳', badge: 'Owner' },
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
+  { name: 'Signalements', href: '/reports', icon: '🚩', badge: 'Owner' },
   { name: 'Export JSON', href: '/export', icon: '📤', badge: 'Owner' },
+  { name: 'AI Chat', href: '/ai-chat', icon: '🤖', badge: 'AI' },
+  { name: 'AI Analytics', href: '/ai-analytics', icon: '📊', badge: 'AI' },
+  { name: 'Knowledge Base', href: '/knowledge', icon: '📚', badge: 'RAG' },
 ];
 
 export default function Sidebar() {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -38,19 +38,7 @@ export default function ExportPage() {
   const [isOwner, setIsOwner] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string; result?: ExportResult } | null>(null);
 
-  useEffect(() => {
-    checkAccessAndFetchStatus();
-  }, []);
-
-  // Auto-dismiss toast after 8 seconds
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
-  const checkAccessAndFetchStatus = async () => {
+  const checkAccessAndFetchStatus = useCallback(async () => {
     try {
       setLoading(true);
       // 1. Check User Role
@@ -96,7 +84,19 @@ export default function ExportPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    checkAccessAndFetchStatus();
+  }, [checkAccessAndFetchStatus]);
+
+  // Auto-dismiss toast after 8 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const handleExport = async () => {
     setExporting(true);

@@ -230,3 +230,53 @@ export async function getModuleCours(moduleName: string): Promise<{ cours: strin
     return { cours: [], error: 'Failed to fetch cours' }
   }
 }
+
+// ============================================================================
+// Get Module Courses Structure (with Sub-disciplines)
+// ============================================================================
+
+export async function getModuleCoursesStructure(moduleName: string): Promise<{
+  structure: { name: string; sub_discipline: string | null }[];
+  error: string | null
+}> {
+  try {
+    // Try offline content first
+    const offlineModuleData = await OfflineContentService.getModuleContent(moduleName)
+    if (offlineModuleData && offlineModuleData.questions) {
+      // Create structure from offline data which has both cours and sub_discipline (if available)
+      // This is a bit tricky as questions might not have sub_discipline consistent with courses but we'll try
+      const uniqueCourses = new Set<string>();
+      const structure: { name: string; sub_discipline: string | null }[] = [];
+
+      offlineModuleData.questions.forEach((q: any) => {
+        if (q.cours && Array.isArray(q.cours)) {
+          q.cours.forEach((c: string) => {
+            if (!uniqueCourses.has(c)) {
+              uniqueCourses.add(c);
+              structure.push({
+                name: c,
+                sub_discipline: q.sub_discipline || null
+              });
+            }
+          });
+        }
+      });
+
+      return { structure: structure.sort((a, b) => a.name.localeCompare(b.name)), error: null }
+    }
+
+    const { data, error } = await supabase
+      .from('courses')
+      .select('name, sub_discipline')
+      .eq('module_name', moduleName)
+      .order('name')
+
+    if (error) {
+      return { structure: [], error: error.message }
+    }
+
+    return { structure: data || [], error: null }
+  } catch (error) {
+    return { structure: [], error: 'Failed to fetch module courses structure' }
+  }
+}

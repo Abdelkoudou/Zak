@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface Contribution {
@@ -46,11 +46,7 @@ export default function ContributionsPage() {
   const [payingUser, setPayingUser] = useState<Contribution | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  useEffect(() => {
-    fetchContributions();
-  }, [paymentMode]); // Refetch when mode toggles
-
-  const fetchContributions = async () => {
+  const fetchContributions = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -83,7 +79,11 @@ export default function ContributionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [paymentMode, startDate, endDate]);
+
+  useEffect(() => {
+    fetchContributions();
+  }, [fetchContributions]); // Refetch when mode toggles
 
   const fetchDetails = async (userId: string) => {
     try {

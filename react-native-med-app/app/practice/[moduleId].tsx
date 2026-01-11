@@ -3,14 +3,15 @@
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Image, Animated, Platform, TextInput, Modal } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getQuestions } from '@/lib/questions'
 import { saveTestAttempt } from '@/lib/stats'
-import { toggleSaveQuestion, isQuestionSaved } from '@/lib/saved'
+import { toggleSaveQuestion, getSavedQuestionIds } from '@/lib/saved'
+import { submitQuestionReport, ReportType, REPORT_TYPE_LABELS } from '@/lib/reports'
 import { QuestionWithAnswers, OptionLabel, ExamType } from '@/types'
 import { Card, Badge, LoadingSpinner, Button, FadeInView, ConfirmModal } from '@/components/ui'
 import { ChevronLeftIcon } from '@/components/icons'
@@ -20,10 +21,11 @@ import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function PracticeScreen() {
-  const { moduleId, moduleName, examType, subDiscipline, cours } = useLocalSearchParams<{
+  const { moduleId, moduleName, examType, examYear, subDiscipline, cours } = useLocalSearchParams<{
     moduleId: string
     moduleName: string
     examType?: string
+    examYear?: string
     subDiscipline?: string
     cours?: string
   }>()
@@ -37,9 +39,15 @@ export default function PracticeScreen() {
   const [eliminatedAnswers, setEliminatedAnswers] = useState<Record<string, OptionLabel[]>>({})
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set())
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set())
+  const [skippedQuestions, setSkippedQuestions] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState(true)
   const [startTime] = useState(new Date())
   const [showEndSessionModal, setShowEndSessionModal] = useState(false)
+  const [showReportModal, setShowReportModal] = useState(false)
+  const [selectedReportType, setSelectedReportType] = useState<ReportType | null>(null)
+  const [reportDescription, setReportDescription] = useState('')
+  const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportedQuestions, setReportedQuestions] = useState<Set<string>>(new Set())
   const scrollRef = useRef<ScrollView>(null)
   
   const questionFade = useRef(new Animated.Value(0)).current
@@ -87,18 +95,18 @@ export default function PracticeScreen() {
     try {
       const filters: any = { module_name: moduleName }
       if (examType) filters.exam_type = examType
+      if (examYear) filters.exam_year = parseInt(examYear)
       if (subDiscipline) filters.sub_discipline = subDiscipline
       if (cours) filters.cours = cours
 
       const { questions: data } = await getQuestions(filters)
       setQuestions(data)
 
+      // Fetch all saved question IDs in one call instead of N separate calls
       if (user) {
-        const savedSet = new Set<string>()
-        for (const q of data) {
-          const saved = await isQuestionSaved(user.id, q.id)
-          if (saved) savedSet.add(q.id)
-        }
+        const { ids: savedIds } = await getSavedQuestionIds(user.id)
+        const questionIdSet = new Set(data.map(q => q.id))
+        const savedSet = new Set(savedIds.filter(id => questionIdSet.has(id)))
         setSavedQuestions(savedSet)
       }
     } catch (error) {
@@ -112,6 +120,7 @@ export default function PracticeScreen() {
 
   const currentQuestion = questions[currentIndex]
   const isSubmitted = currentQuestion ? submittedQuestions.has(currentQuestion.id) : false
+  const isSkipped = currentQuestion ? skippedQuestions.has(currentQuestion.id) : false
   const currentAnswers = currentQuestion ? selectedAnswers[currentQuestion.id] || [] : []
   const currentEliminated = currentQuestion ? eliminatedAnswers[currentQuestion.id] || [] : []
 
@@ -168,6 +177,17 @@ export default function PracticeScreen() {
     }
   }
 
+  const skipQuestion = () => {
+    if (!currentQuestion) return
+    // Mark as skipped
+    setSkippedQuestions(prev => new Set([...prev, currentQuestion.id]))
+    // Move to next question
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1)
+      scrollRef.current?.scrollTo({ y: 0, animated: true })
+    }
+  }
+
   const goToPrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1)
@@ -200,17 +220,57 @@ export default function PracticeScreen() {
     setShowEndSessionModal(false)
   }
 
+  // Report handlers
+  const openReportModal = () => {
+    setSelectedReportType(null)
+    setReportDescription('')
+    setShowReportModal(true)
+  }
+
+  const closeReportModal = () => {
+    setShowReportModal(false)
+    setSelectedReportType(null)
+    setReportDescription('')
+  }
+
+  const handleSubmitReport = async () => {
+    if (!user || !currentQuestion || !selectedReportType) return
+    
+    setReportSubmitting(true)
+    const { success, error } = await submitQuestionReport(
+      user.id,
+      currentQuestion.id,
+      selectedReportType,
+      reportDescription
+    )
+    setReportSubmitting(false)
+
+    if (success) {
+      setReportedQuestions(prev => new Set([...prev, currentQuestion.id]))
+      closeReportModal()
+    } else {
+      // Show error (could use alert or toast)
+      if (error) {
+        alert(error)
+      }
+    }
+  }
+
   const getEndSessionMessage = () => {
     const answeredCount = submittedQuestions.size
-    const unansweredCount = questions.length - answeredCount
+    const skippedCount = skippedQuestions.size
+    const unansweredCount = questions.length - answeredCount - skippedCount
     
     if (answeredCount === 0) {
       return 'Vous n\'avez répondu à aucune question. Voulez-vous vraiment quitter ?'
     }
     
     let message = `Vous avez répondu à ${answeredCount}/${questions.length} questions.`
+    if (skippedCount > 0) {
+      message += `\n\n${skippedCount} question${skippedCount > 1 ? 's' : ''} sautée${skippedCount > 1 ? 's' : ''}.`
+    }
     if (unansweredCount > 0) {
-      message += `\n\n${unansweredCount} questions non répondues seront ignorées.`
+      message += `\n\n${unansweredCount} question${unansweredCount > 1 ? 's' : ''} non répondue${unansweredCount > 1 ? 's' : ''} sera${unansweredCount > 1 ? 'ont' : ''} ignorée${unansweredCount > 1 ? 's' : ''}.`
     }
     return message
   }
@@ -299,6 +359,142 @@ export default function PracticeScreen() {
         onConfirm={handleConfirmEndSession}
         onCancel={handleCancelEndSession}
       />
+
+      {/* Report Question Modal */}
+      <Modal
+        visible={showReportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeReportModal}
+      >
+        <View style={{ 
+          flex: 1, 
+          backgroundColor: 'rgba(0,0,0,0.5)', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: 24
+        }}>
+          <View style={{ 
+            backgroundColor: colors.card, 
+            borderRadius: 24, 
+            padding: 24, 
+            width: '100%',
+            maxWidth: 400,
+            maxHeight: '80%'
+          }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 24, marginRight: 12 }}>🚩</Text>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, flex: 1 }}>
+                Signaler la question
+              </Text>
+              <TouchableOpacity onPress={closeReportModal} style={{ padding: 4 }}>
+                <Text style={{ fontSize: 24, color: colors.textMuted }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Report Type Selection */}
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 12 }}>
+              Type de problème
+            </Text>
+            <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false}>
+              {(Object.keys(REPORT_TYPE_LABELS) as ReportType[]).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  onPress={() => setSelectedReportType(type)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    backgroundColor: selectedReportType === type ? colors.primaryMuted : colors.backgroundSecondary,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    borderWidth: 2,
+                    borderColor: selectedReportType === type ? colors.primary : 'transparent'
+                  }}
+                >
+                  <View style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: selectedReportType === type ? colors.primary : colors.border,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 12
+                  }}>
+                    {selectedReportType === type && (
+                      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />
+                    )}
+                  </View>
+                  <Text style={{ 
+                    color: selectedReportType === type ? colors.primary : colors.text, 
+                    fontSize: 15,
+                    fontWeight: selectedReportType === type ? '600' : '400'
+                  }}>
+                    {REPORT_TYPE_LABELS[type]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            {/* Description Input */}
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginTop: 16, marginBottom: 8 }}>
+              Description (optionnel)
+            </Text>
+            <TextInput
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              placeholder="Décrivez le problème..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={3}
+              style={{
+                backgroundColor: colors.backgroundSecondary,
+                borderRadius: 12,
+                padding: 12,
+                color: colors.text,
+                fontSize: 15,
+                minHeight: 80,
+                textAlignVertical: 'top'
+              }}
+            />
+
+            {/* Actions */}
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 20 }}>
+              <TouchableOpacity
+                onPress={closeReportModal}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  backgroundColor: colors.backgroundSecondary,
+                  alignItems: 'center'
+                }}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 15 }}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSubmitReport}
+                disabled={!selectedReportType || reportSubmitting}
+                style={{
+                  flex: 1,
+                  paddingVertical: 14,
+                  borderRadius: 12,
+                  backgroundColor: selectedReportType ? colors.primary : colors.border,
+                  alignItems: 'center',
+                  opacity: reportSubmitting ? 0.7 : 1
+                }}
+              >
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>
+                  {reportSubmitting ? 'Envoi...' : 'Envoyer'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={Platform.OS === 'web' ? [] : ['bottom']}>
         {/* Progress Bar */}
@@ -308,12 +504,30 @@ export default function PracticeScreen() {
 
         <ScrollView ref={scrollRef} style={{ flex: 1, paddingHorizontal: 24, paddingVertical: 16 }}>
           {/* Question Header */}
-          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Badge label={`Q${currentQuestion.number}`} variant="primary" style={{ marginRight: 8 }} />
               {currentQuestion.exam_type && <Badge label={currentQuestion.exam_type} variant="secondary" />}
             </View>
-            <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
+            <Animated.View style={{ transform: [{ scale: saveButtonScale }], flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* Report Button */}
+              <TouchableOpacity 
+                onPress={openReportModal}
+                disabled={reportedQuestions.has(currentQuestion.id)}
+                style={{ 
+                  width: 40, 
+                  height: 40, 
+                  borderRadius: 20, 
+                  backgroundColor: reportedQuestions.has(currentQuestion.id) ? colors.warningLight : colors.backgroundSecondary, 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  opacity: reportedQuestions.has(currentQuestion.id) ? 0.6 : 1
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 18 }}>{reportedQuestions.has(currentQuestion.id) ? '✓' : '🚩'}</Text>
+              </TouchableOpacity>
+              {/* Save Button */}
               <TouchableOpacity 
                 onPress={toggleSave}
                 style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isSaved ? colors.primaryLight : colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center' }}
@@ -322,6 +536,24 @@ export default function PracticeScreen() {
                 <Text style={{ fontSize: 20 }}>{isSaved ? '💾' : '📥'}</Text>
               </TouchableOpacity>
             </Animated.View>
+          </Animated.View>
+
+          {/* Filter Summary - Compact inline */}
+          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{moduleName}</Text>
+              {(examType || examYear || cours) && <Text style={{ color: colors.border, fontSize: 10 }}>›</Text>}
+              {examType && <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>{examType}</Text>}
+              {examYear && (
+                <>
+                  {examType && <Text style={{ color: colors.border, fontSize: 10 }}>•</Text>}
+                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>M{parseInt(examYear) - 2000}</Text>
+                </>
+              )}
+              {cours && (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }} numberOfLines={1}>{cours}</Text>
+              )}
+            </View>
           </Animated.View>
 
           {/* Question Text */}
@@ -412,30 +644,60 @@ export default function PracticeScreen() {
             <TouchableOpacity 
               onPress={finishPractice}
               style={{ 
-                backgroundColor: colors.errorLight, 
-                paddingVertical: 10, 
-                paddingHorizontal: 16, 
-                borderRadius: 8, 
+                flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 8, 
+                paddingHorizontal: 12, 
+                borderRadius: 20, 
+                alignSelf: 'center',
                 marginBottom: 12,
-                borderWidth: 1,
-                borderColor: colors.error
+                backgroundColor: colors.backgroundSecondary,
               }}
             >
-              <Text style={{ color: colors.error, fontWeight: '600', fontSize: 14 }}>
-                🛑 Terminer la session ({submittedQuestions.size}/{questions.length} répondues)
+              <View style={{ 
+                width: 6, 
+                height: 6, 
+                borderRadius: 3, 
+                backgroundColor: colors.textMuted,
+                marginRight: 8 
+              }} />
+              <Text style={{ color: colors.textSecondary, fontWeight: '500', fontSize: 13 }}>
+                Terminer ({submittedQuestions.size}/{questions.length})
               </Text>
             </TouchableOpacity>
             
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AnimatedNavButton label="← Précédent" onPress={goToPrevious} disabled={currentIndex === 0} colors={colors} />
-              {!isSubmitted ? (
-                <Button title="Valider" onPress={submitAnswer} disabled={currentAnswers.length === 0} variant="primary" />
-              ) : currentIndex < questions.length - 1 ? (
-                <Button title="Suivant →" onPress={goToNext} variant="primary" />
-              ) : (
-                <Button title="Voir résultats" onPress={saveResults} variant="primary" />
-              )}
+              
+              {/* Skip / Validate / Next buttons */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {!isSubmitted && currentIndex < questions.length - 1 && (
+                  <TouchableOpacity
+                    onPress={skipQuestion}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 8,
+                      backgroundColor: colors.backgroundSecondary,
+                      borderWidth: 1,
+                      borderColor: colors.border
+                    }}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontWeight: '500', fontSize: 14 }}>
+                      Sauter
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                
+                {!isSubmitted ? (
+                  <Button title="Valider" onPress={submitAnswer} disabled={currentAnswers.length === 0} variant="primary" />
+                ) : currentIndex < questions.length - 1 ? (
+                  <Button title="Suivant →" onPress={goToNext} variant="primary" />
+                ) : (
+                  <Button title="Voir résultats" onPress={saveResults} variant="primary" />
+                )}
+              </View>
             </View>
           </View>
         </FadeInView>

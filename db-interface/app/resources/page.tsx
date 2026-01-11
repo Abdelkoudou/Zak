@@ -45,7 +45,6 @@ export default function ResourcesPage() {
     type: 'google_drive',
     url: '',
     speciality: 'Médecine',
-    cours: [''],
   });
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -134,14 +133,6 @@ export default function ResourcesPage() {
     setError(null);
     setSuccess(null);
 
-    // Validate cours
-    const validCours = (formData.cours || []).filter(c => c.trim());
-    if (validCours.length === 0) {
-      setError('Veuillez fournir au moins un cours.');
-      setSaving(false);
-      return;
-    }
-
     // Prepare data for Supabase
     const resourceData = {
       year: formData.year,
@@ -152,7 +143,7 @@ export default function ResourcesPage() {
       url: formData.url,
       description: formData.description || undefined,
       speciality: formData.speciality || undefined,
-      cours: validCours,
+
       unity_name: formData.unityName || undefined,
       module_type: formData.moduleType || selectedModule?.type,
     };
@@ -184,7 +175,7 @@ export default function ResourcesPage() {
       type: 'google_drive',
       url: '',
       speciality: 'Médecine',
-      cours: [''],
+
     });
   };
 
@@ -201,21 +192,7 @@ export default function ResourcesPage() {
     }
   };
 
-  // Helper functions for cours management
-  const addCoursInput = () => {
-    setFormData({ ...formData, cours: [...(formData.cours || []), ''] });
-  };
 
-  const removeCoursInput = (index: number) => {
-    const newCours = (formData.cours || []).filter((_, i) => i !== index);
-    setFormData({ ...formData, cours: newCours.length > 0 ? newCours : [''] });
-  };
-
-  const updateCoursInput = (index: number, value: string) => {
-    const newCours = [...(formData.cours || [])];
-    newCours[index] = value;
-    setFormData({ ...formData, cours: newCours });
-  };
 
   const getResourceIcon = (type: string) => {
     switch (type) {
@@ -627,43 +604,7 @@ export default function ResourcesPage() {
                 </div>
               </div>
 
-              {/* Cours (Multiple) */}
-              <div className="mt-8">
-                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 px-1">
-                  Cours associés *
-                </label>
-                <div className="space-y-4">
-                  {(formData.cours || ['']).map((cours, index) => (
-                    <div key={index} className="flex gap-3">
-                      <input
-                        type="text"
-                        value={cours}
-                        onChange={(e) => updateCoursInput(index, e.target.value)}
-                        className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
-                        placeholder="Nom du cours"
-                        required
-                      />
-                      {index === (formData.cours || []).length - 1 ? (
-                        <button
-                          type="button"
-                          onClick={addCoursInput}
-                          className="w-12 h-12 flex items-center justify-center bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all shadow-lg shadow-primary-500/20 active:scale-95"
-                        >
-                          ➕
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => removeCoursInput(index)}
-                          className="w-12 h-12 flex items-center justify-center bg-red-500/10 text-red-500 rounded-2xl hover:bg-red-500/20 transition-all active:scale-95"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+
 
               {/* Title & URL & Description */}
               <div className="mt-8 space-y-6">

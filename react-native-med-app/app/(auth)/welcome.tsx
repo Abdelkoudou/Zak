@@ -350,7 +350,7 @@ export default function WelcomeScreen() {
             }}>
               <Image 
                 source={Logo}
-                style={{ width: 140, height: 140, resizeMode: 'contain' }}
+                style={{ width: 140, height: 140, resizeMode: 'contain', borderRadius: 48 }}
               />
             </View>
             
@@ -550,6 +550,7 @@ export default function WelcomeScreen() {
                   width: isTablet ? 90 : 75,
                   height: isTablet ? 90 : 75,
                   resizeMode: 'contain',
+                  borderRadius: isTablet ? 30 : 24,
                 }}
               />
             </Animated.View>

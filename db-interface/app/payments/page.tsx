@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { formatAmount } from '@/lib/chargily';
@@ -44,35 +44,7 @@ export default function PaymentsPage() {
   const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'failed'>('all');
   const [searchEmail, setSearchEmail] = useState('');
 
-  // Check auth
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-
-      const { data: user } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!user || user.role !== 'owner') {
-        router.push('/');
-        return;
-      }
-
-      setUserRole(user.role);
-      await Promise.all([fetchPayments(), fetchStats()]);
-      setLoading(false);
-    };
-
-    checkAuth();
-  }, [router]);
-
-  const fetchPayments = async () => {
+  const fetchPayments = useCallback(async () => {
     let query = supabase
       .from('online_payments')
       .select(`
@@ -118,7 +90,7 @@ export default function PaymentsPage() {
     }));
 
     setPayments(transformed);
-  };
+  }, [filter, searchEmail]);
 
   const fetchStats = async () => {
     const { data, error } = await supabase
@@ -141,11 +113,39 @@ export default function PaymentsPage() {
     });
   };
 
+  // Check auth
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const { data: user } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!user || user.role !== 'owner') {
+        router.push('/');
+        return;
+      }
+
+      setUserRole(user.role);
+      await Promise.all([fetchPayments(), fetchStats()]);
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, [router, fetchPayments]);
+
   useEffect(() => {
     if (userRole) {
       fetchPayments();
     }
-  }, [filter, searchEmail, userRole]);
+  }, [userRole, fetchPayments]);
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
