@@ -1,9 +1,34 @@
 // ============================================================================
 // Web Visibility Hook - Handle browser tab visibility changes
+// Crash-Safe Implementation with Lazy Loading
 // ============================================================================
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { Platform, AppState, AppStateStatus } from 'react-native'
+
+// Lazy-loaded modules to prevent crashes
+let _Platform: typeof import('react-native').Platform | null = null
+let _AppState: typeof import('react-native').AppState | null = null
+let _modulesLoaded = false
+
+function loadModules() {
+  if (_modulesLoaded) return
+  _modulesLoaded = true
+  
+  try {
+    const RN = require('react-native')
+    _Platform = RN.Platform
+    _AppState = RN.AppState
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[useWebVisibility] Failed to load react-native:', error)
+    }
+  }
+}
+
+function getPlatformOS(): string {
+  loadModules()
+  return _Platform?.OS || 'unknown'
+}
 
 interface VisibilityState {
   isVisible: boolean
@@ -36,7 +61,7 @@ export function useWebVisibility(options: UseWebVisibilityOptions = {}) {
     hiddenDuration: 0,
   })
   
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null)
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastHiddenAtRef = useRef<number | null>(null)
   const onVisibilityChangeRef = useRef(onVisibilityChange)
   
@@ -46,7 +71,9 @@ export function useWebVisibility(options: UseWebVisibilityOptions = {}) {
   }, [onVisibilityChange])
 
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const platformOS = getPlatformOS()
+    
+    if (platformOS === 'web' && typeof document !== 'undefined') {
       // Web: Use Page Visibility API
       const handleVisibilityChange = () => {
         const isNowVisible = !document.hidden
@@ -120,9 +147,16 @@ export function useWebVisibility(options: UseWebVisibilityOptions = {}) {
           clearTimeout(debounceTimer.current)
         }
       }
-    } else {
-      // Native: Use AppState
-      const handleAppStateChange = (nextAppState: AppStateStatus) => {
+    } else if (platformOS !== 'unknown') {
+      // Native: Use AppState (lazy loaded)
+      loadModules()
+      
+      if (!_AppState) {
+        // AppState not available, return early
+        return
+      }
+      
+      const handleAppStateChange = (nextAppState: string) => {
         const isNowVisible = nextAppState === 'active'
         const now = Date.now()
         
@@ -153,10 +187,16 @@ export function useWebVisibility(options: UseWebVisibilityOptions = {}) {
         }
       }
 
-      const subscription = AppState.addEventListener('change', handleAppStateChange)
-      
-      return () => {
-        subscription.remove()
+      try {
+        const subscription = _AppState.addEventListener('change', handleAppStateChange)
+        
+        return () => {
+          subscription?.remove()
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[useWebVisibility] Failed to add AppState listener:', error)
+        }
       }
     }
   }, [debounceMs])

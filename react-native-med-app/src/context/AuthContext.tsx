@@ -3,11 +3,26 @@
 // ============================================================================
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback, ReactNode } from 'react'
-import { Platform } from 'react-native'
 import { User, RegisterFormData, ProfileUpdateData } from '@/types'
 import * as authService from '@/lib/auth'
 import { supabase, ensureValidSession, getStoredSessionSync } from '@/lib/supabase'
 import { useWebVisibility } from '@/lib/useWebVisibility'
+
+// Lazy-loaded Platform
+let _Platform: typeof import('react-native').Platform | null = null
+let _platformLoaded = false
+
+function getPlatformOS(): string {
+  if (!_platformLoaded) {
+    _platformLoaded = true
+    try {
+      _Platform = require('react-native').Platform
+    } catch {
+      _Platform = null
+    }
+  }
+  return _Platform?.OS || 'unknown'
+}
 
 // ============================================================================
 // Types
@@ -49,7 +64,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Track last successful session check time
   const lastSessionCheck = useRef<number>(0)
   // Minimum time between session checks (5 seconds for web, 30 seconds for native)
-  const SESSION_CHECK_COOLDOWN = Platform.OS === 'web' ? 5000 : 30000
+  const SESSION_CHECK_COOLDOWN = getPlatformOS() === 'web' ? 5000 : 30000
   // Track if initial load is complete
   const initialLoadComplete = useRef(false)
   // Track if we've subscribed to auth changes
@@ -136,7 +151,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!isVisible) return
     
     // Only handle on web after initial load is complete
-    if (Platform.OS !== 'web' || !initialLoadComplete.current) return
+    if (getPlatformOS() !== 'web' || !initialLoadComplete.current) return
     
     // Skip if we checked very recently (within 3 seconds)
     const timeSinceLastCheck = Date.now() - lastSessionCheck.current

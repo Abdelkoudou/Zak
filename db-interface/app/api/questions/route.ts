@@ -210,7 +210,7 @@ export async function DELETE(request: NextRequest) {
     // Validate question ID
     const url = new URL(request.url);
     const idParam = url.searchParams.get('id');
-    
+
     const idResult = validateParam(idParam, uuidSchema, 'Question ID');
     if (idResult.error) return idResult.error;
 

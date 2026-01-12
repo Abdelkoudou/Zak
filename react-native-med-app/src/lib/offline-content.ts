@@ -2,8 +2,23 @@
 // Offline Content Service - Safe Implementation with Lazy Loading
 // ============================================================================
 
-import { Platform } from 'react-native';
 import { supabase } from './supabase';
+
+// Lazy-loaded Platform
+let _Platform: typeof import('react-native').Platform | null = null;
+let _platformLoaded = false;
+
+function getPlatformOS(): string {
+  if (!_platformLoaded) {
+    _platformLoaded = true;
+    try {
+      _Platform = require('react-native').Platform;
+    } catch {
+      _Platform = null;
+    }
+  }
+  return _Platform?.OS || 'unknown';
+}
 
 // Lazy-loaded FileSystem module to prevent crashes on app startup
 let FileSystem: typeof import('expo-file-system') | null = null;
@@ -17,7 +32,7 @@ const MAX_FAILURES = 3;
 
 // Lazy load FileSystem to prevent crashes during module initialization
 async function getFileSystem(): Promise<typeof import('expo-file-system') | null> {
-  if (Platform.OS === 'web') return null;
+  if (getPlatformOS() === 'web') return null;
   if (offlineContentDisabled) return null;
   
   if (!fileSystemLoadAttempted) {
@@ -78,12 +93,12 @@ export interface OfflineVersion {
 export const OfflineContentService = {
   // Check if offline content is available
   isAvailable(): boolean {
-    return Platform.OS !== 'web' && !offlineContentDisabled && fileSystemAvailable;
+    return getPlatformOS() !== 'web' && !offlineContentDisabled && fileSystemAvailable;
   },
 
   // Initialize directory safely
   async init(): Promise<boolean> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return false;
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return false;
     
     try {
       const fs = await getFileSystem();
@@ -108,7 +123,7 @@ export const OfflineContentService = {
 
   // Check for updates safely
   async checkForUpdates(): Promise<{ hasUpdate: boolean; remoteVersion: OfflineVersion | null; error?: string }> {
-    if (Platform.OS === 'web' || offlineContentDisabled) {
+    if (getPlatformOS() === 'web' || offlineContentDisabled) {
       return { hasUpdate: false, remoteVersion: null };
     }
     
@@ -171,7 +186,7 @@ export const OfflineContentService = {
 
   // Download all updates safely
   async downloadUpdates(onProgress?: (progress: number) => void): Promise<void> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return;
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return;
     
     try {
       const fs = await getFileSystem();
@@ -219,7 +234,7 @@ export const OfflineContentService = {
 
   // Get content for a specific module safely
   async getModuleContent(moduleName: string, year?: number): Promise<ModuleData | null> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return null;
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return null;
 
     try {
       const fs = await getFileSystem();
@@ -259,7 +274,7 @@ export const OfflineContentService = {
 
   // Get local version safely
   async getLocalVersion(): Promise<OfflineVersion | null> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return null;
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return null;
 
     try {
       const fs = await getFileSystem();
@@ -284,7 +299,7 @@ export const OfflineContentService = {
 
   // Build module metadata from downloaded content files
   async buildModuleMetadataFromFiles(): Promise<any[]> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return [];
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return [];
 
     try {
       const fs = await getFileSystem();
@@ -333,7 +348,7 @@ export const OfflineContentService = {
 
   // Get Module Metadata by ID
   async getModuleById(id: string): Promise<any | null> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return null;
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return null;
     
     try {
       const version = await this.getLocalVersion();
@@ -368,7 +383,7 @@ export const OfflineContentService = {
 
   // Get All Modules Metadata
   async getAllModules(): Promise<any[]> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return [];
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return [];
     
     try {
       const version = await this.getLocalVersion();
@@ -385,7 +400,7 @@ export const OfflineContentService = {
 
   // Get Modules by Year
   async getModulesByYear(year: string): Promise<any[]> {
-    if (Platform.OS === 'web' || offlineContentDisabled) return [];
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return [];
     
     try {
       const version = await this.getLocalVersion();
