@@ -92,8 +92,52 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 }
 
 // ============================================================================
-// Sign In
+// Error Message Translation
 // ============================================================================
+
+function translateAuthError(error: string): string {
+  const errorLower = error.toLowerCase()
+  
+  // Common Supabase auth errors with French translations
+  if (errorLower.includes('invalid login credentials') || errorLower.includes('invalid credentials')) {
+    return 'Email ou mot de passe incorrect. Veuillez vérifier vos informations.'
+  }
+  
+  if (errorLower.includes('email not confirmed') || errorLower.includes('email address not confirmed')) {
+    return 'Votre email n\'a pas été confirmé. Veuillez vérifier votre boîte mail et cliquer sur le lien de confirmation.'
+  }
+  
+  if (errorLower.includes('too many requests') || errorLower.includes('rate limit')) {
+    return 'Trop de tentatives de connexion. Veuillez attendre quelques minutes avant de réessayer.'
+  }
+  
+  if (errorLower.includes('network') || errorLower.includes('fetch')) {
+    return 'Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer.'
+  }
+  
+  if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
+    return 'La connexion a pris trop de temps. Veuillez réessayer.'
+  }
+  
+  if (errorLower.includes('user not found') || errorLower.includes('no user found')) {
+    return 'Aucun compte trouvé avec cet email. Veuillez vérifier l\'adresse email ou créer un compte.'
+  }
+  
+  if (errorLower.includes('password') && errorLower.includes('weak')) {
+    return 'Le mot de passe est trop faible. Utilisez au moins 8 caractères avec des lettres et des chiffres.'
+  }
+  
+  if (errorLower.includes('email') && errorLower.includes('invalid')) {
+    return 'Format d\'email invalide. Veuillez entrer une adresse email valide.'
+  }
+  
+  if (errorLower.includes('signup') && errorLower.includes('disabled')) {
+    return 'Les inscriptions sont temporairement désactivées. Veuillez réessayer plus tard.'
+  }
+  
+  // Return original error if no translation found
+  return error
+}
 
 // Helper function to add timeout to promises
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -108,6 +152,12 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
     console.log('[Auth] Starting sign in for:', email)
+    
+    // Debug device info in development
+    if (__DEV__) {
+      const { debugDeviceInfo } = await import('./deviceId')
+      await debugDeviceInfo()
+    }
     
     // Add 15 second timeout to prevent endless loading
     const authResult = await withTimeout(
@@ -126,7 +176,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
     if (authError) {
       console.error('[Auth] Sign in error:', authError.message)
-      return { user: null, error: authError.message }
+      return { user: null, error: translateAuthError(authError.message) }
     }
 
     if (!authData.user) {
@@ -156,44 +206,34 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
     if (fetchError) {
       console.error('[Auth] Profile fetch error:', fetchError.message)
-      return { user: null, error: fetchError.message }
+      return { user: null, error: translateAuthError(fetchError.message) }
     }
 
     // Skip device limit check for reviewer accounts (for app store review)
     const isReviewer = (userProfile as any).is_reviewer === true
 
     if (!isReviewer) {
-      console.log('[Auth] Checking device sessions...')
-      // Check device count before registering new device
-      const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
-      const currentDeviceId = await getDeviceId()
-      const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
-
-      console.log('[Auth] Device check:', { 
-        sessionCount: sessions.length, 
-        isCurrentRegistered: isCurrentDeviceRegistered 
-      })
-
-      // If this is a new device and user already has 2 devices, block login
-      if (!isCurrentDeviceRegistered && sessions.length >= 2) {
-        // Sign out the user immediately
-        await supabase.auth.signOut()
-        return {
-          user: null,
-          error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
-        }
-      }
+      console.log('[Auth] Device limit will be enforced by database trigger if needed')
+      // Note: We removed the premature client-side device count check because:
+      // 1. It created a race condition - blocking login before the database trigger could handle it
+      // 2. The database trigger automatically removes the oldest device when limit is exceeded
+      // 3. This provides better UX - users don't get blocked, oldest device just gets replaced
     }
 
     console.log('[Auth] Registering device...')
     // Register/update device session
     await registerDevice(authData.user.id)
 
+    // Debug device sessions in development
+    if (__DEV__) {
+      await debugDeviceSessions(authData.user.id)
+    }
+
     console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
     console.error('[Auth] Unexpected sign in error:', error)
-    return { user: null, error: error?.message || 'An unexpected error occurred' }
+    return { user: null, error: translateAuthError(error?.message || 'Une erreur inattendue s\'est produite') }
   }
 }
 
@@ -409,5 +449,29 @@ export async function removeDevice(sessionId: string): Promise<{ error: string |
     return { error: null }
   } catch (error) {
     return { error: 'Failed to remove device' }
+  }
+}
+
+// ============================================================================
+// Debug Functions
+// ============================================================================
+
+export async function debugDeviceSessions(userId: string): Promise<void> {
+  if (!__DEV__) return
+  
+  try {
+    const currentDeviceId = await getDeviceId()
+    const { sessions } = await getDeviceSessions(userId)
+    
+    console.log('[Auth Debug] Current device ID:', currentDeviceId)
+    console.log('[Auth Debug] Device sessions:', sessions.map(s => ({
+      id: s.id,
+      device_id: s.device_id,
+      device_name: s.device_name,
+      last_active: s.last_active_at,
+      is_current: s.device_id === currentDeviceId
+    })))
+  } catch (error) {
+    console.error('[Auth Debug] Failed to debug device sessions:', error)
   }
 }

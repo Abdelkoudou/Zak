@@ -75,46 +75,63 @@ async function getSecureStorage() {
 }
 
 // ============================================================================
-// Device ID Generation - Unified Approach
+// Device ID Generation - Unified Approach for Consistency
 // ============================================================================
 
-function generateDeterministicDeviceId(): string {
+function generateUnifiedDeviceId(): string {
   loadModules()
   
+  // Get screen characteristics (use consistent orientation - always width >= height)
   let screenWidth = 1920
   let screenHeight = 1080
-  let osName = 'Unknown OS'
   
   try {
     if (_Dimensions) {
       const screen = _Dimensions.get('screen')
-      screenWidth = Math.max(screen.width, screen.height)
-      screenHeight = Math.min(screen.width, screen.height)
+      screenWidth = Math.max(screen.width, screen.height)  // Always use larger as width
+      screenHeight = Math.min(screen.width, screen.height) // Always use smaller as height
     }
   } catch {
     // Use defaults
   }
   
+  // Get simplified OS name for consistency between mobile and web
+  let osName = 'Unknown'
+  
   try {
     if (_Device?.osName) {
-      osName = _Device.osName
+      const deviceOsName = _Device.osName.toLowerCase()
+      // Normalize OS names to match web detection
+      if (deviceOsName.includes('android')) osName = 'Android'
+      else if (deviceOsName.includes('ios')) osName = 'iOS'
+      else if (deviceOsName.includes('windows')) osName = 'Windows'
+      else if (deviceOsName.includes('mac')) osName = 'macOS'
+      else if (deviceOsName.includes('linux')) osName = 'Linux'
+      else osName = _Device.osName
     }
   } catch {
     // Use default
   }
   
+  // Create device string focusing on hardware characteristics
+  // This should be consistent whether accessed via mobile app or web browser
   const screenInfo = `${screenWidth}x${screenHeight}`
   const deviceString = `${osName}-${screenInfo}`
   
-  // Create a hash-like identifier
+  // Create a hash-like identifier (same algorithm as web)
   let hash = 0
   for (let i = 0; i < deviceString.length; i++) {
     const char = deviceString.charCodeAt(i)
     hash = ((hash << 5) - hash) + char
-    hash = hash & hash
+    hash = hash & hash // Convert to 32-bit integer
   }
   
   const hashString = Math.abs(hash).toString(36)
+  
+  if (__DEV__) {
+    console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
+  }
+  
   return `unified-${hashString}`
 }
 
@@ -129,7 +146,7 @@ export async function getDeviceId(): Promise<string> {
     let deviceId = await storage.getItemAsync(DEVICE_ID_KEY)
     
     if (!deviceId) {
-      deviceId = generateDeterministicDeviceId()
+      deviceId = generateUnifiedDeviceId()
       await storage.setItemAsync(DEVICE_ID_KEY, deviceId)
       
       if (__DEV__) {
@@ -142,7 +159,7 @@ export async function getDeviceId(): Promise<string> {
     if (__DEV__) {
       console.error('[DeviceId] Error getting device ID:', error)
     }
-    return generateDeterministicDeviceId()
+    return generateUnifiedDeviceId()
   }
 }
 
@@ -179,7 +196,49 @@ export async function clearDeviceId(): Promise<void> {
       const SecureStore = require('expo-secure-store')
       await SecureStore.deleteItemAsync(DEVICE_ID_KEY)
     }
+    
+    if (__DEV__) {
+      console.log('[DeviceId] Cleared stored device ID')
+    }
   } catch {
     // Ignore errors
+  }
+}
+
+// ============================================================================
+// Debug Functions
+// ============================================================================
+
+export async function debugDeviceInfo(): Promise<void> {
+  if (!__DEV__) return
+  
+  loadModules()
+  
+  try {
+    const deviceId = await getDeviceId()
+    const deviceName = await getDeviceName()
+    
+    let screenInfo = 'Unknown'
+    let osInfo = 'Unknown'
+    
+    try {
+      if (_Dimensions) {
+        const screen = _Dimensions.get('screen')
+        screenInfo = `${Math.max(screen.width, screen.height)}x${Math.min(screen.width, screen.height)}`
+      }
+    } catch {}
+    
+    try {
+      if (_Device?.osName) {
+        osInfo = _Device.osName
+      }
+    } catch {}
+    
+    console.log('[DeviceId Debug] Device ID:', deviceId)
+    console.log('[DeviceId Debug] Device Name:', deviceName)
+    console.log('[DeviceId Debug] Screen Info:', screenInfo)
+    console.log('[DeviceId Debug] OS Info:', osInfo)
+  } catch (error) {
+    console.error('[DeviceId Debug] Failed to debug device info:', error)
   }
 }
