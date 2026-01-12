@@ -35,31 +35,3 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
-
-// Configure shorter CMake build directory to avoid Windows MAX_PATH issues
-subprojects {
-  def configureProject = { proj ->
-    if (proj.hasProperty('android')) {
-      proj.android {
-        if (it.hasProperty('externalNativeBuild')) {
-          it.externalNativeBuild {
-            if (it.hasProperty('cmake')) {
-              it.cmake {
-                buildStagingDirectory = new File("C:/tmp/rn/${proj.name}")
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  
-  // If project already evaluated, configure immediately; otherwise wait
-  if (project.state.executed) {
-    configureProject(project)
-  } else {
-    project.afterEvaluate {
-      configureProject(project)
-    }
-  }
-}
