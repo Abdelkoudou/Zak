@@ -43,8 +43,7 @@ export const questionSchema = z.object({
       'annexe_biskra',
       'annexe_oum_el_bouaghi',
       'annexe_khenchela',
-      'annexe_batna',
-      'annexe_msila',
+      'annexe_souk_ahras',
     ])
     .nullish(),
   image_url: z.string().url().max(MAX_URL_LENGTH).nullish(),
