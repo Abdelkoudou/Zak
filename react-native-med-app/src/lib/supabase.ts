@@ -41,9 +41,16 @@ function ensureUrlPolyfill() {
   }
 }
 
-// Get environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
+// Get environment variables with fallback for production builds
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://tkthvgvjecihqfnknosj.supabase.co'
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdGh2Z3ZqZWNpaHFmbmtub3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjgwOTQsImV4cCI6MjA3OTAwNDA5NH0.w6TmuCl85ChtLbzUmQDVTwLxOqjD-9HjBfg2uQZhhQI'
+
+// Log configuration status (only in dev)
+if (__DEV__) {
+  console.log('[Supabase] URL configured:', supabaseUrl ? 'Yes' : 'NO - MISSING!')
+  console.log('[Supabase] Key configured:', supabaseAnonKey ? 'Yes' : 'NO - MISSING!')
+  console.log('[Supabase] Using env vars:', !!process.env.EXPO_PUBLIC_SUPABASE_URL)
+}
 
 // Check platform safely
 function isWeb(): boolean {
@@ -197,6 +204,20 @@ export function getStoredSessionSync(): boolean {
     return stored !== null && stored !== ''
   } catch {
     return false
+  }
+}
+
+// Check if Supabase is properly configured
+export function isSupabaseConfigured(): boolean {
+  return supabaseUrl.length > 0 && supabaseAnonKey.length > 0 && supabaseUrl.includes('supabase')
+}
+
+// Get configuration status for debugging
+export function getSupabaseConfigStatus(): { url: boolean; key: boolean; valid: boolean } {
+  return {
+    url: supabaseUrl.length > 0,
+    key: supabaseAnonKey.length > 0,
+    valid: isSupabaseConfigured()
   }
 }
 

@@ -2,7 +2,7 @@
 // Authentication Service
 // ============================================================================
 
-import { supabase, getRedirectUrl } from './supabase'
+import { supabase, getRedirectUrl, isSupabaseConfigured, getSupabaseConfigStatus } from './supabase'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 import { getDeviceId, getDeviceName } from './deviceId'
 
@@ -98,7 +98,13 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 function translateAuthError(error: string): string {
   const errorLower = error.toLowerCase()
   
+  // Log the original error for debugging
+  if (__DEV__) {
+    console.log('[Auth] Translating error:', error)
+  }
+  
   // Common Supabase auth errors with French translations
+  // Check most specific errors first
   if (errorLower.includes('invalid login credentials') || errorLower.includes('invalid credentials')) {
     return 'Email ou mot de passe incorrect. Veuillez vérifier vos informations.'
   }
@@ -109,14 +115,6 @@ function translateAuthError(error: string): string {
   
   if (errorLower.includes('too many requests') || errorLower.includes('rate limit')) {
     return 'Trop de tentatives de connexion. Veuillez attendre quelques minutes avant de réessayer.'
-  }
-  
-  if (errorLower.includes('network') || errorLower.includes('fetch')) {
-    return 'Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer.'
-  }
-  
-  if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
-    return 'La connexion a pris trop de temps. Veuillez réessayer.'
   }
   
   if (errorLower.includes('user not found') || errorLower.includes('no user found')) {
@@ -133,6 +131,22 @@ function translateAuthError(error: string): string {
   
   if (errorLower.includes('signup') && errorLower.includes('disabled')) {
     return 'Les inscriptions sont temporairement désactivées. Veuillez réessayer plus tard.'
+  }
+  
+  // Network errors - be more specific to avoid false positives
+  // Only match actual network/connection errors, not "fetch profile" type errors
+  if (errorLower.includes('network request failed') || 
+      errorLower.includes('networkerror') ||
+      errorLower.includes('failed to fetch') ||
+      errorLower.includes('net::err') ||
+      errorLower.includes('econnrefused') ||
+      errorLower.includes('enotfound') ||
+      errorLower.includes('unable to resolve host')) {
+    return 'Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer.'
+  }
+  
+  if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
+    return 'La connexion a pris trop de temps. Veuillez réessayer.'
   }
   
   // Return original error if no translation found
@@ -153,87 +167,115 @@ export async function signIn(email: string, password: string): Promise<{ user: U
   try {
     console.log('[Auth] Starting sign in for:', email)
     
-    // Debug device info in development
-    if (__DEV__) {
-      const { debugDeviceInfo } = await import('./deviceId')
-      await debugDeviceInfo()
+    // Check if Supabase is properly configured
+    const configStatus = getSupabaseConfigStatus()
+    console.log('[Auth] Supabase config status:', configStatus)
+    
+    if (!isSupabaseConfigured()) {
+      console.error('[Auth] Supabase not configured properly:', configStatus)
+      return { user: null, error: 'Erreur de configuration. Veuillez réinstaller l\'application.' }
     }
     
-    // Add 15 second timeout to prevent endless loading
-    const authResult = await withTimeout(
-      supabase.auth.signInWithPassword({
+    // Debug device info in development
+    if (__DEV__) {
+      try {
+        const { debugDeviceInfo } = await import('./deviceId')
+        await debugDeviceInfo()
+      } catch (e) {
+        console.warn('[Auth] Debug device info failed:', e)
+      }
+    }
+    
+    // Step 1: Authenticate with Supabase
+    console.log('[Auth] Calling signInWithPassword...')
+    let authData: any = null
+    let authError: any = null
+    
+    try {
+      const result = await supabase.auth.signInWithPassword({
         email,
         password,
-      }),
-      15000,
-      'La connexion a pris trop de temps. Veuillez réessayer.'
-    )
-    
-    const authData = authResult.data
-    const authError = authResult.error
+      })
+      authData = result.data
+      authError = result.error
+    } catch (e: any) {
+      console.error('[Auth] signInWithPassword threw:', e)
+      return { user: null, error: translateAuthError(e?.message || 'Erreur de connexion. Veuillez réessayer.') }
+    }
 
-    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, error: authError?.message })
+    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
 
     if (authError) {
       console.error('[Auth] Sign in error:', authError.message)
       return { user: null, error: translateAuthError(authError.message) }
     }
 
-    if (!authData.user) {
+    if (!authData?.user) {
       console.error('[Auth] No user returned from sign in')
-      return { user: null, error: 'Failed to sign in' }
+      return { user: null, error: 'Échec de la connexion. Veuillez réessayer.' }
     }
 
-    console.log('[Auth] Fetching user profile...')
+    // Step 2: Fetch user profile
+    console.log('[Auth] Fetching user profile for:', authData.user.id)
+    let userProfile: any = null
+    let fetchError: any = null
     
-    // Fetch user profile first to check if they're a reviewer
-    const profilePromise = supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
-    
-    const profileResult = await withTimeout(
-      Promise.resolve(profilePromise),
-      10000,
-      'Impossible de charger le profil. Veuillez réessayer.'
-    )
-    
-    const userProfile = profileResult.data
-    const fetchError = profileResult.error
+    try {
+      const result = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+      
+      userProfile = result.data
+      fetchError = result.error
+    } catch (e: any) {
+      console.error('[Auth] Profile fetch threw:', e)
+      return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
+    }
 
     console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
 
     if (fetchError) {
-      console.error('[Auth] Profile fetch error:', fetchError.message)
-      return { user: null, error: translateAuthError(fetchError.message) }
+      console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
+      // Don't translate this error - show a specific message
+      if (fetchError.code === 'PGRST116') {
+        return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
+      }
+      return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
     }
 
-    // Skip device limit check for reviewer accounts (for app store review)
-    const isReviewer = (userProfile as any).is_reviewer === true
+    if (!userProfile) {
+      console.error('[Auth] No profile data returned')
+      return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
+    }
 
+    // Step 3: Register device (skip for reviewers)
+    const isReviewer = userProfile.is_reviewer === true
     if (!isReviewer) {
-      console.log('[Auth] Device limit will be enforced by database trigger if needed')
-      // Note: We removed the premature client-side device count check because:
-      // 1. It created a race condition - blocking login before the database trigger could handle it
-      // 2. The database trigger automatically removes the oldest device when limit is exceeded
-      // 3. This provides better UX - users don't get blocked, oldest device just gets replaced
+      console.log('[Auth] Registering device...')
+      try {
+        await registerDevice(authData.user.id)
+      } catch (e) {
+        console.warn('[Auth] Device registration failed (non-blocking):', e)
+        // Don't fail login if device registration fails
+      }
     }
-
-    console.log('[Auth] Registering device...')
-    // Register/update device session
-    await registerDevice(authData.user.id)
 
     // Debug device sessions in development
     if (__DEV__) {
-      await debugDeviceSessions(authData.user.id)
+      try {
+        await debugDeviceSessions(authData.user.id)
+      } catch (e) {
+        console.warn('[Auth] Debug device sessions failed:', e)
+      }
     }
 
     console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
     console.error('[Auth] Unexpected sign in error:', error)
-    return { user: null, error: translateAuthError(error?.message || 'Une erreur inattendue s\'est produite') }
+    return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
   }
 }
 
