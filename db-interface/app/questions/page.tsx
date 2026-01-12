@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Question, QuestionFormData } from '@/types/database';
 import { YEARS, EXAM_TYPES, OPTION_LABELS } from '@/lib/constants';
 import { PREDEFINED_MODULES, PREDEFINED_SUBDISCIPLINES } from '@/lib/predefined-modules';
-import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion, getQuestionById } from '@/lib/api/questions';
+import { createQuestion, getQuestions, deleteQuestion as deleteQuestionAPI, updateQuestion, getQuestionById, getExistingQuestionNumbers } from '@/lib/api/questions';
 import { getCourses, createCourse } from '@/lib/api/courses';
 import { getModules } from '@/lib/api/modules';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
@@ -19,6 +19,8 @@ function QuestionsPageContent() {
   const [questions, setQuestions] = useState<any[]>([]);
   const [availableCourses, setAvailableCourses] = useState<string[]>([]);
   const [fetchingCourses, setFetchingCourses] = useState(false);
+  const [fetchingNextNumber, setFetchingNextNumber] = useState(false);
+  const [existingNumbers, setExistingNumbers] = useState<number[]>([]);
   const [activeCourseInputIndex, setActiveCourseInputIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -29,6 +31,7 @@ function QuestionsPageContent() {
     year: '1',
     moduleId: '',
     examType: 'EMD',
+    examYear: undefined,
     number: 1,
     questionText: '',
     speciality: 'Médecine',
@@ -92,7 +95,8 @@ function QuestionsPageContent() {
     moduleId: '', // module_name
     subDiscipline: '',
     cours: '',
-    examType: ''
+    examType: '',
+    examYear: '' // promo
   });
 
   const [filterCourses, setFilterCourses] = useState<string[]>([]);
@@ -146,6 +150,7 @@ function QuestionsPageContent() {
         module_name: listFilters.moduleId || undefined,
         sub_discipline: listFilters.subDiscipline || undefined,
         exam_type: listFilters.examType || undefined,
+        exam_year: listFilters.examYear ? parseInt(listFilters.examYear) : undefined,
         cours: listFilters.cours || undefined
     });
     if (result.success) {
@@ -196,6 +201,35 @@ function QuestionsPageContent() {
     fetchCourses();
   }, [formData.year, formData.speciality, formData.moduleId, formData.subDisciplineId]);
 
+  // Auto-fetch existing question numbers when module/exam context changes
+  useEffect(() => {
+    const fetchExistingNumbers = async () => {
+      // Only fetch if we have the required fields and not editing
+      if (formData.year && formData.moduleId && formData.examType && !editingId) {
+        setFetchingNextNumber(true);
+        const result = await getExistingQuestionNumbers({
+          year: formData.year,
+          module_name: formData.moduleId,
+          sub_discipline: formData.subDisciplineId,
+          exam_type: formData.examType,
+          exam_year: formData.examYear,
+        });
+        if (result.success && result.data) {
+          const numbers = result.data.existingNumbers as number[];
+          setExistingNumbers(numbers);
+          // Only auto-set number if current number is already taken or is default (1)
+          if (numbers.includes(formData.number) || formData.number === 1) {
+            setFormData(prev => ({ ...prev, number: result.data.suggestedNext }));
+          }
+        }
+        setFetchingNextNumber(false);
+      } else {
+        setExistingNumbers([]);
+      }
+    };
+    fetchExistingNumbers();
+  }, [formData.year, formData.moduleId, formData.subDisciplineId, formData.examType, formData.examYear, editingId]);
+
   // Reload when filters change
   useEffect(() => {
     loadQuestions();
@@ -206,6 +240,13 @@ function QuestionsPageContent() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+
+    // Validation: exam_year is required
+    if (!formData.examYear) {
+      setError('Veuillez sélectionner l\'année de l\'examen (promo). C\'est obligatoire pour éviter les doublons.');
+      setSaving(false);
+      return;
+    }
 
     // Validation
     const hasCorrectAnswer = formData.answers.some(a => a.isCorrect && a.answerText.trim());
@@ -247,7 +288,7 @@ function QuestionsPageContent() {
       module_name: formData.moduleId, // moduleId is actually the module name
       sub_discipline: formData.subDisciplineId || undefined,
       exam_type: formData.examType,
-      exam_year: formData.examYear || undefined,
+      exam_year: formData.examYear!,  // Already validated as required above
       number: formData.number,
       question_text: formData.questionText,
       speciality: formData.speciality || undefined,
@@ -280,10 +321,37 @@ function QuestionsPageContent() {
         setEditingId(null);
       } else {
         // Keep form open for faster entry
-        // Preserve context (Speciality -> Exam Year), increment number, clear content
+        // Fetch existing numbers to update the list and suggest next
+        const numbersResult = await getExistingQuestionNumbers({
+          year: formData.year,
+          module_name: formData.moduleId,
+          sub_discipline: formData.subDisciplineId,
+          exam_type: formData.examType,
+          exam_year: formData.examYear,
+        });
+        
+        if (numbersResult.success) {
+          setExistingNumbers(numbersResult.data.existingNumbers);
+        }
+        
+        const nextNumber = numbersResult.success ? numbersResult.data.suggestedNext : formData.number + 1;
+        
+        // Preserve context fields explicitly (year, module, examType, examYear, speciality, etc.)
+        // Clear only content fields (questionText, cours, answers, etc.)
         setFormData(prev => ({
-          ...prev,
-          number: prev.number + 1,
+          // Explicitly preserve all context fields
+          year: prev.year,
+          moduleId: prev.moduleId,
+          subDisciplineId: prev.subDisciplineId,
+          examType: prev.examType,
+          examYear: prev.examYear,  // IMPORTANT: Keep the promo year!
+          speciality: prev.speciality,
+          unityName: prev.unityName,
+          moduleType: prev.moduleType,
+          facultySource: prev.facultySource,
+          // Set next question number
+          number: nextNumber,
+          // Clear content fields for new question
           questionText: '',
           cours: [''],
           imageUrl: undefined,
@@ -313,6 +381,7 @@ function QuestionsPageContent() {
       year: '1',
       moduleId: '',
       examType: 'EMD',
+      examYear: undefined,
       number: 1,
       questionText: '',
       speciality: 'Médecine',
@@ -795,10 +864,10 @@ function QuestionsPageContent() {
                 </select>
               </div>
 
-              {/* Année de l'Examen (Promo) */}
+              {/* Année de l'Examen (Promo) - REQUIRED */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Année de l&apos;Examen (Promo)
+                  Année de l&apos;Examen (Promo) <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={formData.examYear || ""}
@@ -810,9 +879,12 @@ function QuestionsPageContent() {
                         : undefined,
                     })
                   }
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
+                  className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all ${
+                    !formData.examYear ?  'border-slate-200 dark:border-white/10': 'border-red-300 dark:border-red-500'
+                  }`}
+                  required
                 >
-                  <option value="">Sélectionner la promo</option>
+                  <option value="">⚠️ Sélectionner la promo (obligatoire)</option>
                   {formData.year === "1" &&
                     Array.from({ length: 8 }, (_, i) => 2025 - i).map(
                       (year) => (
@@ -838,11 +910,18 @@ function QuestionsPageContent() {
                       )
                     )}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.year === "1" && "1ère année: 2018-2025"}
-                  {formData.year === "2" && "2ème année: 2018-2024"}
-                  {formData.year === "3" && "3ème année: 2018-2023"}
-                </p>
+                {!formData.examYear && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    ⚠️ La promo est obligatoire pour éviter les doublons
+                  </p>
+                )}
+                {formData.examYear && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.year === "1" && "1ère année: 2018-2025"}
+                    {formData.year === "2" && "2ème année: 2018-2024"}
+                    {formData.year === "3" && "3ème année: 2018-2023"}
+                  </p>
+                )}
               </div>
 
               {/* Numéro de la Question */}
@@ -850,19 +929,68 @@ function QuestionsPageContent() {
                 <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">
                   Numéro de la Question *
                 </label>
-                <input
-                  type="number"
-                  value={formData.number}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      number: parseInt(e.target.value),
-                    })
-                  }
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all"
-                  min="1"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={formData.number}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        number: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all pr-10 ${
+                      existingNumbers.includes(formData.number) && !editingId
+                        ? 'border-red-400 dark:border-red-500'
+                        : 'border-slate-200 dark:border-white/10'
+                    }`}
+                    min="1"
+                    required
+                  />
+                  {fetchingNextNumber && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin h-4 w-4 border-2 border-primary-500 rounded-full border-t-transparent"></div>
+                    </div>
+                  )}
+                </div>
+                {/* Warning if number already exists */}
+                {existingNumbers.includes(formData.number) && !editingId && (
+                  <p className="text-xs text-red-500 mt-2 ml-1 font-medium">
+                    ⚠️ Ce numéro existe déjà pour cet examen!
+                  </p>
+                )}
+                {/* Show existing numbers */}
+                {existingNumbers.length > 0 && (
+                  <div className="mt-2 ml-1">
+                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+                      Questions déjà saisies ({existingNumbers.length}):
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {existingNumbers.slice(0, 30).map((num) => (
+                        <span
+                          key={num}
+                          className={`inline-flex items-center justify-center w-7 h-7 text-xs font-bold rounded-lg ${
+                            num === formData.number
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {num}
+                        </span>
+                      ))}
+                      {existingNumbers.length > 30 && (
+                        <span className="inline-flex items-center justify-center px-2 h-7 text-xs font-bold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                          +{existingNumbers.length - 30}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {existingNumbers.length === 0 && !fetchingNextNumber && formData.moduleId && formData.examType && (
+                  <p className="text-[10px] font-bold text-green-500 dark:text-green-400 uppercase tracking-wider mt-2 ml-1">
+                    ✓ Aucune question saisie pour cet examen
+                  </p>
+                )}
               </div>
 
               {/* Cours (Multiple) */}
@@ -1189,6 +1317,26 @@ function QuestionsPageContent() {
                 <option value="">Tous les cours</option>
                 {filterCourses.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+
+            <select
+                value={listFilters.examType}
+                onChange={e => setListFilters(prev => ({ ...prev, examType: e.target.value }))}
+                className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
+            >
+                <option value="">Tous les types</option>
+                {EXAM_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+
+            <select
+                value={listFilters.examYear}
+                onChange={e => setListFilters(prev => ({ ...prev, examYear: e.target.value }))}
+                className="px-4 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm transition-all"
+            >
+                <option value="">Toutes les promos</option>
+                {Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => (
+                  <option key={year} value={year}>M{year - 2000}</option>
+                ))}
+            </select>
           </div>
         </div>
         <div className="p-6 md:p-8">
@@ -1236,6 +1384,16 @@ function QuestionsPageContent() {
                               <span className="px-3 py-1 bg-primary-600 text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-primary-500/20">
                                 Q{question.number}
                               </span>
+                              {question.exam_year && (
+                                <span className="px-3 py-1 bg-blue-500/10 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-widest border border-blue-500/20">
+                                  M{question.exam_year - 2000}
+                                </span>
+                              )}
+                              {!question.exam_year && (
+                                <span className="px-3 py-1 bg-red-500/10 text-red-500 text-[10px] font-black rounded-lg uppercase tracking-widest border border-red-500/20">
+                                  ⚠️ Sans promo
+                                </span>
+                              )}
                               {question.speciality && (
                                 <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-black rounded-lg uppercase tracking-widest">
                                   {question.speciality}

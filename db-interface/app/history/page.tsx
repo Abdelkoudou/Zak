@@ -11,6 +11,8 @@ interface FilterState {
   moduleId: string;
   speciality: string;
   examType: string;
+  examYear: string;
+  questionNumber: string;
   createdBy: string;
   searchText: string;
   dateFrom: string;
@@ -26,6 +28,8 @@ export default function HistoryPage() {
     moduleId: '',
     speciality: '',
     examType: '',
+    examYear: '',
+    questionNumber: '',
     createdBy: '',
     searchText: '',
     dateFrom: '',
@@ -98,6 +102,16 @@ export default function HistoryPage() {
       filtered = filtered.filter(q => q.exam_type === filters.examType);
     }
 
+    // Filter by exam year (promo)
+    if (filters.examYear) {
+      filtered = filtered.filter(q => q.exam_year === parseInt(filters.examYear));
+    }
+
+    // Filter by question number
+    if (filters.questionNumber) {
+      filtered = filtered.filter(q => q.number === parseInt(filters.questionNumber));
+    }
+
     // Filter by created by
     if (filters.createdBy) {
       filtered = filtered.filter(q => q.created_by === filters.createdBy);
@@ -145,6 +159,8 @@ export default function HistoryPage() {
       moduleId: '',
       speciality: '',
       examType: '',
+      examYear: '',
+      questionNumber: '',
       createdBy: '',
       searchText: '',
       dateFrom: '',
@@ -164,12 +180,13 @@ export default function HistoryPage() {
   };
 
   const exportToCSV = () => {
-    const headers = ['Année', 'Module', 'Spécialité', 'Type Examen', 'Numéro', 'Question', 'Cours', 'Date Création'];
+    const headers = ['Année', 'Module', 'Spécialité', 'Type Examen', 'Promo', 'Numéro', 'Question', 'Cours', 'Date Création'];
     const rows = filteredQuestions.map(q => [
       q.year,
       q.module_name,
       q.speciality || '',
       q.exam_type,
+      q.exam_year ? `M${q.exam_year - 2000}` : '',
       q.number,
       `"${q.question_text.replace(/"/g, '""')}"`,
       q.cours ? `"${q.cours.join('; ')}"` : '',
@@ -270,6 +287,7 @@ export default function HistoryPage() {
             { label: 'Année', value: filters.year, onChange: (v: string) => setFilters({ ...filters, year: v, moduleId: '' }), placeholder: 'Toutes les années', options: YEARS.map(y => ({ value: y.value, label: y.label })) },
             { label: 'Module', value: filters.moduleId, onChange: (v: string) => setFilters({ ...filters, moduleId: v }), placeholder: 'Tous les modules', options: availableModules.map(m => ({ value: m.name, label: m.name })) },
             { label: 'Type d\'Examen', value: filters.examType, onChange: (v: string) => setFilters({ ...filters, examType: v }), placeholder: 'Tous les types', options: availableExamTypes.map(t => ({ value: t, label: t })) },
+            { label: 'Promo (Année Examen)', value: filters.examYear, onChange: (v: string) => setFilters({ ...filters, examYear: v }), placeholder: 'Toutes les promos', options: Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => ({ value: String(year), label: `M${year - 2000}` })) },
             { label: 'Ajouté par', value: filters.createdBy, onChange: (v: string) => setFilters({ ...filters, createdBy: v }), placeholder: 'Tous les utilisateurs', options: users.map(u => ({ value: u.id, label: u.full_name || u.email })) },
           ].map((item, idx) => (
             <div key={idx}>
@@ -301,6 +319,21 @@ export default function HistoryPage() {
               value={filters.searchText}
               onChange={(e) => setFilters({ ...filters, searchText: e.target.value })}
               placeholder="Texte de la question..."
+              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+            />
+          </div>
+
+          {/* Question Number */}
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+              N° Question
+            </label>
+            <input
+              type="number"
+              value={filters.questionNumber}
+              onChange={(e) => setFilters({ ...filters, questionNumber: e.target.value })}
+              placeholder="Ex: 17"
+              min="1"
               className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
             />
           </div>
@@ -384,6 +417,15 @@ export default function HistoryPage() {
                         <span className="px-2 py-0.5 bg-primary-600 text-white text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                           Q{question.number}
                         </span>
+                        {question.exam_year ? (
+                          <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-black rounded-md uppercase tracking-widest leading-none border border-blue-500/20">
+                            M{question.exam_year - 2000}
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 bg-red-500/10 text-red-500 text-[10px] font-black rounded-md uppercase tracking-widest leading-none border border-red-500/20">
+                            ⚠️ Sans promo
+                          </span>
+                        )}
                         <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
                           {YEARS.find(y => y.value === question.year)?.label}
                         </span>
@@ -404,9 +446,17 @@ export default function HistoryPage() {
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                        {new Date(question.created_at).toLocaleDateString('fr-FR')}
-                      </span>
+                      <div className="flex items-center gap-3">
+                        <a
+                          href={`/questions?edit=${question.id}`}
+                          className="px-3 py-1.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-black rounded-lg uppercase tracking-widest hover:bg-primary-500/20 transition-all"
+                        >
+                          ✏️ Modifier
+                        </a>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          {new Date(question.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
                     </div>
 
                     <p className="text-slate-900 dark:text-white mb-4 font-bold leading-relaxed">{question.question_text}</p>

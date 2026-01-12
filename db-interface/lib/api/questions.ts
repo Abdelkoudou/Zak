@@ -17,7 +17,7 @@ export interface CreateQuestionData {
   module_name: string;
   sub_discipline?: string;
   exam_type: string;
-  exam_year?: number;
+  exam_year: number;  // Required - promo year
   number: number;
   question_text: string;
   // New fields
@@ -58,7 +58,7 @@ export async function createQuestion(data: CreateQuestionData) {
           module_name: data.module_name,
           sub_discipline: data.sub_discipline || null,
           exam_type: data.exam_type,
-          exam_year: data.exam_year || null,
+          exam_year: data.exam_year,  // Required - no fallback to null
           number: data.number,
           question_text: data.question_text,
           speciality: data.speciality || null,
@@ -95,6 +95,7 @@ export async function getQuestions(filters?: {
   module_name?: string;
   sub_discipline?: string;
   exam_type?: string;
+  exam_year?: number;
   cours?: string;
 }) {
   try {
@@ -125,6 +126,9 @@ export async function getQuestions(filters?: {
       }
       if (filters?.exam_type) {
         query = query.eq('exam_type', filters.exam_type);
+      }
+      if (filters?.exam_year) {
+        query = query.eq('exam_year', filters.exam_year);
       }
       if (filters?.cours) {
         query = query.contains('cours', [filters.cours]);
@@ -211,7 +215,7 @@ export async function updateQuestion(
           module_name: data.module_name,
           sub_discipline: data.sub_discipline || null,
           exam_type: data.exam_type,
-          exam_year: data.exam_year || null,
+          exam_year: data.exam_year,  // Required - no fallback to null
           number: data.number,
           question_text: data.question_text,
           speciality: data.speciality || null,
@@ -281,6 +285,85 @@ export async function getQuestionStats() {
     return {
       success: false,
       data: { total: 0 },
+    };
+  }
+}
+
+// Get existing question numbers and suggest next available for a specific module/exam combination
+export async function getExistingQuestionNumbers(params: {
+  year: string;
+  module_name: string;
+  sub_discipline?: string;
+  exam_type: string;
+  exam_year?: number;
+}): Promise<{
+  success: boolean;
+  error?: string;
+  data: {
+    existingNumbers: number[];
+    suggestedNext: number;
+    count: number;
+  };
+}> {
+  try {
+    // Build query to find all question numbers for this combination
+    let query = supabase
+      .from('questions')
+      .select('number')
+      .eq('year', params.year)
+      .eq('module_name', params.module_name)
+      .eq('exam_type', params.exam_type)
+      .order('number', { ascending: true });
+
+    // Handle sub_discipline (can be null)
+    if (params.sub_discipline) {
+      query = query.eq('sub_discipline', params.sub_discipline);
+    } else {
+      query = query.is('sub_discipline', null);
+    }
+
+    // For exam_year, we need to show numbers from:
+    // 1. The selected promo (if specified)
+    // 2. Questions with NULL exam_year (old data that could conflict)
+    // This helps managers see ALL potentially conflicting numbers
+    if (params.exam_year) {
+      // Show numbers from selected promo OR from questions without promo (NULL)
+      query = query.or(`exam_year.eq.${params.exam_year},exam_year.is.null`);
+    } else {
+      // If no promo selected, only show questions without promo
+      query = query.is('exam_year', null);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Extract all existing numbers
+    const existingNumbers: number[] = data ? data.map(q => q.number) : [];
+    
+    // Find the first missing number (gap) or next after max
+    let suggestedNext = 1;
+    for (let i = 1; i <= (existingNumbers.length + 1); i++) {
+      if (!existingNumbers.includes(i)) {
+        suggestedNext = i;
+        break;
+      }
+    }
+    
+    return {
+      success: true,
+      data: {
+        existingNumbers,
+        suggestedNext,
+        count: existingNumbers.length,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error fetching existing question numbers:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to fetch existing question numbers',
+      data: { existingNumbers: [], suggestedNext: 1, count: 0 },
     };
   }
 }

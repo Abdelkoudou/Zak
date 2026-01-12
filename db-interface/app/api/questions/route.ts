@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       module_name: question.module_name,
       sub_discipline: question.sub_discipline || null,
       exam_type: question.exam_type,
-      exam_year: question.exam_year || null,
+      exam_year: question.exam_year,  // Required - no fallback to null
       number: question.number,
       question_text: question.question_text,
       speciality: question.speciality || null,
@@ -146,7 +146,7 @@ export async function PUT(request: NextRequest) {
       module_name: question.module_name,
       sub_discipline: question.sub_discipline || null,
       exam_type: question.exam_type,
-      exam_year: question.exam_year || null,
+      exam_year: question.exam_year,  // Required - no fallback to null
       number: question.number,
       question_text: question.question_text,
       speciality: question.speciality || null,
