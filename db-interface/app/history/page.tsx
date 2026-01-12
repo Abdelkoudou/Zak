@@ -104,7 +104,13 @@ export default function HistoryPage() {
 
     // Filter by exam year (promo)
     if (filters.examYear) {
-      filtered = filtered.filter(q => q.exam_year === parseInt(filters.examYear));
+      if (filters.examYear === 'null') {
+        // Filter for questions without promo (exam_year is null)
+        filtered = filtered.filter(q => q.exam_year === null || q.exam_year === undefined);
+      } else {
+        // Filter for specific promo year
+        filtered = filtered.filter(q => q.exam_year === parseInt(filters.examYear));
+      }
     }
 
     // Filter by question number
@@ -287,7 +293,10 @@ export default function HistoryPage() {
             { label: 'Année', value: filters.year, onChange: (v: string) => setFilters({ ...filters, year: v, moduleId: '' }), placeholder: 'Toutes les années', options: YEARS.map(y => ({ value: y.value, label: y.label })) },
             { label: 'Module', value: filters.moduleId, onChange: (v: string) => setFilters({ ...filters, moduleId: v }), placeholder: 'Tous les modules', options: availableModules.map(m => ({ value: m.name, label: m.name })) },
             { label: 'Type d\'Examen', value: filters.examType, onChange: (v: string) => setFilters({ ...filters, examType: v }), placeholder: 'Tous les types', options: availableExamTypes.map(t => ({ value: t, label: t })) },
-            { label: 'Promo (Année Examen)', value: filters.examYear, onChange: (v: string) => setFilters({ ...filters, examYear: v }), placeholder: 'Toutes les promos', options: Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => ({ value: String(year), label: `M${year - 2000}` })) },
+            { label: 'Promo (Année Examen)', value: filters.examYear, onChange: (v: string) => setFilters({ ...filters, examYear: v }), placeholder: 'Toutes les promos', options: [
+              { value: 'null', label: '⚠️ Pas de promo' },
+              ...Array.from({ length: 8 }, (_, i) => 2025 - i).map(year => ({ value: String(year), label: `M${year - 2000}` }))
+            ] },
             { label: 'Ajouté par', value: filters.createdBy, onChange: (v: string) => setFilters({ ...filters, createdBy: v }), placeholder: 'Tous les utilisateurs', options: users.map(u => ({ value: u.id, label: u.full_name || u.email })) },
           ].map((item, idx) => (
             <div key={idx}>
