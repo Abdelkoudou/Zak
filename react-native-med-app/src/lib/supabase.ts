@@ -1,11 +1,48 @@
 // ============================================================================
-// Supabase Client Configuration - Completely Lazy & Crash-Safe
+// Supabase Client Configuration - Production Ready for Native & Web
 // ============================================================================
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-// Lazy-loaded Platform to prevent crashes
+// ============================================================================
+// Environment Variable Handling
+// ============================================================================
+
+function isValidEnvVar(value: string | undefined): boolean {
+  if (!value) return false
+  if (value.length === 0) return false
+  // Check for EAS placeholder strings that weren't resolved
+  if (value.startsWith('${') && value.endsWith('}')) return false
+  // Check for common placeholder patterns
+  if (value === 'undefined' || value === 'null') return false
+  return true
+}
+
+// Get environment variables - these MUST be set in EAS secrets or .env
+const supabaseUrl = isValidEnvVar(process.env.EXPO_PUBLIC_SUPABASE_URL) 
+  ? process.env.EXPO_PUBLIC_SUPABASE_URL! 
+  : ''
+
+const supabaseAnonKey = isValidEnvVar(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY)
+  ? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+  : ''
+
+// Log warning if not configured (only in dev)
+if (__DEV__) {
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[Supabase] ⚠️ MISSING CONFIGURATION!')
+    console.error('[Supabase] Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY')
+    console.error('[Supabase] In .env file for local dev, or EAS Secrets for builds')
+  } else {
+    console.log('[Supabase] ✓ Configuration loaded')
+  }
+}
+
+// ============================================================================
+// Platform Detection - Lazy loaded to prevent crashes
+// ============================================================================
+
 let _Platform: typeof import('react-native').Platform | null = null
 let _platformLoaded = false
 
@@ -21,7 +58,10 @@ function getPlatform() {
   return _Platform
 }
 
-// URL polyfill state
+// ============================================================================
+// URL Polyfill - Must be loaded before any network calls on native
+// ============================================================================
+
 let _urlPolyfillLoaded = false
 
 function ensureUrlPolyfill() {
@@ -34,25 +74,19 @@ function ensureUrlPolyfill() {
       require('react-native-url-polyfill/auto')
     }
   } catch (error) {
-    // Silent fail - URL polyfill might not be needed
     if (__DEV__) {
       console.warn('[Supabase] URL polyfill failed:', error)
     }
   }
 }
 
-// Get environment variables with fallback for production builds
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://tkthvgvjecihqfnknosj.supabase.co'
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrdGh2Z3ZqZWNpaHFmbmtub3NqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM0MjgwOTQsImV4cCI6MjA3OTAwNDA5NH0.w6TmuCl85ChtLbzUmQDVTwLxOqjD-9HjBfg2uQZhhQI'
+// Load URL polyfill immediately for native platforms
+ensureUrlPolyfill()
 
-// Log configuration status (only in dev)
-if (__DEV__) {
-  console.log('[Supabase] URL configured:', supabaseUrl ? 'Yes' : 'NO - MISSING!')
-  console.log('[Supabase] Key configured:', supabaseAnonKey ? 'Yes' : 'NO - MISSING!')
-  console.log('[Supabase] Using env vars:', !!process.env.EXPO_PUBLIC_SUPABASE_URL)
-}
+// ============================================================================
+// Platform Helpers
+// ============================================================================
 
-// Check platform safely
 function isWeb(): boolean {
   const platform = getPlatform()
   return platform?.OS === 'web'
@@ -62,7 +96,10 @@ function isBrowser(): boolean {
   return typeof window !== 'undefined'
 }
 
-// For web: Use localStorage directly
+// ============================================================================
+// Storage Configuration
+// ============================================================================
+
 function getWebStorage() {
   if (!isBrowser()) return undefined
   try {
@@ -72,7 +109,6 @@ function getWebStorage() {
   }
 }
 
-// For native: Use AsyncStorage with error handling
 const nativeStorage = {
   getItem: async (key: string): Promise<string | null> => {
     try {
@@ -97,7 +133,10 @@ const nativeStorage = {
   },
 }
 
-// Create the redirect URL for deep linking
+// ============================================================================
+// Deep Linking / Redirect URL
+// ============================================================================
+
 export const getRedirectUrl = (path: string = 'auth/callback') => {
   const platform = getPlatform()
   
@@ -118,75 +157,69 @@ export const getRedirectUrl = (path: string = 'auth/callback') => {
   }
 }
 
-// Supabase client - truly lazy singleton
+// ============================================================================
+// Supabase Client - Singleton Pattern
+// ============================================================================
+
 let _supabaseInstance: SupabaseClient | null = null
 
 function createSupabaseClient(): SupabaseClient {
-  // Ensure URL polyfill is loaded before creating client
-  ensureUrlPolyfill()
-  
   const web = isWeb()
   const storage = web ? getWebStorage() : nativeStorage
   
-  try {
-    return createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: storage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-        storageKey: 'sb-auth-token',
-        flowType: web ? 'pkce' : 'implicit',
-      },
-      global: {
-        headers: {
-          'x-client-info': `fmc-app/${getPlatform()?.OS || 'unknown'}`,
-        },
-      },
-    })
-  } catch (error) {
-    if (__DEV__) {
-      console.error('[Supabase] Failed to create client:', error)
-    }
-    // Create a minimal fallback client
-    return createClient('https://placeholder.supabase.co', 'placeholder', {
+  if (__DEV__) {
+    console.log('[Supabase] Creating client for platform:', getPlatform()?.OS || 'unknown')
+  }
+  
+  // If not configured, create a dummy client that will fail gracefully
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[Supabase] Cannot create client - missing configuration')
+    // Return a client that will fail on any operation
+    return createClient('https://placeholder.supabase.co', 'placeholder-key', {
       auth: { storage: nativeStorage, persistSession: false }
     })
   }
+  
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      storage: storage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+      storageKey: 'sb-auth-token',
+      flowType: web ? 'pkce' : 'implicit',
+    },
+    global: {
+      headers: {
+        'x-client-info': `fmc-app/${getPlatform()?.OS || 'unknown'}`,
+      },
+    },
+  })
 }
 
-// Getter function for lazy initialization
-function getSupabase(): SupabaseClient {
+function getSupabaseClient(): SupabaseClient {
   if (!_supabaseInstance) {
     _supabaseInstance = createSupabaseClient()
   }
   return _supabaseInstance
 }
 
-// Export as a proxy that lazily initializes
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_, prop) {
-    const client = getSupabase()
-    const value = (client as any)[prop]
-    if (typeof value === 'function') {
-      return value.bind(client)
-    }
-    return value
-  }
-})
+export const supabase: SupabaseClient = getSupabaseClient()
 
-// Helper function to ensure session is valid
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 export async function ensureValidSession(): Promise<boolean> {
   try {
-    const client = getSupabase()
-    const { data: { session }, error } = await client.auth.getSession()
+    const { data: { session }, error } = await supabase.auth.getSession()
     if (error || !session) return false
     
     const expiresAt = session.expires_at
     if (expiresAt) {
       const now = Math.floor(Date.now() / 1000)
       if (expiresAt - now < 60) {
-        const { error: refreshError } = await client.auth.refreshSession()
+        const { error: refreshError } = await supabase.auth.refreshSession()
         if (refreshError) return false
       }
     }
@@ -196,7 +229,6 @@ export async function ensureValidSession(): Promise<boolean> {
   }
 }
 
-// Helper to get session synchronously from localStorage on web
 export function getStoredSessionSync(): boolean {
   if (!isWeb() || !isBrowser()) return false
   try {
@@ -207,16 +239,17 @@ export function getStoredSessionSync(): boolean {
   }
 }
 
-// Check if Supabase is properly configured
 export function isSupabaseConfigured(): boolean {
-  return supabaseUrl.length > 0 && supabaseAnonKey.length > 0 && supabaseUrl.includes('supabase')
+  return supabaseUrl.length > 0 && 
+         supabaseAnonKey.length > 0 && 
+         supabaseUrl.includes('supabase') &&
+         supabaseAnonKey.startsWith('eyJ')
 }
 
-// Get configuration status for debugging
 export function getSupabaseConfigStatus(): { url: boolean; key: boolean; valid: boolean } {
   return {
-    url: supabaseUrl.length > 0,
-    key: supabaseAnonKey.length > 0,
+    url: supabaseUrl.length > 0 && supabaseUrl.includes('supabase'),
+    key: supabaseAnonKey.length > 0 && supabaseAnonKey.startsWith('eyJ'),
     valid: isSupabaseConfigured()
   }
 }

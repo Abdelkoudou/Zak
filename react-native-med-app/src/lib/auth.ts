@@ -12,45 +12,81 @@ import { getDeviceId, getDeviceName } from './deviceId'
 
 export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
+    console.log('[Auth] Starting sign up for:', data.email)
+    
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      console.error('[Auth] Supabase not configured properly')
+      return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
+    }
+    
     // 1. Create auth user with redirect URL for email verification
     const redirectUrl = getRedirectUrl()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    })
+    console.log('[Auth] Creating auth user...')
+    
+    let authData: any = null
+    let authError: any = null
+    
+    try {
+      const result = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      })
+      authData = result.data
+      authError = result.error
+    } catch (e: any) {
+      console.error('[Auth] signUp threw:', e)
+      const errorMessage = e?.message || ''
+      if (errorMessage.toLowerCase().includes('network') || 
+          errorMessage.toLowerCase().includes('fetch')) {
+        return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+      }
+      return { user: null, error: 'Erreur lors de la création du compte. Veuillez réessayer.' }
+    }
 
     if (authError) {
-      return { user: null, error: authError.message }
+      console.error('[Auth] Sign up error:', authError.message)
+      return { user: null, error: translateAuthError(authError.message) }
     }
 
-    if (!authData.user) {
-      return { user: null, error: 'Failed to create user' }
+    if (!authData?.user) {
+      return { user: null, error: 'Échec de la création du compte' }
     }
+
+    console.log('[Auth] Auth user created, creating profile...')
 
     // 2. Create user profile using RPC function (bypasses RLS issues)
-    const { data: profileResult, error: profileError } = await supabase
-      .rpc('create_user_profile', {
-        p_user_id: authData.user.id,
-        p_email: data.email,
-        p_full_name: data.full_name,
-        p_speciality: data.speciality,
-        p_year_of_study: data.year_of_study,
-        p_region: data.region,
-        p_faculty: data.faculty,
-      })
+    try {
+      const { data: profileResult, error: profileError } = await supabase
+        .rpc('create_user_profile', {
+          p_user_id: authData.user.id,
+          p_email: data.email,
+          p_full_name: data.full_name,
+          p_speciality: data.speciality,
+          p_year_of_study: data.year_of_study,
+          p_region: data.region,
+          p_faculty: data.faculty,
+        })
 
-    if (profileError) {
-      return { user: null, error: profileError.message }
+      if (profileError) {
+        console.error('[Auth] Profile creation error:', profileError.message)
+        return { user: null, error: profileError.message }
+      }
+
+      // Check if profile creation was successful (RPC returns JSON object)
+      const result = profileResult as { success: boolean; message: string } | null
+      if (result && !result.success) {
+        return { user: null, error: result.message || 'Échec de la création du profil' }
+      }
+    } catch (e: any) {
+      console.error('[Auth] Profile creation threw:', e)
+      return { user: null, error: 'Erreur lors de la création du profil. Veuillez réessayer.' }
     }
 
-    // Check if profile creation was successful (RPC returns JSON object)
-    const result = profileResult as { success: boolean; message: string } | null
-    if (result && !result.success) {
-      return { user: null, error: result.message || 'Failed to create profile' }
-    }
+    console.log('[Auth] Profile created, activating subscription...')
 
     // 3. Activate subscription with code
     const activationResult = await activateSubscription(authData.user.id, data.activation_code)
@@ -58,6 +94,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
     if (!activationResult.success) {
       return { user: null, error: activationResult.message }
     }
+
+    console.log('[Auth] Subscription activated')
 
     // 4. Check if email confirmation is required
     // If user identity is not confirmed, they need to verify email
@@ -70,24 +108,38 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: null, needsEmailVerification: true }
     }
 
-    // 5. Register device
-    await registerDevice(authData.user.id)
+    // 5. Register device (non-blocking)
+    registerDevice(authData.user.id).catch(e => {
+      console.warn('[Auth] Device registration failed (non-blocking):', e)
+    })
 
     // 6. Fetch complete user profile
-    const { data: userProfile, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
+    try {
+      const { data: userProfile, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
 
-    if (fetchError) {
-      // Profile created but can't fetch - likely needs email verification
+      if (fetchError) {
+        // Profile created but can't fetch - likely needs email verification
+        return { user: null, error: null, needsEmailVerification: true }
+      }
+
+      console.log('[Auth] Sign up complete!')
+      return { user: userProfile as User, error: null }
+    } catch (e) {
+      console.error('[Auth] Profile fetch threw:', e)
       return { user: null, error: null, needsEmailVerification: true }
     }
-
-    return { user: userProfile as User, error: null }
-  } catch (error) {
-    return { user: null, error: 'An unexpected error occurred' }
+  } catch (error: any) {
+    console.error('[Auth] Unexpected sign up error:', error)
+    const errorMessage = error?.message || ''
+    if (errorMessage.toLowerCase().includes('network') || 
+        errorMessage.toLowerCase().includes('fetch')) {
+      return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+    }
+    return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
   }
 }
 
@@ -173,7 +225,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     
     if (!isSupabaseConfigured()) {
       console.error('[Auth] Supabase not configured properly:', configStatus)
-      return { user: null, error: 'Erreur de configuration. Veuillez réinstaller l\'application.' }
+      return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
     
     // Debug device info in development
@@ -200,7 +252,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       authError = result.error
     } catch (e: any) {
       console.error('[Auth] signInWithPassword threw:', e)
-      return { user: null, error: translateAuthError(e?.message || 'Erreur de connexion. Veuillez réessayer.') }
+      const errorMessage = e?.message || ''
+      // Check for network errors specifically
+      if (errorMessage.toLowerCase().includes('network') || 
+          errorMessage.toLowerCase().includes('fetch') ||
+          errorMessage.toLowerCase().includes('timeout')) {
+        return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+      }
+      return { user: null, error: translateAuthError(errorMessage || 'Erreur de connexion. Veuillez réessayer.') }
     }
 
     console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
@@ -250,31 +309,33 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
     }
 
-    // Step 3: Register device (skip for reviewers)
+    // Step 3: Register device (skip for reviewers) - NON-BLOCKING
     const isReviewer = userProfile.is_reviewer === true
     if (!isReviewer) {
       console.log('[Auth] Registering device...')
-      try {
-        await registerDevice(authData.user.id)
-      } catch (e) {
+      // Fire and forget - don't block login on device registration
+      registerDevice(authData.user.id).catch(e => {
         console.warn('[Auth] Device registration failed (non-blocking):', e)
-        // Don't fail login if device registration fails
-      }
+      })
     }
 
-    // Debug device sessions in development
+    // Debug device sessions in development (non-blocking)
     if (__DEV__) {
-      try {
-        await debugDeviceSessions(authData.user.id)
-      } catch (e) {
+      debugDeviceSessions(authData.user.id).catch(e => {
         console.warn('[Auth] Debug device sessions failed:', e)
-      }
+      })
     }
 
     console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
     console.error('[Auth] Unexpected sign in error:', error)
+    const errorMessage = error?.message || ''
+    // Check for network errors
+    if (errorMessage.toLowerCase().includes('network') || 
+        errorMessage.toLowerCase().includes('fetch')) {
+      return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+    }
     return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
   }
 }
