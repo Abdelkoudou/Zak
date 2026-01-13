@@ -14,6 +14,9 @@ function QuestionsPageContent() {
   const searchParams = useSearchParams();
   const editQuestionId = searchParams.get('edit');
   
+  // localStorage key for autosave
+  const AUTOSAVE_KEY = 'questions_form_autosave';
+  
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<any[]>([]);
@@ -27,6 +30,7 @@ function QuestionsPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [formDataLoaded, setFormDataLoaded] = useState(false);
   const [formData, setFormData] = useState<QuestionFormData>({
     year: '1',
     moduleId: '',
@@ -48,6 +52,68 @@ function QuestionsPageContent() {
     ],
   });
   const [userRole, setUserRole] = useState<string | null>(null);
+
+  // Load saved form context from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(AUTOSAVE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Only restore context fields, not content fields
+        setFormData(prev => ({
+          ...prev,
+          year: parsed.year || prev.year,
+          moduleId: parsed.moduleId || prev.moduleId,
+          subDisciplineId: parsed.subDisciplineId,
+          examType: parsed.examType || prev.examType,
+          examYear: parsed.examYear,
+          speciality: parsed.speciality || prev.speciality,
+          unityName: parsed.unityName,
+          moduleType: parsed.moduleType,
+          facultySource: parsed.facultySource,
+        }));
+        console.log('[Autosave] Restored form context from localStorage');
+      }
+    } catch (e) {
+      console.error('[Autosave] Failed to load saved form context:', e);
+    }
+    setFormDataLoaded(true);
+  }, []);
+
+  // Save form context to localStorage when context fields change
+  useEffect(() => {
+    // Don't save until initial load is complete
+    if (!formDataLoaded) return;
+    
+    try {
+      const contextToSave = {
+        year: formData.year,
+        moduleId: formData.moduleId,
+        subDisciplineId: formData.subDisciplineId,
+        examType: formData.examType,
+        examYear: formData.examYear,
+        speciality: formData.speciality,
+        unityName: formData.unityName,
+        moduleType: formData.moduleType,
+        facultySource: formData.facultySource,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(contextToSave));
+    } catch (e) {
+      console.error('[Autosave] Failed to save form context:', e);
+    }
+  }, [
+    formDataLoaded,
+    formData.year,
+    formData.moduleId,
+    formData.subDisciplineId,
+    formData.examType,
+    formData.examYear,
+    formData.speciality,
+    formData.unityName,
+    formData.moduleType,
+    formData.facultySource,
+  ]);
 
   useEffect(() => {
     const fetchUserRole = async () => {
@@ -376,27 +442,47 @@ function QuestionsPageContent() {
     setSaving(false);
   };
 
-  const resetForm = () => {
-    setFormData({
-      year: '1',
-      moduleId: '',
-      examType: 'EMD',
-      examYear: undefined,
-      number: 1,
-      questionText: '',
-      speciality: 'Médecine',
-      cours: [''],
-    facultySource: undefined,
-    imageUrl: undefined,
-    explanation: '',
-    answers: [
-        { optionLabel: 'A', answerText: '', isCorrect: false },
-        { optionLabel: 'B', answerText: '', isCorrect: false },
-        { optionLabel: 'C', answerText: '', isCorrect: false },
-        { optionLabel: 'D', answerText: '', isCorrect: false },
-        { optionLabel: 'E', answerText: '', isCorrect: false },
-      ],
-    });
+  const resetForm = (clearContext: boolean = false) => {
+    if (clearContext) {
+      // Full reset - clear everything including context
+      setFormData({
+        year: '1',
+        moduleId: '',
+        examType: 'EMD',
+        examYear: undefined,
+        number: 1,
+        questionText: '',
+        speciality: 'Médecine',
+        cours: [''],
+        facultySource: undefined,
+        imageUrl: undefined,
+        explanation: '',
+        answers: [
+          { optionLabel: 'A', answerText: '', isCorrect: false },
+          { optionLabel: 'B', answerText: '', isCorrect: false },
+          { optionLabel: 'C', answerText: '', isCorrect: false },
+          { optionLabel: 'D', answerText: '', isCorrect: false },
+          { optionLabel: 'E', answerText: '', isCorrect: false },
+        ],
+      });
+    } else {
+      // Partial reset - preserve context fields (year, module, examType, examYear, etc.)
+      setFormData(prev => ({
+        ...prev,
+        number: 1,
+        questionText: '',
+        cours: [''],
+        imageUrl: undefined,
+        explanation: '',
+        answers: [
+          { optionLabel: 'A', answerText: '', isCorrect: false },
+          { optionLabel: 'B', answerText: '', isCorrect: false },
+          { optionLabel: 'C', answerText: '', isCorrect: false },
+          { optionLabel: 'D', answerText: '', isCorrect: false },
+          { optionLabel: 'E', answerText: '', isCorrect: false },
+        ],
+      }));
+    }
     setEditingId(null);
   };
 
@@ -669,12 +755,18 @@ function QuestionsPageContent() {
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-200 dark:border-white/5 shadow-2xl p-6 md:p-8 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-primary-500 to-transparent opacity-50"></div>
           
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-8 flex items-center gap-3">
-            <span className="w-10 h-10 flex items-center justify-center bg-primary-50 dark:bg-primary-900/20 rounded-xl text-primary-600">
-              {editingId ? "✏️" : "✨"}
-            </span>
-            {editingId ? "Modifier la Question" : "Ajouter une Question"}
-          </h2>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+              <span className="w-10 h-10 flex items-center justify-center bg-primary-50 dark:bg-primary-900/20 rounded-xl text-primary-600">
+                {editingId ? "✏️" : "✨"}
+              </span>
+              {editingId ? "Modifier la Question" : "Ajouter une Question"}
+            </h2>
+            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span>Sauvegarde auto activée</span>
+            </div>
+          </div>
           
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Section 1: Détails de la Question */}
@@ -880,7 +972,7 @@ function QuestionsPageContent() {
                     })
                   }
                   className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all ${
-                    !formData.examYear ?  'border-slate-200 dark:border-white/10': 'border-red-300 dark:border-red-500'
+                    !formData.examYear ? 'border-red-300 dark:border-red-500' : 'border-slate-200 dark:border-white/10'
                   }`}
                   required
                 >
