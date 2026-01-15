@@ -30,7 +30,7 @@ export const questionSchema = z.object({
   module_name: z.string().min(1, 'Module name required').max(200),
   sub_discipline: z.string().max(200).nullish(),
   exam_type: z.enum(['EMD', 'EMD1', 'EMD2', 'Rattrapage']),
-  exam_year: z.number().int().min(2000).max(2100).nullish(),
+  exam_year: z.number().int().min(2000).max(2100, 'Année de l\'examen (promo) est obligatoire'),
   number: z.number().int().min(1).max(500),
   question_text: z.string().min(1, 'Question text required').max(MAX_TEXT_LENGTH),
   speciality: z.string().max(100).nullish(),
@@ -43,8 +43,7 @@ export const questionSchema = z.object({
       'annexe_biskra',
       'annexe_oum_el_bouaghi',
       'annexe_khenchela',
-      'annexe_batna',
-      'annexe_msila',
+      'annexe_souk_ahras',
     ])
     .nullish(),
   image_url: z.string().url().max(MAX_URL_LENGTH).nullish(),

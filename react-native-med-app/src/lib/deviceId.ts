@@ -1,24 +1,48 @@
 // ============================================================================
-// Device ID Generation - Backward Compatible
+// Device ID Generation - Crash-Safe with Lazy Loading
 // ============================================================================
-
-import { Platform, Dimensions } from 'react-native'
-import * as Device from 'expo-device'
 
 // Storage key for device ID
 const DEVICE_ID_KEY = 'fmc_device_id'
+
+// Lazy-loaded modules
+let _Platform: typeof import('react-native').Platform | null = null
+let _Dimensions: typeof import('react-native').Dimensions | null = null
+let _Device: typeof import('expo-device') | null = null
+let _modulesLoaded = false
+
+// Safely load React Native modules
+function loadModules() {
+  if (_modulesLoaded) return
+  _modulesLoaded = true
+  
+  try {
+    const RN = require('react-native')
+    _Platform = RN.Platform
+    _Dimensions = RN.Dimensions
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[DeviceId] Failed to load React Native:', error)
+    }
+  }
+  
+  try {
+    _Device = require('expo-device')
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[DeviceId] Failed to load expo-device:', error)
+    }
+  }
+}
 
 // ============================================================================
 // Platform-specific storage
 // ============================================================================
 
-/**
- * Get secure storage based on platform
- * - Native: expo-secure-store (encrypted)
- * - Web: localStorage (with prefix)
- */
 async function getSecureStorage() {
-  if (Platform.OS === 'web') {
+  loadModules()
+  
+  if (_Platform?.OS === 'web') {
     return {
       getItemAsync: async (key: string): Promise<string | null> => {
         try {
@@ -38,31 +62,60 @@ async function getSecureStorage() {
   }
   
   // Native platforms use expo-secure-store
-  const SecureStore = require('expo-secure-store')
-  return SecureStore
+  try {
+    const SecureStore = require('expo-secure-store')
+    return SecureStore
+  } catch {
+    // Fallback to a no-op storage
+    return {
+      getItemAsync: async (): Promise<string | null> => null,
+      setItemAsync: async (): Promise<void> => {},
+    }
+  }
 }
 
 // ============================================================================
-// Device ID Generation - Unified Approach
+// Device ID Generation - Unified Approach for Consistency
 // ============================================================================
 
-/**
- * Generate a deterministic device ID from device info
- * This creates a unified ID that should be similar whether accessing
- * via mobile app or web browser on the same device
- */
-function generateDeterministicDeviceId(): string {
-  // Get screen dimensions (use consistent orientation - always width >= height)
-  const screen = Dimensions.get('screen')
-  const screenWidth = Math.max(screen.width, screen.height)  // Always use larger dimension as width
-  const screenHeight = Math.min(screen.width, screen.height) // Always use smaller dimension as height
+function generateUnifiedDeviceId(): string {
+  loadModules()
+  
+  // Get screen characteristics (use consistent orientation - always width >= height)
+  let screenWidth = 1920
+  let screenHeight = 1080
+  
+  try {
+    if (_Dimensions) {
+      const screen = _Dimensions.get('screen')
+      screenWidth = Math.max(screen.width, screen.height)  // Always use larger as width
+      screenHeight = Math.min(screen.width, screen.height) // Always use smaller as height
+    }
+  } catch {
+    // Use defaults
+  }
+  
+  // Get simplified OS name for consistency between mobile and web
+  let osName = 'Unknown'
+  
+  try {
+    if (_Device?.osName) {
+      const deviceOsName = _Device.osName.toLowerCase()
+      // Normalize OS names to match web detection
+      if (deviceOsName.includes('android')) osName = 'Android'
+      else if (deviceOsName.includes('ios')) osName = 'iOS'
+      else if (deviceOsName.includes('windows')) osName = 'Windows'
+      else if (deviceOsName.includes('mac')) osName = 'macOS'
+      else if (deviceOsName.includes('linux')) osName = 'Linux'
+      else osName = _Device.osName
+    }
+  } catch {
+    // Use default
+  }
+  
+  // Create device string focusing on hardware characteristics
+  // This should be consistent whether accessed via mobile app or web browser
   const screenInfo = `${screenWidth}x${screenHeight}`
-  
-  // Get OS name
-  const osName = Device.osName || 'Unknown OS'
-  
-  // Create a device string that focuses on hardware characteristics
-  // This should match the web version for the same device
   const deviceString = `${osName}-${screenInfo}`
   
   // Create a hash-like identifier (same algorithm as web)
@@ -73,8 +126,12 @@ function generateDeterministicDeviceId(): string {
     hash = hash & hash // Convert to 32-bit integer
   }
   
-  // Convert to positive string - use same format as web
   const hashString = Math.abs(hash).toString(36)
+  
+  if (__DEV__) {
+    console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
+  }
+  
   return `unified-${hashString}`
 }
 
@@ -82,32 +139,18 @@ function generateDeterministicDeviceId(): string {
 // Device ID Functions
 // ============================================================================
 
-/**
- * Get or create a persistent device ID
- * 
- * UNIFIED APPROACH:
- * - Uses deterministic ID generation for consistency
- * - Same algorithm for both native and web platforms
- * - Stores the ID for consistency across app restarts
- * 
- * This ensures the same device gets the same ID regardless of platform.
- */
 export async function getDeviceId(): Promise<string> {
   try {
     const storage = await getSecureStorage()
     
-    // Check for existing stored device ID
     let deviceId = await storage.getItemAsync(DEVICE_ID_KEY)
     
     if (!deviceId) {
-      // Always use unified deterministic ID generation
-      deviceId = generateDeterministicDeviceId()
-      
-      // Store for future consistency
+      deviceId = generateUnifiedDeviceId()
       await storage.setItemAsync(DEVICE_ID_KEY, deviceId)
       
       if (__DEV__) {
-        console.log('[DeviceId] Generated and stored unified device ID:', deviceId)
+        console.log('[DeviceId] Generated device ID:', deviceId)
       }
     }
     
@@ -116,23 +159,15 @@ export async function getDeviceId(): Promise<string> {
     if (__DEV__) {
       console.error('[DeviceId] Error getting device ID:', error)
     }
-    
-    // Fallback: generate without storing
-    return generateDeterministicDeviceId()
+    return generateUnifiedDeviceId()
   }
 }
 
-/**
- * Get a human-readable device name for display purposes
- */
 export async function getDeviceName(): Promise<string> {
+  loadModules()
+  
   try {
-    const deviceName = Device.deviceName || 'Unknown Device'
-    const osName = Device.osName || ''
-    const osVersion = Device.osVersion || ''
-    
-    if (Platform.OS === 'web') {
-      // For web, try to get browser info
+    if (_Platform?.OS === 'web') {
       const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
       if (userAgent.includes('Chrome')) return 'Chrome Browser'
       if (userAgent.includes('Firefox')) return 'Firefox Browser'
@@ -141,26 +176,69 @@ export async function getDeviceName(): Promise<string> {
       return 'Web Browser'
     }
     
+    const deviceName = _Device?.deviceName || 'Unknown Device'
+    const osName = _Device?.osName || ''
+    const osVersion = _Device?.osVersion || ''
+    
     return osVersion ? `${deviceName} (${osName} ${osVersion})` : `${deviceName} (${osName})`
   } catch {
     return 'Unknown Device'
   }
 }
 
-/**
- * Clear stored device ID (useful for testing or logout scenarios)
- * Note: This will cause a new device ID to be generated on next getDeviceId() call
- */
 export async function clearDeviceId(): Promise<void> {
+  loadModules()
+  
   try {
-    const storage = await getSecureStorage()
-    if (Platform.OS === 'web') {
+    if (_Platform?.OS === 'web') {
       localStorage.removeItem(DEVICE_ID_KEY)
     } else {
       const SecureStore = require('expo-secure-store')
       await SecureStore.deleteItemAsync(DEVICE_ID_KEY)
     }
+    
+    if (__DEV__) {
+      console.log('[DeviceId] Cleared stored device ID')
+    }
   } catch {
     // Ignore errors
+  }
+}
+
+// ============================================================================
+// Debug Functions
+// ============================================================================
+
+export async function debugDeviceInfo(): Promise<void> {
+  if (!__DEV__) return
+  
+  loadModules()
+  
+  try {
+    const deviceId = await getDeviceId()
+    const deviceName = await getDeviceName()
+    
+    let screenInfo = 'Unknown'
+    let osInfo = 'Unknown'
+    
+    try {
+      if (_Dimensions) {
+        const screen = _Dimensions.get('screen')
+        screenInfo = `${Math.max(screen.width, screen.height)}x${Math.min(screen.width, screen.height)}`
+      }
+    } catch {}
+    
+    try {
+      if (_Device?.osName) {
+        osInfo = _Device.osName
+      }
+    } catch {}
+    
+    console.log('[DeviceId Debug] Device ID:', deviceId)
+    console.log('[DeviceId Debug] Device Name:', deviceName)
+    console.log('[DeviceId Debug] Screen Info:', screenInfo)
+    console.log('[DeviceId Debug] OS Info:', osInfo)
+  } catch (error) {
+    console.error('[DeviceId Debug] Failed to debug device info:', error)
   }
 }

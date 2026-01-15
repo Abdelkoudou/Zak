@@ -10,8 +10,8 @@ const DEVICE_ID_KEY = 'fmc_device_id'
 // ============================================================================
 
 /**
- * Generate a device fingerprint that's consistent across platforms
- * This creates a unified ID that should be similar whether accessing
+ * Generate a device fingerprint that's consistent with mobile app
+ * This creates a unified ID that should be the same whether accessing
  * via mobile app or web browser on the same device
  */
 function generateUnifiedDeviceId(): string {
@@ -20,20 +20,22 @@ function generateUnifiedDeviceId(): string {
   const screenHeight = Math.min(screen.width, screen.height) // Always use smaller dimension as height
   const screenResolution = `${screenWidth}x${screenHeight}`
   
-  // Get OS info
+  // Get simplified OS name for consistency with mobile app
   const userAgent = navigator.userAgent || ''
   let osName = 'Unknown'
-  if (userAgent.includes('Windows')) osName = 'Windows'
+  
+  // Normalize OS names to match mobile app detection
+  if (userAgent.includes('Android')) osName = 'Android'
+  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) osName = 'iOS'
+  else if (userAgent.includes('Windows')) osName = 'Windows'
   else if (userAgent.includes('Mac')) osName = 'macOS'
   else if (userAgent.includes('Linux')) osName = 'Linux'
-  else if (userAgent.includes('Android')) osName = 'Android'
-  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) osName = 'iOS'
   
-  // Create a device string that focuses on hardware characteristics
-  // This should be similar for mobile app and web browser on same device
+  // Create device string focusing on hardware characteristics
+  // This should match the mobile app's device string format
   const deviceString = `${osName}-${screenResolution}`
   
-  // Create a hash-like string (same algorithm as mobile)
+  // Create a hash-like string (same algorithm as mobile app)
   let hash = 0
   for (let i = 0; i < deviceString.length; i++) {
     const char = deviceString.charCodeAt(i)
@@ -41,8 +43,11 @@ function generateUnifiedDeviceId(): string {
     hash = hash & hash // Convert to 32-bit integer
   }
   
-  // Convert to positive string - use same format as mobile but with web prefix
+  // Convert to positive string - same format as mobile app
   const hashString = Math.abs(hash).toString(36)
+  
+  console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
+  
   return `unified-${hashString}`
 }
 

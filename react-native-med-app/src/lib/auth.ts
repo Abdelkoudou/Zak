@@ -2,7 +2,7 @@
 // Authentication Service
 // ============================================================================
 
-import { supabase, getRedirectUrl } from './supabase'
+import { supabase, getRedirectUrl, isSupabaseConfigured, getSupabaseConfigStatus } from './supabase'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 import { getDeviceId, getDeviceName } from './deviceId'
 
@@ -12,45 +12,81 @@ import { getDeviceId, getDeviceName } from './deviceId'
 
 export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
+    console.log('[Auth] Starting sign up for:', data.email)
+    
+    // Check if Supabase is properly configured
+    if (!isSupabaseConfigured()) {
+      console.error('[Auth] Supabase not configured properly')
+      return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
+    }
+    
     // 1. Create auth user with redirect URL for email verification
     const redirectUrl = getRedirectUrl()
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    })
+    console.log('[Auth] Creating auth user...')
+    
+    let authData: any = null
+    let authError: any = null
+    
+    try {
+      const result = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+        },
+      })
+      authData = result.data
+      authError = result.error
+    } catch (e: any) {
+      console.error('[Auth] signUp threw:', e)
+      const errorMessage = e?.message || ''
+      if (errorMessage.toLowerCase().includes('network') || 
+          errorMessage.toLowerCase().includes('fetch')) {
+        return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+      }
+      return { user: null, error: 'Erreur lors de la création du compte. Veuillez réessayer.' }
+    }
 
     if (authError) {
-      return { user: null, error: authError.message }
+      console.error('[Auth] Sign up error:', authError.message)
+      return { user: null, error: translateAuthError(authError.message) }
     }
 
-    if (!authData.user) {
-      return { user: null, error: 'Failed to create user' }
+    if (!authData?.user) {
+      return { user: null, error: 'Échec de la création du compte' }
     }
+
+    console.log('[Auth] Auth user created, creating profile...')
 
     // 2. Create user profile using RPC function (bypasses RLS issues)
-    const { data: profileResult, error: profileError } = await supabase
-      .rpc('create_user_profile', {
-        p_user_id: authData.user.id,
-        p_email: data.email,
-        p_full_name: data.full_name,
-        p_speciality: data.speciality,
-        p_year_of_study: data.year_of_study,
-        p_region: data.region,
-        p_faculty: data.faculty,
-      })
+    try {
+      const { data: profileResult, error: profileError } = await supabase
+        .rpc('create_user_profile', {
+          p_user_id: authData.user.id,
+          p_email: data.email,
+          p_full_name: data.full_name,
+          p_speciality: data.speciality,
+          p_year_of_study: data.year_of_study,
+          p_region: data.region,
+          p_faculty: data.faculty,
+        })
 
-    if (profileError) {
-      return { user: null, error: profileError.message }
+      if (profileError) {
+        console.error('[Auth] Profile creation error:', profileError.message)
+        return { user: null, error: profileError.message }
+      }
+
+      // Check if profile creation was successful (RPC returns JSON object)
+      const result = profileResult as { success: boolean; message: string } | null
+      if (result && !result.success) {
+        return { user: null, error: result.message || 'Échec de la création du profil' }
+      }
+    } catch (e: any) {
+      console.error('[Auth] Profile creation threw:', e)
+      return { user: null, error: 'Erreur lors de la création du profil. Veuillez réessayer.' }
     }
 
-    // Check if profile creation was successful (RPC returns JSON object)
-    const result = profileResult as { success: boolean; message: string } | null
-    if (result && !result.success) {
-      return { user: null, error: result.message || 'Failed to create profile' }
-    }
+    console.log('[Auth] Profile created, activating subscription...')
 
     // 3. Activate subscription with code
     const activationResult = await activateSubscription(authData.user.id, data.activation_code)
@@ -58,6 +94,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
     if (!activationResult.success) {
       return { user: null, error: activationResult.message }
     }
+
+    console.log('[Auth] Subscription activated')
 
     // 4. Check if email confirmation is required
     // If user identity is not confirmed, they need to verify email
@@ -70,30 +108,102 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: null, needsEmailVerification: true }
     }
 
-    // 5. Register device
-    await registerDevice(authData.user.id)
+    // 5. Register device (non-blocking)
+    registerDevice(authData.user.id).catch(e => {
+      console.warn('[Auth] Device registration failed (non-blocking):', e)
+    })
 
     // 6. Fetch complete user profile
-    const { data: userProfile, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
+    try {
+      const { data: userProfile, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
 
-    if (fetchError) {
-      // Profile created but can't fetch - likely needs email verification
+      if (fetchError) {
+        // Profile created but can't fetch - likely needs email verification
+        return { user: null, error: null, needsEmailVerification: true }
+      }
+
+      console.log('[Auth] Sign up complete!')
+      return { user: userProfile as User, error: null }
+    } catch (e) {
+      console.error('[Auth] Profile fetch threw:', e)
       return { user: null, error: null, needsEmailVerification: true }
     }
-
-    return { user: userProfile as User, error: null }
-  } catch (error) {
-    return { user: null, error: 'An unexpected error occurred' }
+  } catch (error: any) {
+    console.error('[Auth] Unexpected sign up error:', error)
+    const errorMessage = error?.message || ''
+    if (errorMessage.toLowerCase().includes('network') || 
+        errorMessage.toLowerCase().includes('fetch')) {
+      return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+    }
+    return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
   }
 }
 
 // ============================================================================
-// Sign In
+// Error Message Translation
 // ============================================================================
+
+function translateAuthError(error: string): string {
+  const errorLower = error.toLowerCase()
+  
+  // Log the original error for debugging
+  if (__DEV__) {
+    console.log('[Auth] Translating error:', error)
+  }
+  
+  // Common Supabase auth errors with French translations
+  // Check most specific errors first
+  if (errorLower.includes('invalid login credentials') || errorLower.includes('invalid credentials')) {
+    return 'Email ou mot de passe incorrect. Veuillez vérifier vos informations.'
+  }
+  
+  if (errorLower.includes('email not confirmed') || errorLower.includes('email address not confirmed')) {
+    return 'Votre email n\'a pas été confirmé. Veuillez vérifier votre boîte mail et cliquer sur le lien de confirmation.'
+  }
+  
+  if (errorLower.includes('too many requests') || errorLower.includes('rate limit')) {
+    return 'Trop de tentatives de connexion. Veuillez attendre quelques minutes avant de réessayer.'
+  }
+  
+  if (errorLower.includes('user not found') || errorLower.includes('no user found')) {
+    return 'Aucun compte trouvé avec cet email. Veuillez vérifier l\'adresse email ou créer un compte.'
+  }
+  
+  if (errorLower.includes('password') && errorLower.includes('weak')) {
+    return 'Le mot de passe est trop faible. Utilisez au moins 8 caractères avec des lettres et des chiffres.'
+  }
+  
+  if (errorLower.includes('email') && errorLower.includes('invalid')) {
+    return 'Format d\'email invalide. Veuillez entrer une adresse email valide.'
+  }
+  
+  if (errorLower.includes('signup') && errorLower.includes('disabled')) {
+    return 'Les inscriptions sont temporairement désactivées. Veuillez réessayer plus tard.'
+  }
+  
+  // Network errors - be more specific to avoid false positives
+  // Only match actual network/connection errors, not "fetch profile" type errors
+  if (errorLower.includes('network request failed') || 
+      errorLower.includes('networkerror') ||
+      errorLower.includes('failed to fetch') ||
+      errorLower.includes('net::err') ||
+      errorLower.includes('econnrefused') ||
+      errorLower.includes('enotfound') ||
+      errorLower.includes('unable to resolve host')) {
+    return 'Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer.'
+  }
+  
+  if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
+    return 'La connexion a pris trop de temps. Veuillez réessayer.'
+  }
+  
+  // Return original error if no translation found
+  return error
+}
 
 // Helper function to add timeout to promises
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -109,91 +219,124 @@ export async function signIn(email: string, password: string): Promise<{ user: U
   try {
     console.log('[Auth] Starting sign in for:', email)
     
-    // Add 15 second timeout to prevent endless loading
-    const authResult = await withTimeout(
-      supabase.auth.signInWithPassword({
+    // Check if Supabase is properly configured
+    const configStatus = getSupabaseConfigStatus()
+    console.log('[Auth] Supabase config status:', configStatus)
+    
+    if (!isSupabaseConfigured()) {
+      console.error('[Auth] Supabase not configured properly:', configStatus)
+      return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
+    }
+    
+    // Debug device info in development
+    if (__DEV__) {
+      try {
+        const { debugDeviceInfo } = await import('./deviceId')
+        await debugDeviceInfo()
+      } catch (e) {
+        console.warn('[Auth] Debug device info failed:', e)
+      }
+    }
+    
+    // Step 1: Authenticate with Supabase
+    console.log('[Auth] Calling signInWithPassword...')
+    let authData: any = null
+    let authError: any = null
+    
+    try {
+      const result = await supabase.auth.signInWithPassword({
         email,
         password,
-      }),
-      15000,
-      'La connexion a pris trop de temps. Veuillez réessayer.'
-    )
-    
-    const authData = authResult.data
-    const authError = authResult.error
+      })
+      authData = result.data
+      authError = result.error
+    } catch (e: any) {
+      console.error('[Auth] signInWithPassword threw:', e)
+      const errorMessage = e?.message || ''
+      // Check for network errors specifically
+      if (errorMessage.toLowerCase().includes('network') || 
+          errorMessage.toLowerCase().includes('fetch') ||
+          errorMessage.toLowerCase().includes('timeout')) {
+        return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+      }
+      return { user: null, error: translateAuthError(errorMessage || 'Erreur de connexion. Veuillez réessayer.') }
+    }
 
-    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, error: authError?.message })
+    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
 
     if (authError) {
       console.error('[Auth] Sign in error:', authError.message)
-      return { user: null, error: authError.message }
+      return { user: null, error: translateAuthError(authError.message) }
     }
 
-    if (!authData.user) {
+    if (!authData?.user) {
       console.error('[Auth] No user returned from sign in')
-      return { user: null, error: 'Failed to sign in' }
+      return { user: null, error: 'Échec de la connexion. Veuillez réessayer.' }
     }
 
-    console.log('[Auth] Fetching user profile...')
+    // Step 2: Fetch user profile
+    console.log('[Auth] Fetching user profile for:', authData.user.id)
+    let userProfile: any = null
+    let fetchError: any = null
     
-    // Fetch user profile first to check if they're a reviewer
-    const profilePromise = supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single()
-    
-    const profileResult = await withTimeout(
-      Promise.resolve(profilePromise),
-      10000,
-      'Impossible de charger le profil. Veuillez réessayer.'
-    )
-    
-    const userProfile = profileResult.data
-    const fetchError = profileResult.error
+    try {
+      const result = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single()
+      
+      userProfile = result.data
+      fetchError = result.error
+    } catch (e: any) {
+      console.error('[Auth] Profile fetch threw:', e)
+      return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
+    }
 
     console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
 
     if (fetchError) {
-      console.error('[Auth] Profile fetch error:', fetchError.message)
-      return { user: null, error: fetchError.message }
-    }
-
-    // Skip device limit check for reviewer accounts (for app store review)
-    const isReviewer = (userProfile as any).is_reviewer === true
-
-    if (!isReviewer) {
-      console.log('[Auth] Checking device sessions...')
-      // Check device count before registering new device
-      const { sessions, error: sessionsError } = await getDeviceSessions(authData.user.id)
-      const currentDeviceId = await getDeviceId()
-      const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
-
-      console.log('[Auth] Device check:', { 
-        sessionCount: sessions.length, 
-        isCurrentRegistered: isCurrentDeviceRegistered 
-      })
-
-      // If this is a new device and user already has 2 devices, block login
-      if (!isCurrentDeviceRegistered && sessions.length >= 2) {
-        // Sign out the user immediately
-        await supabase.auth.signOut()
-        return {
-          user: null,
-          error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
-        }
+      console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
+      // Don't translate this error - show a specific message
+      if (fetchError.code === 'PGRST116') {
+        return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
       }
+      return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
     }
 
-    console.log('[Auth] Registering device...')
-    // Register/update device session
-    await registerDevice(authData.user.id)
+    if (!userProfile) {
+      console.error('[Auth] No profile data returned')
+      return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
+    }
+
+    // Step 3: Register device (skip for reviewers) - NON-BLOCKING
+    const isReviewer = userProfile.is_reviewer === true
+    if (!isReviewer) {
+      console.log('[Auth] Registering device...')
+      // Fire and forget - don't block login on device registration
+      registerDevice(authData.user.id).catch(e => {
+        console.warn('[Auth] Device registration failed (non-blocking):', e)
+      })
+    }
+
+    // Debug device sessions in development (non-blocking)
+    if (__DEV__) {
+      debugDeviceSessions(authData.user.id).catch(e => {
+        console.warn('[Auth] Debug device sessions failed:', e)
+      })
+    }
 
     console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
     console.error('[Auth] Unexpected sign in error:', error)
-    return { user: null, error: error?.message || 'An unexpected error occurred' }
+    const errorMessage = error?.message || ''
+    // Check for network errors
+    if (errorMessage.toLowerCase().includes('network') || 
+        errorMessage.toLowerCase().includes('fetch')) {
+      return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
+    }
+    return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
   }
 }
 
@@ -409,5 +552,29 @@ export async function removeDevice(sessionId: string): Promise<{ error: string |
     return { error: null }
   } catch (error) {
     return { error: 'Failed to remove device' }
+  }
+}
+
+// ============================================================================
+// Debug Functions
+// ============================================================================
+
+export async function debugDeviceSessions(userId: string): Promise<void> {
+  if (!__DEV__) return
+  
+  try {
+    const currentDeviceId = await getDeviceId()
+    const { sessions } = await getDeviceSessions(userId)
+    
+    console.log('[Auth Debug] Current device ID:', currentDeviceId)
+    console.log('[Auth Debug] Device sessions:', sessions.map(s => ({
+      id: s.id,
+      device_id: s.device_id,
+      device_name: s.device_name,
+      last_active: s.last_active_at,
+      is_current: s.device_id === currentDeviceId
+    })))
+  } catch (error) {
+    console.error('[Auth Debug] Failed to debug device sessions:', error)
   }
 }

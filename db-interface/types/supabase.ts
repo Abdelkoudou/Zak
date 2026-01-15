@@ -32,7 +32,13 @@ export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 
 export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other'
 
-export type FacultySource = 'fac_mere' | 'annexe'
+export type FacultySource = 
+  | 'fac_mere' 
+  | 'annexe'
+  | 'annexe_biskra'
+  | 'annexe_oum_el_bouaghi'
+  | 'annexe_khenchela'
+  | 'annexe_souk_ahras'
 
 // ============================================================================
 // DATABASE TYPES

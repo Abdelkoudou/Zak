@@ -40,6 +40,18 @@ export function sanitizeError(error: unknown): string {
     if (safePatterns.some((pattern) => error.message.includes(pattern))) {
       return error.message;
     }
+
+    // Handle PostgreSQL unique constraint violations
+    if (error.message.includes('duplicate key') || 
+        error.message.includes('unique constraint') ||
+        error.message.includes('questions_unique_per_exam')) {
+      return 'Une question avec ce numéro existe déjà pour ce module/examen. Veuillez utiliser un numéro différent.';
+    }
+
+    // Handle PostgreSQL foreign key violations
+    if (error.message.includes('foreign key constraint')) {
+      return 'Référence invalide. Veuillez vérifier les données saisies.';
+    }
   }
 
   // Default generic message for unknown errors

@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "FMC App",
-    "slug": "fmc-app",
-    "version": "1.6.0",
+    "slug": "fmc",
+    "version": "1.9",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "fmcapp",
@@ -29,7 +29,7 @@
     },
     "android": {
       "package": "com.fmcapp.mobile",
-      "versionCode": 10,
+      "versionCode": 18,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09B2AD"
@@ -89,8 +89,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "3dce402c-e948-4ea1-b773-fd0c4c4a8b6d"
+        "projectId": "99823c80-2490-445b-b1d3-0dcc3bff7273"
       }
-    }
+    },
+    "owner": "moz1234"
   }
 }

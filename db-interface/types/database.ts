@@ -134,7 +134,7 @@ export interface QuestionFormData {
   subDisciplineId?: string;
   chapterId?: string;
   examType: ExamType;
-  examYear?: number;  // Year when exam was taken (promo year)
+  examYear?: number;  // Optional in form, but required on submit
   number: number;
   questionText: string;
   // New fields
