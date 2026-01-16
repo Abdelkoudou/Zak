@@ -136,16 +136,15 @@ export default function ResourcesPage() {
     // Prepare data for Supabase
     const resourceData = {
       year: formData.year,
-      module_name: formData.moduleId,
+      module_name: formData.moduleId || undefined,
       sub_discipline: formData.subDisciplineId || undefined,
       title: formData.title,
       type: formData.type,
       url: formData.url,
       description: formData.description || undefined,
       speciality: formData.speciality || undefined,
-
       unity_name: formData.unityName || undefined,
-      module_type: formData.moduleType || selectedModule?.type,
+      module_type: formData.moduleId ? (formData.moduleType || selectedModule?.type) : undefined,
     };
 
     // Save to Supabase
@@ -533,10 +532,10 @@ export default function ResourcesPage() {
                   </div>
                 ))}
 
-                {/* Module */}
+                {/* Module (Optional) */}
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
-                    Module / Unité *
+                    Module / Unité (optionnel)
                   </label>
                   <select
                     value={formData.moduleId}
@@ -551,9 +550,8 @@ export default function ResourcesPage() {
                       });
                     }}
                     className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
-                    required
                   >
-                    <option value="">Sélectionner un module</option>
+                    <option value="">Aucun module (optionnel)</option>
                     {availableModules.map((module) => (
                       <option key={module.name} value={module.name} className="bg-white dark:bg-slate-900">
                         {module.type === 'uei' ? '🟢 ' : module.type === 'standalone' ? '🟡 ' : '🔵 '}
