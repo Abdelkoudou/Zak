@@ -278,7 +278,7 @@ export async function extendSubscription(
 }
 
 /**
- * Revoke user subscription
+ * Revoke user subscription (legacy - just removes paid status)
  */
 export async function revokeSubscription(userId: string): Promise<{ error?: string }> {
   const { error } = await supabase
@@ -291,6 +291,40 @@ export async function revokeSubscription(userId: string): Promise<{ error?: stri
     .eq('id', userId);
 
   return { error: error?.message };
+}
+
+/**
+ * Delete user completely - removes user, devices, activation key, and auth account
+ * This calls an API route that uses the service role key
+ */
+export async function deleteUserCompletely(userId: string): Promise<{ error?: string }> {
+  try {
+    // Get the current session token
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.access_token) {
+      return { error: 'Non authentifié' };
+    }
+
+    const response = await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return { error: data.error || 'Erreur lors de la suppression' };
+    }
+
+    return {};
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
 }
 
 /**

@@ -46,6 +46,7 @@ export default function ModuleDetailScreen() {
   const [subDisciplines, setSubDisciplines] = useState<string[]>([])
   const [selectedSubDiscipline, setSelectedSubDiscipline] = useState<string | null>(null)
   const [courseStructure, setCourseStructure] = useState<Record<string, string | null>>({})
+  const [selectedStartQuestion, setSelectedStartQuestion] = useState<number | null>(null)
   
   const [hasLoaded, setHasLoaded] = useState(false)
 
@@ -109,7 +110,26 @@ export default function ModuleDetailScreen() {
         })
         
         setCourseStructure(structureMap)
-        const sortedSubs = Array.from(uniqueSubs).sort()
+        const PREDEFINED_ORDER = [
+          'Anatomie',
+          'Histologie',
+          'Physiologie',
+          'Biophysique/Biochimie'
+        ]
+        
+        const sortedSubs = Array.from(uniqueSubs).sort((a, b) => {
+          const indexA = PREDEFINED_ORDER.indexOf(a)
+          const indexB = PREDEFINED_ORDER.indexOf(b)
+
+          if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB
+          }
+          if (indexA !== -1) return -1
+          if (indexB !== -1) return 1
+          
+          return a.localeCompare(b)
+        })
+        
         setSubDisciplines(sortedSubs)
         if (sortedSubs.length > 0) {
           setSelectedSubDiscipline(sortedSubs[0])
@@ -187,7 +207,13 @@ export default function ModuleDetailScreen() {
     const filters: any = { module_name: module.name }
     if (params.examType) filters.exam_type = params.examType
     if (params.examYear) filters.exam_year = parseInt(params.examYear)
+    if (params.examYear) filters.exam_year = parseInt(params.examYear)
     if (params.cours) filters.cours = params.cours
+    
+    if (selectedStartQuestion) {
+      params.startQuestion = selectedStartQuestion.toString()
+    }
+
     const { count } = await getQuestionCount(filters)
     if (count === 0) {
       alert('Aucune question disponible pour cette sélection')
@@ -287,8 +313,9 @@ export default function ModuleDetailScreen() {
             {/* Mode Toggle Buttons */}
             <View style={{ 
               flexDirection: 'row', 
-              gap: 12,
+              gap: 8,
               marginBottom: 24,
+              flexWrap: 'wrap',
             }}>
               {/* Selon les Cours */}
               {cours.length > 0 && (
@@ -300,56 +327,63 @@ export default function ModuleDetailScreen() {
                     setAvailableExamYears([]); 
                     setSelectedCours(null); 
                     if (subDisciplines.length > 0) setSelectedSubDiscipline(subDisciplines[0]);
+                    setSelectedStartQuestion(null);
                   }}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
                     borderRadius: 24,
                     backgroundColor: selectedMode === 'cours' ? colors.primaryMuted : colors.card,
                     borderWidth: 1.5,
                     borderColor: selectedMode === 'cours' ? colors.primary : colors.border,
+                    flex: 1,
+                    minWidth: 140,
+                    justifyContent: 'center',
                   }}
                 >
                   <BookQcmIcon 
-                    size={18} 
+                    size={16} 
                     color={selectedMode === 'cours' ? colors.primary : colors.textSecondary} 
                   />
                   <Text style={{ 
-                    marginLeft: 8,
-                    fontSize: 14, 
+                    marginLeft: 6,
+                    fontSize: 13, 
                     fontWeight: '600',
                     color: selectedMode === 'cours' ? colors.primary : colors.textSecondary,
-                  }}>
+                  }} numberOfLines={1}>
                     Selon les Cours
                   </Text>
                 </TouchableOpacity>
               )}
               {/* Selon les Controles */}
               <TouchableOpacity
-                onPress={() => { setSelectedMode('exam'); setSelectedCours(null); setSelectedSubDiscipline(null); }}
+                onPress={() => { setSelectedMode('exam'); setSelectedCours(null); setSelectedSubDiscipline(null); setSelectedStartQuestion(null); }}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
                   borderRadius: 24,
                   backgroundColor: selectedMode === 'exam' ? colors.primaryMuted : colors.card,
                   borderWidth: 1.5,
                   borderColor: selectedMode === 'exam' ? colors.primary : colors.border,
+                  flex: 1,
+                  minWidth: 140,
+                  justifyContent: 'center',
                 }}
               >
                 <QcmExamIcon 
-                  size={18} 
+                  size={16} 
                   color={selectedMode === 'exam' ? colors.primary : colors.textSecondary} 
                 />
                 <Text style={{ 
-                  marginLeft: 8,
-                  fontSize: 14, 
+                  marginLeft: 6,
+                  fontSize: 13, 
                   fontWeight: '600',
                   color: selectedMode === 'exam' ? colors.primary : colors.textSecondary,
-                }}>
+                }} numberOfLines={1}>
                   Selon les Contrôles
                 </Text>
               </TouchableOpacity>
@@ -434,9 +468,14 @@ export default function ModuleDetailScreen() {
                     color: colors.text, 
                     marginBottom: 12 
                   }}>
-                    Filtrer par  Module
+                    Module
                   </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -20, paddingHorizontal: 20 }}>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    style={{ marginHorizontal: -20 }}
+                    contentContainerStyle={{ paddingHorizontal: 20, paddingRight: 40 }}
+                  >
 
                     {subDisciplines.map((sub) => (
                       <TouchableOpacity
@@ -504,19 +543,9 @@ export default function ModuleDetailScreen() {
               )}
             </View>
           )}
-
-          {/* Empty States */}
-          {selectedMode === 'exam' && availableExamTypes.length === 0 && !isLoading && (
-            <FadeInView delay={200} animation="scale" style={{ paddingHorizontal: 20, marginTop: 40, alignItems: 'center' }}>
-              <Text style={{ fontSize: 40, marginBottom: 12 }}>�</Text>
-              <Text style={{ color: colors.textMuted, fontSize: 15, textAlign: 'center' }}>
-                Aucun examen disponible pour ce module
-              </Text>
-            </FadeInView>
-          )}
         </ScrollView>
 
-        {/* Bottom Button */}
+        {/* Bottom Button Area */}
         <View style={{
           position: 'absolute',
           bottom: 0,
@@ -524,11 +553,80 @@ export default function ModuleDetailScreen() {
           right: 0,
           backgroundColor: colors.background,
           paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: Platform.OS === 'web' ? 24 : 40,
+          paddingTop: 12,
+          paddingBottom: Platform.OS === 'web' ? 24 : 32,
           borderTopWidth: 1,
           borderTopColor: colors.border,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.05,
+          shadowRadius: 8,
+          elevation: 10,
         }}>
+          {/* Start Question Selection - Sticky */}
+          {(canStartPractice() && (() => {
+            // Calculate max questions based on current selection
+            let maxQuestions = 0
+            if (selectedMode === 'exam') {
+              if (selectedExamYear) {
+                maxQuestions = availableExamYears.find(y => y.year === selectedExamYear)?.count || 0
+              } else if (selectedExamType) {
+                maxQuestions = availableExamTypes.find(t => t.type === selectedExamType)?.count || 0
+              }
+            } else if (selectedMode === 'cours' && selectedCours) {
+              maxQuestions = filteredCoursWithCounts.find(c => c.name === selectedCours)?.count || 0
+            }
+
+            if (maxQuestions <= 1) return null
+
+            return (
+              <View style={{ marginBottom: 12 }}>
+                <FadeInView delay={0} animation="fade">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                      Commencer à :
+                    </Text>
+                    {selectedStartQuestion !== null && (
+                      <TouchableOpacity onPress={() => setSelectedStartQuestion(null)}>
+                        <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '500' }}>Réinitialiser</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}
+                  >
+                    {Array.from({ length: maxQuestions }, (_, i) => i + 1).map((num) => (
+                      <TouchableOpacity
+                        key={num}
+                        onPress={() => setSelectedStartQuestion(num === 1 ? null : num)}
+                        style={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: selectedStartQuestion === num || (num === 1 && selectedStartQuestion === null) ? colors.primary : colors.card,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderWidth: 1,
+                          borderColor: selectedStartQuestion === num || (num === 1 && selectedStartQuestion === null) ? colors.primary : colors.border,
+                        }}
+                      >
+                        <Text style={{ 
+                          color: selectedStartQuestion === num || (num === 1 && selectedStartQuestion === null) ? '#fff' : colors.text,
+                          fontWeight: '600',
+                          fontSize: 14,
+                        }}>
+                          {num}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </FadeInView>
+              </View>
+            )
+          })())}
+
           <TouchableOpacity
             onPress={startPractice}
             disabled={!canStartPractice()}
@@ -544,7 +642,9 @@ export default function ModuleDetailScreen() {
               fontSize: 17, 
               fontWeight: '700' 
             }}>
-              Commencer la pratique
+              {selectedStartQuestion && selectedStartQuestion > 1 
+                ? `Commencer à la Q${selectedStartQuestion}` 
+                : 'Commencer la pratique'}
             </Text>
           </TouchableOpacity>
         </View>

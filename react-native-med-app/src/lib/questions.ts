@@ -39,6 +39,7 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
           module_name: q.module || q.module_name,
           sub_discipline: q.sub_discipline,
           exam_type: q.exam_type,
+          exam_year: q.exam_year,
           number: q.number,
           question_text: q.question_text,
           explanation: q.explanation,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { fetchUserById, updateUser, extendSubscription, revokeSubscription, deleteAllUserDevices } from '@/lib/users';
+import { fetchUserById, updateUser, extendSubscription, deleteUserCompletely, deleteAllUserDevices } from '@/lib/users';
 import { fetchUserDevices, deleteUserDevice } from '@/lib/activation-codes';
 import type { ManagedUser, UserUpdateData } from '@/lib/users';
 import type { DeviceSession, YearLevel, Speciality } from '@/types/database';
@@ -107,25 +107,23 @@ export default function UserEditModal({ userId, onClose, onUpdate }: UserEditMod
     setSaving(false);
   };
 
-  const handleRevokeSubscription = async () => {
+  const handleDeleteUser = async () => {
     if (!user) return;
-    if (!confirm('Êtes-vous sûr de vouloir révoquer l\'abonnement de cet utilisateur ?')) return;
+    if (!confirm('⚠️ ATTENTION: Cette action va SUPPRIMER DÉFINITIVEMENT:\n\n• Le compte utilisateur\n• Tous ses appareils\n• Toutes ses données (questions sauvegardées, statistiques, etc.)\n• Son code d\'activation sera libéré\n\nCette action est IRRÉVERSIBLE. Continuer ?')) return;
 
     setSaving(true);
     setError('');
     setSuccess('');
 
-    const { error } = await revokeSubscription(userId);
+    const { error } = await deleteUserCompletely(userId);
 
     if (error) {
       setError(error);
+      setSaving(false);
     } else {
-      setSuccess('Abonnement révoqué');
       onUpdate();
-      await loadUserData();
+      onClose();
     }
-
-    setSaving(false);
   };
 
   const handleDeleteDevice = async (deviceId: string) => {
@@ -293,19 +291,6 @@ export default function UserEditModal({ userId, onClose, onUpdate }: UserEditMod
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-                      Région
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.region || ''}
-                      onChange={(e) => setFormData({ ...formData, region: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                      placeholder="Région"
-                    />
-                  </div>
-
                   {/* Read-only info */}
                   <div className="mt-6 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl space-y-2">
                     <div className="flex justify-between text-sm">
@@ -392,24 +377,22 @@ export default function UserEditModal({ userId, onClose, onUpdate }: UserEditMod
                     </div>
                   </div>
 
-                  {/* Revoke subscription */}
-                  {user.isPaid && (
-                    <div className="p-4 border border-red-200 dark:border-red-800 rounded-xl bg-red-50 dark:bg-red-900/20">
-                      <h3 className="text-sm font-bold text-red-600 dark:text-red-400 mb-2">
-                        ⚠️ Zone dangereuse
-                      </h3>
-                      <p className="text-xs text-red-500 dark:text-red-400 mb-4">
-                        Révoquer l&apos;abonnement supprimera l&apos;accès payant de l&apos;utilisateur.
-                      </p>
-                      <button
-                        onClick={handleRevokeSubscription}
-                        disabled={saving}
-                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        Révoquer l&apos;abonnement
-                      </button>
-                    </div>
-                  )}
+                  {/* Delete user */}
+                  <div className="p-4 border border-red-200 dark:border-red-800 rounded-xl bg-red-50 dark:bg-red-900/20">
+                    <h3 className="text-sm font-bold text-red-600 dark:text-red-400 mb-2">
+                      ⚠️ Zone dangereuse
+                    </h3>
+                    <p className="text-xs text-red-500 dark:text-red-400 mb-4">
+                      Supprimer définitivement cet utilisateur, tous ses appareils, ses données et libérer son code d&apos;activation.
+                    </p>
+                    <button
+                      onClick={handleDeleteUser}
+                      disabled={saving}
+                      className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      🗑️ Supprimer l&apos;utilisateur
+                    </button>
+                  </div>
                 </div>
               )}
 

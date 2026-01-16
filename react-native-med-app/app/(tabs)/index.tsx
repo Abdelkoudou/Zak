@@ -86,7 +86,42 @@ export default function HomeScreen() {
         getModulesWithCounts(yearToLoad),
         getUserStatistics(user.id)
       ])
-      if (!modulesResult.error) setModules(modulesResult.modules)
+      if (!modulesResult.error) {
+        const PREDEFINED_ORDER = [
+          'Cardio',
+          'Digestif',
+          'Urinaire',
+          'Endo',
+          'Neuro',
+          'Immuno',
+          'Génétique'
+        ]
+
+        const sortedModules = modulesResult.modules.sort((a, b) => {
+          // Normalize names for comparison (handle potential casing or minor differences if needed, 
+          // but strict match is usually safer for known IDs/Names. Assuming 'name' matches the user list)
+          // We'll check if the module name *starts with* or *includes* the key if exact match fails, 
+          // but usually these are short names. Let's assume exact or partial match.
+          // Given the user prompt "Cardio", "Digestif" etc., these might be short names or full names.
+          // I'll check if the module name includes the key to be more robust.
+          
+          const getOrderIndex = (name: string) => {
+            const index = PREDEFINED_ORDER.findIndex(key => name.includes(key))
+            return index === -1 ? Infinity : index
+          }
+
+          const indexA = getOrderIndex(a.name)
+          const indexB = getOrderIndex(b.name)
+
+          if (indexA !== indexB) {
+            return indexA - indexB
+          }
+          
+          return a.name.localeCompare(b.name)
+        })
+
+        setModules(sortedModules)
+      }
       if (!statsResult.error) setStats(statsResult.stats)
     } catch {
       // Error loading data

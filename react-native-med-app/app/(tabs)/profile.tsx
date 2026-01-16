@@ -13,7 +13,11 @@ import {
   Pressable,
   Platform,
   useWindowDimensions,
-  Switch
+  Switch,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -26,6 +30,7 @@ import { Badge, FadeInView, Skeleton } from '@/components/ui'
 import { WebHeader } from '@/components/ui/WebHeader'
 import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
 import { showConfirm } from '@/lib/alerts'
+import { supabase } from '@/lib/supabase'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -45,6 +50,11 @@ export default function ProfileScreen() {
   const [deviceSessions, setDeviceSessions] = useState<DeviceSession[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [feedbackType, setFeedbackType] = useState<'general' | 'bug' | 'feature' | 'content'>('general')
+  const [feedbackMessage, setFeedbackMessage] = useState('')
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-15)).current
@@ -103,6 +113,37 @@ export default function ProfileScreen() {
       'Annuler',
       'destructive'
     )
+  }
+
+  const handleSubmitFeedback = async () => {
+    if (!feedbackMessage.trim()) {
+      Alert.alert('Erreur', 'Veuillez entrer votre message')
+      return
+    }
+
+    setSubmittingFeedback(true)
+    try {
+      const { error } = await supabase.from('user_feedback').insert({
+        user_id: user?.id,
+        user_email: user?.email,
+        user_name: user?.full_name,
+        feedback_type: feedbackType,
+        message: feedbackMessage.trim(),
+        rating: feedbackRating > 0 ? feedbackRating : null,
+      })
+
+      if (error) throw error
+
+      Alert.alert('Merci !', 'Votre feedback a été envoyé avec succès.')
+      setShowFeedbackModal(false)
+      setFeedbackMessage('')
+      setFeedbackType('general')
+      setFeedbackRating(0)
+    } catch (err) {
+      Alert.alert('Erreur', 'Impossible d\'envoyer le feedback. Réessayez plus tard.')
+    } finally {
+      setSubmittingFeedback(false)
+    }
   }
 
   const getYearLabel = () => YEARS.find(y => y.value === user?.year_of_study)?.label || ''
@@ -226,6 +267,30 @@ export default function ProfileScreen() {
             </View>
           </FadeInView>
 
+          {/* Feedback Button */}
+          <FadeInView delay={75} animation="slideUp">
+            <Pressable onPress={() => setShowFeedbackModal(true)}>
+              <ThemedCard colors={colors} isDark={isDark} style={{ marginTop: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{
+                      width: 52, height: 52,
+                      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                      borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16,
+                    }}>
+                      <Text style={{ fontSize: 26 }}>💬</Text>
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Feedback</Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 2 }}>Partagez vos suggestions</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+                </View>
+              </ThemedCard>
+            </Pressable>
+          </FadeInView>
+
           {/* Grid Layout */}
           <View style={{ flexDirection: isDesktop ? 'row' : 'column', gap: 20, marginTop: 24 }}>
             {/* Left Column */}
@@ -251,7 +316,7 @@ export default function ProfileScreen() {
                   <ThemedCard colors={colors} isDark={isDark} style={{ marginTop: 16 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ width: 52, height: 52, backgroundColor: colors.primaryMuted, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                        <View style={{ width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
                           <SavesIcon size={26} color={colors.text} />
                         </View>
                         <View>
@@ -264,7 +329,6 @@ export default function ProfileScreen() {
                   </ThemedCard>
                 </Pressable>
               </FadeInView>
-
               {/* Devices */}
               <FadeInView delay={300} animation="slideUp">
                 <View style={{ marginTop: 24 }}>
@@ -364,6 +428,133 @@ export default function ProfileScreen() {
           <View style={{ height: 120 }} />
         </View>
       </ScrollView>
+
+      {/* Feedback Modal */}
+      <Modal
+        visible={showFeedbackModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFeedbackModal(false)}
+      >
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={{ 
+            flex: 1, 
+            backgroundColor: 'rgba(0,0,0,0.5)', 
+            justifyContent: 'flex-end' 
+          }}>
+            <View style={{ 
+              backgroundColor: colors.card, 
+              borderTopLeftRadius: 24, 
+              borderTopRightRadius: 24,
+              padding: 24,
+              maxHeight: '90%',
+            }}>
+              {/* Header */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>💬 Feedback</Text>
+                <TouchableOpacity onPress={() => setShowFeedbackModal(false)}>
+                  <Text style={{ fontSize: 28, color: colors.textMuted }}>×</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Feedback Type */}
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 10 }}>Type de feedback</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                {[
+                  { value: 'general', label: '💭 Général' },
+                  { value: 'bug', label: '🐛 Bug' },
+                  { value: 'feature', label: '✨ Suggestion' },
+                  { value: 'content', label: '📚 Contenu' },
+                ].map((type) => (
+                  <TouchableOpacity
+                    key={type.value}
+                    onPress={() => setFeedbackType(type.value as any)}
+                    style={{
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      backgroundColor: feedbackType === type.value ? colors.primary : colors.backgroundSecondary,
+                      borderWidth: 1,
+                      borderColor: feedbackType === type.value ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ 
+                      color: feedbackType === type.value ? '#fff' : colors.text,
+                      fontWeight: '600',
+                      fontSize: 13,
+                    }}>
+                      {type.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Rating */}
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 10 }}>Note (optionnel)</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setFeedbackRating(feedbackRating === star ? 0 : star)}
+                  >
+                    <Text style={{ fontSize: 28 }}>
+                      {star <= feedbackRating ? '⭐' : '☆'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Message */}
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 10 }}>Votre message</Text>
+              <TextInput
+                value={feedbackMessage}
+                onChangeText={setFeedbackMessage}
+                placeholder="Décrivez votre feedback, suggestion ou problème..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={5}
+                style={{
+                  backgroundColor: colors.backgroundSecondary,
+                  borderRadius: 16,
+                  padding: 16,
+                  color: colors.text,
+                  fontSize: 15,
+                  minHeight: 120,
+                  textAlignVertical: 'top',
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              />
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                onPress={handleSubmitFeedback}
+                disabled={submittingFeedback || !feedbackMessage.trim()}
+                style={{
+                  backgroundColor: feedbackMessage.trim() ? colors.primary : colors.border,
+                  paddingVertical: 16,
+                  borderRadius: 16,
+                  alignItems: 'center',
+                  marginTop: 20,
+                }}
+              >
+                <Text style={{ 
+                  color: feedbackMessage.trim() ? '#fff' : colors.textMuted, 
+                  fontSize: 16, 
+                  fontWeight: '700' 
+                }}>
+                  {submittingFeedback ? 'Envoi en cours...' : 'Envoyer le feedback'}
+                </Text>
+              </TouchableOpacity>
+
+              <View style={{ height: Platform.OS === 'ios' ? 20 : 10 }} />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   )
 }

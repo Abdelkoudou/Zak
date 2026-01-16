@@ -22,6 +22,7 @@ const ownerOnlyNavigation = [
   { name: 'Paiements', href: '/payments', icon: '💳', badge: 'Owner' },
   { name: 'Contributions', href: '/contributions', icon: '💰', badge: 'Owner' },
   { name: 'Signalements', href: '/reports', icon: '🚩', badge: 'Owner' },
+  { name: 'Feedbacks', href: '/feedbacks', icon: '💬', badge: 'Owner' },
   { name: 'Export JSON', href: '/export', icon: '📤', badge: 'Owner' },
   { name: 'AI Chat', href: '/ai-chat', icon: '🤖', badge: 'AI' },
   { name: 'AI Analytics', href: '/ai-analytics', icon: '📊', badge: 'AI' },
