@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 
 export interface CreateResourceData {
   year: string;
-  module_name: string;
+  module_name?: string;
   sub_discipline?: string;
   title: string;
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
