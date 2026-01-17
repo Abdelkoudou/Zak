@@ -279,7 +279,7 @@ export default function HomeScreen() {
                 width: '100%',
                 
                 backgroundColor: '#09B2AD',
-                paddingTop: showWebHeader ? 20 : 20,
+                paddingTop: showWebHeader ? 20 : 40,
                 paddingBottom: 100,
                 alignItems: 'center',
                 position: 'relative',
@@ -287,21 +287,7 @@ export default function HomeScreen() {
                 borderBottomRightRadius: 32,
               }}
             >
-              {/* Wave image absolutely positioned at bottom */}
-              <Image 
-                source={HeaderImg} 
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  width: '100%',
-                  height: 160, // Height that fits well without overlapping text
-                  resizeMode: 'cover',
-                  borderBottomLeftRadius: 32,
-                  borderBottomRightRadius: 32,
-                }}
-              />
+
               
               <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
