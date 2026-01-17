@@ -158,23 +158,27 @@ export const OfflineContentService = {
         return { hasUpdate: false, remoteVersion: null, error: 'Directory not available' };
       }
 
-      // Get remote version with timeout
+      // Get remote version with timeout using public URL (works in React Native)
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout')), 10000)
       );
 
-      const downloadPromise = supabase.storage
+      // Use getPublicUrl + fetch instead of download (blob.text() doesn't work in RN)
+      const { data: urlData } = supabase.storage
         .from('questions')
-        .download('version.json');
+        .getPublicUrl('version.json');
 
-      const { data, error } = await Promise.race([downloadPromise, timeoutPromise]) as any;
+      const fetchPromise = fetch(urlData.publicUrl).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      });
 
-      if (error) {
-        return { hasUpdate: false, remoteVersion: null, error: error.message };
-      }
-
-      const text = await data.text();
-      const remoteVersion: OfflineVersion = JSON.parse(text);
+      const remoteVersion: OfflineVersion = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as OfflineVersion;
 
       // Get local version
       const versionFile = offlineDir + 'version.json';

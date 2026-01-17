@@ -31,6 +31,7 @@ import { WebHeader } from '@/components/ui/WebHeader'
 import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from '@/components/icons/ResultIcons'
 import { showConfirm } from '@/lib/alerts'
 import { supabase } from '@/lib/supabase'
+import { OfflineContentService, OfflineVersion } from '@/lib/offline-content'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -55,6 +56,17 @@ export default function ProfileScreen() {
   const [feedbackMessage, setFeedbackMessage] = useState('')
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
+
+  // Offline content state
+  const [offlineStatus, setOfflineStatus] = useState<{
+    downloaded: boolean
+    version: string | null
+    updateAvailable: boolean
+    questionCount: number
+    moduleCount: number
+  }>({ downloaded: false, version: null, updateAvailable: false, questionCount: 0, moduleCount: 0 })
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState(0)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-15)).current
@@ -95,7 +107,76 @@ export default function ProfileScreen() {
   const onRefresh = useCallback(() => {
     setRefreshing(true)
     loadData()
+    // Also refresh offline status on pull-to-refresh
+    if (Platform.OS !== 'web') {
+      checkOfflineStatus()
+    }
   }, [loadData])
+
+  // Check offline content status (local cache + remote version)
+  const checkOfflineStatus = useCallback(async () => {
+    if (Platform.OS === 'web') return
+    
+    try {
+      const localVersion = await OfflineContentService.getLocalVersion()
+      const { hasUpdate, remoteVersion } = await OfflineContentService.checkForUpdates()
+      
+      setOfflineStatus({
+        downloaded: !!localVersion,
+        version: localVersion?.version || null,
+        updateAvailable: hasUpdate,
+        questionCount: localVersion?.total_questions || remoteVersion?.total_questions || 0,
+        moduleCount: localVersion?.total_modules || remoteVersion?.total_modules || 0
+      })
+    } catch (error) {
+      // Silent fail - offline status check is not critical
+      if (__DEV__) {
+        console.warn('[Profile] Offline status check failed:', error)
+      }
+    }
+  }, [])
+
+  // Handle download/update of offline content
+  const handleDownloadOffline = async () => {
+    if (isDownloading) return
+    
+    setIsDownloading(true)
+    setDownloadProgress(0)
+    
+    try {
+      await OfflineContentService.downloadUpdates((progress: number) => {
+        setDownloadProgress(progress)
+      })
+      
+      // Refresh status after download
+      await checkOfflineStatus()
+      
+      Alert.alert(
+        '✅ Téléchargement terminé',
+        'Le contenu est maintenant disponible hors-ligne.',
+        [{ text: 'OK' }]
+      )
+    } catch (error) {
+      Alert.alert(
+        'Erreur',
+        'Le téléchargement a échoué. Vérifiez votre connexion et réessayez.',
+        [{ text: 'OK' }]
+      )
+      if (__DEV__) {
+        console.error('[Profile] Download failed:', error)
+      }
+    } finally {
+      setIsDownloading(false)
+      setDownloadProgress(0)
+    }
+  }
+
+  // Check offline status on mount (only on mobile)
+  useEffect(() => {
+    if (Platform.OS !== 'web') {
+      checkOfflineStatus()
+    }
+  }, [checkOfflineStatus])
 
   const handleSignOut = () => {
     showConfirm(
@@ -266,6 +347,80 @@ export default function ProfileScreen() {
               </ThemedCard>
             </View>
           </FadeInView>
+
+          {/* Offline Content - Only on mobile */}
+          {Platform.OS !== 'web' && (
+            <FadeInView delay={60} animation="slideUp">
+              <Pressable 
+                onPress={offlineStatus.downloaded && !offlineStatus.updateAvailable && !isDownloading ? undefined : handleDownloadOffline}
+                disabled={isDownloading}
+              >
+                <ThemedCard colors={colors} isDark={isDark} style={{ marginTop: 16 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <View style={{
+                        width: 52, height: 52,
+                        backgroundColor: offlineStatus.downloaded 
+                          ? 'rgba(16, 185, 129, 0.1)' 
+                          : 'rgba(99, 102, 241, 0.1)',
+                        borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16,
+                      }}>
+                        <Text style={{ fontSize: 26 }}>
+                          {isDownloading ? '⏳' : offlineStatus.downloaded ? '✅' : '📥'}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>
+                            Mode hors-ligne
+                          </Text>
+                          {offlineStatus.updateAvailable && !isDownloading && (
+                            <View style={{ 
+                              backgroundColor: colors.warning || '#f59e0b', 
+                              borderRadius: 10, 
+                              paddingHorizontal: 8, 
+                              paddingVertical: 2 
+                            }}>
+                              <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>MAJ</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={{ color: colors.textMuted, fontSize: 14, marginTop: 2 }}>
+                          {isDownloading 
+                            ? `Téléchargement... ${Math.round(downloadProgress * 100)}%`
+                            : offlineStatus.downloaded 
+                              ? `${offlineStatus.questionCount} questions • v${offlineStatus.version}`
+                              : 'Télécharger pour utiliser sans internet'
+                          }
+                        </Text>
+                      </View>
+                    </View>
+                    {!isDownloading && (!offlineStatus.downloaded || offlineStatus.updateAvailable) && (
+                      <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+                    )}
+                  </View>
+                  
+                  {/* Progress bar during download */}
+                  {isDownloading && (
+                    <View style={{ 
+                      marginTop: 12, 
+                      height: 6, 
+                      backgroundColor: colors.backgroundSecondary, 
+                      borderRadius: 3, 
+                      overflow: 'hidden' 
+                    }}>
+                      <View style={{ 
+                        width: `${downloadProgress * 100}%`, 
+                        height: '100%', 
+                        backgroundColor: colors.primary, 
+                        borderRadius: 3 
+                      }} />
+                    </View>
+                  )}
+                </ThemedCard>
+              </Pressable>
+            </FadeInView>
+          )}
 
           {/* Feedback Button */}
           <FadeInView delay={75} animation="slideUp">
