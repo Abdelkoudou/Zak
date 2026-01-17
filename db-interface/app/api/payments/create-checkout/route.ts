@@ -71,13 +71,13 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateCheckoutRequest = await request.json();
     const clientIP = getClientIP(request);
-    
+
     // Sanitize inputs
     const customerEmail = body.customerEmail?.toLowerCase().trim();
     const customerName = sanitizeString(body.customerName);
     const customerPhone = body.customerPhone?.replace(/\s/g, '');
     const duration = body.duration;
-    
+
     // Validate required fields
     if (!customerEmail) {
       return NextResponse.json(
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Validate email format
     if (!isValidEmail(customerEmail)) {
       return NextResponse.json(
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Validate duration
     if (!duration || !isValidDuration(duration)) {
       return NextResponse.json(
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Validate phone if provided
     if (customerPhone && !isValidPhone(customerPhone)) {
       return NextResponse.json(
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Rate limiting per email
     const emailRateLimitKey = `create:email:${customerEmail}`;
     if (isRateLimited(emailRateLimitKey, RATE_LIMITS.CREATE_PER_EMAIL.maxRequests, RATE_LIMITS.CREATE_PER_EMAIL.windowMs)) {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         { status: 429, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Rate limiting per IP
     const ipRateLimitKey = `create:ip:${clientIP}`;
     if (isRateLimited(ipRateLimitKey, RATE_LIMITS.CREATE_PER_IP.maxRequests, RATE_LIMITS.CREATE_PER_IP.windowMs)) {
@@ -127,22 +127,42 @@ export async function POST(request: NextRequest) {
         { status: 429, headers: getSecurityHeaders() }
       );
     }
-    
+
     // Get subscription price (validated above)
-    const subscription = SUBSCRIPTION_PRICES[duration];
+    // Default to hardcoded value
+    let subscriptionAmount: number = SUBSCRIPTION_PRICES[duration].amount;
+    let subscriptionLabel: string = SUBSCRIPTION_PRICES[duration].label;
+
+    // Try to fetch dynamic price from DB
+    if (duration === '365') {
+      const { data: configPrice, error: configError } = await supabaseAdmin
+        .from('app_config')
+        .select('value')
+        .eq('key', 'chargily_price_365')
+        .single();
+
+      if (!configError && configPrice?.value) {
+        const dbPrice = parseInt(configPrice.value);
+        if (!isNaN(dbPrice) && dbPrice > 0) {
+          subscriptionAmount = dbPrice;
+          subscriptionLabel = `1 An - ${dbPrice} DA`; // Update label to match new price
+        }
+      }
+    }
+
     const durationDays = parseInt(duration);
-    
+
     // Build URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
     const successUrl = `${baseUrl}/payment/success`;
     const failureUrl = `${baseUrl}/payment/failure`;
     const webhookEndpoint = `${baseUrl}/api/webhooks/chargily`;
-    
+
     // Create Chargily checkout
     const chargily = getChargilyClient();
-    
+
     const checkout = await chargily.createCheckout({
-      amount: subscription.amount,
+      amount: subscriptionAmount,
       currency: 'dzd',
       customerEmail: customerEmail,
       customerName: customerName || undefined,
@@ -150,7 +170,7 @@ export async function POST(request: NextRequest) {
       successUrl,
       failureUrl,
       webhookEndpoint,
-      description: `Abonnement MCQ Med App - ${subscription.label}`,
+      description: `Abonnement MCQ Med App - ${subscriptionLabel}`,
       locale: body.locale || 'fr',
       metadata: {
         duration_days: duration,
@@ -159,7 +179,7 @@ export async function POST(request: NextRequest) {
         customer_name: customerName || '',
       },
     });
-    
+
     // Store payment record in database
     const { error: insertError } = await supabaseAdmin
       .from('online_payments')
@@ -168,7 +188,7 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
         customer_name: customerName,
         customer_phone: customerPhone || null,
-        amount: subscription.amount,
+        amount: subscriptionAmount,
         currency: 'dzd',
         duration_days: durationDays,
         checkout_url: checkout.checkout_url,
@@ -176,30 +196,30 @@ export async function POST(request: NextRequest) {
         failure_url: failureUrl,
         status: 'pending',
         metadata: {
-          duration_label: subscription.label,
+          duration_label: subscriptionLabel,
           locale: body.locale || 'fr',
           source: 'web',
           client_ip: clientIP,
         },
       });
-    
+
     if (insertError) {
       console.error('[Create Checkout] Error storing payment record:', insertError);
       // Continue anyway - the checkout was created successfully
     }
-    
+
     return NextResponse.json({
       success: true,
       checkoutId: checkout.id,
       checkoutUrl: checkout.checkout_url,
-      amount: subscription.amount,
+      amount: subscriptionAmount,
       currency: 'dzd',
       duration: duration,
     }, { headers: getSecurityHeaders() });
-    
+
   } catch (error) {
     console.error('[Create Checkout] Error:', error);
-    
+
     // Don't expose internal error details
     return NextResponse.json(
       { error: 'Failed to create checkout. Please try again.' },
@@ -220,7 +240,7 @@ export async function GET() {
     amountFormatted: `${price.amount / 100} DA`,
     label: price.label,
   }));
-  
+
   return NextResponse.json({
     plans,
     currency: 'dzd',
