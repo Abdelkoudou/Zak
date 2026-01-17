@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import Link from 'next/link';
 
@@ -56,11 +56,9 @@ export default function AIAnalyticsPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [days]);
+  /* useEffect moved below fetchAnalytics */
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -75,7 +73,11 @@ export default function AIAnalyticsPage() {
       setError(err.message);
     }
     setLoading(false);
-  };
+  }, [days]);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [days, fetchAnalytics]);
 
   const StatCard = ({ icon, label, value, subValue, color }: { 
     icon: string; label: string; value: string | number; subValue?: string; color: string 

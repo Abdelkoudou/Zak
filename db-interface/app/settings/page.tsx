@@ -54,13 +54,13 @@ export default async function SettingsPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Paramètres</h1>
       
       <div className="bg-white shadow rounded-lg p-6">
-        <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Paramètres d'abonnement</h2>
+        <h2 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Paramètres d&apos;abonnement</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-2">Prix de l'abonnement annuel</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-2">Prix de l&apos;abonnement annuel</h3>
             <p className="text-sm text-gray-500 mb-4">
-              Définir le prix de l'abonnement de 365 jours. Ce changement s'applique immédiatement aux nouveaux sessions de paiement.
+              Définir le prix de l&apos;abonnement de 365 jours. Ce changement s&apos;applique immédiatement aux nouveaux sessions de paiement.
             </p>
           </div>
           
