@@ -372,8 +372,8 @@ export default function ProfileScreen() {
                         <StatBox label="Incorrectes" value={stats.total_questions_attempted - stats.total_correct_answers} icon={<FalseIcon size={26} color={colors.error} />} colors={colors} />
                       </View>
                       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
-                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color={colors.primary} />} colors={colors} />
-                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color={colors.primary} />} colors={colors} />
+                        <StatBox label="Temps" value={`${stats.total_time_spent_minutes}m`} icon={<GoalIcon size={26} color={isDark ? '#ffffff' : '#000000'} />} colors={colors} />
+                        <StatBox label="Précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={26} color={isDark ? '#ffffff' : '#000000'} />} colors={colors} />
                         <StatBox label="Modules" value={stats.modules_practiced} icon={<BookIcon size={26} color={colors.text} />} colors={colors} />
                       </View>
                       {stats.last_practice_date && (

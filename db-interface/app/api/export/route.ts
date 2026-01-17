@@ -12,6 +12,20 @@ import {
   errorResponse,
 } from '@/lib/security/api-utils';
 
+/**
+ * Normalize string for file path - remove accented characters and special chars
+ * Converts: génétique → genetique, Système → systeme, etc.
+ */
+function normalizeForFilePath(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')                    // Decompose accented chars (é → e + ́)
+    .replace(/[\u0300-\u036f]/g, '')     // Remove diacritical marks
+    .replace(/[^a-z0-9_-]/g, '_')        // Replace non-alphanumeric with underscore
+    .replace(/_+/g, '_')                 // Collapse multiple underscores
+    .replace(/^_|_$/g, '');              // Trim leading/trailing underscores
+}
+
 interface ModuleQuestions {
   [key: string]: any[];
 }
@@ -97,7 +111,7 @@ export async function POST(request: NextRequest) {
 
     for (const question of questions as QuestionWithAnswers[]) {
       const year = question.year;
-      const moduleName = question.module_name.toLowerCase().replace(/\s+/g, '_');
+      const moduleName = normalizeForFilePath(question.module_name);
       const key = `year${year}`;
 
       if (!groupedQuestions[key]) {
