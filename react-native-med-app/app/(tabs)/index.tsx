@@ -274,23 +274,35 @@ export default function HomeScreen() {
                 </Animated.View>
              </LinearGradient>
           ) : (
-            <ImageBackground 
-              source={HeaderImg} 
+            <View 
               style={{
                 width: '100%',
-                backgroundColor: '#09B2AD', // Brand Teal fill
-                paddingTop: showWebHeader ? 48 : 80,
+                
+                backgroundColor: '#09B2AD',
+                paddingTop: showWebHeader ? 20 : 20,
                 paddingBottom: 100,
                 alignItems: 'center',
-              }}
-              
-              imageStyle={{
-                resizeMode: 'cover',
+                position: 'relative',
                 borderBottomLeftRadius: 32,
                 borderBottomRightRadius: 32,
-                top: 90, // Push waves down to start at blur section
               }}
             >
+              {/* Wave image absolutely positioned at bottom */}
+              <Image 
+                source={HeaderImg} 
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  width: '100%',
+                  height: 160, // Height that fits well without overlapping text
+                  resizeMode: 'cover',
+                  borderBottomLeftRadius: 32,
+                  borderBottomRightRadius: 32,
+                }}
+              />
+              
               <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                   <View style={{ marginBottom: 14 }}>
@@ -325,14 +337,14 @@ export default function HomeScreen() {
                   )}
                 </View>
               </Animated.View>
-            </ImageBackground>
+            </View>
           )}
         </View>
 
         {/* Content Container */}
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Stats Cards */}
-          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -60 : -45, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
+          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -70 : -55, opacity: statsOpacity, transform: [{ scale: statsScale }], zIndex: 10 }}>
             {isLoading ? (
               <StatsSkeleton />
             ) : stats ? (
@@ -362,33 +374,36 @@ export default function HomeScreen() {
                     </View>
                   </View>
                 ) : (
-                  // Native: expo-blur BlurView
-                  <BlurView 
-                    intensity={60} 
-                    tint={isDark ? "dark" : "light"}
+                  // Native: Gradient to simulate frosted glass (BlurView doesn't match web backdrop-filter)
+                  <LinearGradient
+                    colors={isDark 
+                      ? ['rgba(45, 55, 60, 0.95)', 'rgba(30, 35, 40, 0.98)']
+                      : ['rgba(200, 235, 235, 0.85)', 'rgba(245, 250, 250, 0.95)']
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={{ 
                       borderRadius: 17,
-                      overflow: 'hidden',
+                      padding: isDesktop ? 28 : 20,
+                      borderWidth: 1,
+                      borderColor: isDark 
+                        ? 'rgba(255, 255, 255, 0.12)' 
+                        : 'rgba(255, 255, 255, 0.8)',
                     }}
                   >
-                    <View style={{
-                      backgroundColor: isDark ? 'rgba(30, 30, 30, 0.4)' : 'rgba(255, 255, 255, 0.4)',
-                      padding: isDesktop ? 28 : 20,
-                    }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                      </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
                     </View>
-                  </BlurView>
+                  </LinearGradient>
                 )}
               </View>
             ) : null}
           </Animated.View>
 
           {/* Modules Section */}
-          <View style={{ marginTop: isDesktop ? 40 : 28, width: '100%' }}>
+          <View style={{ marginTop: isDesktop ? 32 : 18, width: '100%' }}>
             <FadeInView delay={150}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <View>
