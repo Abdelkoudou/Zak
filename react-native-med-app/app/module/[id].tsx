@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams, router, Stack, useNavigation } from 'expo-router'
 import { useTheme } from '@/context/ThemeContext'
 import { useAuth } from '@/context/AuthContext'
-import { getModuleById, getModuleCours, getModuleQuestionCount, getModuleCoursesStructure } from '@/lib/modules'
+import { getModuleById, getModuleCours, getModuleQuestionCount, getModuleCoursesStructure, getExamTypesWithCounts, getCoursWithCounts } from '@/lib/modules'
 import { getQuestionCount, getExamYears } from '@/lib/questions'
 import { Module, ExamType } from '@/types'
 import { EXAM_TYPES_BY_MODULE_TYPE } from '@/constants'
@@ -95,6 +95,7 @@ export default function ModuleDetailScreen() {
       const { module: moduleData } = await getModuleById(id)
       setModule(moduleData)
       if (moduleData) {
+        // Load question count
         const { count } = await getModuleQuestionCount(moduleData.name)
         setQuestionCount(count)
         
@@ -135,10 +136,15 @@ export default function ModuleDetailScreen() {
           setSelectedSubDiscipline(sortedSubs[0])
         }
 
+        // Load cours list (for the toggle button visibility)
         const { cours: coursData } = await getModuleCours(moduleData.name)
         setCours(coursData)
-        await loadExamTypesWithCounts(moduleData)
-        await loadCoursWithCounts(moduleData.name, coursData)
+        
+        // OPTIMIZED: Load exam types with counts in single query
+        await loadExamTypesWithCountsOptimized(moduleData)
+        
+        // OPTIMIZED: Load cours with counts in single query
+        await loadCoursWithCountsOptimized(moduleData.name)
       }
       setHasLoaded(true)
     } catch {
@@ -148,7 +154,29 @@ export default function ModuleDetailScreen() {
     }
   }
 
-  const loadExamTypesWithCounts = async (moduleData: Module) => {
+  // OPTIMIZED: Single query for exam types with counts
+  const loadExamTypesWithCountsOptimized = async (moduleData: Module) => {
+    try {
+      const { examTypes, error } = await getExamTypesWithCounts(moduleData.name, moduleData.year)
+      
+      if (error) {
+        // Fallback to legacy method if RPC not available
+        console.warn('[ModuleDetail] Falling back to legacy exam types loading:', error)
+        await loadExamTypesWithCountsLegacy(moduleData)
+        return
+      }
+      
+      // Filter to only valid exam types for this module type
+      const validExamTypes = EXAM_TYPES_BY_MODULE_TYPE[moduleData.type] || []
+      const filteredExamTypes = examTypes.filter(et => validExamTypes.includes(et.type))
+      setAvailableExamTypes(filteredExamTypes)
+    } catch {
+      // Error loading exam types
+    }
+  }
+
+  // Legacy fallback for exam types (N+1 queries)
+  const loadExamTypesWithCountsLegacy = async (moduleData: Module) => {
     try {
       const validExamTypes = EXAM_TYPES_BY_MODULE_TYPE[moduleData.type] || []
       const examTypesWithCounts = await Promise.all(
@@ -163,18 +191,47 @@ export default function ModuleDetailScreen() {
     }
   }
 
-  const loadCoursWithCounts = async (moduleName: string, coursData: string[]) => {
+  // OPTIMIZED: Single query for cours with counts
+  const loadCoursWithCountsOptimized = async (moduleName: string) => {
     try {
-      const coursWithCounts = await Promise.all(
+      const { cours: coursWithCountsData, error } = await getCoursWithCounts(moduleName)
+      
+      if (error) {
+        // Fallback to legacy method if RPC not available
+        console.warn('[ModuleDetail] Falling back to legacy cours loading:', error)
+        const { cours: coursData } = await getModuleCours(moduleName)
+        await loadCoursWithCountsLegacy(moduleName, coursData)
+        return
+      }
+      
+      setCoursWithCounts(coursWithCountsData)
+    } catch {
+      // Error loading cours counts
+    }
+  }
+
+  // Legacy fallback for cours (N+1 queries)
+  const loadCoursWithCountsLegacy = async (moduleName: string, coursData: string[]) => {
+    try {
+      const coursWithCountsResult = await Promise.all(
         coursData.map(async (coursName) => {
           const { count } = await getQuestionCount({ module_name: moduleName, cours: coursName })
           return { name: coursName, count }
         })
       )
-      setCoursWithCounts(coursWithCounts.filter(item => item.count > 0))
+      setCoursWithCounts(coursWithCountsResult.filter(item => item.count > 0))
     } catch {
       // Error loading cours counts
     }
+  }
+
+  // Keep legacy functions for backward compatibility (used by loadExamTypesWithCountsLegacy)
+  const loadExamTypesWithCounts = async (moduleData: Module) => {
+    await loadExamTypesWithCountsOptimized(moduleData)
+  }
+
+  const loadCoursWithCounts = async (moduleName: string, coursData: string[]) => {
+    await loadCoursWithCountsOptimized(moduleName)
   }
 
   const loadExamYearsForType = async (examType: ExamType) => {
