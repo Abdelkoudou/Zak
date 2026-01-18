@@ -75,7 +75,14 @@ export default function ProfileScreen() {
     moduleCount: number
   }>({ downloaded: false, version: null, updateAvailable: false, questionCount: 0, moduleCount: 0 })
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [downloadProgress, setDownloadProgress] = useState(0)
+  
+  // Offline Manager State
+  const [showOfflineManager, setShowOfflineManager] = useState(false)
+  const [offlineModules, setOfflineModules] = useState<any[]>([])
+  const [storageUsage, setStorageUsage] = useState(0)
+  const [loadingManager, setLoadingManager] = useState(false)
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-15)).current
@@ -147,7 +154,7 @@ export default function ProfileScreen() {
 
   // Handle download/update of offline content
   const handleDownloadOffline = async () => {
-    if (isDownloading) return
+    if (isDownloading || isDeleting) return
     
     setIsDownloading(true)
     setDownloadProgress(0)
@@ -178,6 +185,44 @@ export default function ProfileScreen() {
       setIsDownloading(false)
       setDownloadProgress(0)
     }
+  }
+
+  const handleDeleteOffline = () => {
+    if (isDownloading || isDeleting) return
+
+    Alert.alert(
+      'Supprimer le contenu ?',
+      'Attention : Vous allez supprimer tout le contenu hors-ligne. Vous ne pourrez plus étudier sans internet jusqu\'au prochain téléchargement.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Supprimer', 
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true)
+            try {
+              const success = await OfflineContentService.clearOfflineData()
+              if (success) {
+                setOfflineStatus({
+                  downloaded: false,
+                  version: null,
+                  updateAvailable: false,
+                  questionCount: 0,
+                  moduleCount: 0
+                })
+                Alert.alert('Succès', 'Contenu hors-ligne supprimé.')
+              } else {
+                Alert.alert('Erreur', 'Impossible de supprimer le contenu.')
+              }
+            } catch (error) {
+              Alert.alert('Erreur', 'Une erreur est survenue.')
+            } finally {
+              setIsDeleting(false)
+            }
+          }
+        }
+      ]
+    )
   }
 
   // Toggle profile expansion
@@ -221,6 +266,78 @@ export default function ProfileScreen() {
       'Déconnexion',
       'Annuler',
       'destructive'
+    )
+  }
+
+  // Open Offline Manager
+  const openOfflineManager = async () => {
+    setShowOfflineManager(true)
+    setLoadingManager(true)
+    try {
+      const [modules, usage] = await Promise.all([
+        OfflineContentService.getAllModules(),
+        OfflineContentService.getOfflineStorageUsage()
+      ])
+      setOfflineModules(modules)
+      setStorageUsage(usage)
+    } catch (error) {
+       console.error(error)
+    } finally {
+      setLoadingManager(false)
+    }
+  }
+
+  // Delete specific module from manager
+  const handleDeleteModule = async (moduleName: string) => {
+    Alert.alert(
+      'Supprimer le module ?',
+      `Voulez-vous supprimer "${moduleName}" ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Supprimer', 
+          style: 'destructive',
+          onPress: async () => {
+             setLoadingManager(true)
+             try {
+               const success = await OfflineContentService.deleteModule(moduleName)
+               if (success) {
+                 // Refresh data
+                 const [modules, usage] = await Promise.all([
+                    OfflineContentService.getAllModules(),
+                    OfflineContentService.getOfflineStorageUsage()
+                  ])
+                  
+                  if (modules.length === 0) {
+                     // If empty, close manager and reset status
+                     setShowOfflineManager(false)
+                     setOfflineStatus({
+                        downloaded: false,
+                        version: null,
+                        updateAvailable: false,
+                        questionCount: 0,
+                        moduleCount: 0
+                      })
+                  } else {
+                     setOfflineModules(modules)
+                     setStorageUsage(usage)
+                     // Update global status counts
+                     const newCount = modules.reduce((sum, m) => sum + (m.question_count || 0), 0)
+                     setOfflineStatus(prev => ({
+                        ...prev,
+                        questionCount: newCount,
+                        moduleCount: modules.length
+                     }))
+                  }
+               }
+             } catch (error) {
+               Alert.alert('Erreur', 'Impossible de supprimer le module')
+             } finally {
+               setLoadingManager(false)
+             }
+          }
+        }
+      ]
     )
   }
 
@@ -459,7 +576,10 @@ export default function ProfileScreen() {
           {Platform.OS !== 'web' && (
             <FadeInView delay={60} animation="slideUp">
               <Pressable 
-                onPress={offlineStatus.downloaded && !offlineStatus.updateAvailable && !isDownloading ? undefined : handleDownloadOffline}
+                onPress={offlineStatus.downloaded && !offlineStatus.updateAvailable && !isDownloading 
+                  ? openOfflineManager 
+                  : handleDownloadOffline
+                }
                 disabled={isDownloading}
               >
                 <ThemedCard colors={colors} isDark={isDark} style={{ marginTop: 16 }}>
@@ -502,9 +622,37 @@ export default function ProfileScreen() {
                         </Text>
                       </View>
                     </View>
-                    {!isDownloading && (!offlineStatus.downloaded || offlineStatus.updateAvailable) && (
-                      <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
-                    )}
+                    {/* Right Side Actions */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {/* Updates or Action Arrow */}
+                      {!isDownloading && !isDeleting && (!offlineStatus.downloaded || offlineStatus.updateAvailable) && (
+                        <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+                      )}
+                      
+                      {/* Manage Button (Settings Icon) */}
+                      {!isDownloading && !isDeleting && offlineStatus.downloaded && (
+                         <View style={{ flexDirection: 'row', gap: 8 }}>
+                            {offlineStatus.updateAvailable && (
+                               <TouchableOpacity onPress={handleDownloadOffline} style={{ padding: 4 }}>
+                                  <Text style={{ fontSize: 20 }}>🔄</Text>
+                               </TouchableOpacity>
+                            )}
+                            <TouchableOpacity 
+                              onPress={(e) => {
+                                e.stopPropagation()
+                                openOfflineManager()
+                              }}
+                              style={{ 
+                                padding: 8,
+                                backgroundColor: colors.backgroundSecondary,
+                                borderRadius: 12,
+                              }}
+                            >
+                              <Text style={{ fontSize: 16 }}>⚙️</Text>
+                            </TouchableOpacity>
+                         </View>
+                      )}
+                    </View>
                   </View>
                   
                   {/* Progress bar during download */}
@@ -811,11 +959,122 @@ export default function ProfileScreen() {
                   {submittingFeedback ? 'Envoi en cours...' : 'Envoyer le feedback'}
                 </Text>
               </TouchableOpacity>
-
-              <View style={{ height: Platform.OS === 'ios' ? 20 : 10 }} />
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Offline Manager Modal */}
+      <Modal
+        visible={showOfflineManager}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowOfflineManager(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+           {/* Modal Header */}
+           <View style={{ 
+              padding: 20, 
+              borderBottomWidth: 1, 
+              borderBottomColor: colors.border,
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+           }}>
+              <View>
+                 <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text }}>Contenu hors-ligne</Text>
+                 <Text style={{ fontSize: 13, color: colors.textMuted }}>Gérez votre espace de stockage</Text>
+              </View>
+              <TouchableOpacity 
+                 onPress={() => setShowOfflineManager(false)}
+                 style={{ padding: 8, backgroundColor: colors.backgroundSecondary, borderRadius: 20 }}
+              >
+                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Fermer</Text>
+              </TouchableOpacity>
+           </View>
+
+           {loadingManager ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                 <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+           ) : (
+              <View style={{ flex: 1 }}>
+                 {/* Storage Stats */}
+                 <View style={{ padding: 24, paddingBottom: 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                       <Text style={{ fontWeight: '600', color: colors.text }}>Espace utilisé</Text>
+                       <Text style={{ fontWeight: '700', color: colors.primary }}>{storageUsage} MB</Text>
+                    </View>
+                    <View style={{ height: 8, backgroundColor: colors.backgroundSecondary, borderRadius: 4, overflow: 'hidden' }}>
+                       <View style={{ width: '100%', height: '100%', backgroundColor: colors.primary, opacity: 0.3 }} />
+                       <View style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: `${Math.min((storageUsage / 500) * 100, 100)}%` as any, backgroundColor: colors.primary }} />
+                    </View>
+                    <Text style={{ fontSize: 12, color: colors.textMuted, marginTop: 8, textAlign: 'right' }}>
+                       {offlineModules.length} module{offlineModules.length > 1 ? 's' : ''} téléchargé{offlineModules.length > 1 ? 's' : ''}
+                    </Text>
+                 </View>
+
+                 {/* Modules List */}
+                 <ScrollView contentContainerStyle={{ padding: 20 }}>
+                    {offlineModules.map((module) => (
+                       <View key={module.id} style={{ 
+                          flexDirection: 'row', 
+                          alignItems: 'center', 
+                          backgroundColor: colors.card,
+                          padding: 16,
+                          borderRadius: 16,
+                          marginBottom: 12,
+                          borderWidth: 1,
+                          borderColor: colors.border
+                       }}>
+                          <View style={{ 
+                             width: 44, height: 44, 
+                             backgroundColor: colors.primaryMuted, 
+                             borderRadius: 12, 
+                             alignItems: 'center', 
+                             justifyContent: 'center',
+                             marginRight: 16
+                          }}>
+                             <Text style={{ fontSize: 18 }}>📚</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                             <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{module.name}</Text>
+                             <Text style={{ fontSize: 13, color: colors.textMuted }}>
+                                {module.year}ème année • {module.question_count} qst
+                             </Text>
+                          </View>
+                          <TouchableOpacity 
+                             onPress={() => handleDeleteModule(module.name)}
+                             style={{ padding: 10 }}
+                          >
+                             <Text style={{ fontSize: 18 }}>🗑️</Text>
+                          </TouchableOpacity>
+                       </View>
+                    ))}
+                 </ScrollView>
+
+                 {/* Footer Actions */}
+                 <View style={{ padding: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
+                    <TouchableOpacity 
+                       onPress={() => {
+                          setShowOfflineManager(false)
+                          setTimeout(() => handleDeleteOffline(), 300) // Call the main delete function
+                       }}
+                       style={{ 
+                          backgroundColor: colors.errorLight, 
+                          paddingVertical: 16, 
+                          borderRadius: 16, 
+                          alignItems: 'center',
+                          borderWidth: 1,
+                          borderColor: 'rgba(239, 68, 68, 0.2)'
+                       }}
+                    >
+                       <Text style={{ color: colors.error, fontWeight: '700', fontSize: 16 }}>Tout supprimer</Text>
+                    </TouchableOpacity>
+                 </View>
+              </View>
+           )}
+        </View>
       </Modal>
     </SafeAreaView>
   )

@@ -14,7 +14,8 @@ import {
   Platform,
   ImageBackground,
   Image,
-  StyleSheet
+  StyleSheet,
+  AppState
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
@@ -31,6 +32,7 @@ import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 import { BookIcon } from '@/components/icons/ResultIcons'
 import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
 import { useWebVisibility } from '@/lib/useWebVisibility'
+import { OfflineStatsService } from '@/lib/offline-stats'
 
 const HeaderImg = require('../../assets/images/images/Header.png')
 
@@ -142,6 +144,41 @@ export default function HomeScreen() {
       }
     }, [loadData, hasInitiallyLoaded]),
   })
+
+  // Background Sync Effect (On Mount + On Foreground)
+  useEffect(() => {
+    const triggerSync = () => {
+        if (user?.id) {
+            OfflineStatsService.syncPendingQueue(user.id).then(({ syncedCount }) => {
+                if (syncedCount > 0) {
+                    console.log('[Home] Synced pending attempts:', syncedCount)
+                    loadData(true)
+                }
+            })
+        }
+    }
+
+    // specific import for AppState inside the hook or top level. 
+    // AppState is not imported above yet. I will add it to the imports via a separate edit or assume I can add it here if I check imports.
+    // Wait, I should add AppState to imports first.
+    // For now, let's just implement the logic and I will check imports in next step or use Fully Qualified if possible, 
+    // but better to add to imports.
+    
+    // Initial sync
+    triggerSync()
+
+    // Listen for state changes (background -> active)
+    // useful when user goes to settings to enable wifi and comes back
+    const subscription = AppState.addEventListener('change', nextAppState => {
+        if (nextAppState === 'active') {
+            triggerSync()
+        }
+    })
+
+    return () => {
+        subscription.remove()
+    }
+  }, [user?.id, loadData])
 
   const runEntranceAnimations = useCallback(() => {
     // Stop any running animations first
