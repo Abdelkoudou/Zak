@@ -279,8 +279,8 @@ export default function HomeScreen() {
                 width: '100%',
                 
                 backgroundColor: '#09B2AD',
-                paddingTop: showWebHeader ? 20 : 40,
-                paddingBottom: 100,
+                paddingTop: showWebHeader ? 20 : 20,
+                paddingBottom: 60,
                 alignItems: 'center',
                 position: 'relative',
                 borderBottomLeftRadius: 32,
@@ -330,7 +330,7 @@ export default function HomeScreen() {
         {/* Content Container */}
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Stats Cards */}
-          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -70 : -55, opacity: statsOpacity, transform: [{ scale: statsScale }], zIndex: 10 }}>
+          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -50 : -35, opacity: statsOpacity, transform: [{ scale: statsScale }], zIndex: 10 }}>
             {isLoading ? (
               <StatsSkeleton />
             ) : stats ? (
@@ -369,8 +369,8 @@ export default function HomeScreen() {
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={{ 
-                      borderRadius: 17,
-                      padding: isDesktop ? 28 : 20,
+                      borderRadius: 14,
+                      padding: isDesktop ? 20 : 12,
                       borderWidth: 1,
                       borderColor: isDark 
                         ? 'rgba(255, 255, 255, 0.12)' 
@@ -389,13 +389,13 @@ export default function HomeScreen() {
           </Animated.View>
 
           {/* Modules Section */}
-          <View style={{ marginTop: isDesktop ? 32 : 18, width: '100%' }}>
+          <View style={{ marginTop: isDesktop ? 24 : 16, width: '100%' }}>
             <FadeInView delay={150}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <View>
-                  <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
+                  <Text style={{ fontSize: isDesktop ? 22 : 18, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
                   <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>
-                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules disponibles
+                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules 
                   </Text>
                 </View>
                 
@@ -436,9 +436,9 @@ export default function HomeScreen() {
 function StatItem({ label, value, icon, isDesktop, colors }: { label: string; value: string; icon: React.ReactNode; isDesktop: boolean; colors: any }) {
   return (
     <View style={{ alignItems: 'center', paddingHorizontal: isDesktop ? 24 : 12, paddingVertical: 8 }}>
-      <View style={{ marginBottom: 10, padding: 8, borderRadius: 14 }}>{icon}</View>
-      <Text style={{ fontSize: isDesktop ? 28 : 22, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.5 }}>{value}</Text>
-      <Text style={{ color: colors.textMuted, fontSize: isDesktop ? 14 : 12, fontWeight: '500' }}>{label}</Text>
+      <View style={{ marginBottom: 6, padding: 6, borderRadius: 10 }}>{icon}</View>
+      <Text style={{ fontSize: isDesktop ? 24 : 18, fontWeight: '800', color: colors.text, marginBottom: 2, letterSpacing: -0.5 }}>{value}</Text>
+      <Text style={{ color: colors.textMuted, fontSize: isDesktop ? 13 : 11, fontWeight: '600' }}>{label}</Text>
     </View>
   )
 }
@@ -470,17 +470,17 @@ function ModuleCard({ module, onPress, isDesktop, colors, isDark }: { module: Mo
         shadowRadius: 2,
         elevation: 1,
       }}>
-        <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: isDesktop ? 20 : 16 }}>
+        <View style={{ height: 3, backgroundColor: colors.primary, width: '100%' }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: isDesktop ? 16 : 12 }}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ fontSize: isDesktop ? 17 : 16, fontWeight: '700', color: colors.text, marginBottom: 6, letterSpacing: -0.3 }} numberOfLines={2}>{module.name}</Text>
+            <Text style={{ fontSize: isDesktop ? 16 : 14, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.3 }} numberOfLines={1}>{module.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <BookIcon size={14} color={colors.textMuted} />
               <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500', marginLeft: 6 }}>{module.question_count} Questions</Text>
             </View>
           </View>
-          <View style={{ backgroundColor: colors.primaryMuted, paddingHorizontal: isDesktop ? 16 : 14, paddingVertical: isDesktop ? 10 : 8, borderRadius: 12 }}>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>Pratiquer</Text>
+          <View style={{ backgroundColor: colors.primaryMuted, paddingHorizontal: isDesktop ? 12 : 10, paddingVertical: isDesktop ? 8 : 6, borderRadius: 10 }}>
+            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: isDesktop ? 13 : 11 }}>Pratiquer</Text>
           </View>
         </View>
       </Animated.View>

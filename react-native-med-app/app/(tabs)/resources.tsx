@@ -122,6 +122,14 @@ export default function ResourcesScreen() {
       default: return 'Autre'
     }
   }
+   const getYearLabel = () => {
+    switch (user?.year_of_study) {
+      case '1': return '1ère Année'
+      case '2': return '2ème Année'
+      case '3': return '3ème Année'
+      default: return ''
+    }
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={showWebHeader ? ['bottom'] : ['top', 'bottom']}>
@@ -146,7 +154,7 @@ export default function ResourcesScreen() {
 
             {/* Type Filter */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <AnimatedFilterChip label="Tous" isSelected={selectedType === 'all'} onPress={() => setSelectedType('all')} colors={colors} />
+             
               <AnimatedFilterChip label="📁 Drive" isSelected={selectedType === 'google_drive'} onPress={() => setSelectedType('google_drive')} colors={colors} />
               <AnimatedFilterChip label="💬 Telegram" isSelected={selectedType === 'telegram'} onPress={() => setSelectedType('telegram')} colors={colors} />
             </ScrollView>
@@ -183,7 +191,7 @@ export default function ResourcesScreen() {
                 <Text style={{ fontSize: 64, marginBottom: 20 }}>📁</Text>
                 <Text style={{ color: colors.text, textAlign: 'center', fontSize: 20, fontWeight: '700', marginBottom: 8 }}>Aucune ressource disponible</Text>
                 <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 15 }}>
-                  pour la {user.year_of_study}ère année{selectedType !== 'all' && ` (${getTypeLabel(selectedType)})`}
+                  pour la {getYearLabel()} année{selectedType !== 'all' && ` (${getTypeLabel(selectedType)})`}
                 </Text>
               </View>
             </FadeInView>

@@ -21,8 +21,8 @@ export default function TabsLayout() {
   const showTabBar = !isWeb || !isDesktop
   
   // Calculate tab bar height accounting for safe area (edge-to-edge on Android 15)
-  const baseHeight = Platform.OS === 'ios' ? 66 : Platform.OS === 'web' ? 70 : 66
-  const bottomPadding = Platform.OS === 'ios' ? insets.bottom : Platform.OS === 'web' ? 10 : Math.max(insets.bottom, 24)
+  const baseHeight = Platform.OS === 'ios' ? 56 : Platform.OS === 'web' ? 60 : 56
+  const bottomPadding = Platform.OS === 'ios' ? insets.bottom : Platform.OS === 'web' ? 8 : Math.max(insets.bottom, 16)
   const tabBarHeight = baseHeight + bottomPadding
 
   return (
@@ -34,9 +34,9 @@ export default function TabsLayout() {
           borderTopWidth: 0,
           height: tabBarHeight,
           paddingBottom: bottomPadding,
-          paddingTop: Platform.OS === 'web' ? 10 : 12,
-          borderTopLeftRadius: 32,
-          borderTopRightRadius: 32,
+          paddingTop: Platform.OS === 'web' ? 8 : 10,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -50,10 +50,10 @@ export default function TabsLayout() {
         tabBarActiveTintColor: '#1E1E1E',
         tabBarInactiveTintColor: 'rgba(30, 30, 30, 0.5)',
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '600',
-          marginTop: Platform.OS === 'web' ? 4 : 2,
-          letterSpacing: 0.3,
+          marginTop: Platform.OS === 'web' ? 2 : 0,
+          letterSpacing: 0.2,
         },
         tabBarIconStyle: {
           marginBottom: 0,
@@ -72,7 +72,7 @@ export default function TabsLayout() {
           title: 'Accueil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <HomeIcon size={26} color={color} />
+              <HomeIcon size={22} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -83,7 +83,7 @@ export default function TabsLayout() {
           title: 'Ressources',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ResourcesIcon size={26} color={color} />
+              <ResourcesIcon size={22} color={color} />
             </AnimatedTabIcon>
           ),
         }}
@@ -94,7 +94,7 @@ export default function TabsLayout() {
           title: 'Profil',
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon focused={focused}>
-              <ProfileIcon size={26} color={color} />
+              <ProfileIcon size={22} color={color} />
             </AnimatedTabIcon>
           ),
         }}

@@ -17,7 +17,9 @@ import {
   Modal,
   TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  ActivityIndicator
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -32,6 +34,7 @@ import { SavesIcon, CorrectIcon, FalseIcon, FileIcon, GoalIcon, BookIcon } from 
 import { showConfirm } from '@/lib/alerts'
 import { supabase } from '@/lib/supabase'
 import { OfflineContentService, OfflineVersion } from '@/lib/offline-content'
+import { getUserActivationCode } from '@/lib/auth'
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
@@ -56,6 +59,12 @@ export default function ProfileScreen() {
   const [feedbackMessage, setFeedbackMessage] = useState('')
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  
+  // Expanded card state
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [activationCode, setActivationCode] = useState<string | null>(null)
+  const [isLoadingCode, setIsLoadingCode] = useState(false)
+  const [showCode, setShowCode] = useState(false)
 
   // Offline content state
   const [offlineStatus, setOfflineStatus] = useState<{
@@ -171,6 +180,25 @@ export default function ProfileScreen() {
     }
   }
 
+  // Toggle profile expansion
+  const toggleExpand = async () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+    setIsExpanded(!isExpanded)
+    
+    // Fetch activation code if expanding and not yet loaded
+    if (!isExpanded && !activationCode &&  !isLoadingCode && user) {
+        setIsLoadingCode(true)
+        try {
+            const { code } = await getUserActivationCode(user.id)
+            setActivationCode(code)
+        } catch (e) {
+            console.error('Error fetching code', e)
+        } finally {
+            setIsLoadingCode(false)
+        }
+    }
+  }
+
   // Check offline status on mount (only on mobile)
   useEffect(() => {
     if (Platform.OS !== 'web') {
@@ -268,55 +296,134 @@ export default function ProfileScreen() {
       >
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Profile Header */}
-          <Animated.View style={{
-            backgroundColor: colors.card,
-            borderRadius: isDesktop ? 28 : 20,
-            padding: isDesktop ? 32 : 24,
-            marginTop: isDesktop ? 32 : 16,
-            opacity: headerOpacity,
-            transform: [{ translateY: headerSlide }],
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: isDark ? 0.3 : 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}>
-            <View style={{ flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'center' : 'flex-start' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginBottom: isDesktop ? 0 : 20 }}>
-                <View style={{
-                  width: isDesktop ? 80 : 64,
-                  height: isDesktop ? 80 : 64,
-                  backgroundColor: colors.primary,
-                  borderRadius: isDesktop ? 24 : 20,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginRight: 20,
-                }}>
-                  <Text style={{ color: '#ffffff', fontSize: isDesktop ? 32 : 26, fontWeight: '700' }}>
-                    {user?.full_name?.charAt(0)?.toUpperCase() || '👤'}
-                  </Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: isDesktop ? 28 : 24, fontWeight: '800', color: colors.text, marginBottom: 6 }}>
-                    {user?.full_name || 'Utilisateur'}
-                  </Text>
-                  <Text style={{ color: colors.textMuted, fontSize: isDesktop ? 16 : 14 }}>{user?.email}</Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginLeft: isDesktop ? 20 : 0 }}>
-                <View style={{ backgroundColor: colors.primaryMuted, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                  <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>📚 {getYearLabel()}</Text>
-                </View>
-                {user?.speciality && (
-                  <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
-                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}> {user.speciality}</Text>
+          <Pressable onPress={toggleExpand}>
+            <Animated.View style={{
+              backgroundColor: colors.card,
+              borderRadius: isDesktop ? 28 : 20,
+              padding: isDesktop ? 32 : 24,
+              marginTop: isDesktop ? 32 : 16,
+              opacity: headerOpacity,
+              transform: [{ translateY: headerSlide }],
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isDark ? 0.3 : 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}>
+              <View style={{ flexDirection: isDesktop ? 'row' : 'column', alignItems: isDesktop ? 'center' : 'flex-start' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginBottom: isDesktop ? 0 : 20 }}>
+                  <View style={{
+                    width: isDesktop ? 80 : 64,
+                    height: isDesktop ? 80 : 64,
+                    backgroundColor: colors.primary,
+                    borderRadius: isDesktop ? 24 : 20,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 20,
+                  }}>
+                    <Text style={{ color: '#ffffff', fontSize: isDesktop ? 32 : 26, fontWeight: '700' }}>
+                      {user?.full_name?.charAt(0)?.toUpperCase() || '👤'}
+                    </Text>
                   </View>
-                )}
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text 
+                      style={{ fontSize: isDesktop ? 28 : 24, fontWeight: '800', color: colors.text, marginBottom: 6 }}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {user?.full_name || 'Utilisateur'}
+                    </Text>
+                    <Text 
+                      style={{ color: colors.textMuted, fontSize: isDesktop ? 16 : 14, flexShrink: 1 }}
+                      numberOfLines={1}
+                      ellipsizeMode="middle"
+                    >
+                      {user?.email}
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginLeft: isDesktop ? 20 : 0 }}>
+                  <View style={{ backgroundColor: colors.primaryMuted, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
+                    <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 14 }}>📚 {getYearLabel()}</Text>
+                  </View>
+                  {user?.speciality && (
+                    <View style={{ backgroundColor: colors.backgroundSecondary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }}>
+                      <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}> {user.speciality}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
-            </View>
-          </Animated.View>
+
+              {/* Expanded Details */}
+              {isExpanded && (
+                <View style={{ marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.border }}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 20 }}>
+                         {/* Region */}
+                        {user?.region && (
+                             <View style={{ width: '45%' }}>
+                                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Région</Text>
+                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{user.region}</Text>
+                             </View>
+                        )}
+                         {/* Faculty */}
+                        {user?.faculty && (
+                             <View style={{ width: '45%' }}>
+                                <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Faculté</Text>
+                                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{user.faculty}</Text>
+                             </View>
+                        )}
+                         {/* Member Since */}
+                        <View style={{ width: '45%' }}>
+                            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 4 }}>Membre depuis</Text>
+                            <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>{formatDate(user?.created_at || null)}</Text>
+                        </View>
+                        {/* Activation Code */}
+                        <View style={{ width: '100%', marginTop: 8 }}>
+                            <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 8 }}>Code d'activation</Text>
+                            <Pressable 
+                                onPress={(e) => {
+                                    e.stopPropagation()
+                                    setShowCode(!showCode)
+                                }}
+                                style={{ 
+                                    flexDirection: 'row', 
+                                    alignItems: 'center', 
+                                    backgroundColor: colors.backgroundSecondary,
+                                    padding: 12,
+                                    borderRadius: 12,
+                                    alignSelf: 'flex-start'
+                                }}
+                            >
+                                {isLoadingCode ? (
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                ) : (
+                                    <>
+                                        <Text style={{ 
+                                            color: colors.text, 
+                                            fontSize: 16, 
+                                            fontWeight: '700', 
+                                            letterSpacing: 2,
+                                            marginRight: 10,
+                                            fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' 
+                                        }}>
+                                            {activationCode ? (showCode ? activationCode : '••••••••••••') : 'Aucun code'}
+                                        </Text>
+                                        {activationCode && (
+                                            <Text style={{ fontSize: 16, color: colors.textMuted }}>
+                                                {showCode ? '👁️‍🗨️' : '👁️'}
+                                            </Text>
+                                        )}
+                                    </>
+                                )}
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+              )}
+            </Animated.View>
+          </Pressable>
 
           {/* Dark Mode Toggle */}
           <FadeInView delay={50} animation="slideUp">

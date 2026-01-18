@@ -114,6 +114,7 @@ export function validateCodeChecksum(code: string): boolean {
 interface SimplifiedCodeFormData {
   salesPointId: string;
   durationDays: number;
+  expirationDate?: string; // ISO date string for exact expiration date
   notes?: string;
   pricePaid?: number;
   quantity: number;
@@ -135,6 +136,7 @@ export async function generateBatchCodes(
   const keysToInsert: Array<{
     key_code: string;
     duration_days: number;
+    expires_at: string | null;
     sales_point_id: string;
     batch_id: string;
     notes: string | null;
@@ -142,6 +144,21 @@ export async function generateBatchCodes(
     created_by: string;
     generation_params: object;
   }> = [];
+
+  // Calculate expiration date: use exact date if provided, otherwise calculate from duration
+  let expiresAt: string | null = null;
+  if (params.expirationDate) {
+    // Use the exact expiration date provided (set to end of day)
+    const expDate = new Date(params.expirationDate);
+    expDate.setHours(23, 59, 59, 999);
+    expiresAt = expDate.toISOString();
+  } else if (params.durationDays > 0) {
+    // Calculate from duration days
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + params.durationDays);
+    expDate.setHours(23, 59, 59, 999);
+    expiresAt = expDate.toISOString();
+  }
 
   for (let i = 0; i < params.quantity; i++) {
     const { code, checksum, timestamp } = generateSecureCode({
@@ -152,6 +169,7 @@ export async function generateBatchCodes(
     keysToInsert.push({
       key_code: code,
       duration_days: params.durationDays,
+      expires_at: expiresAt,
       sales_point_id: params.salesPointId,
       batch_id: batchId,
       notes: params.notes || null,
@@ -162,6 +180,7 @@ export async function generateBatchCodes(
         timestamp,
         checksum,
         batchIndex: i,
+        expirationMode: params.expirationDate ? 'exact-date' : 'duration-days',
       },
     });
   }
@@ -533,6 +552,43 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
     .eq('is_used', false); // Can only revoke unused keys
 
   return { error: error?.message };
+}
+
+/**
+ * Update expiration date for multiple activation keys
+ * @param ids - Array of activation key IDs to update
+ * @param expirationDate - New expiration date (ISO string)
+ * @returns Object with success count and any errors
+ */
+export async function updateActivationKeysExpiration(
+  ids: string[],
+  expirationDate: string
+): Promise<{ successCount: number; errorCount: number; error?: string }> {
+  if (ids.length === 0) {
+    return { successCount: 0, errorCount: 0, error: 'No IDs provided' };
+  }
+
+  // Set expiration to end of day
+  const expDate = new Date(expirationDate);
+  expDate.setHours(23, 59, 59, 999);
+  const expiresAt = expDate.toISOString();
+
+  // Update all codes at once (only unused codes can be updated)
+  const { data, error } = await supabase
+    .from('activation_keys')
+    .update({ expires_at: expiresAt })
+    .in('id', ids)
+    .eq('is_used', false) // Only update unused codes
+    .select('id');
+
+  if (error) {
+    return { successCount: 0, errorCount: ids.length, error: error.message };
+  }
+
+  const successCount = data?.length || 0;
+  const errorCount = ids.length - successCount;
+
+  return { successCount, errorCount };
 }
 
 /**

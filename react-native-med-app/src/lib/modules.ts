@@ -122,8 +122,8 @@ export async function getModuleQuestionCount(moduleName: string): Promise<{ coun
   try {
     // Try offline content first
     const offlineModuleData = await OfflineContentService.getModuleContent(moduleName)
-    if (offlineModuleData) {
-      // offlineModuleData.questions is an array of questions
+    if (offlineModuleData && offlineModuleData.questions && offlineModuleData.questions.length > 0) {
+      // Only use offline data if it has actual questions
       return { count: offlineModuleData.questions.length, error: null }
     }
 
@@ -147,6 +147,12 @@ export async function getModuleQuestionCount(moduleName: string): Promise<{ coun
 // ============================================================================
 // Previously: N+1 queries (1 for modules + N for each module's count)
 // Now: Single database call using RPC function
+// 
+// IMPORTANT: Offline-first with validation
+// - Checks offline content first for better performance
+// - Only uses offline data if it has valid question counts (> 0)
+// - Falls back to Supabase RPC if offline data is incomplete
+// - This prevents showing "0 Questions" on native when offline files don't exist
 // ============================================================================
 
 export async function getModulesWithCounts(year: YearLevel): Promise<{
@@ -157,16 +163,23 @@ export async function getModulesWithCounts(year: YearLevel): Promise<{
     // Try offline content first
     const offlineModules = await OfflineContentService.getModulesByYear(year)
     if (offlineModules && offlineModules.length > 0) {
-      // For offline, we can get counts from the cached data directly
-      const modulesWithCounts = offlineModules.map((module: any) => {
-        // If offline module already has question_count, use it
-        if (typeof module.question_count === 'number') {
-          return module
-        }
-        // Otherwise, return with 0 (will be updated when online)
-        return { ...module, question_count: module.question_count || 0 }
-      })
-      return { modules: modulesWithCounts as (Module & { question_count: number })[], error: null }
+      // Check if offline data has valid question counts
+      // Only use offline data if at least one module has questions
+      const hasValidCounts = offlineModules.some((m: any) => (m.question_count || 0) > 0)
+
+      if (hasValidCounts) {
+        // Offline data is valid, use it
+        const modulesWithCounts = offlineModules.map((module: any) => ({
+          ...module,
+          question_count: module.question_count || 0
+        }))
+        return { modules: modulesWithCounts as (Module & { question_count: number })[], error: null }
+      }
+
+      // Offline data exists but has no question counts - fall through to fetch from Supabase
+      if (__DEV__) {
+        console.log('[Modules] Offline data incomplete, fetching from Supabase')
+      }
     }
 
     // Use optimized RPC function - single query instead of N+1
@@ -241,6 +254,27 @@ export async function getExamTypesWithCounts(
   year?: YearLevel
 ): Promise<{ examTypes: { type: ExamType; count: number }[]; error: string | null }> {
   try {
+    // Try offline content first
+    const yearNum = year ? parseInt(year) : undefined;
+    const offlineModuleData = await OfflineContentService.getModuleContent(moduleName, yearNum);
+    if (offlineModuleData && offlineModuleData.questions && offlineModuleData.questions.length > 0) {
+      // Compute exam types with counts from offline data
+      const examTypeCounts: Record<string, number> = {};
+      offlineModuleData.questions.forEach((q: any) => {
+        if (q.exam_type) {
+          examTypeCounts[q.exam_type] = (examTypeCounts[q.exam_type] || 0) + 1;
+        }
+      });
+
+      const examTypes = Object.entries(examTypeCounts).map(([type, count]) => ({
+        type: type as ExamType,
+        count
+      }));
+
+      return { examTypes, error: null };
+    }
+
+    // Fallback to Supabase RPC
     const { data, error } = await supabase.rpc('get_exam_types_with_counts', {
       p_module_name: moduleName,
       p_year: year || null
@@ -270,6 +304,27 @@ export async function getCoursWithCounts(
   moduleName: string
 ): Promise<{ cours: { name: string; count: number }[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineModuleData = await OfflineContentService.getModuleContent(moduleName);
+    if (offlineModuleData && offlineModuleData.questions && offlineModuleData.questions.length > 0) {
+      // Compute cours with counts from offline data
+      const coursCounts: Record<string, number> = {};
+      offlineModuleData.questions.forEach((q: any) => {
+        if (q.cours && Array.isArray(q.cours)) {
+          q.cours.forEach((c: string) => {
+            coursCounts[c] = (coursCounts[c] || 0) + 1;
+          });
+        }
+      });
+
+      const cours = Object.entries(coursCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return { cours, error: null };
+    }
+
+    // Fallback to Supabase RPC
     const { data, error } = await supabase.rpc('get_cours_with_counts', {
       p_module_name: moduleName
     })
@@ -331,7 +386,7 @@ export async function getModuleDetailsOptimized(moduleId: string): Promise<{
     }
 
     const row = data[0]
-    
+
     return {
       module: row.module_data as Module,
       questionCount: Number(row.question_count) || 0,

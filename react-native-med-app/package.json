@@ -10,6 +10,9 @@
     "build:web": "node -e \"require('fs').copyFileSync('global.web.css', 'global.css')\" && npx expo export --platform web && node -e \"require('fs').copyFileSync('public/favicon.ico', 'dist/favicon.ico')\"",
     "preview:web": "npx serve dist",
     "lint": "eslint .",
+    "create:padded-icon": "node ./scripts/create-padded-icon.js",
+    "fix:icons": "node ./scripts/fix-icons.js",
+    "prebuild:clean": "npx expo prebuild --clean",
     "build:android": "eas build --platform android",
     "build:ios": "eas build --platform ios"
   },
@@ -26,6 +29,7 @@
     "expo-file-system": "~18.1.0",
     "expo-linear-gradient": "~14.1.0",
     "expo-linking": "~7.1.0",
+    "expo-navigation-bar": "~4.2.8",
     "expo-router": "~5.1.10",
     "expo-secure-store": "~14.2.0",
     "expo-splash-screen": "~0.30.0",
@@ -52,6 +56,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^8.56.0",
     "serve": "^14.2.5",
+    "sharp": "^0.32.6",
     "typescript": "~5.8.3"
   },
   "private": true

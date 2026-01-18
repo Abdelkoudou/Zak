@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
             cours: (q as any).cours || [],
             sub_discipline: q.sub_discipline,
             exam_type: q.exam_type,
+            exam_year: (q as any).exam_year || null,
             number: q.number,
             question_text: q.question_text,
             explanation: q.explanation,
@@ -199,13 +200,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Create and upload version.json
+    // Compute question counts per module for enhanced metadata
+    const moduleQuestionCounts: Record<string, number> = {};
+    for (const question of questions as QuestionWithAnswers[]) {
+      const moduleName = question.module_name;
+      moduleQuestionCounts[moduleName] = (moduleQuestionCounts[moduleName] || 0) + 1;
+    }
+
+    // Enhance module_metadata with question counts for offline display
+    const enhancedModuleMetadata = (allModules || []).map((m: any) => ({
+      ...m,
+      question_count: moduleQuestionCounts[m.name] || 0
+    }));
+
+    console.log(`📦 Enhanced ${enhancedModuleMetadata.length} modules with question counts`);
+
     const versionData = {
       version: '1.1.0',
       last_updated: new Date().toISOString(),
       total_questions: questions.length,
       total_modules: totalUploaded,
       modules: uploadedModules,
-      module_metadata: allModules,
+      module_metadata: enhancedModuleMetadata,
       changelog: [
         {
           version: '1.1.0',
