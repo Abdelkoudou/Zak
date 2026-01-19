@@ -53,6 +53,7 @@ export interface Question {
   module_name: string
   sub_discipline: string | null
   exam_type: ExamType
+  exam_year?: number
   number: number
   question_text: string
   speciality: Speciality | null

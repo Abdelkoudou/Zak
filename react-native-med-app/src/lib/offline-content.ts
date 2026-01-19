@@ -20,6 +20,21 @@ function getPlatformOS(): string {
   return _Platform?.OS || 'unknown';
 }
 
+/**
+ * Normalize string for file path - remove accented characters and special chars
+ * Must match the normalization used in db-interface/app/api/export/route.ts
+ * Converts: génétique → genetique, Système → systeme, etc.
+ */
+function normalizeForFilePath(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')                    // Decompose accented chars (é → e + ́)
+    .replace(/[\u0300-\u036f]/g, '')     // Remove diacritical marks
+    .replace(/[^a-z0-9_-]/g, '_')        // Replace non-alphanumeric with underscore
+    .replace(/_+/g, '_')                 // Collapse multiple underscores
+    .replace(/^_|_$/g, '');              // Trim leading/trailing underscores
+}
+
 // Lazy-loaded FileSystem module to prevent crashes on app startup
 let FileSystem: typeof import('expo-file-system') | null = null;
 let fileSystemLoadAttempted = false;
@@ -34,7 +49,7 @@ const MAX_FAILURES = 3;
 async function getFileSystem(): Promise<typeof import('expo-file-system') | null> {
   if (getPlatformOS() === 'web') return null;
   if (offlineContentDisabled) return null;
-  
+
   if (!fileSystemLoadAttempted) {
     fileSystemLoadAttempted = true;
     try {
@@ -48,7 +63,7 @@ async function getFileSystem(): Promise<typeof import('expo-file-system') | null
       FileSystem = null;
     }
   }
-  
+
   return FileSystem;
 }
 
@@ -99,14 +114,14 @@ export const OfflineContentService = {
   // Initialize directory safely
   async init(): Promise<boolean> {
     if (getPlatformOS() === 'web' || offlineContentDisabled) return false;
-    
+
     try {
       const fs = await getFileSystem();
       if (!fs) return false;
-      
+
       const offlineDir = await getOfflineDir();
       if (!offlineDir) return false;
-      
+
       const dirInfo = await fs.getInfoAsync(offlineDir);
       if (!dirInfo.exists) {
         await fs.makeDirectoryAsync(offlineDir, { intermediates: true });
@@ -126,13 +141,13 @@ export const OfflineContentService = {
     if (getPlatformOS() === 'web' || offlineContentDisabled) {
       return { hasUpdate: false, remoteVersion: null };
     }
-    
+
     try {
       const fs = await getFileSystem();
       if (!fs) {
         return { hasUpdate: false, remoteVersion: null, error: 'FileSystem not available' };
       }
-      
+
       const initialized = await this.init();
       if (!initialized) {
         return { hasUpdate: false, remoteVersion: null, error: 'Failed to initialize' };
@@ -143,23 +158,27 @@ export const OfflineContentService = {
         return { hasUpdate: false, remoteVersion: null, error: 'Directory not available' };
       }
 
-      // Get remote version with timeout
-      const timeoutPromise = new Promise<never>((_, reject) => 
+      // Get remote version with timeout using public URL (works in React Native)
+      const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Timeout')), 10000)
       );
-      
-      const downloadPromise = supabase.storage
+
+      // Use getPublicUrl + fetch instead of download (blob.text() doesn't work in RN)
+      const { data: urlData } = supabase.storage
         .from('questions')
-        .download('version.json');
-      
-      const { data, error } = await Promise.race([downloadPromise, timeoutPromise]) as any;
+        .getPublicUrl('version.json');
 
-      if (error) {
-        return { hasUpdate: false, remoteVersion: null, error: error.message };
-      }
+      const fetchPromise = fetch(urlData.publicUrl).then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      });
 
-      const text = await data.text();
-      const remoteVersion: OfflineVersion = JSON.parse(text);
+      const remoteVersion: OfflineVersion = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as OfflineVersion;
 
       // Get local version
       const versionFile = offlineDir + 'version.json';
@@ -187,11 +206,11 @@ export const OfflineContentService = {
   // Download all updates safely
   async downloadUpdates(onProgress?: (progress: number) => void): Promise<void> {
     if (getPlatformOS() === 'web' || offlineContentDisabled) return;
-    
+
     try {
       const fs = await getFileSystem();
       if (!fs) return;
-      
+
       const { remoteVersion } = await this.checkForUpdates();
       if (!remoteVersion) return;
 
@@ -239,11 +258,11 @@ export const OfflineContentService = {
     try {
       const fs = await getFileSystem();
       if (!fs) return null;
-      
+
       const offlineDir = await getOfflineDir();
       if (!offlineDir) return null;
 
-      const normalizedModuleName = moduleName.toLowerCase().replace(/\s+/g, '_');
+      const normalizedModuleName = normalizeForFilePath(moduleName);
       let filename = '';
 
       if (year) {
@@ -251,7 +270,7 @@ export const OfflineContentService = {
       } else {
         const initialized = await this.init();
         if (!initialized) return null;
-        
+
         const files = await fs.readDirectoryAsync(offlineDir);
         const match = files.find(f => f.includes(`_${normalizedModuleName}.json`));
         if (!match) return null;
@@ -279,14 +298,14 @@ export const OfflineContentService = {
     try {
       const fs = await getFileSystem();
       if (!fs) return null;
-      
+
       const offlineDir = await getOfflineDir();
       if (!offlineDir) return null;
 
       const versionFile = offlineDir + 'version.json';
       const info = await fs.getInfoAsync(versionFile);
       if (!info.exists) return null;
-      
+
       const content = await fs.readAsStringAsync(versionFile);
       return JSON.parse(content);
     } catch (error) {
@@ -304,10 +323,10 @@ export const OfflineContentService = {
     try {
       const fs = await getFileSystem();
       if (!fs) return [];
-      
+
       const initialized = await this.init();
       if (!initialized) return [];
-      
+
       const offlineDir = await getOfflineDir();
       if (!offlineDir) return [];
 
@@ -349,7 +368,7 @@ export const OfflineContentService = {
   // Get Module Metadata by ID
   async getModuleById(id: string): Promise<any | null> {
     if (getPlatformOS() === 'web' || offlineContentDisabled) return null;
-    
+
     try {
       const version = await this.getLocalVersion();
 
@@ -384,7 +403,7 @@ export const OfflineContentService = {
   // Get All Modules Metadata
   async getAllModules(): Promise<any[]> {
     if (getPlatformOS() === 'web' || offlineContentDisabled) return [];
-    
+
     try {
       const version = await this.getLocalVersion();
 
@@ -401,7 +420,7 @@ export const OfflineContentService = {
   // Get Modules by Year
   async getModulesByYear(year: string): Promise<any[]> {
     if (getPlatformOS() === 'web' || offlineContentDisabled) return [];
-    
+
     try {
       const version = await this.getLocalVersion();
 
@@ -413,6 +432,135 @@ export const OfflineContentService = {
       return builtModules.filter((m: any) => String(m.year) === String(year));
     } catch (error) {
       return [];
+    }
+  },
+
+  // Clear all offline data safely - Acts as a Repair mechanism
+  async clearOfflineData(): Promise<boolean> {
+    if (getPlatformOS() === 'web') return false;
+
+    try {
+      // Force get filesystem even if disabled
+      let fs = await getFileSystem();
+      if (!fs && FileSystem) fs = FileSystem; // Fallback if wrapper blocked it
+      if (!fs) return false;
+
+      const offlineDir = await getOfflineDir();
+      if (!offlineDir) return false;
+
+      const dirInfo = await fs.getInfoAsync(offlineDir);
+      if (dirInfo.exists) {
+        // Delete the entire directory
+        await fs.deleteAsync(offlineDir, { idempotent: true });
+      }
+
+      // Recreate the empty directory immediately
+      await fs.makeDirectoryAsync(offlineDir, { intermediates: true });
+
+      // RESET SAFETY FLAGS - This was a successful "repair"
+      offlineContentDisabled = false;
+      failureCount = 0;
+
+      return true;
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[OfflineContent] Failed to clear offline data:', error);
+      }
+      return false;
+    }
+  },
+
+  // Delete a specific module safely and update version.json
+  async deleteModule(moduleName: string): Promise<boolean> {
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return false;
+
+    try {
+      const fs = await getFileSystem();
+      if (!fs) return false;
+
+      const offlineDir = await getOfflineDir();
+      if (!offlineDir) return false;
+
+      const initialized = await this.init();
+      if (!initialized) return false;
+
+      // 1. Identify the file
+      const normalizedName = normalizeForFilePath(moduleName);
+      const files = await fs.readDirectoryAsync(offlineDir);
+
+      // Find files matching this module (might have different years)
+      const targetFiles = files.filter(f => f.includes(`_${normalizedName}.json`));
+
+      if (targetFiles.length === 0) return false;
+
+      // 2. Delete files
+      for (const file of targetFiles) {
+        await fs.deleteAsync(offlineDir + file, { idempotent: true });
+      }
+
+      // 3. Update version.json to reflect changes
+      const versionFile = offlineDir + 'version.json';
+      const versionInfo = await fs.getInfoAsync(versionFile);
+
+      if (versionInfo.exists) {
+        const content = await fs.readAsStringAsync(versionFile);
+        const versionData: OfflineVersion = JSON.parse(content);
+
+        // Remove from modules map
+        if (versionData.modules) {
+          const keysToRemove = Object.keys(versionData.modules).filter(key =>
+            key.includes(normalizedName) || key.includes(moduleName)
+          );
+          keysToRemove.forEach(key => delete versionData.modules[key]);
+        }
+
+        // Re-calculate metadata from remaining files
+        // (Safer than trying to splice the array correctly)
+        const updatedMetadata = await this.buildModuleMetadataFromFiles();
+        versionData.module_metadata = updatedMetadata;
+        versionData.total_modules = updatedMetadata.length;
+        versionData.total_questions = updatedMetadata.reduce((sum, m) => sum + (m.question_count || 0), 0);
+
+        await fs.writeAsStringAsync(versionFile, JSON.stringify(versionData));
+      }
+
+      return true;
+    } catch (error) {
+      if (__DEV__) {
+        console.warn('[OfflineContent] Failed to delete module:', error);
+      }
+      return false;
+    }
+  },
+
+  // Get total storage usage in MB
+  async getOfflineStorageUsage(): Promise<number> {
+    if (getPlatformOS() === 'web' || offlineContentDisabled) return 0;
+
+    try {
+      const fs = await getFileSystem();
+      if (!fs) return 0;
+
+      const offlineDir = await getOfflineDir();
+      if (!offlineDir) return 0;
+
+      const info = await fs.getInfoAsync(offlineDir);
+      if (!info.exists) return 0;
+
+      const files = await fs.readDirectoryAsync(offlineDir);
+      let totalSize = 0;
+
+      for (const file of files) {
+        const fileInfo = await fs.getInfoAsync(offlineDir + file);
+        if (fileInfo.exists && !fileInfo.isDirectory) {
+          totalSize += fileInfo.size;
+        }
+      }
+
+      // Convert bytes to MB (1 MB = 1024 * 1024 bytes)
+      return Math.round((totalSize / (1024 * 1024)) * 100) / 100;
+    } catch (error) {
+      return 0;
     }
   }
 };

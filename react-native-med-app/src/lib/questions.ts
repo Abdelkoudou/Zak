@@ -39,6 +39,7 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
           module_name: q.module || q.module_name,
           sub_discipline: q.sub_discipline,
           exam_type: q.exam_type,
+          exam_year: q.exam_year,
           number: q.number,
           question_text: q.question_text,
           explanation: q.explanation,
@@ -64,6 +65,9 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
         }
         if (filters.cours) {
           questions = questions.filter(q => q.cours && q.cours.includes(filters.cours as string))
+        }
+        if (filters.exam_year) {
+          questions = questions.filter(q => q.exam_year === filters.exam_year)
         }
 
         // Pagination
@@ -194,6 +198,7 @@ export async function getRandomQuestions(
         module_name: q.module || q.module_name,
         sub_discipline: q.sub_discipline,
         exam_type: q.exam_type,
+        exam_year: q.exam_year,
         number: q.number,
         question_text: q.question_text,
         explanation: q.explanation,
@@ -303,6 +308,31 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
   error: string | null
 }> {
   try {
+    // Try offline content first
+    if (filters.module_name) {
+      const offlineData = await OfflineContentService.getModuleContent(filters.module_name);
+      if (offlineData && offlineData.questions && offlineData.questions.length > 0) {
+        // Apply filters in memory
+        let questions = offlineData.questions;
+
+        if (filters.exam_type) {
+          questions = questions.filter((q: any) => q.exam_type === filters.exam_type);
+        }
+        if (filters.sub_discipline) {
+          questions = questions.filter((q: any) => q.sub_discipline === filters.sub_discipline);
+        }
+        if (filters.cours) {
+          questions = questions.filter((q: any) => q.cours && q.cours.includes(filters.cours));
+        }
+        if (filters.exam_year) {
+          questions = questions.filter((q: any) => q.exam_year === filters.exam_year);
+        }
+
+        return { count: questions.length, error: null };
+      }
+    }
+
+    // Fallback to Supabase
     let query = supabase
       .from('questions')
       .select('*', { count: 'exact', head: true })
@@ -344,6 +374,30 @@ export async function getExamYears(
   examType?: ExamType
 ): Promise<{ years: { year: number; count: number }[]; error: string | null }> {
   try {
+    // Try offline content first
+    const offlineData = await OfflineContentService.getModuleContent(moduleName);
+    if (offlineData && offlineData.questions && offlineData.questions.length > 0) {
+      // Filter by exam type if specified and count by exam_year
+      let questions = offlineData.questions;
+      if (examType) {
+        questions = questions.filter((q: any) => q.exam_type === examType);
+      }
+
+      const yearCounts: Record<number, number> = {};
+      questions.forEach((q: any) => {
+        if (q.exam_year) {
+          yearCounts[q.exam_year] = (yearCounts[q.exam_year] || 0) + 1;
+        }
+      });
+
+      const years = Object.entries(yearCounts)
+        .map(([year, count]) => ({ year: parseInt(year), count }))
+        .sort((a, b) => b.year - a.year); // newest first
+
+      return { years, error: null };
+    }
+
+    // Fallback to Supabase
     let query = supabase
       .from('questions')
       .select('exam_year')

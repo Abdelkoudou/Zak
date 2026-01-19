@@ -6,128 +6,209 @@ This is a monorepo containing multiple applications:
 
 ```
 mcq-study-app/
-├── backend/                    # FastAPI backend (PRIMARY)
 ├── react-native-med-app/       # React Native mobile app (PRIMARY)
-├── medical-exam-app/           # Next.js web app (ALTERNATIVE)
-├── frontend/                   # Legacy HTML files (DEPRECATED)
-└── docs/                       # Markdown documentation
+├── db-interface/               # Next.js admin interface (SECONDARY)
+├── supabase/                   # Database schema and migrations
+├── docs/                       # Project documentation
+├── .kiro/                      # Kiro steering files
+└── README.md                   # Project overview
 ```
 
-## Backend Structure
-
-```
-backend/
-├── app/
-│   ├── main.py                 # FastAPI app initialization, CORS, middleware
-│   ├── database.py             # Database connection and session management
-│   ├── models.py               # SQLAlchemy models (User, Question, Answer, etc.)
-│   ├── schemas.py              # Pydantic schemas for request/response validation
-│   ├── crud.py                 # CRUD operations (database queries)
-│   ├── auth.py                 # JWT authentication logic
-│   ├── permissions.py          # Authorization decorators (@require_admin, etc.)
-│   ├── constants.py            # Medical structure constants (modules, exam types)
-│   └── routers/
-│       ├── auth.py             # Auth endpoints (/auth/register, /auth/token)
-│       ├── users.py            # User management (/users/*)
-│       ├── questions.py        # Question endpoints (/questions/*)
-│       └── admin.py            # Admin endpoints (/admin/*)
-├── scripts/
-│   ├── create_owner.py         # Create initial owner user
-│   ├── seed_data.py            # Seed test data
-│   └── import_questions.py     # Import questions from JSON
-├── alembic/                    # Database migrations
-│   ├── versions/               # Migration files
-│   └── env.py                  # Alembic configuration
-├── .env                        # Environment variables (not in git)
-├── requirements.txt            # Python dependencies
-└── run.py                      # Development server entry point
-```
-
-## React Native App Structure
+## React Native App Structure (Primary)
 
 ```
 react-native-med-app/
+├── app/                        # Expo Router screens
+│   ├── (auth)/                # Authentication flow
+│   │   ├── welcome.tsx        # Landing page
+│   │   ├── login.tsx          # Login screen
+│   │   ├── register.tsx       # Registration
+│   │   ├── forgot-password.tsx
+│   │   └── _layout.tsx        # Auth layout
+│   ├── (tabs)/                # Main app navigation
+│   │   ├── index.tsx          # Home (modules list)
+│   │   ├── resources.tsx      # Course resources
+│   │   ├── profile.tsx        # User profile
+│   │   └── _layout.tsx        # Tab layout
+│   ├── module/[id].tsx        # Module detail screen
+│   ├── practice/              # Practice screens
+│   │   ├── [moduleId].tsx     # QCM practice session
+│   │   └── results.tsx        # Results screen
+│   ├── saved/index.tsx        # Saved questions
+│   ├── auth/callback.tsx      # Auth callback
+│   └── _layout.tsx            # Root layout
 ├── src/
-│   ├── components/
-│   │   └── ui/                 # Reusable UI components
-│   │       ├── Button.tsx
-│   │       ├── Card.tsx
-│   │       ├── Input.tsx
-│   │       └── ...
-│   ├── screens/                # Screen components
-│   │   ├── LoginScreen.tsx
-│   │   ├── SignupScreen.tsx
-│   │   ├── HomeScreen.tsx
-│   │   ├── PracticeScreen.tsx
-│   │   └── ...
-│   ├── navigation/
-│   │   └── AppNavigator.tsx    # Navigation configuration
-│   ├── context/
-│   │   └── AuthProvider.tsx    # Authentication context
-│   ├── services/               # API services
-│   │   ├── api.ts              # Axios client configuration
-│   │   ├── auth.ts             # Auth API calls
-│   │   └── questions.ts        # Questions API calls
-│   ├── types/
-│   │   └── index.ts            # TypeScript type definitions
-│   └── utils/
-│       └── storage.ts          # AsyncStorage helpers
-├── assets/                     # Images, fonts, icons
-├── App.tsx                     # Root component
-├── app.json                    # Expo configuration
-└── package.json
+│   ├── components/            # Reusable UI components
+│   │   ├── ui/                # Base UI components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── ...
+│   │   └── icons/             # Icon components
+│   ├── context/               # React Context providers
+│   │   ├── AuthContext.tsx    # Authentication state
+│   │   └── ThemeContext.tsx   # Theme management
+│   ├── lib/                   # Services and utilities
+│   │   ├── supabase.ts        # Supabase client
+│   │   ├── auth.ts            # Authentication logic
+│   │   ├── modules.ts         # Modules API
+│   │   ├── questions.ts       # Questions API
+│   │   ├── saved.ts           # Saved questions
+│   │   ├── stats.ts           # Statistics
+│   │   ├── resources.ts       # Resources API
+│   │   └── deviceId.ts        # Device identification
+│   ├── types/                 # TypeScript definitions
+│   │   └── index.ts           # App-specific types
+│   └── constants/             # App constants
+│       ├── index.ts           # General constants
+│       ├── faculty.ts         # Faculty/region data
+│       └── theme.ts           # Theme configuration
+├── assets/                    # Static assets
+│   ├── images/                # Images and logos
+│   └── icons/                 # SVG icons
+├── app.json                   # Expo configuration
+├── package.json               # Dependencies
+├── tailwind.config.js         # Tailwind configuration
+└── global.css                 # Global styles
 ```
+
+## Next.js Admin Interface Structure
+
+```
+db-interface/
+├── app/                       # Next.js App Router
+│   ├── (admin)/              # Admin-only routes
+│   ├── api/                  # API routes
+│   │   ├── admin/            # Admin endpoints
+│   │   ├── chat/             # AI chat endpoints
+│   │   ├── questions/        # Questions API
+│   │   ├── resources/        # Resources API
+│   │   └── webhooks/         # Webhook handlers
+│   ├── login/                # Login page
+│   ├── questions/            # Questions management
+│   ├── users/                # User management
+│   ├── courses/              # Course management
+│   ├── ai-chat/              # AI chat interface
+│   └── layout.tsx            # Root layout
+├── components/               # React components
+│   ├── ui/                   # Base UI components
+│   ├── AppLayout.tsx         # Main app layout
+│   ├── Sidebar.tsx           # Navigation sidebar
+│   └── ...
+├── lib/                      # Utilities and services
+│   ├── api/                  # API client functions
+│   ├── security/             # Security utilities
+│   ├── supabase.ts           # Supabase client
+│   ├── supabase-admin.ts     # Admin Supabase client
+│   └── ai-models.ts          # AI model configuration
+├── types/                    # TypeScript definitions
+│   ├── database.ts           # Database types
+│   └── supabase.ts           # Supabase types
+├── scripts/                  # Utility scripts
+├── package.json              # Dependencies
+└── next.config.js            # Next.js configuration
+```
+
+## Supabase Structure
+
+```
+supabase/
+├── migrations/               # Database migrations
+│   ├── 001_initial_schema.sql
+│   ├── 002_question_improvements.sql
+│   └── ...
+├── schema.sql               # Complete database schema
+├── types.ts                 # TypeScript types
+├── seed.sql                 # Sample data
+└── README.md                # Setup instructions
+```
+
+## Key Architecture Patterns
+
+### File-Based Routing (React Native)
+- Uses Expo Router for file-based navigation
+- Parentheses `()` for route groups (auth, tabs)
+- Square brackets `[]` for dynamic routes
+- Underscore `_` for layout files
+
+### Component Organization
+- **UI Components**: Reusable, unstyled base components
+- **Feature Components**: Business logic components
+- **Screen Components**: Full-screen views
+- **Layout Components**: Navigation and structure
+
+### Service Layer Pattern
+- **API Services**: Handle HTTP requests to Supabase
+- **Auth Service**: Authentication logic
+- **Storage Service**: Local storage management
+- **Validation**: Zod schemas for type safety
+
+### State Management
+- **React Context**: Global state (auth, theme)
+- **Local State**: Component-specific state with hooks
+- **Server State**: Supabase real-time subscriptions
 
 ## Database Models
 
-Key models in `backend/app/models.py`:
+Key relationships:
+- **Users** → **DeviceSessions** (1:2 max)
+- **Users** → **SavedQuestions** (1:many)
+- **Users** → **TestAttempts** (1:many)
+- **Modules** → **Questions** (1:many)
+- **Questions** → **Answers** (1:5 max, A-E)
+- **Modules** → **CourseResources** (1:many)
 
-- **User**: User accounts with roles (owner, admin, manager, student)
-- **Question**: MCQ questions with metadata (year, module, exam type)
-- **Answer**: Answer options linked to questions
-- **ActivationKey**: Subscription activation keys
-- **DeviceSession**: Device tracking (max 2 per user)
-- **SavedQuestion**: User's saved questions (to be added)
-- **TestAttempt**: Test results tracking (to be added)
-- **CourseResource**: Course materials links (to be added)
+## File Naming Conventions
 
-## API Architecture
+### React Native
+- **Screens**: PascalCase with descriptive names (`LoginScreen.tsx`)
+- **Components**: PascalCase (`Button.tsx`, `QuestionCard.tsx`)
+- **Services**: camelCase (`auth.ts`, `questions.ts`)
+- **Types**: camelCase (`index.ts`, `database.ts`)
+- **Constants**: camelCase (`theme.ts`, `faculty.ts`)
 
-Layered architecture pattern:
+### Next.js
+- **Pages**: kebab-case for routes (`login/page.tsx`)
+- **Components**: PascalCase (`Sidebar.tsx`)
+- **API Routes**: kebab-case (`route.ts`)
+- **Utilities**: camelCase (`validation.ts`)
 
-1. **Router Layer** (`app/routers/`): HTTP request handlers
-2. **Business Logic** (`app/crud.py`): CRUD operations
-3. **Data Access** (`app/models.py`): SQLAlchemy models
-4. **Database**: PostgreSQL/SQLite
+## Import/Export Patterns
 
-## Authentication Flow
+### Barrel Exports
+```typescript
+// src/components/ui/index.ts
+export { Button } from './Button'
+export { Card } from './Card'
+export { Input } from './Input'
+```
 
-1. User logs in via `/auth/token`
-2. Backend validates credentials and returns JWT token
-3. Client stores token in AsyncStorage
-4. Client includes token in Authorization header for protected endpoints
-5. Backend validates token using dependency injection
+### Type-Only Imports
+```typescript
+import type { Database } from '@/types/supabase'
+import type { User } from '@supabase/supabase-js'
+```
 
-## Role-Based Access Control
+### Relative vs Absolute Imports
+- Use absolute imports with `@/` alias for src directory
+- Use relative imports for nearby files in same feature
 
-Hierarchy: Owner > Admin > Manager > Student
+## Security Architecture
 
-- **Owner**: Full system access, cannot be modified
+### Authentication Flow
+1. User registers/logs in via Supabase Auth
+2. JWT token stored in secure storage
+3. Token included in API requests
+4. RLS policies enforce data access
+
+### Role-Based Access Control
+- **Owner**: Full system access (cannot be modified)
 - **Admin**: User management, question management, key generation
 - **Manager**: Question management only
 - **Student**: Browse questions (if paid), practice, save questions
 
-## File Naming Conventions
-
-- **Python**: snake_case for files and functions
-- **TypeScript**: PascalCase for components, camelCase for utilities
-- **Screens**: `*Screen.tsx` suffix
-- **Components**: PascalCase (e.g., `Button.tsx`)
-- **Services**: camelCase (e.g., `api.ts`)
-
-## Important Notes
-
-- The `frontend/` folder contains legacy HTML files and should not be used for new development
-- The `medical-exam-app/` is an alternative Next.js implementation
-- Primary development focus is on `backend/` and `react-native-med-app/`
-- All new features should be added to the React Native app
+### Data Protection
+- Row Level Security (RLS) on all tables
+- Service role key server-side only
+- Input validation with Zod schemas
+- Device session limits (max 2 per user)

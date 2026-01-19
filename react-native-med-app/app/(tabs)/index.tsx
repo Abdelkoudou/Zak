@@ -14,7 +14,8 @@ import {
   Platform,
   ImageBackground,
   Image,
-  StyleSheet
+  StyleSheet,
+  AppState
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useFocusEffect } from 'expo-router'
@@ -31,6 +32,7 @@ import { GoalIcon, SavesIcon, QcmExamIcon } from '@/components/icons'
 import { BookIcon } from '@/components/icons/ResultIcons'
 import { ANIMATION_DURATION, ANIMATION_EASING, USE_NATIVE_DRIVER } from '@/lib/animations'
 import { useWebVisibility } from '@/lib/useWebVisibility'
+import { OfflineStatsService } from '@/lib/offline-stats'
 
 const HeaderImg = require('../../assets/images/images/Header.png')
 
@@ -86,7 +88,42 @@ export default function HomeScreen() {
         getModulesWithCounts(yearToLoad),
         getUserStatistics(user.id)
       ])
-      if (!modulesResult.error) setModules(modulesResult.modules)
+      if (!modulesResult.error) {
+        const PREDEFINED_ORDER = [
+          'Cardio',
+          'Digestif',
+          'Urinaire',
+          'Endo',
+          'Neuro',
+          'Immuno',
+          'Génétique'
+        ]
+
+        const sortedModules = modulesResult.modules.sort((a, b) => {
+          // Normalize names for comparison (handle potential casing or minor differences if needed, 
+          // but strict match is usually safer for known IDs/Names. Assuming 'name' matches the user list)
+          // We'll check if the module name *starts with* or *includes* the key if exact match fails, 
+          // but usually these are short names. Let's assume exact or partial match.
+          // Given the user prompt "Cardio", "Digestif" etc., these might be short names or full names.
+          // I'll check if the module name includes the key to be more robust.
+          
+          const getOrderIndex = (name: string) => {
+            const index = PREDEFINED_ORDER.findIndex(key => name.includes(key))
+            return index === -1 ? Infinity : index
+          }
+
+          const indexA = getOrderIndex(a.name)
+          const indexB = getOrderIndex(b.name)
+
+          if (indexA !== indexB) {
+            return indexA - indexB
+          }
+          
+          return a.name.localeCompare(b.name)
+        })
+
+        setModules(sortedModules)
+      }
       if (!statsResult.error) setStats(statsResult.stats)
     } catch {
       // Error loading data
@@ -107,6 +144,41 @@ export default function HomeScreen() {
       }
     }, [loadData, hasInitiallyLoaded]),
   })
+
+  // Background Sync Effect (On Mount + On Foreground)
+  useEffect(() => {
+    const triggerSync = () => {
+        if (user?.id) {
+            OfflineStatsService.syncPendingQueue(user.id).then(({ syncedCount }) => {
+                if (syncedCount > 0) {
+                    console.log('[Home] Synced pending attempts:', syncedCount)
+                    loadData(true)
+                }
+            })
+        }
+    }
+
+    // specific import for AppState inside the hook or top level. 
+    // AppState is not imported above yet. I will add it to the imports via a separate edit or assume I can add it here if I check imports.
+    // Wait, I should add AppState to imports first.
+    // For now, let's just implement the logic and I will check imports in next step or use Fully Qualified if possible, 
+    // but better to add to imports.
+    
+    // Initial sync
+    triggerSync()
+
+    // Listen for state changes (background -> active)
+    // useful when user goes to settings to enable wifi and comes back
+    const subscription = AppState.addEventListener('change', nextAppState => {
+        if (nextAppState === 'active') {
+            triggerSync()
+        }
+    })
+
+    return () => {
+        subscription.remove()
+    }
+  }, [user?.id, loadData])
 
   const runEntranceAnimations = useCallback(() => {
     // Stop any running animations first
@@ -239,23 +311,21 @@ export default function HomeScreen() {
                 </Animated.View>
              </LinearGradient>
           ) : (
-            <ImageBackground 
-              source={HeaderImg} 
+            <View 
               style={{
                 width: '100%',
-                backgroundColor: '#09B2AD', // Brand Teal fill
-                paddingTop: showWebHeader ? 48 : 80,
-                paddingBottom: 100,
+                
+                backgroundColor: '#09B2AD',
+                paddingTop: showWebHeader ? 20 : 20,
+                paddingBottom: 60,
                 alignItems: 'center',
-              }}
-              
-              imageStyle={{
-                resizeMode: 'cover',
+                position: 'relative',
                 borderBottomLeftRadius: 32,
                 borderBottomRightRadius: 32,
-                top: 90, // Push waves down to start at blur section
               }}
             >
+
+              
               <Animated.View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: 24, opacity: headerOpacity, transform: [{ translateY: headerSlide }] }}>
                 <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                   <View style={{ marginBottom: 14 }}>
@@ -290,14 +360,14 @@ export default function HomeScreen() {
                   )}
                 </View>
               </Animated.View>
-            </ImageBackground>
+            </View>
           )}
         </View>
 
         {/* Content Container */}
         <View style={{ width: '100%', maxWidth: contentMaxWidth, paddingHorizontal: isDesktop ? 32 : 24 }}>
           {/* Stats Cards */}
-          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -60 : -45, opacity: statsOpacity, transform: [{ scale: statsScale }] }}>
+          <Animated.View style={{ width: '100%', maxWidth: statsMaxWidth, alignSelf: 'center', marginTop: isDesktop ? -50 : -35, opacity: statsOpacity, transform: [{ scale: statsScale }], zIndex: 10 }}>
             {isLoading ? (
               <StatsSkeleton />
             ) : stats ? (
@@ -327,39 +397,42 @@ export default function HomeScreen() {
                     </View>
                   </View>
                 ) : (
-                  // Native: expo-blur BlurView
-                  <BlurView 
-                    intensity={60} 
-                    tint={isDark ? "dark" : "light"}
+                  // Native: Gradient to simulate frosted glass (BlurView doesn't match web backdrop-filter)
+                  <LinearGradient
+                    colors={isDark 
+                      ? ['rgba(45, 55, 60, 0.95)', 'rgba(30, 35, 40, 0.98)']
+                      : ['rgba(200, 235, 235, 0.85)', 'rgba(245, 250, 250, 0.95)']
+                    }
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
                     style={{ 
-                      borderRadius: 17,
-                      overflow: 'hidden',
+                      borderRadius: 14,
+                      padding: isDesktop ? 20 : 12,
+                      borderWidth: 1,
+                      borderColor: isDark 
+                        ? 'rgba(255, 255, 255, 0.12)' 
+                        : 'rgba(255, 255, 255, 0.8)',
                     }}
                   >
-                    <View style={{
-                      backgroundColor: isDark ? 'rgba(30, 30, 30, 0.4)' : 'rgba(255, 255, 255, 0.4)',
-                      padding: isDesktop ? 28 : 20,
-                    }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
-                        <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                        <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
-                      </View>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center' }}>
+                      <StatItem label="Questions" value={stats.total_questions_attempted.toString()} icon={<QcmExamIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="précision" value={`${Math.round(stats.average_score)}%`} icon={<GoalIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
+                      <StatItem label="sauvegardées" value={stats.saved_questions_count.toString()} icon={<SavesIcon size={isDesktop ? 32 : 28} color={colors.text} />} isDesktop={isDesktop} colors={colors} />
                     </View>
-                  </BlurView>
+                  </LinearGradient>
                 )}
               </View>
             ) : null}
           </Animated.View>
 
           {/* Modules Section */}
-          <View style={{ marginTop: isDesktop ? 40 : 28, width: '100%' }}>
+          <View style={{ marginTop: isDesktop ? 24 : 16, width: '100%' }}>
             <FadeInView delay={150}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <View>
-                  <Text style={{ fontSize: isDesktop ? 26 : 22, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
+                  <Text style={{ fontSize: isDesktop ? 22 : 18, fontWeight: '800', color: colors.text, letterSpacing: -0.5 }}> Vos Unités / Modules</Text>
                   <Text style={{ fontSize: 14, color: colors.textMuted, marginTop: 4 }}>
-                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules disponibles
+                    {modules.filter(m => m.type === 'uei').length} Unités et {modules.filter(m => m.type !== 'uei').length} Modules 
                   </Text>
                 </View>
                 
@@ -400,9 +473,9 @@ export default function HomeScreen() {
 function StatItem({ label, value, icon, isDesktop, colors }: { label: string; value: string; icon: React.ReactNode; isDesktop: boolean; colors: any }) {
   return (
     <View style={{ alignItems: 'center', paddingHorizontal: isDesktop ? 24 : 12, paddingVertical: 8 }}>
-      <View style={{ marginBottom: 10, padding: 8, borderRadius: 14 }}>{icon}</View>
-      <Text style={{ fontSize: isDesktop ? 28 : 22, fontWeight: '800', color: colors.text, marginBottom: 4, letterSpacing: -0.5 }}>{value}</Text>
-      <Text style={{ color: colors.textMuted, fontSize: isDesktop ? 14 : 12, fontWeight: '500' }}>{label}</Text>
+      <View style={{ marginBottom: 6, padding: 6, borderRadius: 10 }}>{icon}</View>
+      <Text style={{ fontSize: isDesktop ? 24 : 18, fontWeight: '800', color: colors.text, marginBottom: 2, letterSpacing: -0.5 }}>{value}</Text>
+      <Text style={{ color: colors.textMuted, fontSize: isDesktop ? 13 : 11, fontWeight: '600' }}>{label}</Text>
     </View>
   )
 }
@@ -434,17 +507,17 @@ function ModuleCard({ module, onPress, isDesktop, colors, isDark }: { module: Mo
         shadowRadius: 2,
         elevation: 1,
       }}>
-        <View style={{ height: 4, backgroundColor: colors.primary, width: '100%' }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: isDesktop ? 20 : 16 }}>
+        <View style={{ height: 3, backgroundColor: colors.primary, width: '100%' }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: isDesktop ? 16 : 12 }}>
           <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ fontSize: isDesktop ? 17 : 16, fontWeight: '700', color: colors.text, marginBottom: 6, letterSpacing: -0.3 }} numberOfLines={2}>{module.name}</Text>
+            <Text style={{ fontSize: isDesktop ? 16 : 14, fontWeight: '700', color: colors.text, marginBottom: 4, letterSpacing: -0.3 }} numberOfLines={1}>{module.name}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <BookIcon size={14} color={colors.textMuted} />
               <Text style={{ color: colors.textMuted, fontSize: 13, fontWeight: '500', marginLeft: 6 }}>{module.question_count} Questions</Text>
             </View>
           </View>
-          <View style={{ backgroundColor: colors.primaryMuted, paddingHorizontal: isDesktop ? 16 : 14, paddingVertical: isDesktop ? 10 : 8, borderRadius: 12 }}>
-            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: isDesktop ? 14 : 13 }}>Pratiquer</Text>
+          <View style={{ backgroundColor: colors.primaryMuted, paddingHorizontal: isDesktop ? 12 : 10, paddingVertical: isDesktop ? 8 : 6, borderRadius: 10 }}>
+            <Text style={{ color: colors.primary, fontWeight: '700', fontSize: isDesktop ? 13 : 11 }}>Pratiquer</Text>
           </View>
         </View>
       </Animated.View>

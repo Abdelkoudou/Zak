@@ -6,7 +6,8 @@ import '../global.css'
 
 import { useEffect, useRef } from 'react'
 import { Stack } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar'
+import { StatusBar, Platform } from 'react-native'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { AppVisibilityProvider } from '@/context/AppVisibilityContext'
@@ -69,8 +70,8 @@ try {
   // Silent fail - app should still work
 }
 
-// Silent background sync for offline content
-async function syncOfflineContent(): Promise<void> {
+// Check offline content status on startup (no auto-download - user controls from profile)
+async function checkOfflineContentStatus(): Promise<void> {
   const platform = getPlatform()
   if (platform?.OS === 'web') return
   
@@ -82,14 +83,27 @@ async function syncOfflineContent(): Promise<void> {
     
     if (!_OfflineContentService) return
     
-    const { hasUpdate } = await _OfflineContentService.checkForUpdates()
-    if (hasUpdate) {
-      await _OfflineContentService.downloadUpdates()
+    // Just check status - don't auto-download (user controls from profile)
+    const { hasUpdate, remoteVersion, error } = await _OfflineContentService.checkForUpdates()
+    
+    if (__DEV__) {
+      if (error) {
+        console.log('[Offline] Status check:', error)
+      } else if (hasUpdate && remoteVersion) {
+        console.log(`[Offline] Update available: v${remoteVersion.version} (${remoteVersion.total_questions} questions)`)
+      } else {
+        const localVersion = await _OfflineContentService.getLocalVersion()
+        if (localVersion) {
+          console.log(`[Offline] Content ready: v${localVersion.version} (${localVersion.total_questions} questions)`)
+        } else {
+          console.log('[Offline] No local content - user can download from profile')
+        }
+      }
     }
   } catch (error) {
     // Silent fail - don't interrupt user experience
     if (__DEV__) {
-      console.warn('[Layout] Offline sync failed:', error)
+      console.warn('[Offline] Status check failed:', error)
     }
   }
 }
@@ -107,9 +121,9 @@ function RootLayoutContent() {
 
     const initApp = async () => {
       try {
-        // Sync offline content with timeout
+        // Check offline content status (no auto-download)
         await Promise.race([
-          syncOfflineContent().catch(() => {}),
+          checkOfflineContentStatus().catch(() => {}),
           new Promise(resolve => setTimeout(resolve, 3000))
         ])
       } catch {
@@ -142,6 +156,32 @@ function RootLayoutContent() {
       }
     }
 
+    const setImmersiveMode = async () => {
+      const platform = getPlatform()
+      if (platform?.OS === 'web') return
+
+      try {
+        // Hide top status bar
+        StatusBar.setHidden(true, 'fade')
+
+        // Android specific navigation bar hiding
+        if (platform?.OS === 'android') {
+          try {
+            const NavigationBar = require('expo-navigation-bar')
+            await NavigationBar.setVisibilityAsync('hidden')
+            await NavigationBar.setBehaviorAsync('sticky-immersive')
+          } catch (e) {
+            console.warn('[Immersive] NavigationBar control failed:', e)
+          }
+        }
+      } catch (e) {
+        console.warn('[Immersive] Status bar control failed:', e)
+      }
+    }
+
+    // Apply immersive mode on mount
+    setImmersiveMode()
+
     // Listen for incoming deep links
     const subscription = _Linking?.addEventListener('url', ({ url }) => {
       handleDeepLink(url)
@@ -159,7 +199,7 @@ function RootLayoutContent() {
 
   return (
     <>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <ExpoStatusBar style={isDark ? 'light' : 'dark'} />
       <Stack 
         screenOptions={{ 
           headerShown: false,

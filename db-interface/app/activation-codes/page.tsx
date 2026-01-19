@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
   fetchActivationKeys,
   fetchFaculties,
@@ -13,15 +13,16 @@ import {
   createSalesPoint,
   revokeActivationKey,
   exportToCsv,
-} from '@/lib/activation-codes';
-import type { 
-  ActivationKey, 
-  Faculty, 
-  SalesPoint, 
+  updateActivationKeysExpiration,
+} from "@/lib/activation-codes";
+import type {
+  ActivationKey,
+  Faculty,
+  SalesPoint,
   SalesPointStats,
-  YearLevel 
-} from '@/types/database';
-import DeviceManagerModal from '@/components/DeviceManagerModal';
+  YearLevel,
+} from "@/types/database";
+import DeviceManagerModal from "@/components/DeviceManagerModal";
 
 export default function ActivationCodesPage() {
   // Auth state
@@ -44,21 +45,25 @@ export default function ActivationCodesPage() {
   const router = useRouter();
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'generate' | 'codes' | 'points'>('dashboard');
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "generate" | "codes" | "points"
+  >("dashboard");
   const [filters, setFilters] = useState({
-    year: '' as YearLevel | '',
-    facultyId: '',
-    salesPointId: '',
-    status: '' as 'active' | 'used' | 'expired' | '',
-    search: '',
+    year: "" as YearLevel | "",
+    facultyId: "",
+    salesPointId: "",
+    status: "" as "active" | "used" | "expired" | "",
+    search: "",
   });
 
   // Form state (simplified - year/faculty removed as user fills these during registration)
   const [generateForm, setGenerateForm] = useState({
-    salesPointId: '',
+    salesPointId: "",
     durationDays: 365,
+    expirationMode: "duration" as "duration" | "exact",
+    expirationDate: "",
     quantity: 1,
-    notes: '',
+    notes: "",
     pricePaid: 0,
   });
   const [generating, setGenerating] = useState(false);
@@ -67,38 +72,49 @@ export default function ActivationCodesPage() {
   // Sales point form
   const [showSalesPointForm, setShowSalesPointForm] = useState(false);
   const [salesPointForm, setSalesPointForm] = useState({
-    code: '',
-    name: '',
-    location: '',
-    contactName: '',
-    contactPhone: '',
-    contactEmail: '',
+    code: "",
+    name: "",
+    location: "",
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
     commissionRate: 0,
-    notes: '',
+    notes: "",
   });
 
   // Code detail modal
   const [selectedCode, setSelectedCode] = useState<ActivationKey | null>(null);
 
   // Device manager modal
-  const [deviceManagerUser, setDeviceManagerUser] = useState<{ id: string; name: string } | null>(null);
+  const [deviceManagerUser, setDeviceManagerUser] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Selection mode state (always active)
   const [selectionMode] = useState(true);
-  const [selectedCodeIds, setSelectedCodeIds] = useState<Set<string>>(new Set());
+  const [selectedCodeIds, setSelectedCodeIds] = useState<Set<string>>(
+    new Set()
+  );
+
+  // Bulk expiration update state
+  const [showBulkExpirationModal, setShowBulkExpirationModal] = useState(false);
+  const [bulkExpirationDate, setBulkExpirationDate] = useState("");
 
   // Check user role
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (session) {
         setUserId(session.user.id);
         const { data: user } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
+          .from("users")
+          .select("role")
+          .eq("id", session.user.id)
           .single();
-        
+
         if (user) {
           setUserRole(user.role);
         }
@@ -110,19 +126,25 @@ export default function ActivationCodesPage() {
 
   // Load data
   const loadData = useCallback(async () => {
-    const [codesRes, facultiesRes, pointsRes, statsRes, pointStatsRes] = await Promise.all([
-      fetchActivationKeys({
-        year: filters.year || undefined,
-        facultyId: filters.facultyId || undefined,
-        salesPointId: filters.salesPointId || undefined,
-        isUsed: filters.status === 'used' ? true : filters.status === 'active' ? false : undefined,
-        search: filters.search || undefined,
-      }),
-      fetchFaculties(),
-      fetchSalesPoints(),
-      fetchDashboardStats(),
-      fetchSalesPointStats(),
-    ]);
+    const [codesRes, facultiesRes, pointsRes, statsRes, pointStatsRes] =
+      await Promise.all([
+        fetchActivationKeys({
+          year: filters.year || undefined,
+          facultyId: filters.facultyId || undefined,
+          salesPointId: filters.salesPointId || undefined,
+          isUsed:
+            filters.status === "used"
+              ? true
+              : filters.status === "active"
+              ? false
+              : undefined,
+          search: filters.search || undefined,
+        }),
+        fetchFaculties(),
+        fetchSalesPoints(),
+        fetchDashboardStats(),
+        fetchSalesPointStats(),
+      ]);
 
     setCodes(codesRes.data);
     setFaculties(facultiesRes.data);
@@ -132,7 +154,7 @@ export default function ActivationCodesPage() {
   }, [filters]);
 
   useEffect(() => {
-    if (userRole === 'owner') {
+    if (userRole === "owner") {
       loadData();
     }
   }, [userRole, loadData]);
@@ -140,15 +162,26 @@ export default function ActivationCodesPage() {
   // Generate codes (simplified - no year/faculty, user fills these during registration)
   const handleGenerate = async () => {
     if (!userId || !generateForm.salesPointId) {
-      alert('Veuillez sélectionner un point de vente');
+      alert("Veuillez sélectionner un point de vente");
+      return;
+    }
+
+    // Validate expiration date if in exact mode
+    if (
+      generateForm.expirationMode === "exact" &&
+      !generateForm.expirationDate
+    ) {
+      alert("Veuillez sélectionner une date d'expiration");
       return;
     }
 
     setGenerating(true);
-    const salesPoint = salesPoints.find(sp => sp.id === generateForm.salesPointId);
+    const salesPoint = salesPoints.find(
+      (sp) => sp.id === generateForm.salesPointId
+    );
 
     if (!salesPoint) {
-      alert('Point de vente invalide');
+      alert("Point de vente invalide");
       setGenerating(false);
       return;
     }
@@ -157,6 +190,10 @@ export default function ActivationCodesPage() {
       {
         salesPointId: generateForm.salesPointId,
         durationDays: generateForm.durationDays,
+        expirationDate:
+          generateForm.expirationMode === "exact"
+            ? generateForm.expirationDate
+            : undefined,
         notes: generateForm.notes,
         pricePaid: generateForm.pricePaid,
         quantity: generateForm.quantity,
@@ -177,7 +214,7 @@ export default function ActivationCodesPage() {
   // Create sales point
   const handleCreateSalesPoint = async () => {
     if (!userId || !salesPointForm.code || !salesPointForm.name) {
-      alert('Code et nom sont obligatoires');
+      alert("Code et nom sont obligatoires");
       return;
     }
 
@@ -200,7 +237,16 @@ export default function ActivationCodesPage() {
       alert(`Erreur: ${result.error}`);
     } else {
       setShowSalesPointForm(false);
-      setSalesPointForm({ code: '', name: '', location: '', contactName: '', contactPhone: '', contactEmail: '', commissionRate: 0, notes: '' });
+      setSalesPointForm({
+        code: "",
+        name: "",
+        location: "",
+        contactName: "",
+        contactPhone: "",
+        contactEmail: "",
+        commissionRate: 0,
+        notes: "",
+      });
       loadData();
     }
   };
@@ -208,7 +254,7 @@ export default function ActivationCodesPage() {
   // Revoke code
   const handleRevoke = async (id: string, keyCode: string) => {
     if (!confirm(`Voulez-vous vraiment révoquer le code ${keyCode}?`)) return;
-    
+
     const result = await revokeActivationKey(id);
     if (result.error) {
       alert(`Erreur: ${result.error}`);
@@ -220,43 +266,112 @@ export default function ActivationCodesPage() {
   // Bulk revoke codes
   const handleBulkRevoke = async () => {
     if (selectedCodeIds.size === 0) return;
-    
+
     // Filter to only unused codes
-    const unusedCodes = codes.filter(code => selectedCodeIds.has(code.id) && !code.isUsed);
-    
+    const unusedCodes = codes.filter(
+      (code) => selectedCodeIds.has(code.id) && !code.isUsed
+    );
+
     if (unusedCodes.length === 0) {
-      alert('Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être révoqués.');
+      alert(
+        "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être révoqués."
+      );
       return;
     }
-    
+
     const count = unusedCodes.length;
-    if (!confirm(`Voulez-vous vraiment révoquer ${count} code(s) non utilisé(s) sélectionné(s)?`)) return;
-    
+    if (
+      !confirm(
+        `Voulez-vous vraiment révoquer ${count} code(s) non utilisé(s) sélectionné(s)?`
+      )
+    )
+      return;
+
     const results = await Promise.all(
-      unusedCodes.map(code => revokeActivationKey(code.id))
+      unusedCodes.map((code) => revokeActivationKey(code.id))
     );
-    
-    const errors = results.filter(r => r.error);
+
+    const errors = results.filter((r) => r.error);
     if (errors.length > 0) {
       alert(`Erreur lors de la révocation de ${errors.length} code(s)`);
-     } else {
-       alert(`${count} code(s) révoqué(s) avec succès`);
-       setSelectedCodeIds(new Set());
-       loadData();
-     }
+    } else {
+      alert(`${count} code(s) révoqué(s) avec succès`);
+      setSelectedCodeIds(new Set());
+      loadData();
+    }
+  };
+
+  // Bulk update expiration date
+  const handleBulkUpdateExpiration = async () => {
+    if (selectedCodeIds.size === 0) return;
+    if (!bulkExpirationDate) {
+      alert("Veuillez sélectionner une date d'expiration");
+      return;
+    }
+
+    // Filter to only unused codes
+    const unusedCodes = codes.filter(
+      (code) => selectedCodeIds.has(code.id) && !code.isUsed
+    );
+
+    if (unusedCodes.length === 0) {
+      alert(
+        "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être modifiés."
+      );
+      return;
+    }
+
+    const count = unusedCodes.length;
+    const formattedDate = new Date(bulkExpirationDate).toLocaleDateString(
+      "fr-FR",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }
+    );
+
+    if (
+      !confirm(
+        `Voulez-vous vraiment mettre à jour la date d'expiration de ${count} code(s) au ${formattedDate}?`
+      )
+    )
+      return;
+
+    const result = await updateActivationKeysExpiration(
+      unusedCodes.map((c) => c.id),
+      bulkExpirationDate
+    );
+
+    if (result.error) {
+      alert(`Erreur: ${result.error}`);
+    } else if (result.errorCount > 0) {
+      alert(
+        `${result.successCount} code(s) mis à jour avec succès, ${result.errorCount} échec(s)`
+      );
+    } else {
+      alert(`${result.successCount} code(s) mis à jour avec succès`);
+      setShowBulkExpirationModal(false);
+      setBulkExpirationDate("");
+      setSelectedCodeIds(new Set());
+      loadData();
+    }
   };
 
   // Export selected codes
   const handleExportSelected = () => {
     if (selectedCodeIds.size === 0) return;
-    
-    const selectedCodes = codes.filter(code => selectedCodeIds.has(code.id));
+
+    const selectedCodes = codes.filter((code) => selectedCodeIds.has(code.id));
     const csv = exportToCsv(selectedCodes);
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `activation-codes-selected-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `activation-codes-selected-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     a.click();
   };
 
@@ -276,7 +391,7 @@ export default function ActivationCodesPage() {
     if (selectedCodeIds.size === codes.length) {
       setSelectedCodeIds(new Set());
     } else {
-      setSelectedCodeIds(new Set(codes.map(code => code.id)));
+      setSelectedCodeIds(new Set(codes.map((code) => code.id)));
     }
   };
 
@@ -288,11 +403,13 @@ export default function ActivationCodesPage() {
   // Export
   const handleExport = () => {
     const csv = exportToCsv(codes);
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `activation-codes-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `activation-codes-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     a.click();
   };
 
@@ -311,15 +428,19 @@ export default function ActivationCodesPage() {
   }
 
   // Access denied
-  if (userRole !== 'owner') {
+  if (userRole !== "owner") {
     return (
       <div className="max-w-7xl mx-auto py-20">
         <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-12 text-center shadow-sm">
           <span className="text-6xl mb-6 block">🔒</span>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Accès Réservé</h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">Cette page est exclusivement réservée aux propriétaires du système.</p>
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">
+            Accès Réservé
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">
+            Cette page est exclusivement réservée aux propriétaires du système.
+          </p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push("/")}
             className="mt-8 px-8 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
           >
             Retour au Dashboard
@@ -328,7 +449,6 @@ export default function ActivationCodesPage() {
       </div>
     );
   }
-
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -342,7 +462,7 @@ export default function ActivationCodesPage() {
           </p>
         </div>
         <button
-          onClick={() => router.push('/payments')}
+          onClick={() => router.push("/payments")}
           className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
         >
           <span>💳</span>
@@ -352,18 +472,18 @@ export default function ActivationCodesPage() {
 
       <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-white/5 p-1.5 rounded-[1.5rem] border border-slate-200 dark:border-white/5">
         {[
-          { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-          { id: 'generate', label: 'Générer', icon: '🔑' },
-          { id: 'codes', label: 'Liste des Codes', icon: '📋' },
-          { id: 'points', label: 'Points de Vente', icon: '🏪' },
-        ].map(tab => (
+          { id: "dashboard", label: "Dashboard", icon: "📊" },
+          { id: "generate", label: "Générer", icon: "🔑" },
+          { id: "codes", label: "Liste des Codes", icon: "📋" },
+          { id: "points", label: "Points de Vente", icon: "🏪" },
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex-1 px-4 py-3 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
               activeTab === tab.id
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg"
+                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
             }`}
           >
             <span>{tab.icon}</span>
@@ -373,23 +493,55 @@ export default function ActivationCodesPage() {
       </div>
 
       {/* Dashboard Tab */}
-      {activeTab === 'dashboard' && (
+      {activeTab === "dashboard" && (
         <div className="space-y-6">
           {/* Stats Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { label: 'Total Codes', value: stats.totalCodes, icon: '📊', color: 'primary' },
-              { label: 'Actifs', value: stats.activeCodes, icon: '✅', color: 'blue' },
-              { label: 'Utilisés', value: stats.usedCodes, icon: '👤', color: 'purple' },
-              { label: 'Expirés', value: stats.expiredCodes, icon: '⏰', color: 'red' },
-              { label: 'Revenus', value: `${stats.totalRevenue.toLocaleString()} DA`, icon: '💰', color: 'green' },
+              {
+                label: "Total Codes",
+                value: stats.totalCodes,
+                icon: "📊",
+                color: "primary",
+              },
+              {
+                label: "Actifs",
+                value: stats.activeCodes,
+                icon: "✅",
+                color: "blue",
+              },
+              {
+                label: "Utilisés",
+                value: stats.usedCodes,
+                icon: "👤",
+                color: "purple",
+              },
+              {
+                label: "Expirés",
+                value: stats.expiredCodes,
+                icon: "⏰",
+                color: "red",
+              },
+              {
+                label: "Revenus",
+                value: `${stats.totalRevenue.toLocaleString()} DA`,
+                icon: "💰",
+                color: "green",
+              },
             ].map((item, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm">
+              <div
+                key={idx}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm"
+              >
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-xl">{item.icon}</span>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{item.label}</p>
+                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    {item.label}
+                  </p>
                 </div>
-                <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white truncate">{item.value}</p>
+                <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white truncate">
+                  {item.value}
+                </p>
               </div>
             ))}
           </div>
@@ -411,40 +563,75 @@ export default function ActivationCodesPage() {
                   <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-950/50">
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Vendus</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Actifs</th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Taux</th>
-                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Revenus</th>
+                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Point de Vente
+                        </th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Total
+                        </th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Vendus
+                        </th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Actifs
+                        </th>
+                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Taux
+                        </th>
+                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Revenus
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                      {salesPointStats.sort((a, b) => b.usedCodes - a.usedCodes).map(sp => (
-                        <tr key={sp.id} className="group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
-                          <td className="px-6 py-5">
-                            <div className="font-bold text-slate-900 dark:text-white">{sp.name}</div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">{sp.location}</div>
-                          </td>
-                          <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">{sp.totalCodes}</td>
-                          <td className="px-6 py-5 text-center">
-                            <span className="text-sm font-black text-primary-600 dark:text-primary-400">{sp.usedCodes}</span>
-                          </td>
-                          <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">{sp.activeCodes}</td>
-                          <td className="px-6 py-5 text-center">
-                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
-                              sp.totalCodes > 0 && (sp.usedCodes / sp.totalCodes) > 0.5 
-                                ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' 
-                                : 'bg-slate-100 dark:bg-white/5 text-slate-500'
-                            }`}>
-                              {sp.totalCodes > 0 ? Math.round((sp.usedCodes / sp.totalCodes) * 100) : 0}%
-                            </span>
-                          </td>
-                          <td className="px-6 py-5 text-right font-black text-slate-900 dark:text-white">
-                            {sp.totalRevenue.toLocaleString()} DA
-                          </td>
-                        </tr>
-                      ))}
+                      {salesPointStats
+                        .sort((a, b) => b.usedCodes - a.usedCodes)
+                        .map((sp) => (
+                          <tr
+                            key={sp.id}
+                            className="group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors"
+                          >
+                            <td className="px-6 py-5">
+                              <div className="font-bold text-slate-900 dark:text-white">
+                                {sp.name}
+                              </div>
+                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">
+                                {sp.location}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                              {sp.totalCodes}
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              <span className="text-sm font-black text-primary-600 dark:text-primary-400">
+                                {sp.usedCodes}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                              {sp.activeCodes}
+                            </td>
+                            <td className="px-6 py-5 text-center">
+                              <span
+                                className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                  sp.totalCodes > 0 &&
+                                  sp.usedCodes / sp.totalCodes > 0.5
+                                    ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                                    : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                                }`}
+                              >
+                                {sp.totalCodes > 0
+                                  ? Math.round(
+                                      (sp.usedCodes / sp.totalCodes) * 100
+                                    )
+                                  : 0}
+                                %
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 text-right font-black text-slate-900 dark:text-white">
+                              {sp.totalRevenue.toLocaleString()} DA
+                            </td>
+                          </tr>
+                        ))}
                     </tbody>
                   </table>
                 </div>
@@ -454,19 +641,22 @@ export default function ActivationCodesPage() {
         </div>
       )}
 
-      {activeTab === 'generate' && (
+      {activeTab === "generate" && (
         <div className="grid md:grid-cols-2 gap-8">
           {/* Generation Form */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
               <span className="text-2xl">🔐</span>
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Générer des Codes</h2>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                Générer des Codes
+              </h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-8 leading-relaxed">
-              L&apos;année et la faculté seront renseignées par l&apos;utilisateur lors de son inscription. 
-              Ces codes sont valides pour n&apos;importe quelle année/faculté.
+              L&apos;année et la faculté seront renseignées par
+              l&apos;utilisateur lors de son inscription. Ces codes sont valides
+              pour n&apos;importe quelle année/faculté.
             </p>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
@@ -474,46 +664,182 @@ export default function ActivationCodesPage() {
                 </label>
                 <select
                   value={generateForm.salesPointId}
-                  onChange={e => setGenerateForm({ ...generateForm, salesPointId: e.target.value })}
+                  onChange={(e) =>
+                    setGenerateForm({
+                      ...generateForm,
+                      salesPointId: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
                 >
-                  <option value="" className="bg-white dark:bg-slate-900">Sélectionner un point de vente</option>
-                  {salesPoints.filter(sp => sp.isActive).map(sp => (
-                    <option key={sp.id} value={sp.id} className="bg-white dark:bg-slate-900">{sp.name} - {sp.location}</option>
-                  ))}
+                  <option value="" className="bg-white dark:bg-slate-900">
+                    Sélectionner un point de vente
+                  </option>
+                  {salesPoints
+                    .filter((sp) => sp.isActive)
+                    .map((sp) => (
+                      <option
+                        key={sp.id}
+                        value={sp.id}
+                        className="bg-white dark:bg-slate-900"
+                      >
+                        {sp.name} - {sp.location}
+                      </option>
+                    ))}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
-                    Durée
-                  </label>
-                  <select
-                    value={generateForm.durationDays}
-                    onChange={e => setGenerateForm({ ...generateForm, durationDays: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
+              {/* Expiration Mode Toggle */}
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                  Mode d&apos;expiration
+                </label>
+                <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-950/50 rounded-2xl">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGenerateForm({
+                        ...generateForm,
+                        expirationMode: "duration",
+                      })
+                    }
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      generateForm.expirationMode === "duration"
+                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    }`}
                   >
-                    <option value={30} className="bg-white dark:bg-slate-900">30 jours</option>
-                    <option value={90} className="bg-white dark:bg-slate-900">90 jours</option>
-                    <option value={180} className="bg-white dark:bg-slate-900">180 jours</option>
-                    <option value={365} className="bg-white dark:bg-slate-900">1 an</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
-                    Quantité
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={generateForm.quantity}
-                    onChange={e => setGenerateForm({ ...generateForm, quantity: Number(e.target.value) })}
-                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
-                  />
+                    📅 Durée
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setGenerateForm({
+                        ...generateForm,
+                        expirationMode: "exact",
+                      })
+                    }
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      generateForm.expirationMode === "exact"
+                        ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                    }`}
+                  >
+                    🎯 Date exacte
+                  </button>
                 </div>
               </div>
+
+              {/* Duration or Exact Date based on mode */}
+              {generateForm.expirationMode === "duration" ? (
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Durée
+                    </label>
+                    <select
+                      value={generateForm.durationDays}
+                      onChange={(e) =>
+                        setGenerateForm({
+                          ...generateForm,
+                          durationDays: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none appearance-none cursor-pointer"
+                    >
+                      <option value={30} className="bg-white dark:bg-slate-900">
+                        30 jours
+                      </option>
+                      <option value={90} className="bg-white dark:bg-slate-900">
+                        90 jours
+                      </option>
+                      <option
+                        value={180}
+                        className="bg-white dark:bg-slate-900"
+                      >
+                        180 jours
+                      </option>
+                      <option
+                        value={365}
+                        className="bg-white dark:bg-slate-900"
+                      >
+                        1 an
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Quantité
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={generateForm.quantity}
+                      onChange={(e) =>
+                        setGenerateForm({
+                          ...generateForm,
+                          quantity: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Date d&apos;expiration *
+                    </label>
+                    <input
+                      type="date"
+                      value={generateForm.expirationDate}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) =>
+                        setGenerateForm({
+                          ...generateForm,
+                          expirationDate: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                    />
+                    {generateForm.expirationDate && (
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 px-1">
+                        Expire le:{" "}
+                        <span className="font-bold text-primary-600 dark:text-primary-400">
+                          {new Date(
+                            generateForm.expirationDate
+                          ).toLocaleDateString("fr-FR", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Quantité
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={generateForm.quantity}
+                      onChange={(e) =>
+                        setGenerateForm({
+                          ...generateForm,
+                          quantity: Number(e.target.value),
+                        })
+                      }
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
@@ -523,7 +849,12 @@ export default function ActivationCodesPage() {
                   type="number"
                   min={0}
                   value={generateForm.pricePaid}
-                  onChange={e => setGenerateForm({ ...generateForm, pricePaid: Number(e.target.value) })}
+                  onChange={(e) =>
+                    setGenerateForm({
+                      ...generateForm,
+                      pricePaid: Number(e.target.value),
+                    })
+                  }
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                   placeholder="Prix de vente..."
                 />
@@ -535,7 +866,9 @@ export default function ActivationCodesPage() {
                 </label>
                 <textarea
                   value={generateForm.notes}
-                  onChange={e => setGenerateForm({ ...generateForm, notes: e.target.value })}
+                  onChange={(e) =>
+                    setGenerateForm({ ...generateForm, notes: e.target.value })
+                  }
                   className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                   rows={2}
                   placeholder="Notes optionnelles..."
@@ -547,7 +880,9 @@ export default function ActivationCodesPage() {
                 disabled={generating || !generateForm.salesPointId}
                 className="w-full px-8 py-4 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95 disabled:opacity-50"
               >
-                {generating ? '⏳ Génération...' : `🔑 Générer ${generateForm.quantity} Code(s)`}
+                {generating
+                  ? "⏳ Génération..."
+                  : `🔑 Générer ${generateForm.quantity} Code(s)`}
               </button>
             </div>
           </div>
@@ -557,13 +892,15 @@ export default function ActivationCodesPage() {
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">✨</span>
-                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Codes Générés</h2>
+                <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                  Codes Générés
+                </h2>
               </div>
               {generatedCodes.length > 0 && (
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(generatedCodes.join('\n'));
-                    alert('Codes copiés!');
+                    navigator.clipboard.writeText(generatedCodes.join("\n"));
+                    alert("Codes copiés!");
                   }}
                   className="px-3 py-1.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
                 >
@@ -571,11 +908,13 @@ export default function ActivationCodesPage() {
                 </button>
               )}
             </div>
-            
+
             {generatedCodes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 bg-slate-50 dark:bg-slate-950/30 rounded-3xl border border-dashed border-slate-200 dark:border-white/5 text-center px-6">
                 <span className="text-4xl mb-4">🔑</span>
-                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2">Prêt à générer</p>
+                <p className="text-slate-500 dark:text-slate-400 font-bold mb-2">
+                  Prêt à générer
+                </p>
                 <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                   Les nouveaux codes apparaîtront ici après la génération.
                 </p>
@@ -583,12 +922,17 @@ export default function ActivationCodesPage() {
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {generatedCodes.map((code, i) => (
-                  <div key={i} className="group flex items-center justify-between bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 px-6 py-4 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-slate-950">
-                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white tracking-widest">{code}</span>
+                  <div
+                    key={i}
+                    className="group flex items-center justify-between bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 px-6 py-4 rounded-2xl transition-all hover:bg-slate-100 dark:hover:bg-slate-950"
+                  >
+                    <span className="text-sm font-black font-mono text-slate-900 dark:text-white tracking-widest">
+                      {code}
+                    </span>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(code);
-                        alert('Code copié!');
+                        alert("Code copié!");
                       }}
                       className="text-slate-400 hover:text-primary-500 transition-colors"
                     >
@@ -602,8 +946,7 @@ export default function ActivationCodesPage() {
         </div>
       )}
 
-
-      {activeTab === 'codes' && (
+      {activeTab === "codes" && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm overflow-hidden">
           {/* Filters */}
           <div className="p-6 border-b border-slate-100 dark:border-white/5">
@@ -613,134 +956,234 @@ export default function ActivationCodesPage() {
                   type="text"
                   placeholder="Rechercher un code..."
                   value={filters.search}
-                  onChange={e => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
                   className="pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none md:w-64"
                 />
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔍
+                </span>
               </div>
-              
-               <select
-                 value={filters.year}
-                 onChange={e => setFilters({ ...filters, year: e.target.value as YearLevel | '' })}
-                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-               >
-                <option value="" className="bg-white dark:bg-slate-900">Toutes les années</option>
-                <option value="1" className="bg-white dark:bg-slate-900">1ère Année</option>
-                <option value="2" className="bg-white dark:bg-slate-900">2ème Année</option>
-                <option value="3" className="bg-white dark:bg-slate-900">3ème Année</option>
+
+              <select
+                value={filters.year}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    year: e.target.value as YearLevel | "",
+                  })
+                }
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+              >
+                <option value="" className="bg-white dark:bg-slate-900">
+                  Toutes les années
+                </option>
+                <option value="1" className="bg-white dark:bg-slate-900">
+                  1ère Année
+                </option>
+                <option value="2" className="bg-white dark:bg-slate-900">
+                  2ème Année
+                </option>
+                <option value="3" className="bg-white dark:bg-slate-900">
+                  3ème Année
+                </option>
               </select>
 
-               <select
-                 value={filters.facultyId}
-                 onChange={e => setFilters({ ...filters, facultyId: e.target.value })}
-                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-               >
-                <option value="" className="bg-white dark:bg-slate-900">Toutes les facultés</option>
-                {faculties.map(f => (
-                  <option key={f.id} value={f.id} className="bg-white dark:bg-slate-900">{f.name}</option>
+              <select
+                value={filters.facultyId}
+                onChange={(e) =>
+                  setFilters({ ...filters, facultyId: e.target.value })
+                }
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+              >
+                <option value="" className="bg-white dark:bg-slate-900">
+                  Toutes les facultés
+                </option>
+                {faculties.map((f) => (
+                  <option
+                    key={f.id}
+                    value={f.id}
+                    className="bg-white dark:bg-slate-900"
+                  >
+                    {f.name}
+                  </option>
                 ))}
               </select>
 
-               <select
-                 value={filters.status}
-                 onChange={e => setFilters({ ...filters, status: e.target.value as typeof filters.status })}
-                 className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
-               >
-                <option value="" className="bg-white dark:bg-slate-900">Tous les statuts</option>
-                <option value="active" className="bg-white dark:bg-slate-900">✅ Actifs</option>
-                <option value="used" className="bg-white dark:bg-slate-900">👤 Utilisés</option>
-                <option value="expired" className="bg-white dark:bg-slate-900">⏰ Expirés</option>
+              <select
+                value={filters.salesPointId}
+                onChange={(e) =>
+                  setFilters({ ...filters, salesPointId: e.target.value })
+                }
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+              >
+                <option value="" className="bg-white dark:bg-slate-900">
+                  🏪 Tous les points de vente
+                </option>
+                {salesPoints.map((sp) => (
+                  <option
+                    key={sp.id}
+                    value={sp.id}
+                    className="bg-white dark:bg-slate-900"
+                  >
+                    {sp.name}
+                  </option>
+                ))}
               </select>
 
-               <div className="ml-auto flex items-center gap-2">
-                 {selectedCodeIds.size > 0 ? (
-                   <>
-                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                       {selectedCodeIds.size} sélectionné(s)
-                     </span>
-                     <button
-                       onClick={handleExportSelected}
-                       className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all active:scale-95"
-                     >
-                       <span>📥</span> Exporter Sélection
-                     </button>
-                     <button
-                       onClick={handleBulkRevoke}
-                       className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95"
-                     >
-                       <span>🗑️</span> Révoquer
-                     </button>
-                     <button
-                       onClick={clearSelection}
-                       className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
-                     >
-                       <span>✖️</span> Effacer
-                     </button>
-                   </>
-                 ) : (
-                   <button
-                     onClick={handleExport}
-                     className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
-                   >
-                     <span>📥</span> Exporter CSV
-                   </button>
-                 )}
-               </div>
+              <select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters({
+                    ...filters,
+                    status: e.target.value as typeof filters.status,
+                  })
+                }
+                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+              >
+                <option value="" className="bg-white dark:bg-slate-900">
+                  Tous les statuts
+                </option>
+                <option value="active" className="bg-white dark:bg-slate-900">
+                  ✅ Actifs
+                </option>
+                <option value="used" className="bg-white dark:bg-slate-900">
+                  👤 Utilisés
+                </option>
+                <option value="expired" className="bg-white dark:bg-slate-900">
+                  ⏰ Expirés
+                </option>
+              </select>
+
+              <div className="ml-auto flex items-center gap-2">
+                {selectedCodeIds.size > 0 ? (
+                  <>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      {selectedCodeIds.size} sélectionné(s)
+                    </span>
+                    <button
+                      onClick={handleExportSelected}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all active:scale-95"
+                    >
+                      <span>📥</span> Exporter
+                    </button>
+                    <button
+                      onClick={() => setShowBulkExpirationModal(true)}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-700 transition-all active:scale-95"
+                    >
+                      <span>📅</span> Modifier Expiration
+                    </button>
+                    <button
+                      onClick={handleBulkRevoke}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95"
+                    >
+                      <span>🗑️</span> Révoquer
+                    </button>
+                    <button
+                      onClick={clearSelection}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                    >
+                      <span>✖️</span> Effacer
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleExport}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                  >
+                    <span>📥</span> Exporter CSV
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
-               <thead>
-                 <tr className="bg-slate-50 dark:bg-slate-950/50">
-                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                     <input
-                       type="checkbox"
-                       checked={selectedCodeIds.size === codes.length && codes.length > 0}
-                       onChange={toggleSelectAll}
-                       className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
-                     />
-                   </th>
-                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Code</th>
-                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Année</th>
-                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Point de Vente</th>
-                   <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Statut</th>
-                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Utilisateur</th>
-                   <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Création</th>
-                 </tr>
-               </thead>
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-950/50">
+                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedCodeIds.size === codes.length &&
+                        codes.length > 0
+                      }
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                    />
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Code
+                  </th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Année
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Point de Vente
+                  </th>
+                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Statut
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Utilisateur
+                  </th>
+                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Création
+                  </th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-white/5">
-                 {codes.length === 0 ? (
-                   <tr>
-                     <td colSpan={8} className="px-6 py-20 text-center">
+                {codes.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-20 text-center">
                       <div className="flex flex-col items-center justify-center space-y-2">
                         <span className="text-3xl">📭</span>
-                        <p className="text-slate-500 dark:text-slate-400 font-bold">Aucun code trouvé</p>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Essayez de modifier vos filtres.</p>
+                        <p className="text-slate-500 dark:text-slate-400 font-bold">
+                          Aucun code trouvé
+                        </p>
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                          Essayez de modifier vos filtres.
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  codes.map(code => {
-                    const isExpired = code.expiresAt && new Date(code.expiresAt) < new Date();
-                    const status = code.isUsed ? 'used' : isExpired ? 'expired' : 'active';
+                  codes.map((code) => {
+                    const isExpired =
+                      code.expiresAt && new Date(code.expiresAt) < new Date();
+                    const status = code.isUsed
+                      ? "used"
+                      : isExpired
+                      ? "expired"
+                      : "active";
                     const user = code.usedByUser;
                     const isSelected = selectedCodeIds.has(code.id);
-                    
+
                     return (
-                       <tr 
-                         key={code.id} 
-                         className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${code.isUsed ? 'bg-primary-500/5' : ''} ${isSelected ? 'bg-primary-500/10 dark:bg-primary-500/5' : ''}`}
-                         onClick={() => setSelectedCode(code)}
-                       >
-                         <td className="px-6 py-5 text-center" onClick={(e) => e.stopPropagation()}>
-                           <input
-                             type="checkbox"
-                             checked={isSelected}
-                             onChange={() => toggleCodeSelection(code.id)}
-                             className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
-                           />
-                         </td>
+                      <tr
+                        key={code.id}
+                        className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${
+                          code.isUsed ? "bg-primary-500/5" : ""
+                        } ${
+                          isSelected
+                            ? "bg-primary-500/10 dark:bg-primary-500/5"
+                            : ""
+                        }`}
+                        onClick={() => setSelectedCode(code)}
+                      >
+                        <td
+                          className="px-6 py-5 text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleCodeSelection(code.id)}
+                            className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                          />
+                        </td>
                         <td className="px-6 py-5">
                           <code className="bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg text-xs font-black font-mono text-slate-900 dark:text-white tracking-widest group-hover:bg-primary-500/10 group-hover:text-primary-600 transition-colors">
                             {code.keyCode}
@@ -753,32 +1196,50 @@ export default function ActivationCodesPage() {
                         </td>
                         <td className="px-6 py-5">
                           <div className="font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
-                            {code.salesPoint?.name || '-'}
+                            {code.salesPoint?.name || "-"}
                           </div>
                         </td>
                         <td className="px-6 py-5 text-center">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
-                            status === 'active' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                            status === 'used' ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' :
-                            'bg-red-500/10 text-red-600 dark:text-red-400'
-                          }`}>
-                            {status === 'active' ? '✅ Actif' : status === 'used' ? '👤 Utilisé' : '⏰ Expiré'}
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
+                              status === "active"
+                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                : status === "used"
+                                ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                                : "bg-red-500/10 text-red-600 dark:text-red-400"
+                            }`}
+                          >
+                            {status === "active"
+                              ? "✅ Actif"
+                              : status === "used"
+                              ? "👤 Utilisé"
+                              : "⏰ Expiré"}
                           </span>
                         </td>
                         <td className="px-6 py-5">
                           {user ? (
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 uppercase">
-                                {user.fullName?.split(' ').map(n => n[0]).join('') || '?'}
+                                {user.fullName
+                                  ?.split(" ")
+                                  .map((n) => n[0])
+                                  .join("") || "?"}
                               </div>
                               <div>
-                                <div className="text-sm font-bold text-slate-900 dark:text-white">{user.fullName || 'User'}</div>
-                                <div className="text-[10px] text-slate-500 font-medium">{user.email}</div>
+                                <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                  {user.fullName || "User"}
+                                </div>
+                                <div className="text-[10px] text-slate-500 font-medium">
+                                  {user.email}
+                                </div>
                               </div>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setDeviceManagerUser({ id: user.id, name: user.fullName || 'User' });
+                                  setDeviceManagerUser({
+                                    id: user.id,
+                                    name: user.fullName || "User",
+                                  });
                                 }}
                                 className="ml-2 p-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
                                 title="Gérer les appareils"
@@ -787,17 +1248,26 @@ export default function ActivationCodesPage() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">Disponible</span>
+                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">
+                              Disponible
+                            </span>
                           )}
                         </td>
                         <td className="px-6 py-5 text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">
-                          <div>{new Date(code.createdAt).toLocaleDateString('fr-FR')}</div>
+                          <div>
+                            {new Date(code.createdAt).toLocaleDateString(
+                              "fr-FR"
+                            )}
+                          </div>
                           {code.usedAt && (
                             <div className="text-primary-600 dark:text-primary-400 mt-0.5">
-                              Utilisé: {new Date(code.usedAt).toLocaleDateString('fr-FR')}
+                              Utilisé:{" "}
+                              {new Date(code.usedAt).toLocaleDateString(
+                                "fr-FR"
+                              )}
                             </div>
-                           )}
-                         </td>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
@@ -805,14 +1275,14 @@ export default function ActivationCodesPage() {
               </tbody>
             </table>
           </div>
-          
+
           <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-white/5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
             Affichage de {codes.length} code(s) actif(s)
           </div>
         </div>
       )}
 
-      {activeTab === 'points' && (
+      {activeTab === "points" && (
         <div className="space-y-8">
           {/* Add button */}
           <div className="flex justify-end">
@@ -826,38 +1296,61 @@ export default function ActivationCodesPage() {
 
           {/* Sales Points List */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {salesPoints.map(sp => (
-              <div key={sp.id} className={`group bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-primary-500/5 ${!sp.isActive ? 'opacity-50 grayscale' : ''}`}>
+            {salesPoints.map((sp) => (
+              <div
+                key={sp.id}
+                className={`group bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-primary-500/5 ${
+                  !sp.isActive ? "opacity-50 grayscale" : ""
+                }`}
+              >
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="font-black text-slate-900 dark:text-white tracking-tight group-hover:text-primary-600 transition-colors">{sp.name}</h3>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">{sp.location}</p>
+                    <h3 className="font-black text-slate-900 dark:text-white tracking-tight group-hover:text-primary-600 transition-colors">
+                      {sp.name}
+                    </h3>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                      {sp.location}
+                    </p>
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sp.isActive ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-white/5 text-slate-500'}`}>
-                    {sp.isActive ? 'Actif' : 'Inactif'}
+                  <span
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      sp.isActive
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                    }`}
+                  >
+                    {sp.isActive ? "Actif" : "Inactif"}
                   </span>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                     <span>Code</span>
-                    <span className="bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded font-mono text-slate-900 dark:text-white">{sp.code}</span>
+                    <span className="bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded font-mono text-slate-900 dark:text-white">
+                      {sp.code}
+                    </span>
                   </div>
                   {sp.contactName && (
                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                       <span>Contact</span>
-                      <span className="text-slate-700 dark:text-slate-300">{sp.contactName}</span>
+                      <span className="text-slate-700 dark:text-slate-300">
+                        {sp.contactName}
+                      </span>
                     </div>
                   )}
                   {sp.contactPhone && (
                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                       <span>Tél</span>
-                      <span className="text-slate-700 dark:text-slate-300">{sp.contactPhone}</span>
+                      <span className="text-slate-700 dark:text-slate-300">
+                        {sp.contactPhone}
+                      </span>
                     </div>
                   )}
                   {sp.commissionRate > 0 && (
                     <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
                       <span>Commission</span>
-                      <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-md">{sp.commissionRate}%</span>
+                      <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-md">
+                        {sp.commissionRate}%
+                      </span>
                     </div>
                   )}
                 </div>
@@ -871,73 +1364,117 @@ export default function ActivationCodesPage() {
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center gap-3 mb-8">
                   <span className="text-2xl">🏪</span>
-                  <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">Nouveau Point de Vente</h2>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                    Nouveau Point de Vente
+                  </h2>
                 </div>
-                
+
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Code *</label>
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                        Code *
+                      </label>
                       <input
                         type="text"
                         value={salesPointForm.code}
-                        onChange={e => setSalesPointForm({ ...salesPointForm, code: e.target.value.toUpperCase() })}
+                        onChange={(e) =>
+                          setSalesPointForm({
+                            ...salesPointForm,
+                            code: e.target.value.toUpperCase(),
+                          })
+                        }
                         className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                         placeholder="ALG01"
                         maxLength={10}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Commission %</label>
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                        Commission %
+                      </label>
                       <input
                         type="number"
                         min={0}
                         max={100}
                         value={salesPointForm.commissionRate}
-                        onChange={e => setSalesPointForm({ ...salesPointForm, commissionRate: Number(e.target.value) })}
+                        onChange={(e) =>
+                          setSalesPointForm({
+                            ...salesPointForm,
+                            commissionRate: Number(e.target.value),
+                          })
+                        }
                         className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       />
                     </div>
                   </div>
-                  
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Nom *</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Nom *
+                    </label>
                     <input
                       type="text"
                       value={salesPointForm.name}
-                      onChange={e => setSalesPointForm({ ...salesPointForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setSalesPointForm({
+                          ...salesPointForm,
+                          name: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="Librairie El Ilm"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Localisation</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Localisation
+                    </label>
                     <input
                       type="text"
                       value={salesPointForm.location}
-                      onChange={e => setSalesPointForm({ ...salesPointForm, location: e.target.value })}
+                      onChange={(e) =>
+                        setSalesPointForm({
+                          ...salesPointForm,
+                          location: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="Alger Centre"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Nom du Contact</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Nom du Contact
+                    </label>
                     <input
                       type="text"
                       value={salesPointForm.contactName}
-                      onChange={e => setSalesPointForm({ ...salesPointForm, contactName: e.target.value })}
+                      onChange={(e) =>
+                        setSalesPointForm({
+                          ...salesPointForm,
+                          contactName: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">Téléphone</label>
+                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      Téléphone
+                    </label>
                     <input
                       type="tel"
                       value={salesPointForm.contactPhone}
-                      onChange={e => setSalesPointForm({ ...salesPointForm, contactPhone: e.target.value })}
+                      onChange={(e) =>
+                        setSalesPointForm({
+                          ...salesPointForm,
+                          contactPhone: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
                       placeholder="0555 XX XX XX"
                     />
@@ -969,7 +1506,9 @@ export default function ActivationCodesPage() {
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-lg animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">🔑 Détails du Code</h2>
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                🔑 Détails du Code
+              </h2>
               <button
                 onClick={() => setSelectedCode(null)}
                 className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold"
@@ -977,25 +1516,34 @@ export default function ActivationCodesPage() {
                 ×
               </button>
             </div>
-            
+
             {/* Code Info */}
             <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
                 <code className="text-2xl font-black font-mono text-primary-600 dark:text-primary-400 tracking-[0.2em]">
                   {selectedCode.keyCode}
                 </code>
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                  selectedCode.isUsed ? 'bg-primary-500/10 text-primary-600 dark:text-primary-400' :
-                  (selectedCode.expiresAt && new Date(selectedCode.expiresAt) < new Date()) ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
-                  'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                }`}>
-                  {selectedCode.isUsed ? '👤 Utilisé' : 
-                   (selectedCode.expiresAt && new Date(selectedCode.expiresAt) < new Date()) ? '⏰ Expiré' : '✅ Actif'}
+                <span
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                    selectedCode.isUsed
+                      ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                      : selectedCode.expiresAt &&
+                        new Date(selectedCode.expiresAt) < new Date()
+                      ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  {selectedCode.isUsed
+                    ? "👤 Utilisé"
+                    : selectedCode.expiresAt &&
+                      new Date(selectedCode.expiresAt) < new Date()
+                    ? "⏰ Expiré"
+                    : "✅ Actif"}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
                 <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
-                  {new Date(selectedCode.createdAt).toLocaleDateString('fr-FR')}
+                  {new Date(selectedCode.createdAt).toLocaleDateString("fr-FR")}
                 </span>
                 <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
                   {selectedCode.durationDays} Jours
@@ -1010,15 +1558,24 @@ export default function ActivationCodesPage() {
 
             {/* Code Details */}
             <div className="space-y-4 mb-8">
-              
-              <DetailRow label="Point de Vente" value={selectedCode.salesPoint?.name || '-'} />
-              
+              <DetailRow
+                label="Point de Vente"
+                value={selectedCode.salesPoint?.name || "-"}
+              />
+
               {selectedCode.expiresAt && (
-                <DetailRow label="Date d'Expiration" value={new Date(selectedCode.expiresAt).toLocaleDateString('fr-FR')} />
+                <DetailRow
+                  label="Date d'Expiration"
+                  value={new Date(selectedCode.expiresAt).toLocaleDateString(
+                    "fr-FR"
+                  )}
+                />
               )}
               {selectedCode.notes && (
                 <div className="pt-2">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 px-1">Notes</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 px-1">
+                    Notes
+                  </span>
                   <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl text-xs text-slate-700 dark:text-slate-300 italic">
                     &quot;{selectedCode.notes}&quot;
                   </div>
@@ -1035,14 +1592,21 @@ export default function ActivationCodesPage() {
                 <div className="bg-primary-500/5 border border-primary-500/10 rounded-3xl p-6">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-sm font-black text-primary-600 uppercase">
-                      {selectedCode.usedByUser.fullName?.split(' ').map(n => n[0]).join('') || '?'}
+                      {selectedCode.usedByUser.fullName
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("") || "?"}
                     </div>
                     <div>
-                      <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">{selectedCode.usedByUser.fullName || 'Sans nom'}</div>
-                      <div className="text-xs text-slate-500 font-medium">{selectedCode.usedByUser.email}</div>
+                      <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                        {selectedCode.usedByUser.fullName || "Sans nom"}
+                      </div>
+                      <div className="text-xs text-slate-500 font-medium">
+                        {selectedCode.usedByUser.email}
+                      </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 mt-4">
                     {selectedCode.usedByUser.faculty && (
                       <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
@@ -1065,10 +1629,13 @@ export default function ActivationCodesPage() {
                       </span>
                     )}
                   </div>
-                  
+
                   {selectedCode.usedAt && (
                     <div className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest mt-6">
-                      Activé le {new Date(selectedCode.usedAt).toLocaleDateString('fr-FR')}
+                      Activé le{" "}
+                      {new Date(selectedCode.usedAt).toLocaleDateString(
+                        "fr-FR"
+                      )}
                     </div>
                   )}
                 </div>
@@ -1078,8 +1645,12 @@ export default function ActivationCodesPage() {
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-full mb-4">
                   <span className="text-2xl">🔒</span>
                 </div>
-                <p className="text-sm font-bold text-slate-500">Code non encore activé</p>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">Disponible pour une nouvelle inscription.</p>
+                <p className="text-sm font-bold text-slate-500">
+                  Code non encore activé
+                </p>
+                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                  Disponible pour une nouvelle inscription.
+                </p>
               </div>
             )}
 
@@ -1101,6 +1672,77 @@ export default function ActivationCodesPage() {
           onClose={() => setDeviceManagerUser(null)}
         />
       )}
+
+      {/* Bulk Expiration Update Modal */}
+      {showBulkExpirationModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-2xl max-w-md w-full p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-3xl">📅</span>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                Modifier l&apos;Expiration
+              </h2>
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+              Mettre à jour la date d&apos;expiration pour{" "}
+              <span className="font-bold text-primary-600 dark:text-primary-400">
+                {
+                  codes.filter(
+                    (code) => selectedCodeIds.has(code.id) && !code.isUsed
+                  ).length
+                }
+              </span>{" "}
+              code(s) non utilisé(s) sélectionné(s).
+            </p>
+
+            <div className="mb-6">
+              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                Nouvelle Date d&apos;Expiration *
+              </label>
+              <input
+                type="date"
+                value={bulkExpirationDate}
+                min={new Date().toISOString().split("T")[0]}
+                onChange={(e) => setBulkExpirationDate(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+              />
+              {bulkExpirationDate && (
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 px-1">
+                  Les codes expireront le:{" "}
+                  <span className="font-bold text-primary-600 dark:text-primary-400">
+                    {new Date(bulkExpirationDate).toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBulkExpirationModal(false);
+                  setBulkExpirationDate("");
+                }}
+                className="flex-1 px-6 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleBulkUpdateExpiration}
+                disabled={!bulkExpirationDate}
+                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Mettre à Jour
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1109,25 +1751,43 @@ export default function ActivationCodesPage() {
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5 last:border-0">
-      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{value}</span>
+      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+        {label}
+      </span>
+      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+        {value}
+      </span>
     </div>
   );
 }
 
 // Stat Card Component
-function StatCard({ title, value, icon, color }: { title: string; value: number | string; icon: string; color: string }) {
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+}: {
+  title: string;
+  value: number | string;
+  icon: string;
+  color: string;
+}) {
   const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-50 border-blue-200',
-    green: 'bg-green-50 border-green-200',
-    purple: 'bg-purple-50 border-purple-200',
-    red: 'bg-red-50 border-red-200',
-    yellow: 'bg-yellow-50 border-yellow-200',
-    orange: 'bg-orange-50 border-orange-200',
+    blue: "bg-blue-50 border-blue-200",
+    green: "bg-green-50 border-green-200",
+    purple: "bg-purple-50 border-purple-200",
+    red: "bg-red-50 border-red-200",
+    yellow: "bg-yellow-50 border-yellow-200",
+    orange: "bg-orange-50 border-orange-200",
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${colorClasses[color] || colorClasses.blue}`}>
+    <div
+      className={`rounded-lg border p-4 ${
+        colorClasses[color] || colorClasses.blue
+      }`}
+    >
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xl">{icon}</span>
         <span className="text-sm text-gray-600">{title}</span>

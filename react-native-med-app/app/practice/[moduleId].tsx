@@ -21,20 +21,29 @@ import { ANIMATION_DURATION, ANIMATION_EASING } from '@/lib/animations'
 const USE_NATIVE_DRIVER = Platform.OS !== 'web'
 
 export default function PracticeScreen() {
-  const { moduleId, moduleName, examType, examYear, subDiscipline, cours } = useLocalSearchParams<{
+
+  
+  const { moduleId, moduleName, examType, examYear, subDiscipline, cours, startQuestion } = useLocalSearchParams<{
     moduleId: string
     moduleName: string
     examType?: string
     examYear?: string
     subDiscipline?: string
     cours?: string
+    startQuestion?: string
   }>()
   
   const { user } = useAuth()
   const { colors, isDark } = useTheme()
   
   const [questions, setQuestions] = useState<QuestionWithAnswers[]>([])
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (typeof startQuestion === 'string') {
+      const start = parseInt(startQuestion)
+      return isNaN(start) ? 0 : Math.max(0, start - 1)
+    }
+    return 0
+  })
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, OptionLabel[]>>({})
   const [eliminatedAnswers, setEliminatedAnswers] = useState<Record<string, OptionLabel[]>>({})
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set())
@@ -507,7 +516,12 @@ export default function PracticeScreen() {
           <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Badge label={`Q${currentQuestion.number}`} variant="primary" style={{ marginRight: 8 }} />
-              {currentQuestion.exam_type && <Badge label={currentQuestion.exam_type} variant="secondary" />}
+              {(currentQuestion.exam_type || currentQuestion.exam_year) && (
+                <Badge 
+                  label={`${currentQuestion.exam_type || ''}${currentQuestion.exam_year ? ` M${currentQuestion.exam_year % 100}` : ''}`.trim()} 
+                  variant="secondary" 
+                />
+              )}
             </View>
             <Animated.View style={{ transform: [{ scale: saveButtonScale }], flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {/* Report Button */}
@@ -538,23 +552,7 @@ export default function PracticeScreen() {
             </Animated.View>
           </Animated.View>
 
-          {/* Filter Summary - Compact inline */}
-          <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
-              <Text style={{ color: colors.textMuted, fontSize: 12 }}>{moduleName}</Text>
-              {(examType || examYear || cours) && <Text style={{ color: colors.border, fontSize: 10 }}>›</Text>}
-              {examType && <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }}>{examType}</Text>}
-              {examYear && (
-                <>
-                  {examType && <Text style={{ color: colors.border, fontSize: 10 }}>•</Text>}
-                  <Text style={{ color: colors.primary, fontSize: 12, fontWeight: '600' }}>M{parseInt(examYear) - 2000}</Text>
-                </>
-              )}
-              {cours && (
-                <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '500' }} numberOfLines={1}>{cours}</Text>
-              )}
-            </View>
-          </Animated.View>
+
 
           {/* Question Text */}
           <Animated.View style={{ opacity: questionFade, transform: [{ translateY: questionSlide }], marginBottom: 16 }}>

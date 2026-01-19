@@ -14,7 +14,9 @@ import {
   useWindowDimensions,
   Animated,
   Easing,
-  Image
+  Image,
+  FlatList,
+  Modal
 } from 'react-native'
 import { router, useNavigation, useLocalSearchParams } from 'expo-router'
 import * as Linking from 'expo-linking'
@@ -635,8 +637,8 @@ function FormInput(props: any) {
   )
 }
 
-// Form Dropdown
-function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, scrollable, disabledOptions, disabled }: {
+// Form Dropdown with Modal to avoid Nested ScrollView issues
+function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect, disabled }: {
   value: string
   placeholder: string
   isOpen: boolean
@@ -648,7 +650,7 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
   disabled?: boolean
 }) {
   return (
-    <View>
+    <>
       <TouchableOpacity
         style={{
           backgroundColor: disabled ? BRAND_THEME.colors.gray[100] : BRAND_THEME.colors.gray[50],
@@ -669,79 +671,80 @@ function FormDropdown({ value, placeholder, isOpen, onToggle, options, onSelect,
           {value || placeholder}
         </Text>
         <Text style={{ color: BRAND_THEME.colors.gray[400] }}>
-          {disabled ? '' : (isOpen ? '▲' : '▼')}
+          ▼
         </Text>
       </TouchableOpacity>
-      {isOpen && !disabled && (
-        <View style={{
-          backgroundColor: '#ffffff',
-          borderWidth: 1,
-          borderColor: BRAND_THEME.colors.gray[200],
-          borderRadius: 14,
-          marginTop: 4,
-          position: 'absolute',
-          top: '100%',
-          width: '100%',
-          maxHeight: scrollable ? 250 : undefined,
-          ...BRAND_THEME.shadows.lg,
-          zIndex: 100,
-          overflow: 'hidden',
-        }}>
-          {scrollable ? (
-            <ScrollView 
-              style={{ maxHeight: 250 }}
-              nestedScrollEnabled={true}
+
+      <Modal
+        visible={isOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={onToggle}
+      >
+        <TouchableOpacity 
+          style={{ 
+            flex: 1, 
+            backgroundColor: 'rgba(0,0,0,0.5)', 
+            justifyContent: 'center', 
+            alignItems: 'center',
+            padding: 24
+          }} 
+          activeOpacity={1} 
+          onPress={onToggle}
+        >
+          <View style={{ 
+            backgroundColor: 'white', 
+            borderRadius: 24, 
+            width: '100%', 
+            maxWidth: 500,
+            maxHeight: '70%',
+            ...BRAND_THEME.shadows.lg,
+            overflow: 'hidden'
+          }}>
+            <View style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: BRAND_THEME.colors.gray[100], flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: BRAND_THEME.colors.gray[900] }}>
+                {placeholder}
+              </Text>
+              <TouchableOpacity onPress={onToggle} style={{ padding: 4 }}>
+                <Text style={{ fontSize: 20, color: BRAND_THEME.colors.gray[400] }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.value}
               showsVerticalScrollIndicator={true}
-              bounces={true}
-              keyboardShouldPersistTaps="handled"
-            >
-              {options.map((opt) => (
+              contentContainerStyle={{ paddingVertical: 8 }}
+              renderItem={({ item: opt }) => (
                 <TouchableOpacity 
-                  key={opt.value} 
                   style={{ 
-                    paddingHorizontal: 16, 
-                    paddingVertical: 14, 
+                    paddingHorizontal: 20, 
+                    paddingVertical: 16, 
                     borderBottomWidth: 1, 
-                    borderBottomColor: BRAND_THEME.colors.gray[100],
+                    borderBottomColor: BRAND_THEME.colors.gray[50],
                     opacity: opt.disabled ? 0.5 : 1,
+                    backgroundColor: value === opt.value || (value === opt.label && !opt.label.includes('cod')) ? 'rgba(9, 178, 173, 0.05)' : 'transparent'
                   }} 
-                  onPress={() => !opt.disabled && onSelect(opt.value)}
+                  onPress={() => {
+                    if (!opt.disabled) {
+                      onSelect(opt.value)
+                    }
+                  }}
                   disabled={opt.disabled}
                 >
                   <Text style={{ 
-                    color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
-                    fontSize: 15 
+                    color: opt.disabled ? BRAND_THEME.colors.gray[400] : (value === opt.value ? '#09B2AD' : BRAND_THEME.colors.gray[900]), 
+                    fontSize: 16,
+                    fontWeight: value === opt.value ? '700' : '500'
                   }}>
                     {opt.label}
                   </Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          ) : (
-            options.map((opt) => (
-              <TouchableOpacity 
-                key={opt.value} 
-                style={{ 
-                  paddingHorizontal: 16, 
-                  paddingVertical: 14, 
-                  borderBottomWidth: 1, 
-                  borderBottomColor: BRAND_THEME.colors.gray[100],
-                  opacity: opt.disabled ? 0.5 : 1,
-                }} 
-                onPress={() => !opt.disabled && onSelect(opt.value)}
-                disabled={opt.disabled}
-              >
-                <Text style={{ 
-                  color: opt.disabled ? BRAND_THEME.colors.gray[400] : BRAND_THEME.colors.gray[900], 
-                  fontSize: 15 
-                }}>
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-      )}
-    </View>
+              )}
+            />
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   )
 }

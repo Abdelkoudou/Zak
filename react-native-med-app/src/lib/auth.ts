@@ -13,20 +13,20 @@ import { getDeviceId, getDeviceName } from './deviceId'
 export async function signUp(data: RegisterFormData): Promise<{ user: User | null; error: string | null; needsEmailVerification?: boolean }> {
   try {
     console.log('[Auth] Starting sign up for:', data.email)
-    
+
     // Check if Supabase is properly configured
     if (!isSupabaseConfigured()) {
       console.error('[Auth] Supabase not configured properly')
       return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
-    
+
     // 1. Create auth user with redirect URL for email verification
     const redirectUrl = getRedirectUrl()
     console.log('[Auth] Creating auth user...')
-    
+
     let authData: any = null
     let authError: any = null
-    
+
     try {
       const result = await supabase.auth.signUp({
         email: data.email,
@@ -40,8 +40,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
     } catch (e: any) {
       console.error('[Auth] signUp threw:', e)
       const errorMessage = e?.message || ''
-      if (errorMessage.toLowerCase().includes('network') || 
-          errorMessage.toLowerCase().includes('fetch')) {
+      if (errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('fetch')) {
         return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
       }
       return { user: null, error: 'Erreur lors de la création du compte. Veuillez réessayer.' }
@@ -135,8 +135,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
   } catch (error: any) {
     console.error('[Auth] Unexpected sign up error:', error)
     const errorMessage = error?.message || ''
-    if (errorMessage.toLowerCase().includes('network') || 
-        errorMessage.toLowerCase().includes('fetch')) {
+    if (errorMessage.toLowerCase().includes('network') ||
+      errorMessage.toLowerCase().includes('fetch')) {
       return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
     }
     return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
@@ -149,58 +149,58 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 
 function translateAuthError(error: string): string {
   const errorLower = error.toLowerCase()
-  
+
   // Log the original error for debugging
   if (__DEV__) {
     console.log('[Auth] Translating error:', error)
   }
-  
+
   // Common Supabase auth errors with French translations
   // Check most specific errors first
   if (errorLower.includes('invalid login credentials') || errorLower.includes('invalid credentials')) {
     return 'Email ou mot de passe incorrect. Veuillez vérifier vos informations.'
   }
-  
+
   if (errorLower.includes('email not confirmed') || errorLower.includes('email address not confirmed')) {
     return 'Votre email n\'a pas été confirmé. Veuillez vérifier votre boîte mail et cliquer sur le lien de confirmation.'
   }
-  
+
   if (errorLower.includes('too many requests') || errorLower.includes('rate limit')) {
     return 'Trop de tentatives de connexion. Veuillez attendre quelques minutes avant de réessayer.'
   }
-  
+
   if (errorLower.includes('user not found') || errorLower.includes('no user found')) {
     return 'Aucun compte trouvé avec cet email. Veuillez vérifier l\'adresse email ou créer un compte.'
   }
-  
+
   if (errorLower.includes('password') && errorLower.includes('weak')) {
     return 'Le mot de passe est trop faible. Utilisez au moins 8 caractères avec des lettres et des chiffres.'
   }
-  
+
   if (errorLower.includes('email') && errorLower.includes('invalid')) {
     return 'Format d\'email invalide. Veuillez entrer une adresse email valide.'
   }
-  
+
   if (errorLower.includes('signup') && errorLower.includes('disabled')) {
     return 'Les inscriptions sont temporairement désactivées. Veuillez réessayer plus tard.'
   }
-  
+
   // Network errors - be more specific to avoid false positives
   // Only match actual network/connection errors, not "fetch profile" type errors
-  if (errorLower.includes('network request failed') || 
-      errorLower.includes('networkerror') ||
-      errorLower.includes('failed to fetch') ||
-      errorLower.includes('net::err') ||
-      errorLower.includes('econnrefused') ||
-      errorLower.includes('enotfound') ||
-      errorLower.includes('unable to resolve host')) {
+  if (errorLower.includes('network request failed') ||
+    errorLower.includes('networkerror') ||
+    errorLower.includes('failed to fetch') ||
+    errorLower.includes('net::err') ||
+    errorLower.includes('econnrefused') ||
+    errorLower.includes('enotfound') ||
+    errorLower.includes('unable to resolve host')) {
     return 'Problème de connexion réseau. Veuillez vérifier votre connexion internet et réessayer.'
   }
-  
+
   if (errorLower.includes('timeout') || errorLower.includes('timed out')) {
     return 'La connexion a pris trop de temps. Veuillez réessayer.'
   }
-  
+
   // Return original error if no translation found
   return error
 }
@@ -209,7 +209,7 @@ function translateAuthError(error: string): string {
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) => 
+    new Promise<T>((_, reject) =>
       setTimeout(() => reject(new Error(errorMessage)), timeoutMs)
     )
   ])
@@ -218,16 +218,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
     console.log('[Auth] Starting sign in for:', email)
-    
+
     // Check if Supabase is properly configured
     const configStatus = getSupabaseConfigStatus()
     console.log('[Auth] Supabase config status:', configStatus)
-    
+
     if (!isSupabaseConfigured()) {
       console.error('[Auth] Supabase not configured properly:', configStatus)
       return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
-    
+
     // Debug device info in development
     if (__DEV__) {
       try {
@@ -237,12 +237,12 @@ export async function signIn(email: string, password: string): Promise<{ user: U
         console.warn('[Auth] Debug device info failed:', e)
       }
     }
-    
+
     // Step 1: Authenticate with Supabase
     console.log('[Auth] Calling signInWithPassword...')
     let authData: any = null
     let authError: any = null
-    
+
     try {
       const result = await supabase.auth.signInWithPassword({
         email,
@@ -254,9 +254,9 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       console.error('[Auth] signInWithPassword threw:', e)
       const errorMessage = e?.message || ''
       // Check for network errors specifically
-      if (errorMessage.toLowerCase().includes('network') || 
-          errorMessage.toLowerCase().includes('fetch') ||
-          errorMessage.toLowerCase().includes('timeout')) {
+      if (errorMessage.toLowerCase().includes('network') ||
+        errorMessage.toLowerCase().includes('fetch') ||
+        errorMessage.toLowerCase().includes('timeout')) {
         return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
       }
       return { user: null, error: translateAuthError(errorMessage || 'Erreur de connexion. Veuillez réessayer.') }
@@ -278,14 +278,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     console.log('[Auth] Fetching user profile for:', authData.user.id)
     let userProfile: any = null
     let fetchError: any = null
-    
+
     try {
       const result = await supabase
         .from('users')
         .select('*')
         .eq('id', authData.user.id)
         .single()
-      
+
       userProfile = result.data
       fetchError = result.error
     } catch (e: any) {
@@ -332,8 +332,8 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     console.error('[Auth] Unexpected sign in error:', error)
     const errorMessage = error?.message || ''
     // Check for network errors
-    if (errorMessage.toLowerCase().includes('network') || 
-        errorMessage.toLowerCase().includes('fetch')) {
+    if (errorMessage.toLowerCase().includes('network') ||
+      errorMessage.toLowerCase().includes('fetch')) {
       return { user: null, error: 'Problème de connexion réseau. Vérifiez votre connexion internet.' }
     }
     return { user: null, error: 'Une erreur inattendue s\'est produite. Veuillez réessayer.' }
@@ -368,7 +368,7 @@ export async function getCurrentUser(): Promise<{ user: User | null; error: stri
     if (sessionError) {
       return { user: null, error: sessionError.message }
     }
-    
+
     if (!session) {
       // No session - user is not logged in
       return { user: null, error: null }
@@ -426,11 +426,11 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
   try {
     // Get redirect URL and ensure no whitespace
     const redirectUrl = getRedirectUrl('auth/callback').trim()
-    
+
     if (__DEV__) {
       console.log('[Auth] Reset password redirect URL:', JSON.stringify(redirectUrl))
     }
-    
+
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: redirectUrl,
     })
@@ -481,6 +481,26 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
     return data as boolean
   } catch (error) {
     return false
+  }
+}
+
+export async function getUserActivationCode(userId: string): Promise<{ code: string | null; error: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('activation_keys')
+      .select('key_code')
+      .eq('used_by', userId)
+      .single()
+
+    if (error) {
+      // It's possible the user doesn't have a code (e.g. manually added), so we handle "no rows" gracefully if needed
+      if (error.code === 'PGRST116') return { code: null, error: null }
+      return { code: null, error: error.message }
+    }
+
+    return { code: data?.key_code || null, error: null }
+  } catch (error: any) {
+    return { code: null, error: error.message || 'Error fetching activation code' }
   }
 }
 
@@ -561,11 +581,11 @@ export async function removeDevice(sessionId: string): Promise<{ error: string |
 
 export async function debugDeviceSessions(userId: string): Promise<void> {
   if (!__DEV__) return
-  
+
   try {
     const currentDeviceId = await getDeviceId()
     const { sessions } = await getDeviceSessions(userId)
-    
+
     console.log('[Auth Debug] Current device ID:', currentDeviceId)
     console.log('[Auth Debug] Device sessions:', sessions.map(s => ({
       id: s.id,
