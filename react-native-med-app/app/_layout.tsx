@@ -174,7 +174,9 @@ function RootLayoutContent() {
           try {
             const NavigationBar = require('expo-navigation-bar')
             await NavigationBar.setVisibilityAsync('hidden')
-            await NavigationBar.setBehaviorAsync('sticky-immersive')
+            // These methods are not supported with edge-to-edge enabled and cause warnings
+            // await NavigationBar.setBehaviorAsync('sticky-immersive') 
+            // await NavigationBar.setBackgroundColorAsync('#ffffff')
           } catch (e) {
             console.warn('[Immersive] NavigationBar control failed:', e)
           }

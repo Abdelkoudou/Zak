@@ -325,7 +325,7 @@ export default function ModuleDetailScreen() {
         <ScrollView 
           style={{ flex: 1 }} 
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 200 }}
         >
           {/* Header */}
           <Animated.View style={{ paddingHorizontal: 20, paddingTop: 16, opacity: headerOpacity }}>

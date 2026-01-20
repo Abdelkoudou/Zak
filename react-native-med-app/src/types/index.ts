@@ -86,7 +86,7 @@ export interface QuestionWithAnswers extends Question {
 export interface CourseResource {
   id: string
   year: YearLevel
-  module_name: string
+  module_name: string | null
   sub_discipline: string | null
   title: string
   type: ResourceType

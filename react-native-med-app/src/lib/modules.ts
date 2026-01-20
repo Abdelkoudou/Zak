@@ -300,6 +300,17 @@ export async function getExamTypesWithCounts(
 // Get Cours with Counts - OPTIMIZED (Single Query)
 // ============================================================================
 
+// Helper for natural sorting (handles "Cours 1", "Cours 2", "Cours 10" correctly)
+const naturalSort = (a: string, b: string) => {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+}
+
+// ... existing code ...
+
+// ============================================================================
+// Get Cours with Counts - OPTIMIZED (Single Query)
+// ============================================================================
+
 export async function getCoursWithCounts(
   moduleName: string
 ): Promise<{ cours: { name: string; count: number }[]; error: string | null }> {
@@ -319,7 +330,7 @@ export async function getCoursWithCounts(
 
       const cours = Object.entries(coursCounts)
         .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort((a, b) => naturalSort(a.name, b.name));
 
       return { cours, error: null };
     }
@@ -338,6 +349,8 @@ export async function getCoursWithCounts(
       name: row.cours_name,
       count: Number(row.question_count) || 0
     }))
+      // Ensure natural sort is applied to RPC results too
+      .sort((a: any, b: any) => naturalSort(a.name, b.name))
 
     return { cours, error: null }
   } catch (error) {
@@ -345,73 +358,7 @@ export async function getCoursWithCounts(
   }
 }
 
-// ============================================================================
-// Get Module Details - OPTIMIZED (Single Query for entire detail page)
-// ============================================================================
-
-export async function getModuleDetailsOptimized(moduleId: string): Promise<{
-  module: Module | null;
-  questionCount: number;
-  examTypesWithCounts: { type: ExamType; count: number }[];
-  coursWithCounts: { name: string; count: number }[];
-  subDisciplines: string[];
-  error: string | null
-}> {
-  try {
-    const { data, error } = await supabase.rpc('get_module_details', {
-      p_module_id: moduleId
-    })
-
-    if (error) {
-      console.warn('[Modules] get_module_details RPC failed:', error.message)
-      return {
-        module: null,
-        questionCount: 0,
-        examTypesWithCounts: [],
-        coursWithCounts: [],
-        subDisciplines: [],
-        error: error.message
-      }
-    }
-
-    if (!data || data.length === 0) {
-      return {
-        module: null,
-        questionCount: 0,
-        examTypesWithCounts: [],
-        coursWithCounts: [],
-        subDisciplines: [],
-        error: 'Module not found'
-      }
-    }
-
-    const row = data[0]
-
-    return {
-      module: row.module_data as Module,
-      questionCount: Number(row.question_count) || 0,
-      examTypesWithCounts: (row.exam_types_with_counts || []).map((et: any) => ({
-        type: et.type as ExamType,
-        count: Number(et.count) || 0
-      })),
-      coursWithCounts: (row.cours_with_counts || []).map((c: any) => ({
-        name: c.name,
-        count: Number(c.count) || 0
-      })),
-      subDisciplines: row.sub_disciplines || [],
-      error: null
-    }
-  } catch (error) {
-    return {
-      module: null,
-      questionCount: 0,
-      examTypesWithCounts: [],
-      coursWithCounts: [],
-      subDisciplines: [],
-      error: 'Failed to fetch module details'
-    }
-  }
-}
+// ... existing code ...
 
 // ============================================================================
 // Get Available Cours for Module
@@ -427,7 +374,7 @@ export async function getModuleCours(moduleName: string): Promise<{ cours: strin
       const allCours = offlineModuleData.questions
         .flatMap((q: any) => q.cours || [])
         .filter((value: any, index: number, self: any[]) => self.indexOf(value) === index)
-        .sort() as string[];
+        .sort(naturalSort) as string[];
 
       return { cours: allCours, error: null }
     }
@@ -446,7 +393,7 @@ export async function getModuleCours(moduleName: string): Promise<{ cours: strin
     const allCours = (data || [])
       .flatMap(q => q.cours || [])
       .filter((value, index, self) => self.indexOf(value) === index)
-      .sort()
+      .sort(naturalSort)
 
     return { cours: allCours, error: null }
   } catch (error) {
@@ -485,20 +432,22 @@ export async function getModuleCoursesStructure(moduleName: string): Promise<{
         }
       });
 
-      return { structure: structure.sort((a, b) => a.name.localeCompare(b.name)), error: null }
+      return { structure: structure.sort((a, b) => naturalSort(a.name, b.name)), error: null }
     }
 
     const { data, error } = await supabase
       .from('courses')
       .select('name, sub_discipline')
       .eq('module_name', moduleName)
-      .order('name')
+    // We'll sort in JS since SQL sorting might not differ much or requires complex collation
 
     if (error) {
       return { structure: [], error: error.message }
     }
 
-    return { structure: data || [], error: null }
+    const structure = (data || []).sort((a: any, b: any) => naturalSort(a.name, b.name))
+
+    return { structure, error: null }
   } catch (error) {
     return { structure: [], error: 'Failed to fetch module courses structure' }
   }

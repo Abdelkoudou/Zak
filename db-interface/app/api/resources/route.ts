@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Insert resource using admin client (bypasses RLS)
     const resourceData = {
       year: resource.year,
-      module_name: resource.module_name,
+      module_name: resource.module_name || null,
       sub_discipline: resource.sub_discipline || null,
       title: resource.title,
       type: resource.type,

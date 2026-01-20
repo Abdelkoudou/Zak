@@ -2,9 +2,9 @@
   "expo": {
     "name": "FMC App",
     "slug": "fmc",
-    "version": "2.5",
+    "version": "3",
     "orientation": "default",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/App Icon.jpg",
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
@@ -31,7 +31,7 @@
       "package": "com.fmcapp.mobile",
       "versionCode": 21,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/App Icon.jpg",
         "backgroundColor": "#09B2AD"
       },
       "splash": {
@@ -40,6 +40,10 @@
         "backgroundColor": "#09B2AD"
       },
       "edgeToEdgeEnabled": true,
+      "navigationBar": {
+        "visible": "immersive",
+        "backgroundColor": "#ffffff"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
