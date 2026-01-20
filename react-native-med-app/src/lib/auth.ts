@@ -5,6 +5,84 @@
 import { supabase, getRedirectUrl, isSupabaseConfigured, getSupabaseConfigStatus } from './supabase'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 import { getDeviceId, getDeviceName } from './deviceId'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+// ============================================================================
+// User Profile Caching for Offline Support
+// ============================================================================
+
+const USER_PROFILE_CACHE_KEY = '@fmc_user_profile_cache'
+
+/**
+ * Cache user profile to AsyncStorage for offline access
+ */
+export async function cacheUserProfile(user: User): Promise<void> {
+  try {
+    await AsyncStorage.setItem(USER_PROFILE_CACHE_KEY, JSON.stringify(user))
+    if (__DEV__) {
+      console.log('[Auth] User profile cached for offline use')
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[Auth] Failed to cache user profile:', error)
+    }
+  }
+}
+
+/**
+ * Get cached user profile from AsyncStorage
+ */
+export async function getCachedUserProfile(): Promise<User | null> {
+  try {
+    const cached = await AsyncStorage.getItem(USER_PROFILE_CACHE_KEY)
+    if (cached) {
+      const user = JSON.parse(cached) as User
+      if (__DEV__) {
+        console.log('[Auth] Retrieved cached user profile')
+      }
+      return user
+    }
+    return null
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[Auth] Failed to get cached user profile:', error)
+    }
+    return null
+  }
+}
+
+/**
+ * Clear cached user profile (call on logout)
+ */
+export async function clearCachedUserProfile(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(USER_PROFILE_CACHE_KEY)
+    if (__DEV__) {
+      console.log('[Auth] Cleared cached user profile')
+    }
+  } catch (error) {
+    if (__DEV__) {
+      console.warn('[Auth] Failed to clear cached user profile:', error)
+    }
+  }
+}
+
+/**
+ * Check if an error is a network-related error
+ */
+function isNetworkError(errorMessage: string): boolean {
+  const msg = errorMessage.toLowerCase()
+  return (
+    msg.includes('network') ||
+    msg.includes('fetch') ||
+    msg.includes('timeout') ||
+    msg.includes('econnrefused') ||
+    msg.includes('enotfound') ||
+    msg.includes('unable to resolve') ||
+    msg.includes('connection') ||
+    msg.includes('offline')
+  )
+}
 
 // ============================================================================
 // Sign Up
@@ -125,6 +203,9 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
         // Profile created but can't fetch - likely needs email verification
         return { user: null, error: null, needsEmailVerification: true }
       }
+
+      // Cache profile for offline use
+      await cacheUserProfile(userProfile as User)
 
       console.log('[Auth] Sign up complete!')
       return { user: userProfile as User, error: null }
@@ -326,6 +407,9 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       })
     }
 
+    // Cache profile for offline use
+    await cacheUserProfile(userProfile as User)
+
     console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
@@ -346,6 +430,9 @@ export async function signIn(email: string, password: string): Promise<{ user: U
 
 export async function signOut(): Promise<{ error: string | null }> {
   try {
+    // Clear cached profile first
+    await clearCachedUserProfile()
+
     const { error } = await supabase.auth.signOut()
     if (error) {
       return { error: error.message }
@@ -362,10 +449,20 @@ export async function signOut(): Promise<{ error: string | null }> {
 
 export async function getCurrentUser(): Promise<{ user: User | null; error: string | null }> {
   try {
-    // First, try to get the session
+    // First, try to get the session from local storage (works offline)
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
     if (sessionError) {
+      // Session error - check if it's a network error and we have cached profile
+      if (isNetworkError(sessionError.message)) {
+        const cached = await getCachedUserProfile()
+        if (cached) {
+          if (__DEV__) {
+            console.log('[Auth] Using cached profile (session network error)')
+          }
+          return { user: cached, error: null }
+        }
+      }
       return { user: null, error: sessionError.message }
     }
 
@@ -374,26 +471,75 @@ export async function getCurrentUser(): Promise<{ user: User | null; error: stri
       return { user: null, error: null }
     }
 
-    // Session exists, fetch user profile
-    const { data: userProfile, error: fetchError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', session.user.id)
-      .single()
+    // Session exists, try to fetch user profile from network
+    try {
+      const { data: userProfile, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', session.user.id)
+        .single()
 
-    if (fetchError) {
-      // If we get a PGRST116 error (no rows), the user profile doesn't exist
-      if (fetchError.code === 'PGRST116') {
-        return { user: null, error: 'User profile not found' }
+      if (fetchError) {
+        // If we get a PGRST116 error (no rows), the user profile doesn't exist
+        if (fetchError.code === 'PGRST116') {
+          return { user: null, error: 'User profile not found' }
+        }
+
+        // For network/fetch errors, try to use cached profile
+        if (isNetworkError(fetchError.message)) {
+          const cached = await getCachedUserProfile()
+          if (cached && cached.id === session.user.id) {
+            if (__DEV__) {
+              console.log('[Auth] Using cached profile (profile fetch failed - offline)')
+            }
+            return { user: cached, error: null }
+          }
+        }
+
+        return { user: null, error: fetchError.message }
       }
-      return { user: null, error: fetchError.message }
+
+      // Successfully fetched profile - cache it for offline use
+      const user = userProfile as User
+      await cacheUserProfile(user)
+      return { user, error: null }
+
+    } catch (fetchException: any) {
+      // Network exception during fetch - try cached profile
+      const errorMsg = fetchException?.message || 'Unknown error'
+      if (__DEV__) {
+        console.log('[Auth] Profile fetch exception:', errorMsg)
+      }
+
+      const cached = await getCachedUserProfile()
+      if (cached && cached.id === session.user.id) {
+        if (__DEV__) {
+          console.log('[Auth] Using cached profile (fetch exception - offline)')
+        }
+        return { user: cached, error: null }
+      }
+
+      return { user: null, error: 'Unable to load profile. Please check your connection.' }
     }
 
-    return { user: userProfile as User, error: null }
-  } catch (error) {
+  } catch (error: any) {
+    // Unexpected error - last resort, try cache
+    if (__DEV__) {
+      console.error('[Auth] Unexpected error in getCurrentUser:', error)
+    }
+
+    const cached = await getCachedUserProfile()
+    if (cached) {
+      if (__DEV__) {
+        console.log('[Auth] Using cached profile (unexpected error fallback)')
+      }
+      return { user: cached, error: null }
+    }
+
     return { user: null, error: 'An unexpected error occurred' }
   }
 }
+
 
 // ============================================================================
 // Update Profile

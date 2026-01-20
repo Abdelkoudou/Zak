@@ -34,7 +34,7 @@ export default function ModuleDetailScreen() {
   const [cours, setCours] = useState<string[]>([])
   const [questionCount, setQuestionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours'>('exam')
+  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours'>('cours')
   const [selectedExamType, setSelectedExamType] = useState<ExamType | null>(null)
   const [selectedExamYear, setSelectedExamYear] = useState<number | null>(null)
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
