@@ -11,9 +11,11 @@ import {
   fetchSalesPointStats,
   generateBatchCodes,
   createSalesPoint,
+  updateSalesPoint,
   revokeActivationKey,
   exportToCsv,
   updateActivationKeysExpiration,
+  updateActivationKeySalesPoint,
 } from "@/lib/activation-codes";
 import type {
   ActivationKey,
@@ -71,6 +73,7 @@ export default function ActivationCodesPage() {
 
   // Sales point form
   const [showSalesPointForm, setShowSalesPointForm] = useState(false);
+  const [editingSalesPointId, setEditingSalesPointId] = useState<string | null>(null);
   const [salesPointForm, setSalesPointForm] = useState({
     code: "",
     name: "",
@@ -100,6 +103,11 @@ export default function ActivationCodesPage() {
   // Bulk expiration update state
   const [showBulkExpirationModal, setShowBulkExpirationModal] = useState(false);
   const [bulkExpirationDate, setBulkExpirationDate] = useState("");
+  const [isEditingSalesPoint, setIsEditingSalesPoint] = useState(false);
+  const [newSalesPointId, setNewSalesPointId] = useState("");
+  
+  // Expanded stats card state
+  const [expandedStat, setExpandedStat] = useState<string | null>(null);
 
   // Check user role
   useEffect(() => {
@@ -211,44 +219,87 @@ export default function ActivationCodesPage() {
     setGenerating(false);
   };
 
-  // Create sales point
-  const handleCreateSalesPoint = async () => {
+  // Edit sales point
+  const handleEditSalesPoint = (sp: SalesPoint) => {
+    setEditingSalesPointId(sp.id);
+    setSalesPointForm({
+      code: sp.code,
+      name: sp.name,
+      location: sp.location || "",
+      contactName: sp.contactName || "",
+      contactPhone: sp.contactPhone || "",
+      contactEmail: sp.contactEmail || "",
+      commissionRate: sp.commissionRate,
+      notes: sp.notes || "",
+    });
+    setShowSalesPointForm(true);
+  };
+
+  // Save sales point (Create or Update)
+  const handleSaveSalesPoint = async () => {
     if (!userId || !salesPointForm.code || !salesPointForm.name) {
       alert("Code et nom sont obligatoires");
       return;
     }
 
-    const result = await createSalesPoint(
-      {
+    if (editingSalesPointId) {
+      // Update
+      const result = await updateSalesPoint(editingSalesPointId, {
         code: salesPointForm.code,
         name: salesPointForm.name,
         location: salesPointForm.location,
         contactName: salesPointForm.contactName,
         contactPhone: salesPointForm.contactPhone,
         contactEmail: salesPointForm.contactEmail,
-        isActive: true,
         commissionRate: salesPointForm.commissionRate,
         notes: salesPointForm.notes,
-      },
-      userId
-    );
-
-    if (result.error) {
-      alert(`Erreur: ${result.error}`);
-    } else {
-      setShowSalesPointForm(false);
-      setSalesPointForm({
-        code: "",
-        name: "",
-        location: "",
-        contactName: "",
-        contactPhone: "",
-        contactEmail: "",
-        commissionRate: 0,
-        notes: "",
       });
-      loadData();
+
+      if (result.error) {
+        alert(`Erreur: ${result.error}`);
+      } else {
+        closeSalesPointForm();
+        loadData();
+      }
+    } else {
+      // Create
+      const result = await createSalesPoint(
+        {
+          code: salesPointForm.code,
+          name: salesPointForm.name,
+          location: salesPointForm.location,
+          contactName: salesPointForm.contactName,
+          contactPhone: salesPointForm.contactPhone,
+          contactEmail: salesPointForm.contactEmail,
+          isActive: true,
+          commissionRate: salesPointForm.commissionRate,
+          notes: salesPointForm.notes,
+        },
+        userId
+      );
+
+      if (result.error) {
+        alert(`Erreur: ${result.error}`);
+      } else {
+        closeSalesPointForm();
+        loadData();
+      }
     }
+  };
+
+  const closeSalesPointForm = () => {
+    setShowSalesPointForm(false);
+    setEditingSalesPointId(null);
+    setSalesPointForm({
+      code: "",
+      name: "",
+      location: "",
+      contactName: "",
+      contactPhone: "",
+      contactEmail: "",
+      commissionRate: 0,
+      notes: "",
+    });
   };
 
   // Revoke code
@@ -355,6 +406,36 @@ export default function ActivationCodesPage() {
       setShowBulkExpirationModal(false);
       setBulkExpirationDate("");
       setSelectedCodeIds(new Set());
+      loadData();
+    }
+  };
+
+  // Update sales point
+  const handleUpdateSalesPoint = async () => {
+    if (!selectedCode || !newSalesPointId) return;
+
+    const result = await updateActivationKeySalesPoint(
+      selectedCode.id,
+      newSalesPointId
+    );
+
+    if (result.error) {
+      alert(`Erreur: ${result.error}`);
+    } else {
+      alert("Point de vente mis à jour avec succès");
+      setIsEditingSalesPoint(false);
+      
+      // Update local selectedCode
+      const updatedSP = salesPoints.find((sp) => sp.id === newSalesPointId);
+      if (updatedSP) {
+        setSelectedCode({
+          ...selectedCode,
+          salesPointId: newSalesPointId,
+          salesPoint: updatedSP,
+        });
+      }
+      
+      setNewSalesPointId("");
       loadData();
     }
   };
@@ -495,53 +576,130 @@ export default function ActivationCodesPage() {
       {/* Dashboard Tab */}
       {activeTab === "dashboard" && (
         <div className="space-y-6">
-          {/* Stats Cards */}
+          {/* Stats Cards - Interactive */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
+                id: "total",
                 label: "Total Codes",
                 value: stats.totalCodes,
                 icon: "📊",
                 color: "primary",
+                details: [
+                  { label: "Actifs", value: stats.activeCodes, color: "text-green-500" },
+                  { label: "Utilisés", value: stats.usedCodes, color: "text-purple-500" },
+                  { label: "Expirés", value: stats.expiredCodes, color: "text-red-500" },
+                ],
+                insight: stats.totalCodes > 0 
+                  ? `${Math.round((stats.usedCodes / stats.totalCodes) * 100)}% des codes ont été utilisés`
+                  : "Aucun code généré"
               },
               {
+                id: "active",
                 label: "Actifs",
                 value: stats.activeCodes,
                 icon: "✅",
                 color: "blue",
+                details: [
+                  { label: "Prêts à vendre", value: stats.activeCodes, color: "text-blue-500" },
+                  { label: "% du total", value: `${stats.totalCodes > 0 ? Math.round((stats.activeCodes / stats.totalCodes) * 100) : 0}%`, color: "text-slate-500" },
+                ],
+                insight: stats.activeCodes > 50 
+                  ? "Stock suffisant pour les ventes" 
+                  : stats.activeCodes > 0 
+                  ? "Pensez à générer plus de codes" 
+                  : "Aucun code actif disponible"
               },
               {
+                id: "used",
                 label: "Utilisés",
                 value: stats.usedCodes,
                 icon: "👤",
                 color: "purple",
+                details: [
+                  { label: "Codes activés", value: stats.usedCodes, color: "text-purple-500" },
+                  { label: "Taux conversion", value: `${stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}%`, color: "text-slate-500" },
+                ],
+                insight: stats.usedCodes > 0 
+                  ? `${stats.usedCodes} utilisateur(s) avec abonnement actif`
+                  : "Aucun code n'a encore été utilisé"
               },
               {
+                id: "expired",
                 label: "Expirés",
                 value: stats.expiredCodes,
                 icon: "⏰",
                 color: "red",
+                details: [
+                  { label: "Non utilisés", value: stats.expiredCodes, color: "text-red-500" },
+                  { label: "Perte potentielle", value: `${stats.expiredCodes * 500} DA`, color: "text-orange-500" },
+                ],
+                insight: stats.expiredCodes > 0 
+                  ? "Ces codes n'ont pas été vendus à temps"
+                  : "Aucun code expiré - Excellent!"
               },
               {
+                id: "revenue",
                 label: "Revenus",
                 value: `${stats.totalRevenue.toLocaleString()} DA`,
                 icon: "💰",
                 color: "green",
+                details: [
+                  { label: "Total encaissé", value: `${stats.totalRevenue.toLocaleString()} DA`, color: "text-green-500" },
+                  { label: "Moy. par code", value: stats.usedCodes > 0 ? `${Math.round(stats.totalRevenue / stats.usedCodes).toLocaleString()} DA` : "0 DA", color: "text-slate-500" },
+                ],
+                insight: stats.totalRevenue > 0 
+                  ? `Revenu moyen: ${stats.usedCodes > 0 ? Math.round(stats.totalRevenue / stats.usedCodes) : 0} DA/code`
+                  : "Aucun revenu enregistré"
               },
-            ].map((item, idx) => (
+            ].map((item) => (
               <div
-                key={idx}
-                className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-white/5 shadow-sm"
+                key={item.id}
+                onClick={() => setExpandedStat(expandedStat === item.id ? null : item.id)}
+                className={`bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+                  expandedStat === item.id 
+                    ? 'col-span-2 lg:col-span-2 p-6' 
+                    : 'p-5'
+                }`}
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="text-xl">{item.icon}</span>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                    {item.label}
-                  </p>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xl transition-transform duration-300 ${expandedStat === item.id ? 'scale-125' : ''}`}>
+                      {item.icon}
+                    </span>
+                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                      {item.label}
+                    </p>
+                  </div>
+                  <span className={`text-slate-400 transition-transform duration-300 ${expandedStat === item.id ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
                 </div>
-                <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white truncate">
+                <p className={`font-black text-slate-900 dark:text-white truncate transition-all duration-300 ${
+                  expandedStat === item.id ? 'text-3xl mb-4' : 'text-xl md:text-2xl'
+                }`}>
                   {item.value}
                 </p>
+                
+                {/* Expanded Details */}
+                {expandedStat === item.id && (
+                  <div className="space-y-3 animate-fadeIn">
+                    <div className="h-px bg-slate-100 dark:bg-white/5" />
+                    <div className="grid grid-cols-2 gap-3">
+                      {item.details.map((detail, idx) => (
+                        <div key={idx} className="bg-slate-50 dark:bg-slate-950/50 rounded-xl p-3">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{detail.label}</p>
+                          <p className={`text-lg font-black ${detail.color}`}>{detail.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-3 border border-primary-100 dark:border-primary-800/30">
+                      <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">
+                        💡 {item.insight}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -1312,15 +1470,24 @@ export default function ActivationCodesPage() {
                       {sp.location}
                     </p>
                   </div>
-                  <span
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                      sp.isActive
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                        : "bg-slate-100 dark:bg-white/5 text-slate-500"
-                    }`}
-                  >
-                    {sp.isActive ? "Actif" : "Inactif"}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditSalesPoint(sp)}
+                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      title="Modifier"
+                    >
+                      ✏️
+                    </button>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                        sp.isActive
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                      }`}
+                    >
+                      {sp.isActive ? "Actif" : "Inactif"}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
@@ -1358,14 +1525,16 @@ export default function ActivationCodesPage() {
             ))}
           </div>
 
-          {/* Add Sales Point Modal */}
+          {/* Add/Edit Sales Point Modal */}
           {showSalesPointForm && (
             <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center gap-3 mb-8">
                   <span className="text-2xl">🏪</span>
                   <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                    Nouveau Point de Vente
+                    {editingSalesPointId
+                      ? "Modifier Point de Vente"
+                      : "Nouveau Point de Vente"}
                   </h2>
                 </div>
 
@@ -1483,16 +1652,16 @@ export default function ActivationCodesPage() {
 
                 <div className="flex gap-4 mt-10">
                   <button
-                    onClick={() => setShowSalesPointForm(false)}
+                    onClick={closeSalesPointForm}
                     className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
                   >
                     Annuler
                   </button>
                   <button
-                    onClick={handleCreateSalesPoint}
+                    onClick={handleSaveSalesPoint}
                     className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
                   >
-                    Créer
+                    {editingSalesPointId ? "Enregistrer" : "Créer"}
                   </button>
                 </div>
               </div>
@@ -1558,10 +1727,65 @@ export default function ActivationCodesPage() {
 
             {/* Code Details */}
             <div className="space-y-4 mb-8">
-              <DetailRow
-                label="Point de Vente"
-                value={selectedCode.salesPoint?.name || "-"}
-              />
+              {isEditingSalesPoint ? (
+                <div className="py-3 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">
+                    Nouveau Point de Vente
+                  </span>
+                  <div className="flex gap-2">
+                    <select
+                      value={newSalesPointId || selectedCode.salesPointId || ""}
+                      onChange={(e) => setNewSalesPointId(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white outline-none"
+                    >
+                      <option value="">Sélectionner...</option>
+                      {salesPoints.map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          {sp.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={handleUpdateSalesPoint}
+                      className="px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm hover:bg-emerald-600 transition-colors"
+                      title="Enregistrer"
+                    >
+                      ✅
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingSalesPoint(false);
+                        setNewSalesPointId("");
+                      }}
+                      className="px-3 py-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                      title="Annuler"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Point de Vente
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      {selectedCode.salesPoint?.name || "-"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setNewSalesPointId(selectedCode.salesPointId || "");
+                        setIsEditingSalesPoint(true);
+                      }}
+                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      title="Modifier"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {selectedCode.expiresAt && (
                 <DetailRow

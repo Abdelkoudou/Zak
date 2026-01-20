@@ -46,19 +46,18 @@ export default function Home() {
         .from('course_resources')
         .select('*', { count: 'exact', head: true });
 
-      // Get questions by year
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('year');
+      // Get questions by year using exact counts (bypasses Supabase 1000 row limit)
+      const [year1Result, year2Result, year3Result] = await Promise.all([
+        supabase.from('questions').select('*', { count: 'exact', head: true }).eq('year', '1'),
+        supabase.from('questions').select('*', { count: 'exact', head: true }).eq('year', '2'),
+        supabase.from('questions').select('*', { count: 'exact', head: true }).eq('year', '3'),
+      ]);
 
-      const questionsByYear = questions
-        ? Object.entries(
-            questions.reduce((acc: any, q) => {
-              acc[q.year] = (acc[q.year] || 0) + 1;
-              return acc;
-            }, {})
-          ).map(([year, count]) => ({ year, count: count as number }))
-        : [];
+      const questionsByYear = [
+        { year: '1', count: year1Result.count || 0 },
+        { year: '2', count: year2Result.count || 0 },
+        { year: '3', count: year3Result.count || 0 },
+      ].filter(y => y.count > 0);
 
       // Get resources by type
       const { data: resources } = await supabase
