@@ -4,7 +4,7 @@
 
 import '../global.css'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar'
 import { StatusBar, Platform } from 'react-native'
@@ -12,6 +12,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import { AppVisibilityProvider } from '@/context/AppVisibilityContext'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { VideoSplashScreen } from '@/components/VideoSplashScreen'
 
 // Lazy-loaded modules - prevent crashes from top-level imports
 let _Platform: typeof import('react-native').Platform | null = null
@@ -111,6 +112,14 @@ async function checkOfflineContentStatus(): Promise<void> {
 function RootLayoutContent() {
   const { isDark, colors } = useTheme()
   const initStarted = useRef(false)
+  const [isSplashAnimationFinished, setIsSplashAnimationFinished] = useState(false)
+
+  // Web doesn't need video splash
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      setIsSplashAnimationFinished(true)
+    }
+  }, [])
 
   useEffect(() => {
     const platform = getPlatform()
@@ -128,14 +137,10 @@ function RootLayoutContent() {
         ])
       } catch {
         // Silent fail
-      } finally {
-        // Always hide splash
-        try {
-          await _SplashScreen?.hideAsync()
-        } catch {
-          // Silent fail
-        }
       }
+      // Note: We do NOT hide splash screen here anymore.
+      // The VideoSplashScreen component handles hiding the native splash
+      // once the video is ready to play.
     }
     initApp()
 
@@ -169,7 +174,9 @@ function RootLayoutContent() {
           try {
             const NavigationBar = require('expo-navigation-bar')
             await NavigationBar.setVisibilityAsync('hidden')
-            await NavigationBar.setBehaviorAsync('sticky-immersive')
+            // These methods are not supported with edge-to-edge enabled and cause warnings
+            // await NavigationBar.setBehaviorAsync('sticky-immersive') 
+            // await NavigationBar.setBackgroundColorAsync('#ffffff')
           } catch (e) {
             console.warn('[Immersive] NavigationBar control failed:', e)
           }
@@ -196,6 +203,15 @@ function RootLayoutContent() {
       subscription?.remove()
     }
   }, [])
+
+  // Show video splash screen until animation is finished (on native)
+  if (!isSplashAnimationFinished && Platform.OS !== 'web') {
+    return (
+      <VideoSplashScreen 
+        onFinish={() => setIsSplashAnimationFinished(true)} 
+      />
+    )
+  }
 
   return (
     <>

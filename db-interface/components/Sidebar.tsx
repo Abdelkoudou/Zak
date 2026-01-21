@@ -13,6 +13,7 @@ const navigation = [
   { name: 'Questions', href: '/questions', icon: '❓' },
   { name: 'Historique', href: '/history', icon: '📜' },
   { name: 'Ressources', href: '/resources', icon: '📁' },
+  { name: 'Santé Données', href: '/data-health', icon: '🩺' },
 ];
 
 const ownerOnlyNavigation = [

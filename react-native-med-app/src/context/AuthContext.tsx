@@ -124,8 +124,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (session && !user) {
             await refreshUser()
           } else if (!session) {
-            setUser(null)
-            setIsLoading(false)
+            // No session from Supabase - but check if we have a cached profile
+            // This handles edge cases where session loading fails offline
+            const cachedUser = await authService.getCachedUserProfile()
+            if (cachedUser) {
+              if (__DEV__) {
+                console.log('[Auth] INITIAL_SESSION: Using cached profile (no session)')
+              }
+              setUser(cachedUser)
+              setIsLoading(false)
+            } else {
+              setUser(null)
+              setIsLoading(false)
+            }
           }
         } else if (event === 'USER_UPDATED') {
           // User was updated (e.g., password changed)
@@ -230,7 +241,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (__DEV__) {
         console.error('[Auth] Error checking session:', error)
       }
-      setUser(null)
+      // Try cached profile as fallback
+      const cachedUser = await authService.getCachedUserProfile()
+      if (cachedUser) {
+        if (__DEV__) {
+          console.log('[Auth] checkSession: Using cached profile after error')
+        }
+        setUser(cachedUser)
+      } else {
+        setUser(null)
+      }
     } finally {
       setIsLoading(false)
       isCheckingSession.current = false

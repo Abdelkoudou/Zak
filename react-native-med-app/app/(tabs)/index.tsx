@@ -89,36 +89,74 @@ export default function HomeScreen() {
         getUserStatistics(user.id)
       ])
       if (!modulesResult.error) {
-        const PREDEFINED_ORDER = [
-          'Cardio',
-          'Digestif',
-          'Urinaire',
-          'Endo',
-          'Neuro',
-          'Immuno',
-          'Génétique'
-        ]
+        // Define module ordering by year with multiple keywords per position
+        const MODULE_ORDER_CONFIG: Record<string, string[][]> = {
+          '1': [
+            // Annual modules first
+            ['Anatomie'],
+            ['Biochimie'],
+            ['Biophysique'],
+            ['Biostatistique', 'Informatique'],
+            ['Chimie'],
+            ['Cytologie'],
+            // Semestrial modules
+            ['Embryologie'],
+            ['Histologie'],
+            ['Physiologie'],
+            ['S.S.H'],
+          ],
+          '2': [
+            // UEI modules in pedagogical order
+            ['Cardio', 'Cardiovasculaire', 'Respiratoire'],
+            ['Digestif'],
+            ['Urinaire'],
+            ['Endocrin', 'Reproduction'],
+            ['Nerveux', 'Neuro', 'Sens'],
+            // Standalone modules
+            ['Immuno'],
+            ['Génétique'],
+            
+          ],
+          '3': [
+            // UEI modules for year 3
+            ['Cardio', 'Cardiovasculaire', 'Respiratoire', 'Psychologie'],
+            ['Neurologique', 'Nerveux', 'Locomoteur', 'Cutané'],
+            ['Endocrin', 'Reproduction', 'Urinaire'],
+            ['Digestif', 'Hématopoïétiques'],
+            // Standalone modules
+            ['Anatomie pathologique'],
+            ['Pharmacologie'],
+            ['Microbiologie'],
+            ['Parasitologie'],
+          ],
+        }
+
+        const orderConfig = MODULE_ORDER_CONFIG[yearToLoad] || []
 
         const sortedModules = modulesResult.modules.sort((a, b) => {
-          // Normalize names for comparison (handle potential casing or minor differences if needed, 
-          // but strict match is usually safer for known IDs/Names. Assuming 'name' matches the user list)
-          // We'll check if the module name *starts with* or *includes* the key if exact match fails, 
-          // but usually these are short names. Let's assume exact or partial match.
-          // Given the user prompt "Cardio", "Digestif" etc., these might be short names or full names.
-          // I'll check if the module name includes the key to be more robust.
-          
           const getOrderIndex = (name: string) => {
-            const index = PREDEFINED_ORDER.findIndex(key => name.includes(key))
+            const nameLower = name.toLowerCase()
+            const index = orderConfig.findIndex(keywords =>
+              keywords.some(keyword => nameLower.includes(keyword.toLowerCase()))
+            )
             return index === -1 ? Infinity : index
           }
 
           const indexA = getOrderIndex(a.name)
           const indexB = getOrderIndex(b.name)
 
+          // Primary sort: by predefined order
           if (indexA !== indexB) {
             return indexA - indexB
           }
-          
+
+          // Secondary sort: UEI before standalone
+          if (a.type !== b.type) {
+            if (a.type === 'uei') return -1
+            if (b.type === 'uei') return 1
+          }
+
+          // Tertiary sort: alphabetical
           return a.name.localeCompare(b.name)
         })
 

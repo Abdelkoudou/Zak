@@ -716,9 +716,11 @@ export default function ResourcesPage() {
                           <span className="px-2 py-0.5 bg-primary-600 text-white text-[10px] font-black rounded-md uppercase tracking-widest leading-none">
                             {YEARS.find(y => y.value === resource.year)?.label}
                           </span>
-                          <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
-                            {resource.module_name}
-                          </span>
+                          {resource.module_name && (
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold rounded-md leading-none">
+                              {resource.module_name}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

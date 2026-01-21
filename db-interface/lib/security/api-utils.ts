@@ -36,15 +36,15 @@ export function sanitizeError(error: unknown): string {
       'Invalid',
       'required',
     ];
-    
+
     if (safePatterns.some((pattern) => error.message.includes(pattern))) {
       return error.message;
     }
 
     // Handle PostgreSQL unique constraint violations
-    if (error.message.includes('duplicate key') || 
-        error.message.includes('unique constraint') ||
-        error.message.includes('questions_unique_per_exam')) {
+    if (error.message.includes('duplicate key') ||
+      error.message.includes('unique constraint') ||
+      error.message.includes('questions_unique_per_exam')) {
       return 'Une question avec ce numéro existe déjà pour ce module/examen. Veuillez utiliser un numéro différent.';
     }
 
@@ -55,7 +55,8 @@ export function sanitizeError(error: unknown): string {
   }
 
   // Default generic message for unknown errors
-  return 'An unexpected error occurred';
+  // DEBUG: Exposing full error to diagnose the issue
+  return `An unexpected error occurred: ${error instanceof Error ? error.message : JSON.stringify(error, null, 2)}`;
 }
 
 /**
@@ -146,7 +147,7 @@ export async function authenticateRequest(
   { user: { id: string }; error?: never } | { user?: never; error: NextResponse }
 > {
   const authHeader = request.headers.get('authorization');
-  
+
   if (!authHeader) {
     return {
       error: errorResponse('Unauthorized - No auth token', 401),
@@ -154,7 +155,7 @@ export async function authenticateRequest(
   }
 
   const token = authHeader.replace('Bearer ', '');
-  
+
   if (!token || token === 'Bearer') {
     return {
       error: errorResponse('Unauthorized - Invalid token format', 401),
@@ -184,7 +185,7 @@ export async function requireAdmin(
   userId: string
 ): Promise<{ role: string; error?: never } | { role?: never; error: NextResponse }> {
   const { isAdmin, role } = await verifyAdminUser(userId);
-  
+
   if (!isAdmin) {
     return {
       error: errorResponse('Forbidden - Admin access required', 403),
@@ -201,7 +202,7 @@ export async function requireOwner(
   userId: string
 ): Promise<{ error?: never } | { error: NextResponse }> {
   const { isOwner } = await verifyOwner(userId);
-  
+
   if (!isOwner) {
     return {
       error: errorResponse('Forbidden - Owner access required', 403),

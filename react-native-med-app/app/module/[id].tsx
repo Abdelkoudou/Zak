@@ -34,7 +34,7 @@ export default function ModuleDetailScreen() {
   const [cours, setCours] = useState<string[]>([])
   const [questionCount, setQuestionCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours'>('exam')
+  const [selectedMode, setSelectedMode] = useState<'exam' | 'cours'>('cours')
   const [selectedExamType, setSelectedExamType] = useState<ExamType | null>(null)
   const [selectedExamYear, setSelectedExamYear] = useState<number | null>(null)
   const [selectedCours, setSelectedCours] = useState<string | null>(null)
@@ -325,7 +325,7 @@ export default function ModuleDetailScreen() {
         <ScrollView 
           style={{ flex: 1 }} 
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 200 }}
         >
           {/* Header */}
           <Animated.View style={{ paddingHorizontal: 20, paddingTop: 16, opacity: headerOpacity }}>

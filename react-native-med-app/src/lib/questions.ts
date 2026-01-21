@@ -21,6 +21,16 @@ export interface QuestionFilters {
   offset?: number
 }
 
+// Helper for exam type sorting (EMD < Rattrapage < Residanat)
+export const getExamTypeWeight = (type: string | undefined | null) => {
+  if (!type) return 99
+  const t = type.toLowerCase()
+  if (t.includes('emd')) return 1
+  if (t.includes('rattrapage')) return 2
+  if (t.includes('residanat')) return 3
+  return 10
+}
+
 export async function getQuestions(filters: QuestionFilters): Promise<{
   questions: QuestionWithAnswers[];
   total: number;
@@ -70,6 +80,22 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
           questions = questions.filter(q => q.exam_year === filters.exam_year)
         }
 
+        // Sort questions chronologically: Year (Latest First) -> Session (EMD < Rattrapage) -> Number
+        questions = questions.sort((a, b) => {
+          // 1. Year (Descending: Latest First)
+          const yearA = a.exam_year || 0
+          const yearB = b.exam_year || 0
+          if (yearA !== yearB) return yearB - yearA
+
+          // 2. Exam Type (Session)
+          const typeA = getExamTypeWeight(a.exam_type)
+          const typeB = getExamTypeWeight(b.exam_type)
+          if (typeA !== typeB) return typeA - typeB
+
+          // 3. Number (Ascending)
+          return (a.number || 0) - (b.number || 0)
+        })
+
         // Pagination
         const total = questions.length
         if (filters.offset !== undefined && filters.limit !== undefined) {
@@ -109,7 +135,11 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       query = query.eq('exam_year', filters.exam_year)
     }
 
-    // Order by number
+    // Sort by: Year (Latest First) -> Exam Type -> Number
+    // Adding exam_type to SQL sort ensures consistent pagination
+    // Alphabetically: EMD < Rattrapage < Residanat
+    query = query.order('exam_year', { ascending: false })
+    query = query.order('exam_type', { ascending: true })
     query = query.order('number', { ascending: true })
 
     // Pagination
@@ -126,11 +156,31 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       return { questions: [], total: 0, error: error.message }
     }
 
+
+
     // Sort answers by display_order
-    const questionsWithSortedAnswers = (data || []).map(q => ({
+    let questionsWithSortedAnswers = (data || []).map(q => ({
       ...q,
       answers: (q.answers || []).sort((a: any, b: any) => a.display_order - b.display_order)
     }))
+
+    // Apply chronological sort to the fetched page
+    // Note: If pagination is used, this only sorts the current page. 
+    // Since SQL already sorted by year+number, this is mostly fine, just refining exam_type order if mixed.
+    questionsWithSortedAnswers = questionsWithSortedAnswers.sort((a, b) => {
+      // 1. Year (Descending: Latest First) - should match SQL
+      const yearA = a.exam_year || 0
+      const yearB = b.exam_year || 0
+      if (yearA !== yearB) return yearB - yearA
+
+      // 2. Exam Type (Session)
+      const typeA = getExamTypeWeight(a.exam_type)
+      const typeB = getExamTypeWeight(b.exam_type)
+      if (typeA !== typeB) return typeA - typeB
+
+      // 3. Number (Ascending)
+      return (a.number || 0) - (b.number || 0)
+    })
 
     return {
       questions: questionsWithSortedAnswers as QuestionWithAnswers[],

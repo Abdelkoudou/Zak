@@ -70,7 +70,7 @@ export const updateQuestionSchema = z.object({
 // ============ Resource Schemas ============
 export const resourceSchema = z.object({
   year: z.enum(['1', '2', '3']),
-  module_name: z.string().min(1, 'Module name required').max(200),
+  module_name: z.string().max(200).nullish(),
   sub_discipline: z.string().max(200).nullish(),
   title: z.string().min(1, 'Title required').max(300),
   type: z.enum(['google_drive', 'telegram', 'youtube', 'pdf', 'other']),

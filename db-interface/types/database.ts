@@ -30,7 +30,7 @@ export interface Course {
   name: string;
   year: string;
   speciality: string;
-  module_name: string;
+  module_name?: string;
   sub_discipline?: string;
   createdAt: Date;
 }
@@ -102,7 +102,8 @@ export interface Answer {
 export interface CourseResource {
   id: string;
   year: YearLevel;
-  moduleId: string;
+  moduleId?: string;
+  module_name?: string;
   subDisciplineId?: string;
   title: string;
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';
@@ -154,7 +155,7 @@ export interface QuestionFormData {
 
 export interface CourseResourceFormData {
   year: YearLevel;
-  moduleId: string;
+  moduleId?: string;
   subDisciplineId?: string;
   title: string;
   type: 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other';

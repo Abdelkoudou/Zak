@@ -204,6 +204,7 @@ export async function generateBatchCodes(
 
 /**
  * Fetch all activation keys with related data including user info
+ * Uses pagination to handle more than 1000 codes
  */
 export async function fetchActivationKeys(filters?: {
   year?: YearLevel;
@@ -213,43 +214,58 @@ export async function fetchActivationKeys(filters?: {
   batchId?: string;
   search?: string;
 }): Promise<{ data: ActivationKey[]; error?: string }> {
-  // First fetch activation keys with faculty and sales point
-  let query = supabase
-    .from('activation_keys')
-    .select(`
-      *,
-      faculty:faculties(*),
-      sales_point:sales_points(*)
-    `)
-    .order('created_at', { ascending: false });
+  const PAGE_SIZE = 1000;
+  let allData: Record<string, unknown>[] = [];
+  let page = 0;
+  let hasMore = true;
 
-  if (filters?.year) {
-    query = query.eq('year', filters.year);
-  }
-  if (filters?.facultyId) {
-    query = query.eq('faculty_id', filters.facultyId);
-  }
-  if (filters?.salesPointId) {
-    query = query.eq('sales_point_id', filters.salesPointId);
-  }
-  if (filters?.isUsed !== undefined) {
-    query = query.eq('is_used', filters.isUsed);
-  }
-  if (filters?.batchId) {
-    query = query.eq('batch_id', filters.batchId);
-  }
-  if (filters?.search) {
-    query = query.ilike('key_code', `%${filters.search}%`);
-  }
+  while (hasMore) {
+    let query = supabase
+      .from('activation_keys')
+      .select(`
+        *,
+        faculty:faculties(*),
+        sales_point:sales_points(*)
+      `)
+      .order('created_at', { ascending: false })
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-  const { data, error } = await query;
+    if (filters?.year) {
+      query = query.eq('year', filters.year);
+    }
+    if (filters?.facultyId) {
+      query = query.eq('faculty_id', filters.facultyId);
+    }
+    if (filters?.salesPointId) {
+      query = query.eq('sales_point_id', filters.salesPointId);
+    }
+    if (filters?.isUsed !== undefined) {
+      query = query.eq('is_used', filters.isUsed);
+    }
+    if (filters?.batchId) {
+      query = query.eq('batch_id', filters.batchId);
+    }
+    if (filters?.search) {
+      query = query.ilike('key_code', `%${filters.search}%`);
+    }
 
-  if (error) {
-    return { data: [], error: error.message };
+    const { data, error } = await query;
+
+    if (error) {
+      return { data: [], error: error.message };
+    }
+
+    if (data && data.length > 0) {
+      allData = [...allData, ...data];
+      hasMore = data.length === PAGE_SIZE;
+      page++;
+    } else {
+      hasMore = false;
+    }
   }
 
   // Get unique user IDs from used codes
-  const usedByIds = (data || [])
+  const usedByIds = allData
     .filter((row: Record<string, unknown>) => row.used_by)
     .map((row: Record<string, unknown>) => row.used_by as string);
 
@@ -270,7 +286,7 @@ export async function fetchActivationKeys(filters?: {
   }
 
   // Transform to camelCase
-  const transformed: ActivationKey[] = (data || []).map((row: Record<string, unknown>) => ({
+  const transformed: ActivationKey[] = allData.map((row: Record<string, unknown>) => ({
     id: row.id as string,
     keyCode: row.key_code as string,
     durationDays: row.duration_days as number,
@@ -417,13 +433,12 @@ export async function fetchDashboardStats(): Promise<{
 }> {
   const now = new Date().toISOString();
 
-  // Get all counts in parallel
-  const [totalResult, usedResult, expiredResult, revenueResult] = await Promise.all([
+  // Get all counts in parallel using exact counts (bypasses 1000 row limit)
+  const [totalResult, usedResult, expiredResult] = await Promise.all([
     supabase.from('activation_keys').select('id', { count: 'exact', head: true }),
     supabase.from('activation_keys').select('id', { count: 'exact', head: true }).eq('is_used', true),
     supabase.from('activation_keys').select('id', { count: 'exact', head: true })
       .eq('is_used', false).lt('expires_at', now),
-    supabase.from('activation_keys').select('price_paid').eq('is_used', true),
   ]);
 
   const totalCodes = totalResult.count || 0;
@@ -431,10 +446,31 @@ export async function fetchDashboardStats(): Promise<{
   const expiredCodes = expiredResult.count || 0;
   const activeCodes = totalCodes - usedCodes - expiredCodes;
 
-  const totalRevenue = (revenueResult.data || []).reduce(
-    (sum: number, row: { price_paid: number | null }) => sum + (row.price_paid || 0),
-    0
-  );
+  // Calculate total revenue with pagination to handle 1000+ used codes
+  let totalRevenue = 0;
+  const PAGE_SIZE = 1000;
+  let page = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data: revenueData } = await supabase
+      .from('activation_keys')
+      .select('price_paid')
+      .eq('is_used', true)
+      .not('price_paid', 'is', null)
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+    if (revenueData && revenueData.length > 0) {
+      totalRevenue += revenueData.reduce(
+        (sum: number, row: { price_paid: number | null }) => sum + (row.price_paid || 0),
+        0
+      );
+      hasMore = revenueData.length === PAGE_SIZE;
+      page++;
+    } else {
+      hasMore = false;
+    }
+  }
 
   return { totalCodes, activeCodes, usedCodes, expiredCodes, totalRevenue };
 }
@@ -589,6 +625,21 @@ export async function updateActivationKeysExpiration(
   const errorCount = ids.length - successCount;
 
   return { successCount, errorCount };
+}
+
+/**
+ * Update sales point for an activation key
+ */
+export async function updateActivationKeySalesPoint(
+  id: string,
+  salesPointId: string
+): Promise<{ error?: string }> {
+  const { error } = await supabase
+    .from('activation_keys')
+    .update({ sales_point_id: salesPointId })
+    .eq('id', id);
+
+  return { error: error?.message };
 }
 
 /**

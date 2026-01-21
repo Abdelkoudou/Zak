@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
       if (!configError && configPrice?.value) {
         const dbPrice = parseInt(configPrice.value);
         if (!isNaN(dbPrice) && dbPrice > 0) {
-          subscriptionAmount = dbPrice;
+          subscriptionAmount = dbPrice * 100; // Convert DA to centimes
           subscriptionLabel = `1 An - ${dbPrice} DA`; // Update label to match new price
         }
       }
