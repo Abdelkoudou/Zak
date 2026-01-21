@@ -261,4 +261,5 @@ For questions or issues:
 
 **Built for Algerian medical students following the French curriculum** 🇩🇿
 
-*Last updated: January 2024*
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/eXemoumen/qcm-med?utm_source=oss&utm_medium=github&utm_campaign=eXemoumen%2Fqcm-med&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
+
