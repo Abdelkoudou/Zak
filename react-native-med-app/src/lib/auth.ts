@@ -5,6 +5,7 @@
 import { supabase, getRedirectUrl, isSupabaseConfigured, getSupabaseConfigStatus } from './supabase'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
 import { getDeviceId, getDeviceName } from './deviceId'
+import { clearQueryCache } from './query-client'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // ============================================================================
@@ -432,6 +433,9 @@ export async function signOut(): Promise<{ error: string | null }> {
   try {
     // Clear cached profile first
     await clearCachedUserProfile()
+    
+    // Clear TanStack Query cache to prevent data leakage
+    await clearQueryCache()
 
     const { error } = await supabase.auth.signOut()
     if (error) {
