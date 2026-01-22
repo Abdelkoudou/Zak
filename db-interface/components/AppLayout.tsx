@@ -1,23 +1,19 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import Sidebar from './Sidebar';
+import { usePathname } from "next/navigation";
+import Sidebar from "./Sidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // Check if we are on the buy page or any of its subpages
-  const isBuyPage = pathname?.startsWith('/buy');
+  const isBuyPage = pathname?.startsWith("/buy");
 
   if (isBuyPage) {
     // For buy pages, we render just the children (the page content)
     // We can wrap it in a div if specific background is needed, but the page/layout usually handles that.
-    // However, the root layout has specific styles, so we might want to reset or apply specific styles here 
+    // However, the root layout has specific styles, so we might want to reset or apply specific styles here
     // to match the original buy layout intention (bg-gray-50).
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {children}
-      </div>
-    );
+    return <div className="min-h-screen bg-theme-main">{children}</div>;
   }
 
   // For all other pages, render the Admin Sidebar layout
