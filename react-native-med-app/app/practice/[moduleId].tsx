@@ -409,9 +409,27 @@ export default function PracticeScreen() {
       (new Date().getTime() - startTime.getTime()) / 1000,
     );
 
+    if (!user.year_of_study) {
+      if (__DEV__) {
+        console.warn("[Practice] User year_of_study not set, skipping save");
+      }
+      // Still navigate to results so user isn't stuck
+      router.replace({
+        pathname: "/practice/results",
+        params: {
+          total: totalQuestions.toString(),
+          correct: correctCount.toString(),
+          score: scorePercentage.toFixed(1),
+          time: timeSpent.toString(),
+          moduleName: moduleName!,
+        },
+      });
+      return;
+    }
+
     await saveTestAttempt({
       user_id: user.id,
-      year: user.year_of_study!,
+      year: user.year_of_study,
       module_name: moduleName!,
       sub_discipline: subDiscipline || undefined,
       exam_type: (examType as ExamType) || "EMD",

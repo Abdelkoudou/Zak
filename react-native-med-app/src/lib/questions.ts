@@ -81,7 +81,7 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
         }
 
         // Sort questions chronologically: Year (Latest First) -> Session (EMD < Rattrapage) -> Number
-        questions = questions.sort((a, b) => {
+        questions = [...questions].sort((a, b) => {
           // 1. Year (Descending: Latest First)
           const yearA = a.exam_year || 0
           const yearB = b.exam_year || 0
@@ -143,11 +143,11 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
     query = query.order('number', { ascending: true })
 
     // Pagination
-    if (filters.limit) {
+    if (filters.offset !== undefined) {
+      const limit = filters.limit || 20
+      query = query.range(filters.offset, filters.offset + limit - 1)
+    } else if (filters.limit) {
       query = query.limit(filters.limit)
-    }
-    if (filters.offset) {
-      query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1)
     }
 
     const { data, count, error } = await query
@@ -167,7 +167,7 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
     // Apply chronological sort to the fetched page
     // Note: If pagination is used, this only sorts the current page. 
     // Since SQL already sorted by year+number, this is mostly fine, just refining exam_type order if mixed.
-    questionsWithSortedAnswers = questionsWithSortedAnswers.sort((a, b) => {
+    questionsWithSortedAnswers = [...questionsWithSortedAnswers].sort((a, b) => {
       // 1. Year (Descending: Latest First) - should match SQL
       const yearA = a.exam_year || 0
       const yearB = b.exam_year || 0

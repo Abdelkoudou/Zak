@@ -228,7 +228,7 @@ export function useToggleSaveQuestion(userId: string | undefined) {
 
 /**
  * Helper hook to check if a specific question is saved.
- * Uses the cached saved IDs for O(1) lookup.
+ * Uses the cached saved IDs for lookup.
  */
 export function useIsQuestionSaved(
   userId: string | undefined,
