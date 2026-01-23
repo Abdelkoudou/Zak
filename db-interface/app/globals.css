@@ -1,34 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --font-heading: 'Outfit', sans-serif;
-    --font-body: 'Inter', sans-serif;
-    /* Light mode - Premium clean look */
-    --bg-main: #f9fafb;
-    --bg-secondary: #f3f4f6;
+    --font-heading: "Manrope", sans-serif;
+    --font-body: "Cairo", sans-serif;
+    --font-arabic: "Cairo", sans-serif;
+
+    /* Light mode - FMC App "Floral White" Premium palette */
+    --bg-main: #f8f2e8;
+    --bg-secondary: #f0eadf;
     --bg-card: #ffffff;
-    --border-color: #e5e7eb;
-    --border-light: #f3f4f6;
-    --text-main: #111827;
-    --text-secondary: #374151;
-    --text-muted: #6b7280;
+    --border-color: #e8e1d5;
+    --border-light: #f0eadf;
+    --text-main: #262626;
+    --text-secondary: #404040;
+    --text-muted: #737373;
+
+    --primary: 9, 178, 172;
+    --secondary: 153, 65, 255;
   }
 
   .dark {
-    /* Dark mode - Eerie Black palette */
-    --bg-main: #1f1f1f;
-    --bg-secondary: #262626;
+    /* Dark mode - FMC App "Eerie Black" palette */
+    --bg-main: #262626;
+    --bg-secondary: #1a1a1a;
     --bg-card: #2a2a2a;
     --border-color: #404040;
     --border-light: #333333;
-    --text-main: #f9fafb;
+    --text-main: #f8f2e8;
     --text-secondary: #d1d5db;
-    --text-muted: #9ca3af;
+    --text-muted: #a3a3a3;
   }
 
   html {
@@ -39,20 +42,34 @@
     @apply font-body antialiased;
     background-color: var(--bg-main);
     color: var(--text-main);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-heading tracking-tight;
   }
 
   /* Smooth transitions for theme changes */
-  *, *::before, *::after {
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+  *,
+  *::before,
+  *::after {
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      color 0.2s ease;
   }
 
   /* Exclude animations from theme transitions */
-  .animate-spin, .animate-pulse, .transition-transform {
+  .animate-spin,
+  .animate-pulse,
+  .transition-transform {
     transition: none !important;
   }
 }
@@ -114,8 +131,12 @@
 
 /* Toast progress bar animation */
 @keyframes shrink-width {
-  from { width: 100%; }
-  to { width: 0%; }
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
 }
 
 .animate-shrink-width {

@@ -134,14 +134,15 @@ export async function POST(request: NextRequest) {
     for (const [yearKey, modules] of Object.entries(groupedQuestions)) {
       for (const [moduleName, moduleQuestions] of Object.entries(modules)) {
         const moduleData = {
-          version: '1.0.0',
+          version: '1.2.0',
           module: moduleQuestions[0].module_name,
           study_year: moduleQuestions[0].year,
           exam_types: [...new Set(moduleQuestions.map((q) => q.exam_type))],
           last_updated: new Date().toISOString(),
           questions_count: moduleQuestions.length,
           questions: moduleQuestions.map((q) => ({
-            id: `${q.year}_${q.module_name}_${q.number}`,
+            id: q.id, // Use Database UUID
+            legacy_id: `${q.year}_${q.module_name}_${q.number}`, // Preserve old ID format
             year: q.year,
             study_year: q.year,
             module: q.module_name,
@@ -188,7 +189,7 @@ export async function POST(request: NextRequest) {
         // Track uploaded module
         const moduleKey = `${yearKey}_${moduleName}`;
         uploadedModules[moduleKey] = {
-          version: '1.0.0',
+          version: '1.2.0',
           size: blob.size,
           questions_count: moduleQuestions.length,
           last_updated: new Date().toISOString(),
@@ -216,7 +217,7 @@ export async function POST(request: NextRequest) {
     console.log(`📦 Enhanced ${enhancedModuleMetadata.length} modules with question counts`);
 
     const versionData = {
-      version: '1.1.0',
+      version: '1.2.0',
       last_updated: new Date().toISOString(),
       total_questions: questions.length,
       total_modules: totalUploaded,
@@ -224,9 +225,9 @@ export async function POST(request: NextRequest) {
       module_metadata: enhancedModuleMetadata,
       changelog: [
         {
-          version: '1.1.0',
+          version: '1.2.0',
           date: new Date().toISOString().split('T')[0],
-          changes: `Exported ${questions.length} questions across ${totalUploaded} modules (with metadata)`,
+          changes: `Unified UUIDs: Exported ${questions.length} questions across ${totalUploaded} modules`,
         },
       ],
     };

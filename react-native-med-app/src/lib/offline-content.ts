@@ -168,7 +168,16 @@ export const OfflineContentService = {
         .from('questions')
         .getPublicUrl('version.json');
 
-      const fetchPromise = fetch(urlData.publicUrl).then(async (response) => {
+      // Add cache busting query param to ensure we get the latest version
+      const urlWithCacheBust = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const fetchPromise = fetch(urlWithCacheBust, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      }).then(async (response) => {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -184,6 +193,7 @@ export const OfflineContentService = {
       const versionFile = offlineDir + 'version.json';
       const localVersionInfo = await fs.getInfoAsync(versionFile);
       if (!localVersionInfo.exists) {
+        if (__DEV__) console.log('[OfflineContent] No local version found, update needed');
         return { hasUpdate: true, remoteVersion };
       }
 
@@ -193,7 +203,17 @@ export const OfflineContentService = {
       const remoteDate = new Date(remoteVersion.last_updated).getTime();
       const localDate = new Date(localVersion.last_updated).getTime();
 
-      return { hasUpdate: remoteDate > localDate, remoteVersion };
+      const hasUpdate = remoteDate > localDate;
+
+      if (__DEV__) {
+        console.log('[OfflineContent] Version check:', {
+          local: { version: localVersion.version, date: localVersion.last_updated },
+          remote: { version: remoteVersion.version, date: remoteVersion.last_updated },
+          hasUpdate
+        });
+      }
+
+      return { hasUpdate, remoteVersion };
     } catch (error: any) {
       recordFailure(error);
       if (__DEV__) {
@@ -228,7 +248,9 @@ export const OfflineContentService = {
             .getPublicUrl(mod.path);
 
           const localPath = offlineDir + mod.path.replace(/\//g, '_');
-          await fs.downloadAsync(publicUrl, localPath);
+          // Add cache busting to ensure we download the latest file content
+          const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+          await fs.downloadAsync(urlWithCacheBust, localPath);
 
           completed++;
           if (onProgress) onProgress(completed / total);

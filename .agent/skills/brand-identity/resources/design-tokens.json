@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "brand_name": "FMC App",
+    "description": "Core design tokens for UI implementation. Based on official Brand Guidelines."
+  },
+  "colors": {
+    "primary": {
+      "DEFAULT": "#09b2ac",
+      "hex": "#09b2ac",
+      "rgb": "9, 178, 172",
+      "cmyk": "76, 4, 39, 0",
+      "name": "Light Green Sea",
+      "foreground": "#FFFFFF"
+    },
+    "secondary": {
+      "DEFAULT": "#9941ff",
+      "hex": "#9941ff",
+      "rgb": "153, 65, 255",
+      "name": "Veronica",
+      "foreground": "#FFFFFF"
+    },
+    "neutral": {
+      "light": {
+        "DEFAULT": "#f8f2e8",
+        "hex": "#f8f2e8",
+        "rgb": "248, 242, 232",
+        "name": "Floral White"
+      },
+      "dark": {
+        "DEFAULT": "#262626",
+        "hex": "#262626",
+        "rgb": "38, 38, 38",
+        "name": "Eerie Black"
+      }
+    },
+    "background": "#f8f2e8",
+    "foreground": "#262626",
+    "muted": "#f8f2e8",
+    "accent": "#9941ff",
+    "destructive": "#EF4444",
+    "success": "#10B981"
+  },
+  "colorPairings": {
+    "recommended": [
+      {
+        "background": "#262626",
+        "foreground": "#09b2ac",
+        "description": "Eerie Black + Light Green Sea"
+      },
+      {
+        "background": "#9941ff",
+        "foreground": "#f8f2e8",
+        "description": "Veronica + Floral White"
+      },
+      {
+        "background": "#f8f2e8",
+        "foreground": "#262626",
+        "description": "Floral White + Eerie Black"
+      },
+      {
+        "background": "#09b2ac",
+        "foreground": "#262626",
+        "description": "Light Green Sea + Eerie Black (Logo preferred)"
+      }
+    ]
+  },
+  "typography": {
+    "latin": {
+      "primary": {
+        "family": "Manrope",
+        "fallback": "Inter",
+        "description": "Modern, geometric sans-serif"
+      },
+      "secondary": {
+        "family": "Cairo",
+        "fallback": "Roboto"
+      }
+    },
+    "arabic": {
+      "primary": {
+        "family": "Cairo",
+        "fallback": "Tahoma"
+      },
+      "secondary": {
+        "family": "Cairo",
+        "fallback": "Tahoma"
+      }
+    },
+    "font_family_headings": ["Manrope", "Inter", "sans-serif"],
+    "font_family_body": ["Cairo", "Roboto", "sans-serif"],
+    "font_family_arabic": ["Cairo", "Tahoma", "sans-serif"],
+    "weights": {
+      "extrabold": "800",
+      "bold": "700",
+      "semibold": "600",
+      "normal": "400"
+    }
+  },
+  "typestyles": {
+    "headline": {
+      "font": "Manrope",
+      "weight": "800",
+      "size": "90pt",
+      "transform": "uppercase"
+    },
+    "subheader": {
+      "font": "Manrope",
+      "weight": "700",
+      "size": "72pt"
+    },
+    "sectionTitle": {
+      "font": "Manrope",
+      "weight": "600",
+      "size": "60pt"
+    }
+  },
+  "ui": {
+    "border_radius_default": "0.5rem",
+    "border_radius_small": "0.25rem",
+    "border_radius_large": "1rem",
+    "spacing_base_unit": "4px"
+  }
+}
