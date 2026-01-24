@@ -631,8 +631,76 @@ export default function HomeScreen() {
                       />
                     </View>
                   </View>
+                ) : Platform.OS === "android" ? (
+                  // Android: Filled gradient background using app color palette
+                  <LinearGradient
+                    colors={["#E0F7F6", "#B2E8E5", "#09B2AD"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 17,
+                      padding: isDesktop ? 28 : 20,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-around",
+                        alignItems: "center",
+                      }}
+                    >
+                      <StatItem
+                        label="Questions"
+                        value={stats.total_questions_attempted.toString()}
+                        icon={
+                          <FileIcon
+                            size={isDesktop ? 30 : 26}
+                            color="#262626"
+                          />
+                        }
+                        isDesktop={isDesktop}
+                        colors={{
+                          ...colors,
+                          text: "#262626",
+                          textMuted: "rgba(38, 38, 38, 0.7)",
+                        }}
+                      />
+                      <StatItem
+                        label="Précision"
+                        value={`${Math.round(stats.average_score)}%`}
+                        icon={
+                          <GoalIcon
+                            size={isDesktop ? 30 : 26}
+                            color="#262626"
+                          />
+                        }
+                        isDesktop={isDesktop}
+                        colors={{
+                          ...colors,
+                          text: "#262626",
+                          textMuted: "rgba(38, 38, 38, 0.7)",
+                        }}
+                      />
+                      <StatItem
+                        label="Sauvegardées"
+                        value={stats.saved_questions_count.toString()}
+                        icon={
+                          <SavesIcon
+                            size={isDesktop ? 30 : 26}
+                            color="#262626"
+                          />
+                        }
+                        isDesktop={isDesktop}
+                        colors={{
+                          ...colors,
+                          text: "#262626",
+                          textMuted: "rgba(38, 38, 38, 0.7)",
+                        }}
+                      />
+                    </View>
+                  </LinearGradient>
                 ) : (
-                  // Native: BlurView for real frosted glass effect (matching web)
+                  // iOS: BlurView for real frosted glass effect
                   <BlurView
                     intensity={60}
                     tint={isDark ? "dark" : "light"}
@@ -643,7 +711,6 @@ export default function HomeScreen() {
                   >
                     <View
                       style={{
-                        // Reduced opacity from 0.4 to 0.1 to avoid double-tinting
                         backgroundColor: isDark
                           ? "rgba(30, 30, 30, 0.1)"
                           : "rgba(255, 255, 255, 0.1)",
@@ -686,7 +753,6 @@ export default function HomeScreen() {
                           isDesktop={isDesktop}
                           colors={colors}
                         />
-
                         <StatItem
                           label="Sauvegardées"
                           value={stats.saved_questions_count.toString()}
