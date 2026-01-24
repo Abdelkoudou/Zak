@@ -4,6 +4,7 @@ import "./globals.css";
 import AppLayout from "@/components/AppLayout";
 import SessionManager from "@/components/SessionManager";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 const fontHeading = Manrope({
   subsets: ["latin"],
@@ -45,6 +46,7 @@ export default function RootLayout({
           <SessionManager />
           <AppLayout>{children}</AppLayout>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
