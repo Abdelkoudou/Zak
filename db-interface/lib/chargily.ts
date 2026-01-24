@@ -15,7 +15,7 @@ export interface ChargilyConfig {
 }
 
 export interface CreateCheckoutParams {
-  amount: number;           // Amount in smallest unit (centimes for DZD)
+  amount: number;           // Amount in currency units (DA for DZD)
   currency: 'dzd' | 'usd' | 'eur';
   customerEmail: string;
   customerName?: string;
@@ -279,10 +279,12 @@ export function getChargilyClient(): ChargilyClient {
 }
 
 /**
- * Format amount for display (convert from centimes)
+ * Format amount for display
+ * Note: DZD uses whole dinars, not centimes
  */
-export function formatAmount(amountInCentimes: number, currency: string): string {
-  const amount = amountInCentimes / 100;
+export function formatAmount(amount: number, currency: string): string {
+  // For DZD, amount is already in dinars (not centimes)
+  const displayAmount = currency.toLowerCase() === 'dzd' ? amount : amount / 100;
   
   const formatter = new Intl.NumberFormat('fr-DZ', {
     style: 'currency',
@@ -291,7 +293,7 @@ export function formatAmount(amountInCentimes: number, currency: string): string
     maximumFractionDigits: 2,
   });
   
-  return formatter.format(amount);
+  return formatter.format(displayAmount);
 }
 
 /**
@@ -313,7 +315,7 @@ export const CHARGILY_CURRENCIES = ['dzd', 'usd', 'eur'] as const;
 export const CHARGILY_LOCALES = ['ar', 'en', 'fr'] as const;
 
 export const SUBSCRIPTION_PRICES = {
-  '365': { amount: 1000, label: '1 An - 1000 DA' },      // 1000 DZD for 1 year
+  '365': { amount: 1000, label: '1 An - 1000 DA' },      // 1000 DA for 1 year
 } as const;
 
 export type SubscriptionDuration = keyof typeof SUBSCRIPTION_PRICES;
