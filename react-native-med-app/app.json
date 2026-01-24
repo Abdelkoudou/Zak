@@ -8,9 +8,7 @@
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#09B2AD"
+      "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -19,9 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.fmcapp.mobile",
       "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#09B2AD"
+        "backgroundColor": "#000000"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -35,9 +31,7 @@
         "backgroundColor": "#09B2AD"
       },
       "splash": {
-        "image": "./assets/splash.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#09B2AD"
+        "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
       "navigationBar": {
