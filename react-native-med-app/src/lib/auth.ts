@@ -391,11 +391,20 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
     }
 
-    // Step 3: Register device (skip for reviewers) - NON-BLOCKING
+    // Step 3: Check device limit (skip for reviewers)
     const isReviewer = userProfile.is_reviewer === true
     if (!isReviewer) {
+      console.log('[Auth] Checking device limit...')
+      const { canLogin, error: deviceError } = await checkDeviceLimit(authData.user.id)
+      
+      if (!canLogin) {
+        console.warn('[Auth] Device limit reached, signing out')
+        await supabase.auth.signOut()
+        return { user: null, error: deviceError }
+      }
+
+      // Step 4: Register device - NON-BLOCKING
       console.log('[Auth] Registering device...')
-      // Fire and forget - don't block login on device registration
       registerDevice(authData.user.id).catch(e => {
         console.warn('[Auth] Device registration failed (non-blocking):', e)
       })
@@ -705,6 +714,34 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
     return { sessions: data || [], error: null }
   } catch (error) {
     return { sessions: [], error: 'Failed to fetch device sessions' }
+  }
+}
+
+/**
+ * Check if user has reached device limit (2 devices)
+ * Returns canLogin: true if user can login, false if device limit reached
+ */
+export async function checkDeviceLimit(userId: string): Promise<{ canLogin: boolean; error: string | null }> {
+  try {
+    const { sessions, error } = await getDeviceSessions(userId)
+    if (error) return { canLogin: false, error }
+
+    const currentDeviceId = await getDeviceId()
+    const isCurrentDeviceRegistered = sessions.some(s => s.device_id === currentDeviceId)
+
+    // If this is a new device and user already has 2 devices, block login
+    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+      return { 
+        canLogin: false, 
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.'
+      }
+    }
+    return { canLogin: true, error: null }
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[Auth] Error checking device limit:', error)
+    }
+    return { canLogin: false, error: 'Impossible de vérifier les appareils' }
   }
 }
 
