@@ -154,8 +154,17 @@ export default function DeviceManagerModal({
                 >
                   {/* Main row - clickable to expand */}
                   <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-950/70 transition-colors"
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-950/70 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-inset"
                     onClick={() => toggleExpand(device.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleExpand(device.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={isExpanded}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-lg">
