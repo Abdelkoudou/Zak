@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: "FMC APP - Admin Panel",
   description:
     "Interface d'administration pour FMC APP - Premium Medical Learning",
+  icons: {
+    icon: "/icon",
+    apple: "/icon",
+    shortcut: "/icon",
+  },
 };
 
 export const viewport: Viewport = {
