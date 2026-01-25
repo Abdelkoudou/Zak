@@ -16,6 +16,9 @@ import { supabase } from "@/lib/supabase";
 import { BRAND_THEME } from "@/constants/theme";
 import { AnimatedButton, FadeInView } from "@/components/ui";
 
+// Constants
+const RECOVERY_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
 // Error message translations
 const ERROR_MESSAGES: Record<string, string> = {
   otp_expired:
@@ -196,7 +199,7 @@ export default function AuthCallbackScreen() {
             verifyError.message?.includes("invalid");
           setIsExpiredLink(isExpired);
           setStatus("error");
-          setMessage(getErrorMessage(verifyError.message, "otp_expired"));
+          setMessage(getErrorMessage(verifyError.message));
           return;
         }
         console.log("[Auth Callback] Token verified successfully");
@@ -250,11 +253,10 @@ export default function AuthCallbackScreen() {
 
           const isExpired =
             exchangeError.message?.includes("expired") ||
-            exchangeError.message?.includes("invalid") ||
-            exchangeError.message?.includes("code");
+            exchangeError.message?.includes("invalid");
           setIsExpiredLink(isExpired);
           setStatus("error");
-          setMessage(getErrorMessage(exchangeError.message, "otp_expired"));
+          setMessage(getErrorMessage(exchangeError.message));
           return;
         }
 
@@ -306,14 +308,12 @@ export default function AuthCallbackScreen() {
       const isRecovery =
         type === "recovery" ||
         type === "password_recovery" ||
-        // Check AMR claims for recovery method
-        userAny?.amr?.some(
-          (a: any) => a.method === "recovery" || a.method === "otp",
-        ) ||
-        // Check if recovery was recently sent (within last hour)
+        // Check AMR claims for recovery method (only 'recovery', not 'otp' to avoid false positives)
+        userAny?.amr?.some((a: any) => a.method === "recovery") ||
+        // Check if recovery was recently sent (within recovery window)
         (userAny?.recovery_sent_at &&
           new Date(userAny.recovery_sent_at).getTime() >
-            Date.now() - 3600000) ||
+            Date.now() - RECOVERY_WINDOW_MS) ||
         // Check user_metadata or app_metadata for recovery flag
         userAny?.user_metadata?.recovery_flow === true;
 
