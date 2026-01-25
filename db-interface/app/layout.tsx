@@ -4,7 +4,7 @@ import "./globals.css";
 import AppLayout from "@/components/AppLayout";
 import SessionManager from "@/components/SessionManager";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { Analytics } from "@vercel/analytics/next";
+import { Analytics } from "@vercel/analytics/react";
 
 const fontHeading = Manrope({
   subsets: ["latin"],
