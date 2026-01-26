@@ -1,0 +1,46 @@
+name: Nightly Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # Runs at 2 AM daily
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Create Backups Directory
+        run: mkdir -p backups
+
+      - name: Backup Roles
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase db dump --project-ref $PROJECT_ID -f backups/roles.sql --role-only
+
+      - name: Backup Schema
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase db dump --project-ref $PROJECT_ID -f backups/schema.sql
+
+      - name: Backup Data
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase db dump --project-ref $PROJECT_ID -f backups/data.sql --data-only --use-copy
+
+      - name: Commit and Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Nightly Supabase backup
+          file_pattern: backups/*.sql

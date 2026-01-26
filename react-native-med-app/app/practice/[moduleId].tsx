@@ -85,6 +85,8 @@ export default function PracticeScreen() {
     new Set(),
   );
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [startTime] = useState(new Date());
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -153,12 +155,24 @@ export default function PracticeScreen() {
   }, []);
 
   useEffect(() => {
+    // START PERFORMANCE MARKER
+    const renderStart = global.performance?.now() || Date.now();
+
     animateQuestionIn();
     animateProgress();
+
+    // END PERFORMANCE MARKER (Approximation via requestAnimationFrame)
+    requestAnimationFrame(() => {
+      const renderEnd = global.performance?.now() || Date.now();
+      console.log(
+        `[Perf] Question ${currentIndex + 1} render time: ${(renderEnd - renderStart).toFixed(2)}ms`,
+      );
+    });
   }, [currentIndex, animateQuestionIn, animateProgress]);
 
   const loadQuestions = async () => {
     try {
+      setLoadError(null);
       const filters: any = { module_name: moduleName };
       if (examType) filters.exam_type = examType;
       if (examYear) filters.exam_year = parseInt(examYear);
@@ -181,9 +195,19 @@ export default function PracticeScreen() {
       if (__DEV__) {
         console.error("Error loading questions:", error);
       }
+      setLoadError(
+        "Impossible de charger les questions. Vérifiez votre connexion internet et réessayez.",
+      );
     } finally {
       setIsLoading(false);
+      setIsRetrying(false);
     }
+  };
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    setIsLoading(true);
+    loadQuestions();
   };
 
   const currentQuestion = questions[currentIndex];
@@ -455,6 +479,57 @@ export default function PracticeScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
         <LoadingSpinner message="Chargement des questions..." />
+      </SafeAreaView>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+          }}
+        >
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>⚠️</Text>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: "bold",
+              color: colors.text,
+              marginBottom: 8,
+              textAlign: "center",
+            }}
+          >
+            Erreur de chargement
+          </Text>
+          <Text
+            style={{
+              color: colors.textMuted,
+              textAlign: "center",
+              marginBottom: 24,
+              lineHeight: 22,
+            }}
+          >
+            {loadError}
+          </Text>
+          <View style={{ flexDirection: "row", gap: 12 }}>
+            <Button
+              title="Retour"
+              onPress={() => router.back()}
+              variant="secondary"
+            />
+            <Button
+              title={isRetrying ? "Réessai..." : "Réessayer"}
+              onPress={handleRetry}
+              disabled={isRetrying}
+              variant="primary"
+            />
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
