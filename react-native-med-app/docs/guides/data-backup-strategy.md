@@ -99,10 +99,13 @@ For this to work, you must give GitHub permission to talk to Supabase.
     -   Go to your GitHub Repo -> **Settings** -> **Secrets and variables** -> **Actions**.
     -   Click **New repository secret**.
     -   Add `SUPABASE_ACCESS_TOKEN` (the one you just made).
-    -   Add `SUPABASE_DB_URL` (Your Direct Connection String).
+    -   Add `SUPABASE_DB_URL` (Your Connection Pooler String).
         -   Go to Supabase Dashboard -> Project Settings -> Database -> Connection String -> URI.
-        -   **Important**: Make sure Mode is **"Session"** (Port 5432), NOT Transaction (6543).
+        -   **CRITICAL**: Enable **"Use connection pooling"** checkbox.
+        -   **CRITICAL**: Set Mode to **"Session"** (Port 5432).
+        -   Copy the URI. It should look like: `...pooler.supabase.com...` (IPv4 compatible).
         -   Replace `[YOUR-PASSWORD]` with your actual database password.
+        -   *(Why? GitHub Actions doesn't support IPv6, and the direct link is often IPv6-only.)*
 
 ### Step 3: Trigger First Backup
 
