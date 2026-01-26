@@ -95,11 +95,14 @@ For this to work, you must give GitHub permission to talk to Supabase.
 2. **Get your Project ID**:
    - It's the string in your dashboard URL: `https://app.supabase.com/project/your-project-id` (e.g., `abcde12345...`).
 
-3. **Add to GitHub**:
-   - Go to your GitHub Repo -> **Settings** -> **Secrets and variables** -> **Actions**.
-   - Click **New repository secret**.
-   - Add `SUPABASE_ACCESS_TOKEN` (paste the token).
-   - Add `SUPABASE_PROJECT_ID` (paste the project ID).
+3.  **Add to GitHub**:
+    -   Go to your GitHub Repo -> **Settings** -> **Secrets and variables** -> **Actions**.
+    -   Click **New repository secret**.
+    -   Add `SUPABASE_ACCESS_TOKEN` (the one you just made).
+    -   Add `SUPABASE_DB_URL` (Your Direct Connection String).
+        -   Go to Supabase Dashboard -> Project Settings -> Database -> Connection String -> URI.
+        -   **Important**: Make sure Mode is **"Session"** (Port 5432), NOT Transaction (6543).
+        -   Replace `[YOUR-PASSWORD]` with your actual database password.
 
 ### Step 3: Trigger First Backup
 

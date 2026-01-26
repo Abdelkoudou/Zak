@@ -23,21 +23,18 @@ jobs:
 
       - name: Backup Roles
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: supabase db dump --project-ref $PROJECT_ID -f backups/roles.sql --role-only
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f backups/roles.sql --role-only
 
       - name: Backup Schema
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: supabase db dump --project-ref $PROJECT_ID -f backups/schema.sql
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f backups/schema.sql
 
       - name: Backup Data
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-        run: supabase db dump --project-ref $PROJECT_ID -f backups/data.sql --data-only --use-copy
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db dump --db-url "$SUPABASE_DB_URL" -f backups/data.sql --data-only --use-copy
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4

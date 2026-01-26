@@ -16,12 +16,13 @@ if (-not (Test-Path $BackupDir)) {
 }
 
 # 2. Configuration (User must set these)
-# You can find the Reference ID in Supabase Dashboard URL: app.supabase.com/project/REF_ID
-$ProjectRef = "your-project-ref-id" 
+# Get this from Supabase Dashboard -> Settings -> Database -> Connection String -> URI
+# Ensure it is port 5432 (Session mode) and has your password!
+$DbUrl = "postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
 
-if ($ProjectRef -eq "your-project-ref-id") {
-    Write-Host "⚠️  PLEASE UPDATE THE SCRIPT WITH YOUR PROJECT REF ID!" -ForegroundColor Yellow
-    Write-Host "Open scripts/backup-production.ps1 and edit line 18."
+if ($DbUrl -like "*[YOUR-PASSWORD]*") {
+    Write-Host "⚠️  PLEASE UPDATE THE SCRIPT WITH YOUR DB CONNECTION STRING!" -ForegroundColor Yellow
+    Write-Host "Open scripts/backup-production.ps1 and edit line 20."
     exit 1
 }
 
@@ -29,18 +30,18 @@ if ($ProjectRef -eq "your-project-ref-id") {
 $DataFile = "$BackupDir\kb_data_$Date.sql"
 $RolesFile = "$BackupDir\kb_roles_$Date.sql"
 
-Write-Host "🚀 Starting Backup for Project: $ProjectRef" -ForegroundColor Green
+Write-Host "🚀 Starting Backup..." -ForegroundColor Green
 
 try {
     # 4. Dump Data (Structure + Data)
     # properly captures everything
     Write-Host "   - Dumping complete database..." -NoNewline
-    supabase db dump --project-ref $ProjectRef --file $DataFile
+    supabase db dump --db-url $DbUrl --file $DataFile
     Write-Host "DONE" -ForegroundColor Green
 
     # 5. Dump Roles (Important for Auth)
     Write-Host "   - Dumping roles..." -NoNewline
-    supabase db dump --project-ref $ProjectRef --role-only --file $RolesFile
+    supabase db dump --db-url $DbUrl --role-only --file $RolesFile
     Write-Host "DONE" -ForegroundColor Green
 
     Write-Host "`n   - Cleaning up backups older than 30 days..." -NoNewline
