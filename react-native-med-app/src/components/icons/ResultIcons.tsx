@@ -1,12 +1,12 @@
 // Result screen icons as React Native SVG components
-import Svg, { Path } from 'react-native-svg'
+import Svg, { Path } from "react-native-svg";
 
 interface IconProps {
-  size?: number
-  color?: string
+  size?: number;
+  color?: string;
 }
 
-export function CorrectIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
+export function CorrectIcon({ size = 36, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36" fill="none">
       <Path
@@ -14,10 +14,10 @@ export function CorrectIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
         fill={color}
       />
     </Svg>
-  )
+  );
 }
 
-export function FalseIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
+export function FalseIcon({ size = 36, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 36 36" fill="none">
       <Path
@@ -25,10 +25,10 @@ export function FalseIcon({ size = 36, color = '#1E1E1E' }: IconProps) {
         fill={color}
       />
     </Svg>
-  )
+  );
 }
 
-export function FileIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
+export function FileIcon({ size = 35, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -36,10 +36,10 @@ export function FileIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
         fill={color}
       />
     </Svg>
-  )
+  );
 }
 
-export function SavesIcon({ size = 31, color = '#1E1E1E' }: IconProps) {
+export function SavesIcon({ size = 31, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 31 31" fill="none">
       <Path
@@ -50,10 +50,10 @@ export function SavesIcon({ size = 31, color = '#1E1E1E' }: IconProps) {
         strokeLinejoin="round"
       />
     </Svg>
-  )
+  );
 }
 
-export function GoalIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
+export function GoalIcon({ size = 35, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
       <Path
@@ -69,10 +69,10 @@ export function GoalIcon({ size = 35, color = '#1E1E1E' }: IconProps) {
         fill={color}
       />
     </Svg>
-  )
+  );
 }
 
-export function BookIcon({ size = 47, color = '#1E1E1E' }: IconProps) {
+export function BookIcon({ size = 47, color = "#1E1E1E" }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 47 47" fill="none">
       <Path
@@ -82,5 +82,25 @@ export function BookIcon({ size = 47, color = '#1E1E1E' }: IconProps) {
         fill={color}
       />
     </Svg>
-  )
+  );
+}
+export function ClockIcon({ size = 35, color = "#1E1E1E" }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 35 35" fill="none">
+      <Path
+        d="M17.5 32.0833C25.555 32.0833 32.0833 25.555 32.0833 17.5C32.0833 9.445 25.555 2.91666 17.5 2.91666C9.44499 2.91666 2.91666 9.445 2.91666 17.5C2.91666 25.555 9.44499 32.0833 17.5 32.0833Z"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M17.5 8.75V17.5L23.3333 23.3333"
+        stroke={color}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
 }

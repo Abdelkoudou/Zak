@@ -4,6 +4,7 @@ import "./globals.css";
 import AppLayout from "@/components/AppLayout";
 import SessionManager from "@/components/SessionManager";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 const fontHeading = Manrope({
   subsets: ["latin"],
@@ -21,6 +22,11 @@ export const metadata: Metadata = {
   title: "FMC APP - Admin Panel",
   description:
     "Interface d'administration pour FMC APP - Premium Medical Learning",
+  icons: {
+    icon: "/icon",
+    apple: "/icon",
+    shortcut: "/icon",
+  },
 };
 
 export const viewport: Viewport = {
@@ -45,6 +51,7 @@ export default function RootLayout({
           <SessionManager />
           <AppLayout>{children}</AppLayout>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

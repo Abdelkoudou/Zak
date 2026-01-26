@@ -75,14 +75,15 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
 
 /**
  * Check if user has reached device limit (2 devices)
- * Returns true if user can login, false if device limit reached
+ * Returns canLogin: true if user can login, false if device limit reached
+ * Returns isLimitReached: true only when the actual device limit is exceeded
  */
-export async function checkDeviceLimit(userId: string): Promise<{ canLogin: boolean; error: string | null }> {
+export async function checkDeviceLimit(userId: string): Promise<{ canLogin: boolean; error: string | null; isLimitReached: boolean }> {
   try {
     const { sessions, error } = await getDeviceSessions(userId)
     
     if (error) {
-      return { canLogin: false, error }
+      return { canLogin: false, error, isLimitReached: false }
     }
 
     const currentDeviceId = await getDeviceId()
@@ -92,14 +93,15 @@ export async function checkDeviceLimit(userId: string): Promise<{ canLogin: bool
     if (!isCurrentDeviceRegistered && sessions.length >= 2) {
       return { 
         canLogin: false, 
-        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.' 
+        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.',
+        isLimitReached: true
       }
     }
 
-    return { canLogin: true, error: null }
+    return { canLogin: true, error: null, isLimitReached: false }
   } catch (error) {
     console.error('[DeviceAuth] Error checking device limit:', error)
-    return { canLogin: false, error: 'Failed to check device limit' }
+    return { canLogin: false, error: 'Failed to check device limit', isLimitReached: false }
   }
 }
 
