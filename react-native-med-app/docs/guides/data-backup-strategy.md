@@ -28,7 +28,7 @@ We created a script for you: `scripts/backup-production.ps1`.
 This is the "Set and Forget" method. We use a GitHub Action to:
 1.  Dump the database every night.
 2.  Save it to a `backups/` folder in your repo.
-3.  **Automatically delete backups older than 30 days** (to keep your repo size small).
+3.  **Overwrites the same 3 files** (`roles.sql`, `schema.sql`, `data.sql`) to keep the file count low (though Git keeps the history).
 
 ### Step 1: Create the Workflow File
 The file is already created for you at: `.github/workflows/backup.yaml`
