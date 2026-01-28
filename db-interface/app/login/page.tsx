@@ -66,34 +66,11 @@ function LoginForm() {
         );
       }
 
-      // Check device limit (skip for reviewer accounts)
-      if (!userRecord.is_reviewer) {
-        const {
-          canLogin,
-          error: deviceError,
-          isLimitReached,
-        } = await checkDeviceLimit(data.user.id);
-
-        // Only block login if actual limit is reached
-        if (!canLogin && isLimitReached) {
-          await supabase.auth.signOut();
-          throw new Error(deviceError || "Device limit reached");
-        }
-
-        // Log transient errors but allow login
-        if (!canLogin && !isLimitReached) {
-          console.warn(
-            "Device check failed (transient error), allowing login:",
-            deviceError,
-          );
-        }
-
-        // Register this device
-        const { error: registerError } = await registerDevice(data.user.id);
-        if (registerError) {
-          console.warn("Failed to register device:", registerError);
-          // Don't block login for device registration errors
-        }
+      // Register this device (limit enforcement is bypassed in DB for admins/managers)
+      const { error: registerError } = await registerDevice(data.user.id);
+      if (registerError) {
+        console.warn("Failed to register device:", registerError);
+        // Don't block login for device registration errors
       }
 
       await supabase.auth.refreshSession();

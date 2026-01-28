@@ -84,6 +84,17 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
  */
 export async function checkDeviceLimit(userId: string): Promise<{ canLogin: boolean; error: string | null; isLimitReached: boolean }> {
   try {
+    // Check user role first - bypass for admins/managers
+    const { data: userData } = await supabase
+      .from('users')
+      .select('role, is_reviewer')
+      .eq('id', userId)
+      .single()
+
+    if (userData && (['owner', 'admin', 'manager'].includes(userData.role) || userData.is_reviewer)) {
+      return { canLogin: true, error: null, isLimitReached: false }
+    }
+
     const { sessions, error } = await getDeviceSessions(userId)
     
     if (error) {
