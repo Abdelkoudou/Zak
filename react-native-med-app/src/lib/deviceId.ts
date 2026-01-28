@@ -110,32 +110,50 @@ export function getDeviceFingerprint(): string {
   loadModules()
   
   // Get screen characteristics (use consistent orientation - always width >= height)
-  let screenWidth = 1920
-  let screenHeight = 1080
+  let screenWidth = -1
+  let screenHeight = -1
+  let dimensionsUnavailable = false
   
   try {
     if (_Dimensions) {
       const screen = _Dimensions.get('screen')
-      screenWidth = Math.max(screen.width, screen.height)
-      screenHeight = Math.min(screen.width, screen.height)
+      if (screen.width > 0 && screen.height > 0) {
+        screenWidth = Math.max(screen.width, screen.height)
+        screenHeight = Math.min(screen.width, screen.height)
+      } else {
+        dimensionsUnavailable = true
+      }
+    } else {
+      dimensionsUnavailable = true
     }
-  } catch {}
+  } catch {
+    dimensionsUnavailable = true
+  }
   
   // Get simplified OS name
   let osName = 'Unknown'
   try {
     if (_Device?.osName) {
       const deviceOsName = _Device.osName.toLowerCase()
-      if (deviceOsName.includes('android')) osName = 'Android'
-      else if (deviceOsName.includes('ios')) osName = 'iOS'
-      else if (deviceOsName.includes('windows')) osName = 'Windows'
-      else if (deviceOsName.includes('mac')) osName = 'macOS'
-      else if (deviceOsName.includes('linux')) osName = 'Linux'
-      else osName = _Device.osName
+      // Consistently treat iPad as iOS
+      if (deviceOsName.includes('ios') || deviceOsName.includes('ipados') || deviceOsName.includes('ipad')) {
+        osName = 'iOS'
+      } else if (deviceOsName.includes('android')) {
+        osName = 'Android'
+      } else if (deviceOsName.includes('windows')) {
+        osName = 'Windows'
+      } else if (deviceOsName.includes('mac')) {
+        osName = 'macOS'
+      } else if (deviceOsName.includes('linux')) {
+        osName = 'Linux'
+      } else {
+        osName = _Device.osName
+      }
     }
   } catch {}
   
-  return `${osName}-${screenWidth}x${screenHeight}`
+  const resStr = dimensionsUnavailable ? 'unavail' : `${screenWidth}x${screenHeight}`
+  return `${osName}-${resStr}`
 }
 
 
@@ -149,6 +167,15 @@ export async function getDeviceId(): Promise<string> {
     
     let deviceId = await storage.getItemAsync(DEVICE_ID_KEY)
     
+    // MIGRATION: If we have an old "unified-" ID, clear it to force new secure format
+    if (deviceId && deviceId.startsWith('unified-')) {
+      if (__DEV__) {
+        console.log('[DeviceId] Migrating from old unified id...')
+      }
+      deviceId = null
+      await storage.setItemAsync(DEVICE_ID_KEY, '')
+    }
+
     if (!deviceId) {
       deviceId = generatePermanentDeviceId()
       await storage.setItemAsync(DEVICE_ID_KEY, deviceId)

@@ -94,6 +94,13 @@ export async function getDeviceId(): Promise<string> {
     // Check for existing stored device ID
     let deviceId = localStorage.getItem(DEVICE_ID_KEY)
     
+    // MIGRATION: If we have an old "unified-" ID, clear it to force new secure format
+    if (deviceId && deviceId.startsWith('unified-')) {
+      console.log('[DeviceId] Migrating from old unified id...')
+      deviceId = null
+      localStorage.setItem(DEVICE_ID_KEY, '')
+    }
+
     if (!deviceId) {
       // Generate NEW permanent ID
       deviceId = generatePermanentDeviceId()

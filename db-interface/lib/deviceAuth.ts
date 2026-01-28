@@ -141,3 +141,32 @@ export async function updateDeviceActivity(userId: string): Promise<void> {
     console.error('[DeviceAuth] Failed to update device activity:', error)
   }
 }
+
+/**
+ * Perform a ONE-TIME global reset for all users (v2 migration)
+ * Clears old device IDs and forces a fresh logout/login
+ */
+export async function performGlobalResetOnce(): Promise<void> {
+  const RESET_KEY = 'fmc_v2_migration_reset'
+  try {
+    if (typeof window === 'undefined') return
+
+    const hasReset = localStorage.getItem(RESET_KEY)
+    if (hasReset === 'true') return
+
+    console.log('[DeviceAuth] 🚨 TRIGGERING ONE-TIME GLOBAL RESET (V2)')
+
+    // 1. Force logout from Supabase
+    await supabase.auth.signOut()
+
+    // 2. Clear old Device ID
+    const { clearDeviceId } = await import('./deviceId')
+    clearDeviceId()
+
+    // 3. Mark as reset
+    localStorage.setItem(RESET_KEY, 'true')
+    
+  } catch (error) {
+    console.error('[DeviceAuth] Global reset failed:', error)
+  }
+}

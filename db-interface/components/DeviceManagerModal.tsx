@@ -135,8 +135,8 @@ export default function DeviceManagerModal({
   // Grouping logic: Group sessions by fingerprint
   // If fingerprint is missing, use device_id as a fallback
   const groupedDevices = devices.reduce(
-    (acc, device) => {
-      const key = device.fingerprint || device.device_id;
+    (acc, device, i) => {
+      const key = device.fingerprint || device.device_id || `__unknown_${i}`;
       if (!acc[key]) {
         acc[key] = [];
       }

@@ -69,6 +69,41 @@ export async function clearCachedUserProfile(): Promise<void> {
 }
 
 /**
+ * Perform a ONE-TIME global reset for all users (v2 migration)
+ * Clears old device IDs and forces a fresh logout/login
+ */
+export async function performGlobalResetOnce(): Promise<void> {
+  const RESET_KEY = '@fmc_v2_migration_reset'
+  try {
+    const hasReset = await AsyncStorage.getItem(RESET_KEY)
+    if (hasReset === 'true') return
+
+    if (__DEV__) {
+      console.log('[Auth] 🚨 TRIGGERING ONE-TIME GLOBAL RESET (V2)')
+    }
+
+    // 1. Force logout from Supabase
+    await supabase.auth.signOut()
+
+    // 2. Clear old Device ID (forces new secure format generation)
+    // We already have a self-cleaning check in deviceId.ts, 
+    // but this ensures we start with a clean slate.
+    const { clearDeviceId } = require('./deviceId')
+    await clearDeviceId()
+
+    // 3. Clear cache
+    await clearCachedUserProfile()
+    await clearQueryCache()
+
+    // 4. Mark as reset
+    await AsyncStorage.setItem(RESET_KEY, 'true')
+    
+  } catch (error) {
+    console.error('[Auth] Global reset failed:', error)
+  }
+}
+
+/**
  * Check if an error is a network-related error
  */
 function isNetworkError(errorMessage: string): boolean {
