@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -18,6 +18,15 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
   const videoRef = useRef<Video>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const handleFinish = useCallback(async () => {
+    try {
+      await SplashScreen.hideAsync();
+    } catch (e) {
+      // Ignore errors if already hidden
+    }
+    onFinish();
+  }, [onFinish]);
+
   // Safety timeout: if video fails to load or play within 6 seconds, force finish
   useEffect(() => {
     // Hide native splash screen as soon as this component mounts
@@ -29,16 +38,7 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
     }, 6000);
 
     return () => clearTimeout(timeout);
-  }, []);
-
-  const handleFinish = async () => {
-    try {
-      await SplashScreen.hideAsync();
-    } catch (e) {
-      // Ignore errors if already hidden
-    }
-    onFinish();
-  };
+  }, [handleFinish]);
 
   const handleLoad = async () => {
     setIsLoaded(true);
