@@ -56,7 +56,9 @@ function initNativeModules() {
 
   try {
     _SplashScreen = require("expo-splash-screen");
-    _SplashScreen?.preventAutoHideAsync().catch(() => {});
+    // We remove preventAutoHideAsync so the native splash hides as soon as possible,
+    // allowing our custom VideoSplashScreen to take over immediately.
+    // _SplashScreen?.preventAutoHideAsync().catch(() => {});
   } catch {
     // Silent fail
   }

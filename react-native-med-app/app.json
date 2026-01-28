@@ -8,6 +8,8 @@
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
+      "image": "./assets/splash-black.png",
+      "resizeMode": "contain",
       "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
@@ -18,6 +20,8 @@
       "bundleIdentifier": "com.fmcapp.mobile",
       "buildNumber": "5",
       "splash": {
+        "image": "./assets/splash-black.png",
+        "resizeMode": "contain",
         "backgroundColor": "#000000"
       },
       "infoPlist": {
@@ -32,6 +36,8 @@
         "backgroundColor": "#09B2AD"
       },
       "splash": {
+        "image": "./assets/splash-black.png",
+        "resizeMode": "contain",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
