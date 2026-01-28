@@ -101,6 +101,43 @@ function generatePermanentDeviceId(): string {
     return `device-fallback-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
   }
 }
+/**
+ * Generate a hardware fingerprint (non-unique)
+ * This is used to link independent sessions (App, Web) on the same physical device.
+ * It's based on OS and Screen Resolution.
+ */
+export function getDeviceFingerprint(): string {
+  loadModules()
+  
+  // Get screen characteristics (use consistent orientation - always width >= height)
+  let screenWidth = 1920
+  let screenHeight = 1080
+  
+  try {
+    if (_Dimensions) {
+      const screen = _Dimensions.get('screen')
+      screenWidth = Math.max(screen.width, screen.height)
+      screenHeight = Math.min(screen.width, screen.height)
+    }
+  } catch {}
+  
+  // Get simplified OS name
+  let osName = 'Unknown'
+  try {
+    if (_Device?.osName) {
+      const deviceOsName = _Device.osName.toLowerCase()
+      if (deviceOsName.includes('android')) osName = 'Android'
+      else if (deviceOsName.includes('ios')) osName = 'iOS'
+      else if (deviceOsName.includes('windows')) osName = 'Windows'
+      else if (deviceOsName.includes('mac')) osName = 'macOS'
+      else if (deviceOsName.includes('linux')) osName = 'Linux'
+      else osName = _Device.osName
+    }
+  } catch {}
+  
+  return `${osName}-${screenWidth}x${screenHeight}`
+}
+
 
 // ============================================================================
 // Device ID Functions

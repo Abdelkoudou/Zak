@@ -1,10 +1,15 @@
 -- ============================================================================
 -- Migration: Fix Device Enforcement (BLOCK instead of auto-delete)
+-- Version 2: Added Fingerprint for Hierarchical Grouping (App + Web)
 -- ============================================================================
--- Addresses 2 critical security issues:
--- 1. Trigger auto-deletes oldest device → Now RAISES EXCEPTION
--- 2. Users can DELETE own sessions → Now admin-only
--- ============================================================================
+
+-- Add fingerprint column if it doesn't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'device_sessions' AND column_name = 'fingerprint') THEN
+    ALTER TABLE public.device_sessions ADD COLUMN fingerprint TEXT;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 1: Replace trigger function to BLOCK instead of DELETE
@@ -17,17 +22,32 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  device_count INTEGER;
+  physical_device_count INTEGER;
 BEGIN
-  -- Count existing devices (excluding current device_id if upsert)
-  SELECT COUNT(*) INTO device_count
+  -- Count unique physical devices for this user
+  -- We group by fingerprint. If fingerprint is NULL (legacy), we group by device_id.
+  -- This allows multiple sessions (App, Browser) on 1 phone to count as 1 device.
+  SELECT COUNT(DISTINCT COALESCE(fingerprint, device_id)) INTO physical_device_count
   FROM public.device_sessions
   WHERE user_id = NEW.user_id
-  AND device_id != NEW.device_id;  -- Don't count self if updating existing record
+  AND device_id != NEW.device_id; -- Don't count self if updating existing record
   
-  -- BLOCK if already at 2 devices
-  IF device_count >= 2 THEN
-    RAISE EXCEPTION 'DEVICE_LIMIT_EXCEEDED: User % already has 2 registered devices. Only admins can reset devices.', NEW.user_id
+  -- Consider it a NEW physical device only if its fingerprint/ID combination 
+  -- doesn't match any existing registered hardware.
+  IF physical_device_count >= 2 AND 
+     NOT EXISTS (
+       SELECT 1 FROM public.device_sessions 
+       WHERE user_id = NEW.user_id 
+       AND COALESCE(fingerprint, 'none') = COALESCE(NEW.fingerprint, 'none')
+       -- Note: we use 'none' for COALESCE to ensure NULL=NULL match for logic
+     ) AND
+     NOT EXISTS (
+       SELECT 1 FROM public.device_sessions
+       WHERE user_id = NEW.user_id
+       AND device_id = NEW.device_id
+     )
+  THEN
+    RAISE EXCEPTION 'DEVICE_LIMIT_EXCEEDED: Maximum 2 physical devices allowed'
       USING ERRCODE = 'P0001';
   END IF;
   
@@ -38,6 +58,7 @@ $$;
 -- ============================================================================
 -- STEP 2: Remove user DELETE permission, keep admin DELETE only
 -- ============================================================================
+-- (Keep same as before)
 
 -- Drop existing device_sessions policies to avoid conflicts
 DROP POLICY IF EXISTS "Users manage own sessions" ON public.device_sessions;
@@ -56,7 +77,9 @@ DROP POLICY IF EXISTS "Users can update own sessions" ON public.device_sessions;
 
 DROP POLICY IF EXISTS "Users can delete own sessions" ON public.device_sessions;
 
-DROP POLICY IF EXISTS "Admins can view all sessions" ON public.device_sessions;
+DROP POLICY IF EXISTS "Users register own devices" ON public.device_sessions;
+
+DROP POLICY IF EXISTS "Admins delete device sessions" ON public.device_sessions;
 
 -- CREATE NEW POLICIES (No user DELETE!)
 

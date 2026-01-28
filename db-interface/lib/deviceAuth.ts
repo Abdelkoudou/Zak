@@ -3,12 +3,13 @@
 // ============================================================================
 
 import { supabase } from '@/lib/supabase'
-import { getDeviceId, getDeviceName } from '@/lib/deviceId'
+import { getDeviceId, getDeviceName, getDeviceFingerprint } from '@/lib/deviceId'
 
 export interface DeviceSession {
   id: string
   user_id: string
   device_id: string
+  fingerprint: string | null
   device_name: string | null
   last_active_at: string
   created_at: string
@@ -25,17 +26,20 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
   try {
     const deviceId = await getDeviceId()
     const deviceName = await getDeviceName()
+    const fingerprint = getDeviceFingerprint()
 
     const { error } = await supabase
       .from('device_sessions')
       .upsert({
         user_id: userId,
         device_id: deviceId,
+        fingerprint: fingerprint,
         device_name: deviceName,
         last_active_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,device_id',
       })
+
 
     if (error) {
       console.error('[DeviceAuth] Error registering device:', error.message)
@@ -87,10 +91,25 @@ export async function checkDeviceLimit(userId: string): Promise<{ canLogin: bool
     }
 
     const currentDeviceId = await getDeviceId()
-    const isCurrentDeviceRegistered = sessions.some(session => session.device_id === currentDeviceId)
+    const currentFingerprint = getDeviceFingerprint()
 
-    // If this is a new device and user already has 2 devices, block login
-    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+    // Check if THIS specific session instance is already registered
+    if (sessions.some(session => session.device_id === currentDeviceId)) {
+      return { canLogin: true, error: null, isLimitReached: false }
+    }
+
+    // Check if THIS physical hardware (fingerprint) is already registered
+    if (sessions.some(session => session.fingerprint === currentFingerprint)) {
+      return { canLogin: true, error: null, isLimitReached: false }
+    }
+
+    // Count unique physical devices already registered
+    const physicalDeviceFingerprints = new Set(
+      sessions.map(s => s.fingerprint || s.device_id)
+    )
+
+    // If already using 2 physical devices and this is a 3rd one, block login
+    if (physicalDeviceFingerprints.size >= 2) {
       return { 
         canLogin: false, 
         error: '🔴 Limite d\'appareils atteinte. Vous êtes déjà connecté sur 2 appareils',
