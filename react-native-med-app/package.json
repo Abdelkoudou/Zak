@@ -1,6 +1,6 @@
 {
   "name": "fmc-app",
-  "version": "4",
+  "version": "5",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --clear",
