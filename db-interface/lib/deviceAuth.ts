@@ -93,10 +93,11 @@ export async function checkDeviceLimit(userId: string): Promise<{ canLogin: bool
     if (!isCurrentDeviceRegistered && sessions.length >= 2) {
       return { 
         canLogin: false, 
-        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.',
+        error: '🔴 Limite d\'appareils atteinte. Vous êtes déjà connecté sur 2 appareils',
         isLimitReached: true
       }
     }
+
 
     return { canLogin: true, error: null, isLimitReached: false }
   } catch (error) {

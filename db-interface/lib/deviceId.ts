@@ -10,45 +10,27 @@ const DEVICE_ID_KEY = 'fmc_device_id'
 // ============================================================================
 
 /**
- * Generate a device fingerprint that's consistent with mobile app
- * This creates a unified ID that should be the same whether accessing
- * via mobile app or web browser on the same device
+ * Generate a TRUE unique device identifier
+ * This ID is permanent - stored in localStorage
+ * LocalStorage clear = new device ID (intentional)
  */
-function generateUnifiedDeviceId(): string {
-  // Get screen characteristics (use consistent orientation - always width >= height)
-  const screenWidth = Math.max(screen.width, screen.height)  // Always use larger dimension as width
-  const screenHeight = Math.min(screen.width, screen.height) // Always use smaller dimension as height
-  const screenResolution = `${screenWidth}x${screenHeight}`
-  
-  // Get simplified OS name for consistency with mobile app
-  const userAgent = navigator.userAgent || ''
-  let osName = 'Unknown'
-  
-  // Normalize OS names to match mobile app detection
-  if (userAgent.includes('Android')) osName = 'Android'
-  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) osName = 'iOS'
-  else if (userAgent.includes('Windows')) osName = 'Windows'
-  else if (userAgent.includes('Mac')) osName = 'macOS'
-  else if (userAgent.includes('Linux')) osName = 'Linux'
-  
-  // Create device string focusing on hardware characteristics
-  // This should match the mobile app's device string format
-  const deviceString = `${osName}-${screenResolution}`
-  
-  // Create a hash-like string (same algorithm as mobile app)
-  let hash = 0
-  for (let i = 0; i < deviceString.length; i++) {
-    const char = deviceString.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
+function generatePermanentDeviceId(): string {
+  try {
+    // Generate a true UUID - unique per browser instance
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `device-${crypto.randomUUID()}`
+    }
+    
+    // Fallback: timestamp + high-entropy random string
+    const timestamp = Date.now().toString(36)
+    const random = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15)
+    
+    return `device-${timestamp}-${random}`
+  } catch (error) {
+    // Ultimate fallback
+    return `device-fallback-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
   }
-  
-  // Convert to positive string - same format as mobile app
-  const hashString = Math.abs(hash).toString(36)
-  
-  console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
-  
-  return `unified-${hashString}`
 }
 
 /**
@@ -89,22 +71,23 @@ export async function getDeviceId(): Promise<string> {
     let deviceId = localStorage.getItem(DEVICE_ID_KEY)
     
     if (!deviceId) {
-      // Generate new device ID
-      deviceId = generateUnifiedDeviceId()
+      // Generate NEW permanent ID
+      deviceId = generatePermanentDeviceId()
       
       // Store for future consistency
       localStorage.setItem(DEVICE_ID_KEY, deviceId)
       
-      console.log('[DeviceId] Generated and stored web device ID')
+      console.log('[DeviceId] Generated and stored new permanent web device ID:', deviceId)
     }
     
-    return deviceId
+    return deviceId as string
   } catch (error) {
     console.error('[DeviceId] Error getting device ID:', error)
-    // Fallback to a simple ID
-    return `web-fallback-${Date.now()}`
+    // Fallback to a one-time ID for this session
+    return `web-temp-${Date.now()}`
   }
 }
+
 
 /**
  * Get device name for display
