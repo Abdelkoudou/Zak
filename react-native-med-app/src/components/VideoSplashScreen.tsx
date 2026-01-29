@@ -5,8 +5,9 @@ import {
   TouchableOpacity,
   Text,
   Dimensions,
+  Image,
 } from "react-native";
-import { Video, ResizeMode, AVPlaybackStatus } from "expo-av";
+import { Video, ResizeMode } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 
@@ -30,7 +31,7 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
   // Safety timeout: if video fails to load or play within 6 seconds, force finish
   useEffect(() => {
     // Hide native splash screen as soon as this component mounts
-    // This allows the black container to show up immediately
+    // This allows the container to show up immediately
     SplashScreen.hideAsync().catch(() => {});
 
     const timeout = setTimeout(() => {
@@ -53,6 +54,11 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
   return (
     <View style={styles.container}>
       <StatusBar style="light" hidden />
+      <Image
+        source={require("../../assets/Open screen.jpg")}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      />
       <Video
         ref={videoRef}
         style={styles.video}
@@ -76,9 +82,14 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000000", // Match video background
+    backgroundColor: "#000000",
     alignItems: "center",
     justifyContent: "center",
+  },
+  backgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
   },
   video: {
     width: Dimensions.get("window").width,

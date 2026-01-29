@@ -4,12 +4,12 @@
     "slug": "fmc",
     "version": "5",
     "orientation": "default",
-    "icon": "./assets/app-icon.jpg",
+    "icon": "./assets/icon.png",
     "scheme": "fmcapp",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon.png",
-      "resizeMode": "contain",
+      "image": "./assets/Open screen.jpg",
+      "resizeMode": "cover",
       "backgroundColor": "#000000"
     },
     "assetBundlePatterns": [
@@ -20,8 +20,8 @@
       "bundleIdentifier": "com.fmcapp.mobile",
       "buildNumber": "5",
       "splash": {
-        "image": "./assets/icon.png",
-        "resizeMode": "contain",
+        "image": "./assets/Open screen.jpg",
+        "resizeMode": "cover",
         "backgroundColor": "#000000"
       },
       "infoPlist": {
@@ -32,12 +32,13 @@
       "package": "com.fmcapp.mobile",
       "versionCode": 31,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/app-icon.jpg",
+        "foregroundImage": "./assets/icon.png",
+        "backgroundImage": "./assets/Open screen.jpg",
         "backgroundColor": "#09B2AD"
       },
       "splash": {
-        "image": "./assets/icon.png",
-        "resizeMode": "contain",
+        "image": "./assets/Open screen.jpg",
+        "resizeMode": "cover",
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
