@@ -35,3 +35,8 @@ venv/
 
 **/testsprite_tests/
 **/load-tests/
+
+# Dependencies
+node_modules/
+supabase.js
+supabase.ts
