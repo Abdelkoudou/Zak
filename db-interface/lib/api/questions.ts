@@ -131,7 +131,14 @@ export async function getQuestions(filters?: {
         query = query.eq('exam_year', filters.exam_year);
       }
       if (filters?.cours && filters.cours.trim() !== '') {
-        query = query.contains('cours', [filters.cours]);
+        // Use .filter() with proper PostgreSQL array literal syntax
+        // Elements containing commas, quotes, or backslashes need to be double-quoted
+        // and internal quotes/backslashes need to be escaped
+        const escapedCours = filters.cours
+          .replace(/\\/g, '\\\\')  // Escape backslashes first
+          .replace(/"/g, '\\"');   // Escape double quotes
+        // Format as PostgreSQL array literal with double-quoted element
+        query = query.filter('cours', 'cs', `{"${escapedCours}"}`);
       }
 
       const { data, error } = await query;

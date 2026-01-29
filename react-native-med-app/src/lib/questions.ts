@@ -132,7 +132,12 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       query = query.eq('sub_discipline', filters.sub_discipline)
     }
     if (filters.cours && filters.cours.trim() !== '') {
-      query = query.contains('cours', [filters.cours])
+      // Use .filter() with proper PostgreSQL array literal syntax
+      // Elements containing commas need double-quoting, and internal quotes/backslashes need escaping
+      const escapedCours = filters.cours
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      query = query.filter('cours', 'cs', `{"${escapedCours}"}`)
     }
     if (filters.year && filters.year.trim() !== '') {
       query = query.eq('year', filters.year)
@@ -409,7 +414,11 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
       query = query.eq('sub_discipline', filters.sub_discipline)
     }
     if (filters.cours && filters.cours.trim() !== '') {
-      query = query.contains('cours', [filters.cours])
+      // Use .filter() with proper PostgreSQL array literal syntax for comma-containing values
+      const escapedCours = filters.cours
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      query = query.filter('cours', 'cs', `{"${escapedCours}"}`)
     }
     if (filters.exam_year) {
       query = query.eq('exam_year', filters.exam_year)
