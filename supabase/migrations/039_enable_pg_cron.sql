@@ -25,13 +25,16 @@ SELECT cron.schedule (
 
 -- Weekly: Clean up old chat messages for deleted sessions
 -- Runs every Sunday at 3:30 AM UTC
+-- Using NOT EXISTS for better performance and correct NULL handling
 SELECT cron.schedule (
         'cleanup-orphan-chat-messages', '30 3 * * 0', $$DELETE
-        FROM public.chat_messages
+        FROM public.chat_messages cm
         WHERE
-            session_id NOT IN(
-                SELECT id
-                FROM public.chat_sessions
+            NOT EXISTS (
+                SELECT 1
+                FROM public.chat_sessions cs
+                WHERE
+                    cs.id = cm.session_id
             ) $$
     );
 

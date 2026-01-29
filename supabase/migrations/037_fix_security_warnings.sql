@@ -206,7 +206,13 @@ BEGIN
     JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE n.nspname = 'public' 
     AND p.proname = 'enforce_max_devices'
-    AND (p.proconfig IS NULL OR 'search_path=' != ANY(p.proconfig))
+    AND (
+      p.proconfig IS NULL 
+      OR NOT EXISTS (
+        SELECT 1 FROM unnest(p.proconfig) AS cfg 
+        WHERE cfg LIKE 'search_path=%'
+      )
+    )
   ) THEN
     warning_count := warning_count + 1;
     RAISE WARNING 'enforce_max_devices may still have mutable search_path';

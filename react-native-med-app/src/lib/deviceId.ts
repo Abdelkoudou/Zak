@@ -202,11 +202,23 @@ export async function getDeviceName(): Promise<string> {
   try {
     if (_Platform?.OS === 'web') {
       const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-      if (userAgent.includes('Chrome')) return 'Chrome Browser'
-      if (userAgent.includes('Firefox')) return 'Firefox Browser'
-      if (userAgent.includes('Safari')) return 'Safari Browser'
-      if (userAgent.includes('Edge')) return 'Edge Browser'
-      return 'Web Browser'
+      
+      // Detect if mobile browser
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+      const deviceEmoji = isMobile ? '📱' : '💻'
+      const deviceType = isMobile ? 'Navigateur Mobile' : 'Navigateur Desktop'
+      
+      // Detect browser name
+      let browserName = ''
+      if (userAgent.includes('Chrome') && !userAgent.includes('Edge')) browserName = 'Chrome'
+      else if (userAgent.includes('Firefox')) browserName = 'Firefox'
+      else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browserName = 'Safari'
+      else if (userAgent.includes('Edge')) browserName = 'Edge'
+      
+      if (browserName) {
+        return `${deviceEmoji} ${deviceType} (${browserName})`
+      }
+      return `${deviceEmoji} ${deviceType}`
     }
     
     const deviceName = _Device?.deviceName || 'Unknown Device'

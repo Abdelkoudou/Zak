@@ -762,6 +762,73 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
 }
 
 /**
+ * Represents a unique physical device with its sessions
+ */
+export interface UniqueDevice {
+  fingerprint: string
+  sessions: DeviceSession[]
+  representativeSession: DeviceSession
+}
+
+/**
+ * Group device sessions by physical device (fingerprint)
+ * Returns unique devices with their sessions sorted by last_active_at
+ */
+export function groupSessionsByDevice(sessions: DeviceSession[]): UniqueDevice[] {
+  // Group by fingerprint (fallback to device_id for legacy data)
+  const grouped = sessions.reduce((acc, session, index) => {
+    const key = session.fingerprint || session.device_id || `__unknown_${index}`
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(session)
+    return acc
+  }, {} as Record<string, DeviceSession[]>)
+
+  // Convert to array, sort sessions within each group, pick representative
+  return Object.entries(grouped)
+    .map(([fingerprint, deviceSessions]) => {
+      const sorted = deviceSessions.sort(
+        (a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime()
+      )
+      return {
+        fingerprint,
+        sessions: sorted,
+        representativeSession: sorted[0],
+      }
+    })
+    .sort((a, b) => 
+      new Date(b.representativeSession.last_active_at).getTime() - 
+      new Date(a.representativeSession.last_active_at).getTime()
+    )
+}
+
+/**
+ * Get unique physical devices for a user (deduplicated by fingerprint)
+ * Returns representative sessions for display purposes
+ */
+export async function getUniqueDevices(userId: string): Promise<{ 
+  devices: DeviceSession[]
+  uniqueCount: number
+  error: string | null 
+}> {
+  const { sessions, error } = await getDeviceSessions(userId)
+  
+  if (error) {
+    return { devices: [], uniqueCount: 0, error }
+  }
+
+  const uniqueDevices = groupSessionsByDevice(sessions)
+  
+  // Return representative sessions (1 per physical device)
+  return {
+    devices: uniqueDevices.map(d => d.representativeSession),
+    uniqueCount: uniqueDevices.length,
+    error: null
+  }
+}
+
+/**
  * Check if user has reached device limit (2 devices)
  * Returns canLogin: true if user can login, false if device limit reached
  * Returns isLimitReached: true only when the actual device limit is exceeded (not for transient errors)

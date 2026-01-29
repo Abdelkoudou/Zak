@@ -56,6 +56,11 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   refreshUser: () => Promise<void>;
   getDeviceSessions: () => Promise<{ sessions: any[]; error: string | null }>;
+  getUniqueDevices: () => Promise<{
+    devices: any[];
+    uniqueCount: number;
+    error: string | null;
+  }>;
 }
 
 // ============================================================================
@@ -414,6 +419,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return authService.getDeviceSessions(user.id);
   };
 
+  // Get unique physical devices (deduplicated by fingerprint)
+  const getUniqueDevices = async (): Promise<{
+    devices: any[];
+    uniqueCount: number;
+    error: string | null;
+  }> => {
+    if (!user) {
+      return { devices: [], uniqueCount: 0, error: "Not authenticated" };
+    }
+    return authService.getUniqueDevices(user.id);
+  };
+
   // Context value
   const value: AuthContextType = {
     user,
@@ -426,6 +443,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resetPassword,
     refreshUser,
     getDeviceSessions,
+    getUniqueDevices,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

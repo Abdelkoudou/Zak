@@ -48,7 +48,7 @@ import { getUserActivationCode } from "@/lib/auth";
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
 
 export default function ProfileScreen() {
-  const { user, signOut, getDeviceSessions } = useAuth();
+  const { user, signOut, getUniqueDevices } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
   const { width } = useWindowDimensions();
 
@@ -106,21 +106,21 @@ export default function ProfileScreen() {
   const loadData = useCallback(async () => {
     if (!user) return;
     try {
-      const [userStats, modStats, sessions] = await Promise.all([
+      const [userStats, modStats, devicesResult] = await Promise.all([
         getUserStatistics(user.id),
         getAllModuleStatistics(user.id),
-        getDeviceSessions(),
+        getUniqueDevices(),
       ]);
       if (!userStats.error) setStats(userStats.stats);
       if (!modStats.error) setModuleStats(modStats.stats);
-      if (!sessions.error) setDeviceSessions(sessions.sessions);
+      if (!devicesResult.error) setDeviceSessions(devicesResult.devices);
     } catch {
       // Error loading profile data
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [user, getDeviceSessions]);
+  }, [user, getUniqueDevices]);
 
   useEffect(() => {
     loadData();
