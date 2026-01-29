@@ -27,6 +27,16 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
     const deviceId = await getDeviceId()
     const deviceName = await getDeviceName()
     const fingerprint = getDeviceFingerprint()
+    
+    // Clean up stale sessions from same physical device (e.g. browser reuse)
+    if (fingerprint) {
+      await supabase
+        .from('device_sessions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('fingerprint', fingerprint)
+        .neq('device_id', deviceId)
+    }
 
     const { error } = await supabase
       .from('device_sessions')
