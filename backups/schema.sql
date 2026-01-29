@@ -378,38 +378,36 @@ ALTER FUNCTION "public"."create_user_profile"("p_user_id" "uuid", "p_email" "tex
 
 CREATE OR REPLACE FUNCTION "public"."enforce_max_devices"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
     AS $$
 DECLARE
-  device_count INTEGER;
-  user_role TEXT;
+  physical_device_count INTEGER;
 BEGIN
-  -- Check if user is admin/owner
-  SELECT role INTO user_role
-  FROM public.users
-  WHERE id = NEW.user_id;
-  
-  -- Skip device limit for admins and owners
-  IF user_role IN ('admin', 'owner', 'manager') THEN
+  -- Skip enforcement for admins, owners, managers, or reviewers
+  IF EXISTS (
+    SELECT 1 FROM public.users 
+    WHERE id = NEW.user_id 
+    AND (role IN ('admin', 'owner', 'manager') OR is_reviewer = true)
+  ) THEN
     RETURN NEW;
   END IF;
-  
-  -- For students, enforce 2 device limit
-  SELECT COUNT(*) INTO device_count
+
+  -- Count unique physical devices (fingerprints) for this user
+  SELECT COUNT(DISTINCT fingerprint) INTO physical_device_count
   FROM public.device_sessions
-  WHERE user_id = NEW.user_id;
-  
-  IF device_count >= 2 THEN
-    -- Delete oldest session
-    DELETE FROM public.device_sessions
-    WHERE id = (
-      SELECT id FROM public.device_sessions
-      WHERE user_id = NEW.user_id
-      ORDER BY last_active_at ASC
-      LIMIT 1
-    );
+  WHERE user_id = NEW.user_id
+    AND device_id != NEW.device_id; -- Don't count existing sessions for THIS specific device (if re-registering)
+
+  -- If trying to add a NEW fingerprint and already have 2, block it
+  -- We allow matching fingerprints (same physical device) regardless of session count
+  IF physical_device_count >= 2 AND NOT EXISTS (
+    SELECT 1 FROM public.device_sessions
+    WHERE user_id = NEW.user_id
+    AND fingerprint = NEW.fingerprint
+  ) THEN
+    RAISE EXCEPTION 'DEVICE_LIMIT_EXCEEDED'
+      USING DETAIL = '🔴 Limite d''appareils atteinte. Vous êtes déjà connecté sur 2 appareils';
   END IF;
-  
+
   RETURN NEW;
 END;
 $$;
@@ -1421,14 +1419,18 @@ CREATE TABLE IF NOT EXISTS "public"."device_sessions" (
     "device_id" "text" NOT NULL,
     "device_name" "text",
     "last_active_at" timestamp with time zone DEFAULT "now"(),
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "fingerprint" "text"
 );
 
 
 ALTER TABLE "public"."device_sessions" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."device_sessions" IS 'User device tracking (max 2 per user)';
+COMMENT ON TABLE "public"."device_sessions" IS 'User device tracking. Max 2 devices per user (enforced by trigger).
+Users CANNOT delete their own sessions - admin only.
+Device IDs should be UUIDs, not screen-based hashes.
+Updated in Migration 035.';
 
 
 
@@ -2485,6 +2487,10 @@ CREATE POLICY "Admins delete activation keys" ON "public"."activation_keys" FOR 
 
 
 
+CREATE POLICY "Admins delete device sessions" ON "public"."device_sessions" FOR DELETE TO "authenticated" USING ("public"."is_admin_or_higher"());
+
+
+
 CREATE POLICY "Admins delete reports" ON "public"."question_reports" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_admin_or_higher"() AS "is_admin_or_higher"));
 
 
@@ -2681,10 +2687,6 @@ CREATE POLICY "Users delete own sessions" ON "public"."chat_sessions" FOR DELETE
 
 
 
-CREATE POLICY "Users delete own sessions" ON "public"."device_sessions" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
 CREATE POLICY "Users delete own test attempts" ON "public"."test_attempts" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
@@ -2703,7 +2705,7 @@ CREATE POLICY "Users manage own bookmarks" ON "public"."saved_questions" TO "aut
 
 
 
-CREATE POLICY "Users manage own sessions" ON "public"."device_sessions" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "Users register own devices" ON "public"."device_sessions" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -2751,7 +2753,7 @@ CREATE POLICY "View admin payments" ON "public"."admin_payments" FOR SELECT TO "
 
 
 
-CREATE POLICY "View device sessions" ON "public"."device_sessions" FOR SELECT TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ( SELECT "public"."is_admin_or_higher"() AS "is_admin_or_higher")));
+CREATE POLICY "View device sessions" ON "public"."device_sessions" FOR SELECT TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR "public"."is_admin_or_higher"()));
 
 
 
