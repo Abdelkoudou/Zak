@@ -210,10 +210,10 @@ export async function getDeviceName(): Promise<string> {
       
       // Detect browser name
       let browserName = ''
-      if (userAgent.includes('Chrome') && !userAgent.includes('Edge')) browserName = 'Chrome'
+      if (userAgent.includes('Edg') || userAgent.includes('Edge')) browserName = 'Edge'
+      else if (userAgent.includes('Chrome') && !userAgent.includes('Edge') && !userAgent.includes('Edg')) browserName = 'Chrome'
       else if (userAgent.includes('Firefox')) browserName = 'Firefox'
-      else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browserName = 'Safari'
-      else if (userAgent.includes('Edge')) browserName = 'Edge'
+      else if (userAgent.includes('Safari') && !userAgent.includes('Chrome') && !userAgent.includes('Edg')) browserName = 'Safari'
       
       if (browserName) {
         return `${deviceEmoji} ${deviceType} (${browserName})`

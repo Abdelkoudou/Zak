@@ -55,7 +55,7 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
     <View style={styles.container}>
       <StatusBar style="light" hidden />
       <Image
-        source={require("../../assets/Open screen.jpg")}
+        source={require("../../assets/open-screen.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
       />
