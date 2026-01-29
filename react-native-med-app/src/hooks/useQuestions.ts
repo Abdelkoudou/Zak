@@ -104,7 +104,11 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
         questions = questions.filter((q) => q.sub_discipline === filters.sub_discipline);
       }
       if (filters.cours && filters.cours.trim() !== '') {
-        questions = questions.filter((q) => q.cours?.includes(filters.cours as string));
+        const normalize = (s: string) => s.trim().toLowerCase();
+        const target = normalize(filters.cours as string);
+        questions = questions.filter((q) => 
+          Array.isArray(q.cours) && (q.cours as string[]).some(c => normalize(c) === target)
+        );
       }
       if (filters.exam_year) {
         questions = questions.filter((q) => q.exam_year === filters.exam_year);
@@ -144,11 +148,7 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
     query = query.eq('sub_discipline', filters.sub_discipline);
   }
   if (filters.cours && filters.cours.trim() !== '') {
-    // Special handling for commas in course names for PostgREST containment filters
-    const escapedCours = filters.cours.includes(',') && !filters.cours.startsWith('"') 
-      ? `"${filters.cours}"` 
-      : filters.cours;
-    query = query.contains('cours', [escapedCours]);
+    query = query.contains('cours', [filters.cours]);
   }
   if (filters.year && filters.year.trim() !== '') {
     query = query.eq('year', filters.year);
@@ -261,8 +261,10 @@ export function useQuestionCount(filters: QuestionFilters) {
             questions = questions.filter((q: Record<string, unknown>) => q.sub_discipline === filters.sub_discipline);
           }
           if (filters.cours && filters.cours.trim() !== '') {
+            const normalize = (s: string) => s.trim().toLowerCase();
+            const target = normalize(filters.cours as string);
             questions = questions.filter((q: Record<string, unknown>) => 
-              Array.isArray(q.cours) && (q.cours as string[]).includes(filters.cours as string)
+              Array.isArray(q.cours) && (q.cours as string[]).some(c => normalize(c) === target)
             );
           }
 
@@ -289,11 +291,7 @@ export function useQuestionCount(filters: QuestionFilters) {
         query = query.eq('sub_discipline', filters.sub_discipline);
       }
       if (filters.cours && filters.cours.trim() !== '') {
-        // Special handling for commas in course names for PostgREST containment filters
-        const escapedCours = filters.cours.includes(',') && !filters.cours.startsWith('"') 
-          ? `"${filters.cours}"` 
-          : filters.cours;
-        query = query.contains('cours', [escapedCours]);
+        query = query.contains('cours', [filters.cours]);
       }
 
       const { count, error } = await query;

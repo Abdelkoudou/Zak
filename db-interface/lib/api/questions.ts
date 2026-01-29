@@ -131,11 +131,7 @@ export async function getQuestions(filters?: {
         query = query.eq('exam_year', filters.exam_year);
       }
       if (filters?.cours && filters.cours.trim() !== '') {
-        // Special handling for commas in course names for PostgREST containment filters
-        const escapedCours = filters.cours.includes(',') && !filters.cours.startsWith('"') 
-          ? `"${filters.cours}"` 
-          : filters.cours;
-        query = query.contains('cours', [escapedCours]);
+        query = query.contains('cours', [filters.cours]);
       }
 
       const { data, error } = await query;
