@@ -16,6 +16,7 @@ import {
   Platform
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { getResources } from '@/lib/resources'
@@ -41,7 +42,7 @@ export default function ResourcesScreen() {
   const [isLoading, setIsLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedType, setSelectedType] = useState<ResourceType | 'all'>('all')
+  const [selectedType, setSelectedType] = useState<ResourceType | 'all'>('google_drive')
 
   const headerOpacity = useRef(new Animated.Value(0)).current
   const headerSlide = useRef(new Animated.Value(-20)).current
@@ -154,9 +155,20 @@ export default function ResourcesScreen() {
 
             {/* Type Filter */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-             
-              <AnimatedFilterChip label="📁 Drive" isSelected={selectedType === 'google_drive'} onPress={() => setSelectedType('google_drive')} colors={colors} />
-              <AnimatedFilterChip label="💬 Telegram" isSelected={selectedType === 'telegram'} onPress={() => setSelectedType('telegram')} colors={colors} />
+              <AnimatedFilterChip 
+                label="Drive" 
+                icon={<MaterialCommunityIcons name="google-drive" size={18} color={selectedType === 'google_drive' ? '#ffffff' : colors.textSecondary} />}
+                isSelected={selectedType === 'google_drive'} 
+                onPress={() => setSelectedType('google_drive')} 
+                colors={colors} 
+              />
+              <AnimatedFilterChip 
+                label="Telegram" 
+                icon={<FontAwesome5 name="telegram-plane" size={16} color={selectedType === 'telegram' ? '#ffffff' : colors.textSecondary} />}
+                isSelected={selectedType === 'telegram'} 
+                onPress={() => setSelectedType('telegram')} 
+                colors={colors} 
+              />
             </ScrollView>
           </View>
         </View>
@@ -191,7 +203,7 @@ export default function ResourcesScreen() {
                 <Text style={{ fontSize: 64, marginBottom: 20 }}>📁</Text>
                 <Text style={{ color: colors.text, textAlign: 'center', fontSize: 20, fontWeight: '700', marginBottom: 8 }}>Aucune ressource disponible</Text>
                 <Text style={{ color: colors.textMuted, textAlign: 'center', fontSize: 15 }}>
-                  pour la {getYearLabel()} année{selectedType !== 'all' && ` (${getTypeLabel(selectedType)})`}
+                  pour la {getYearLabel()} {selectedType !== 'all' && ` (${getTypeLabel(selectedType)})`}
                 </Text>
               </View>
             </FadeInView>
@@ -214,7 +226,7 @@ export default function ResourcesScreen() {
 }
 
 // Animated Filter Chip
-function AnimatedFilterChip({ label, isSelected, onPress, colors }: { label: string; isSelected: boolean; onPress: () => void; colors: any }) {
+function AnimatedFilterChip({ label, icon, isSelected, onPress, colors }: { label: string; icon?: React.ReactNode; isSelected: boolean; onPress: () => void; colors: any }) {
   const scaleAnim = useRef(new Animated.Value(1)).current
 
   const handlePressIn = () => {
@@ -232,7 +244,11 @@ function AnimatedFilterChip({ label, isSelected, onPress, colors }: { label: str
         paddingVertical: 10,
         borderRadius: 25,
         backgroundColor: isSelected ? colors.primary : colors.backgroundSecondary,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
       }}>
+        {icon}
         <Text style={{ fontWeight: '600', fontSize: 14, color: isSelected ? '#ffffff' : colors.textSecondary }}>{label}</Text>
       </Animated.View>
     </Pressable>
@@ -252,17 +268,22 @@ function AnimatedResourceCard({ resource, onPress, colors, isDark }: { resource:
 
   const getResourceIcon = (type: ResourceType) => {
     switch (type) {
-      case 'google_drive': return '📁'
-      case 'telegram': return '💬'
-      case 'youtube': return '📺'
-      case 'pdf': return '📄'
-      default: return '📋'
+      case 'google_drive': 
+        return <MaterialCommunityIcons name="google-drive" size={28} color={resourceColors.accent} />
+      case 'telegram': 
+        return <FontAwesome5 name="telegram-plane" size={26} color={resourceColors.accent} />
+      case 'youtube': 
+        return <MaterialCommunityIcons name="youtube" size={28} color={resourceColors.accent} />
+      case 'pdf': 
+        return <MaterialCommunityIcons name="file-pdf-box" size={28} color={resourceColors.accent} />
+      default: 
+        return <MaterialCommunityIcons name="file-document" size={28} color={resourceColors.accent} />
     }
   }
 
   const getResourceColor = (type: ResourceType) => {
     switch (type) {
-      case 'google_drive': return { bg: isDark ? 'rgba(66, 133, 244, 0.2)' : 'rgba(66, 133, 244, 0.1)', accent: '#4285F4' }
+      case 'google_drive': return { bg: isDark ? 'rgba(52, 168, 83, 0.2)' : 'rgba(52, 168, 83, 0.1)', accent: '#34A853' } // Google Drive green
       case 'telegram': return { bg: isDark ? 'rgba(0, 136, 204, 0.2)' : 'rgba(0, 136, 204, 0.1)', accent: '#0088CC' }
       case 'youtube': return { bg: isDark ? 'rgba(255, 0, 0, 0.15)' : 'rgba(255, 0, 0, 0.08)', accent: '#FF0000' }
       case 'pdf': return { bg: isDark ? 'rgba(220, 38, 38, 0.15)' : 'rgba(220, 38, 38, 0.08)', accent: '#DC2626' }
@@ -289,7 +310,7 @@ function AnimatedResourceCard({ resource, onPress, colors, isDark }: { resource:
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ width: 56, height: 56, backgroundColor: resourceColors.bg, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
-            <Text style={{ fontSize: 26 }}>{getResourceIcon(resource.type)}</Text>
+            {getResourceIcon(resource.type)}
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16, marginBottom: 4, letterSpacing: -0.2 }} numberOfLines={2}>{resource.title}</Text>
