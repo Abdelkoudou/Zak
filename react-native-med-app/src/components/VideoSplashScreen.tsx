@@ -1,12 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Text,
-  Dimensions,
-  Image,
-} from "react-native";
+import { StyleSheet, View, Dimensions, Image } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -18,8 +11,10 @@ interface VideoSplashScreenProps {
 export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
   const videoRef = useRef<Video>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const handleFinish = useCallback(async () => {
+    console.log("[VideoSplash] handleFinish called");
     try {
       await SplashScreen.hideAsync();
     } catch (e) {
@@ -28,49 +23,78 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
     onFinish();
   }, [onFinish]);
 
-  // Safety timeout: if video fails to load or play within 6 seconds, force finish
+  // Safety timeout: if video fails to load or play within 8 seconds, force finish
   useEffect(() => {
-    // Hide native splash screen as soon as this component mounts
-    // This allows the container to show up immediately
-    SplashScreen.hideAsync().catch(() => {});
+    console.log("[VideoSplash] Mounted");
+
+    // Attempt to hide native splash so our Image background shows
+    const hideNative = async () => {
+      try {
+        console.log("[VideoSplash] Hiding native splash...");
+        await SplashScreen.hideAsync();
+      } catch (e) {
+        console.warn("[VideoSplash] Failed to hide native splash:", e);
+      }
+    };
+    hideNative();
 
     const timeout = setTimeout(() => {
+      console.log("[VideoSplash] Safety timeout reached");
       handleFinish();
-    }, 6000);
+    }, 8000);
 
     return () => clearTimeout(timeout);
   }, [handleFinish]);
 
   const handleLoad = async () => {
+    console.log("[VideoSplash] Video loaded successfully");
     setIsLoaded(true);
-    // Seamless transition: hide native splash only when video is ready
-    try {
-      await SplashScreen.hideAsync();
-    } catch (e) {
-      // Ignore errors
-    }
+  };
+
+  const handleError = (error: string) => {
+    console.error("[VideoSplash] Video playback error:", error);
+    setHasError(true);
+    // On error, let the safety timeout or manual skip handle it
+    // Or finish immediately if critical
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" hidden />
+
+      {/* Background Image - Always shown initially */}
       <Image
         source={require("../../assets/open-screen.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
+        onLoad={() => console.log("[VideoSplash] Background image loaded")}
+        onError={(e) =>
+          console.error(
+            "[VideoSplash] Background image load error:",
+            e.nativeEvent.error,
+          )
+        }
       />
+
+      {/* Video Animation - Layered on top */}
       <Video
         ref={videoRef}
-        style={styles.video}
+        style={[
+          styles.video,
+          { opacity: isLoaded ? 1 : 0 }, // Only show video when it's ready to play
+        ]}
         source={require("../../assets/logoanimation/logo1_1.mp4")}
         useNativeControls={false}
         resizeMode={ResizeMode.COVER}
         isLooping={false}
         shouldPlay={true}
         isMuted={true}
+        onLoadStart={() => console.log("[VideoSplash] Video load start")}
         onLoad={handleLoad}
+        onError={handleError}
         onPlaybackStatusUpdate={(status) => {
           if (status.isLoaded && status.didJustFinish) {
+            console.log("[VideoSplash] Video finished playback");
             handleFinish();
           }
         }}
@@ -90,30 +114,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
+    zIndex: 1,
   },
   video: {
+    ...StyleSheet.absoluteFillObject,
     width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-  },
-  skipButton: {
-    position: "absolute",
-    top: 60,
-    right: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  skipText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "500",
+    zIndex: 2,
   },
 });
