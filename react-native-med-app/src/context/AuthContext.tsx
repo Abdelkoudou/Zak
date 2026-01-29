@@ -13,6 +13,7 @@ import React, {
 } from "react";
 import { User, RegisterFormData, ProfileUpdateData } from "@/types";
 import * as authService from "@/lib/auth";
+import { getDeviceId } from "@/lib/deviceId";
 import {
   supabase,
   ensureValidSession,
@@ -183,6 +184,95 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  // ============================================================================
+  // Realtime Session Listener - Instant Remote Logout
+  // ============================================================================
+  useEffect(() => {
+    if (!user) return;
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isMounted = true;
+
+    const setupSessionListener = async () => {
+      try {
+        const deviceId = await getDeviceId();
+
+        if (__DEV__) {
+          console.log(
+            "[Auth] Setting up Realtime listener for device:",
+            deviceId,
+          );
+        }
+
+        channel = supabase
+          .channel(`session-${deviceId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "DELETE",
+              schema: "public",
+              table: "device_sessions",
+              filter: `device_id=eq.${deviceId}`,
+            },
+            async (payload) => {
+              if (!isMounted) return;
+
+              if (__DEV__) {
+                console.log("[Auth] Session deleted remotely, forcing logout");
+              }
+
+              // Force logout - session was deleted by admin
+              await signOutInternal("Votre session a été révoquée à distance.");
+            },
+          )
+          .subscribe((status) => {
+            if (__DEV__) {
+              console.log("[Auth] Realtime subscription status:", status);
+            }
+          });
+      } catch (error) {
+        if (__DEV__) {
+          console.error("[Auth] Failed to setup session listener:", error);
+        }
+      }
+    };
+
+    setupSessionListener();
+
+    return () => {
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [user?.id]);
+
+  // Internal sign out with optional message (used by Realtime listener)
+  const signOutInternal = useCallback(async (message?: string) => {
+    try {
+      if (__DEV__) {
+        console.log("[Auth] Signing out internally:", message);
+      }
+
+      // Clear user state immediately for instant feedback
+      setUser(null);
+
+      // Then do the actual sign out
+      await authService.signOut();
+
+      // Store message for display on login screen if needed
+      if (message && typeof window !== "undefined") {
+        sessionStorage?.setItem("logout_message", message);
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.error("[Auth] Internal signout error:", error);
+      }
+      // Even on error, ensure user is cleared
+      setUser(null);
+    }
+  }, []);
+
   // Handle visibility changes - CRITICAL for web tab switching
   const handleVisibilityChange = useCallback(
     async (isVisible: boolean, hiddenDuration: number) => {
@@ -237,7 +327,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
             }
           }
         } else if (user) {
-          // Session exists and we have a user - optionally refresh user data if hidden for a while
+          // Session exists and we have a user
+
+          // IMPORTANT: Also check if device session still exists in DB
+          // This catches cases where admin deleted the session while app was in background
+          const sessionExists = await authService.verifySessionExists();
+          if (!sessionExists) {
+            if (__DEV__) {
+              console.log("[Auth] Device session not found in DB, logging out");
+            }
+            await signOutInternal("Votre session a été révoquée.");
+            return;
+          }
+
+          // Optionally refresh user data if hidden for a while
           if (hiddenDuration > 60000) {
             await refreshUser();
           }

@@ -773,6 +773,38 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
 }
 
 /**
+ * Verify if the current device's session still exists in the database
+ * Used for instant remote logout detection when app becomes active
+ */
+export async function verifySessionExists(): Promise<boolean> {
+  try {
+    const deviceId = await getDeviceId()
+    
+    const { data, error } = await supabase
+      .from('device_sessions')
+      .select('id')
+      .eq('device_id', deviceId)
+      .maybeSingle()
+    
+    if (error) {
+      if (__DEV__) {
+        console.error('[Auth] Error verifying session:', error.message)
+      }
+      // On error, assume session exists to avoid false positives
+      return true
+    }
+    
+    return !!data
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[Auth] Failed to verify session:', error)
+    }
+    // On error, assume session exists to avoid false positives
+    return true
+  }
+}
+
+/**
  * Represents a unique physical device with its sessions
  */
 export interface UniqueDevice {

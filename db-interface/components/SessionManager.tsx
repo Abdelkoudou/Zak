@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getDeviceId } from "@/lib/deviceId";
 import { performGlobalResetOnce } from "@/lib/deviceAuth";
 
 // Session timeout settings
@@ -112,6 +113,43 @@ export default function SessionManager() {
       }
     });
 
+    // ========================================================================
+    // Realtime Session Listener - Instant Remote Logout
+    // ========================================================================
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const setupRealtimeListener = async () => {
+      try {
+        const deviceId = await getDeviceId();
+
+        channel = supabase
+          .channel(`session-web-${deviceId}`)
+          .on(
+            "postgres_changes",
+            {
+              event: "DELETE",
+              schema: "public",
+              table: "device_sessions",
+              filter: `device_id=eq.${deviceId}`,
+            },
+            async () => {
+              console.log(
+                "[SessionManager] Session deleted remotely, forcing logout",
+              );
+              await handleLogout("Votre session a été révoquée à distance.");
+            },
+          )
+          .subscribe();
+      } catch (error) {
+        console.error(
+          "[SessionManager] Failed to setup Realtime listener:",
+          error,
+        );
+      }
+    };
+
+    setupRealtimeListener();
+
     // Cleanup
     return () => {
       activityEvents.forEach((event) => {
@@ -124,6 +162,10 @@ export default function SessionManager() {
 
       clearInterval(sessionCheckInterval);
       subscription.unsubscribe();
+
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
