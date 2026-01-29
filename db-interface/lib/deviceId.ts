@@ -63,22 +63,22 @@ export function getDeviceFingerprint(): string {
 function generateDeviceName(): string {
   const userAgent = navigator.userAgent || ''
   
+  // Detect if mobile browser
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+  const deviceEmoji = isMobile ? '📱' : '💻'
+  const deviceType = isMobile ? 'Navigateur Mobile' : 'Navigateur Desktop'
+  
   // Detect browser
-  let browser = 'Unknown Browser'
-  if (userAgent.includes('Chrome')) browser = 'Chrome'
-  else if (userAgent.includes('Firefox')) browser = 'Firefox'
-  else if (userAgent.includes('Safari')) browser = 'Safari'
-  else if (userAgent.includes('Edge')) browser = 'Edge'
+  let browserName = ''
+  if (userAgent.includes('Chrome') && !userAgent.includes('Edge')) browserName = 'Chrome'
+  else if (userAgent.includes('Firefox')) browserName = 'Firefox'
+  else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) browserName = 'Safari'
+  else if (userAgent.includes('Edge')) browserName = 'Edge'
   
-  // Detect OS
-  let os = 'Unknown OS'
-  if (userAgent.includes('Windows')) os = 'Windows'
-  else if (userAgent.includes('Mac')) os = 'macOS'
-  else if (userAgent.includes('Linux')) os = 'Linux'
-  else if (userAgent.includes('Android')) os = 'Android'
-  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS'
-  
-  return `${browser} sur ${os}`
+  if (browserName) {
+    return `${deviceEmoji} ${deviceType} (${browserName})`
+  }
+  return `${deviceEmoji} ${deviceType}`
 }
 
 // ============================================================================
