@@ -154,41 +154,53 @@ BEGIN
 END;
 $$;
 
--- Fix activate_subscription function (already has search_path but verify)
+-- Fix activate_subscription function
+-- Secure and atomic implementation to prevent TOCTOU and search_path vulnerabilities
+-- Documented: This function is intended to be called via RPC from the User application
 CREATE OR REPLACE FUNCTION public.activate_subscription(p_user_id uuid, p_key_code text)
 RETURNS json
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = 'public'  -- Uses public tables, so this is acceptable
+SET search_path = ''
 AS $$
 DECLARE
-  v_key RECORD;
-  v_result json;
+  v_duration_months INTEGER;
+  v_key_id uuid;
 BEGIN
-  -- Find the activation key
-  SELECT * INTO v_key
-  FROM public.activation_keys
-  WHERE key_code = p_key_code
-    AND is_used = FALSE;
-
-  IF NOT FOUND THEN
-    RETURN json_build_object('success', false, 'error', 'Invalid or already used key');
+  -- Authorization guard: caller must be activating for themselves
+  -- OR caller must be an admin (though typically this is a user-facing RPC)
+  IF auth.uid() IS DISTINCT FROM p_user_id THEN
+    -- Check if caller is admin/owner
+    IF NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid()
+      AND role IN ('admin', 'owner')
+    ) THEN
+      RETURN json_build_object('success', false, 'error', 'Unauthorized');
+    END IF;
   END IF;
 
-  -- Mark key as used
+  -- Atomic check-and-mark: UPDATE ... RETURNING
+  -- This prevents TOCTOU (Time of Check to Time of Use) race conditions
   UPDATE public.activation_keys
   SET is_used = TRUE,
       used_by = p_user_id,
       used_at = NOW()
-  WHERE id = v_key.id;
+  WHERE key_code = p_key_code
+    AND is_used = FALSE
+  RETURNING id, duration_months INTO v_key_id, v_duration_months;
+
+  IF v_key_id IS NULL THEN
+    RETURN json_build_object('success', false, 'error', 'Invalid or already used key');
+  END IF;
 
   -- Update user subscription
   UPDATE public.users
   SET is_paid = TRUE,
-      subscription_expires_at = NOW() + (v_key.duration_months || ' months')::INTERVAL
+      subscription_expires_at = NOW() + (v_duration_months || ' months')::INTERVAL
   WHERE id = p_user_id;
 
-  RETURN json_build_object('success', true, 'duration_months', v_key.duration_months);
+  RETURN json_build_object('success', true, 'duration_months', v_duration_months);
 END;
 $$;
 

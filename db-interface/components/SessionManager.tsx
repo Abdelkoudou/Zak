@@ -14,6 +14,8 @@ export default function SessionManager() {
   const router = useRouter();
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastActivityRef = useRef<number>(Date.now());
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isMounted = useRef(true);
 
   // Reset inactivity timer
   const resetInactivityTimer = () => {
@@ -72,6 +74,7 @@ export default function SessionManager() {
   };
 
   useEffect(() => {
+    isMounted.current = true;
     // Trigger global reset migration if needed (one-time for v2)
     performGlobalResetOnce();
 
@@ -116,30 +119,38 @@ export default function SessionManager() {
     // ========================================================================
     // Realtime Session Listener - Instant Remote Logout
     // ========================================================================
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-
     const setupRealtimeListener = async () => {
       try {
         const deviceId = await getDeviceId();
 
-        channel = supabase
-          .channel(`session-web-${deviceId}`)
-          .on(
-            "postgres_changes",
-            {
-              event: "DELETE",
-              schema: "public",
-              table: "device_sessions",
-              filter: `device_id=eq.${deviceId}`,
-            },
-            async () => {
-              console.log(
-                "[SessionManager] Session deleted remotely, forcing logout",
-              );
-              await handleLogout("Votre session a été révoquée à distance.");
-            },
-          )
-          .subscribe();
+        if (!isMounted.current) return;
+
+        const channel = supabase.channel(`session-web-${deviceId}`).on(
+          "postgres_changes",
+          {
+            event: "DELETE",
+            schema: "public",
+            table: "device_sessions",
+            filter: `device_id=eq.${deviceId}`,
+          },
+          async () => {
+            console.log(
+              "[SessionManager] Session deleted remotely, forcing logout",
+            );
+            await handleLogout("Votre session a été révoquée à distance.");
+          },
+        );
+
+        channelRef.current = channel;
+        channel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            // Check if we unmounted while subscribing
+            if (!isMounted.current && channelRef.current) {
+              supabase.removeChannel(channelRef.current);
+              channelRef.current = null;
+            }
+          }
+        });
       } catch (error) {
         console.error(
           "[SessionManager] Failed to setup Realtime listener:",
@@ -152,6 +163,7 @@ export default function SessionManager() {
 
     // Cleanup
     return () => {
+      isMounted.current = false;
       activityEvents.forEach((event) => {
         document.removeEventListener(event, handleActivity);
       });
@@ -163,8 +175,9 @@ export default function SessionManager() {
       clearInterval(sessionCheckInterval);
       subscription.unsubscribe();
 
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
