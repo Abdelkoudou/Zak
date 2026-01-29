@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { StyleSheet, View, Dimensions, Image } from "react-native";
+import { useEffect, useRef, useCallback } from "react";
+import { StyleSheet, View, Dimensions } from "react-native";
 import { Video, ResizeMode } from "expo-av";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -10,11 +10,8 @@ interface VideoSplashScreenProps {
 
 export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
   const videoRef = useRef<Video>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
 
   const handleFinish = useCallback(async () => {
-    console.log("[VideoSplash] handleFinish called");
     try {
       await SplashScreen.hideAsync();
     } catch (e) {
@@ -23,78 +20,32 @@ export function VideoSplashScreen({ onFinish }: VideoSplashScreenProps) {
     onFinish();
   }, [onFinish]);
 
-  // Safety timeout: if video fails to load or play within 8 seconds, force finish
+  // Handle transitions and safety timeout
   useEffect(() => {
-    console.log("[VideoSplash] Mounted");
-
-    // Attempt to hide native splash so our Image background shows
-    const hideNative = async () => {
-      try {
-        console.log("[VideoSplash] Hiding native splash...");
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        console.warn("[VideoSplash] Failed to hide native splash:", e);
-      }
-    };
-    hideNative();
+    // Hide native splash once the component is mounted to start the animation phase
+    SplashScreen.hideAsync().catch(() => {});
 
     const timeout = setTimeout(() => {
-      console.log("[VideoSplash] Safety timeout reached");
       handleFinish();
     }, 8000);
 
     return () => clearTimeout(timeout);
   }, [handleFinish]);
 
-  const handleLoad = async () => {
-    console.log("[VideoSplash] Video loaded successfully");
-    setIsLoaded(true);
-  };
-
-  const handleError = (error: string) => {
-    console.error("[VideoSplash] Video playback error:", error);
-    setHasError(true);
-    // On error, let the safety timeout or manual skip handle it
-    // Or finish immediately if critical
-  };
-
   return (
     <View style={styles.container}>
       <StatusBar style="light" hidden />
-
-      {/* Background Image - Always shown initially */}
-      <Image
-        source={require("../../assets/open-screen.png")}
-        style={styles.backgroundImage}
-        resizeMode="cover"
-        onLoad={() => console.log("[VideoSplash] Background image loaded")}
-        onError={(e) =>
-          console.error(
-            "[VideoSplash] Background image load error:",
-            e.nativeEvent.error,
-          )
-        }
-      />
-
-      {/* Video Animation - Layered on top */}
       <Video
         ref={videoRef}
-        style={[
-          styles.video,
-          { opacity: isLoaded ? 1 : 0 }, // Only show video when it's ready to play
-        ]}
+        style={styles.video}
         source={require("../../assets/logoanimation/logo1_1.mp4")}
         useNativeControls={false}
         resizeMode={ResizeMode.COVER}
         isLooping={false}
         shouldPlay={true}
         isMuted={true}
-        onLoadStart={() => console.log("[VideoSplash] Video load start")}
-        onLoad={handleLoad}
-        onError={handleError}
         onPlaybackStatusUpdate={(status) => {
           if (status.isLoaded && status.didJustFinish) {
-            console.log("[VideoSplash] Video finished playback");
             handleFinish();
           }
         }}
@@ -110,16 +61,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  backgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: "100%",
-    height: "100%",
-    zIndex: 1,
-  },
   video: {
-    ...StyleSheet.absoluteFillObject,
     width: Dimensions.get("window").width,
     height: Dimensions.get("window").height,
-    zIndex: 2,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
   },
 });
