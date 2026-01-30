@@ -67,14 +67,16 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
         })) as QuestionWithAnswers[];
 
         // Apply filters in memory
-        if (filters.exam_type) {
+        if (filters.exam_type && filters.exam_type.trim() !== '') {
           questions = questions.filter(q => q.exam_type === filters.exam_type)
         }
-        if (filters.sub_discipline) {
+        if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
           questions = questions.filter(q => q.sub_discipline === filters.sub_discipline)
         }
-        if (filters.cours) {
-          questions = questions.filter(q => q.cours && q.cours.includes(filters.cours as string))
+        if (filters.cours && filters.cours.trim() !== '') {
+          const normalize = (s: string) => s.trim().toLowerCase();
+          const target = normalize(filters.cours as string);
+          questions = questions.filter(q => q.cours && q.cours.some(c => normalize(c) === target))
         }
         if (filters.exam_year) {
           questions = questions.filter(q => q.exam_year === filters.exam_year)
@@ -104,7 +106,11 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
           questions = questions.slice(0, filters.limit)
         }
 
-        return { questions, total, error: null }
+        if (questions.length === 0 && filters.cours) {
+          // If course not found in offline data, fall back to Supabase
+        } else {
+          return { questions, total, error: null }
+        }
       }
     }
 
@@ -116,19 +122,24 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       `, { count: 'exact' })
 
     // Apply filters
-    if (filters.module_name) {
+    if (filters.module_name && filters.module_name.trim() !== '') {
       query = query.eq('module_name', filters.module_name)
     }
-    if (filters.exam_type) {
+    if (filters.exam_type && filters.exam_type.trim() !== '') {
       query = query.eq('exam_type', filters.exam_type)
     }
-    if (filters.sub_discipline) {
+    if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
       query = query.eq('sub_discipline', filters.sub_discipline)
     }
-    if (filters.cours) {
-      query = query.contains('cours', [filters.cours])
+    if (filters.cours && filters.cours.trim() !== '') {
+      // Use .filter() with proper PostgreSQL array literal syntax
+      // Elements containing commas need double-quoting, and internal quotes/backslashes need escaping
+      const escapedCours = filters.cours
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      query = query.filter('cours', 'cs', `{"${escapedCours}"}`)
     }
-    if (filters.year) {
+    if (filters.year && filters.year.trim() !== '') {
       query = query.eq('year', filters.year)
     }
     if (filters.exam_year) {
@@ -365,20 +376,26 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
         // Apply filters in memory
         let questions = offlineData.questions;
 
-        if (filters.exam_type) {
+        if (filters.exam_type && filters.exam_type.trim() !== '') {
           questions = questions.filter((q: any) => q.exam_type === filters.exam_type);
         }
-        if (filters.sub_discipline) {
+        if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
           questions = questions.filter((q: any) => q.sub_discipline === filters.sub_discipline);
         }
-        if (filters.cours) {
-          questions = questions.filter((q: any) => q.cours && q.cours.includes(filters.cours));
+        if (filters.cours && filters.cours.trim() !== '') {
+          const normalize = (s: string) => s.trim().toLowerCase();
+          const target = normalize(filters.cours as string);
+          questions = questions.filter((q: any) => q.cours && q.cours.some((c: string) => normalize(c) === target));
         }
         if (filters.exam_year) {
           questions = questions.filter((q: any) => q.exam_year === filters.exam_year);
         }
 
-        return { count: questions.length, error: null };
+        if (questions.length === 0 && filters.cours) {
+          // If course not found in offline data, fall back to Supabase
+        } else {
+          return { count: questions.length, error: null };
+        }
       }
     }
 
@@ -387,17 +404,21 @@ export async function getQuestionCount(filters: QuestionFilters): Promise<{
       .from('questions')
       .select('*', { count: 'exact', head: true })
 
-    if (filters.module_name) {
+    if (filters.module_name && filters.module_name.trim() !== '') {
       query = query.eq('module_name', filters.module_name)
     }
-    if (filters.exam_type) {
+    if (filters.exam_type && filters.exam_type.trim() !== '') {
       query = query.eq('exam_type', filters.exam_type)
     }
-    if (filters.sub_discipline) {
+    if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
       query = query.eq('sub_discipline', filters.sub_discipline)
     }
-    if (filters.cours) {
-      query = query.contains('cours', [filters.cours])
+    if (filters.cours && filters.cours.trim() !== '') {
+      // Use .filter() with proper PostgreSQL array literal syntax for comma-containing values
+      const escapedCours = filters.cours
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"');
+      query = query.filter('cours', 'cs', `{"${escapedCours}"}`)
     }
     if (filters.exam_year) {
       query = query.eq('exam_year', filters.exam_year)

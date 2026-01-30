@@ -115,23 +115,30 @@ export async function getQuestions(filters?: {
         .order('number', { ascending: true })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
-      if (filters?.year) {
+      if (filters?.year && filters.year.trim() !== '') {
         query = query.eq('year', filters.year);
       }
-      if (filters?.module_name) {
+      if (filters?.module_name && filters.module_name.trim() !== '') {
         query = query.eq('module_name', filters.module_name);
       }
-      if (filters?.sub_discipline) {
+      if (filters?.sub_discipline && filters.sub_discipline.trim() !== '') {
         query = query.eq('sub_discipline', filters.sub_discipline);
       }
-      if (filters?.exam_type) {
+      if (filters?.exam_type && filters.exam_type.trim() !== '') {
         query = query.eq('exam_type', filters.exam_type);
       }
       if (filters?.exam_year) {
         query = query.eq('exam_year', filters.exam_year);
       }
-      if (filters?.cours) {
-        query = query.contains('cours', [filters.cours]);
+      if (filters?.cours && filters.cours.trim() !== '') {
+        // Use .filter() with proper PostgreSQL array literal syntax
+        // Elements containing commas, quotes, or backslashes need to be double-quoted
+        // and internal quotes/backslashes need to be escaped
+        const escapedCours = filters.cours
+          .replace(/\\/g, '\\\\')  // Escape backslashes first
+          .replace(/"/g, '\\"');   // Escape double quotes
+        // Format as PostgreSQL array literal with double-quoted element
+        query = query.filter('cours', 'cs', `{"${escapedCours}"}`);
       }
 
       const { data, error } = await query;

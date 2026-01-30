@@ -48,6 +48,9 @@ export async function getResources(filters: ResourceFilters = {}): Promise<{
 
     return { resources: data as CourseResource[], error: null }
   } catch (error) {
+    if (__DEV__) {
+      console.error('[Resources] Failed to fetch resources:', error)
+    }
     return { resources: [], error: 'Failed to fetch resources' }
   }
 }

@@ -10,46 +10,52 @@ const DEVICE_ID_KEY = 'fmc_device_id'
 // ============================================================================
 
 /**
- * Generate a device fingerprint that's consistent with mobile app
- * This creates a unified ID that should be the same whether accessing
- * via mobile app or web browser on the same device
+ * Generate a TRUE unique device identifier
+ * This ID is permanent - stored in localStorage
+ * LocalStorage clear = new device ID (intentional)
  */
-function generateUnifiedDeviceId(): string {
+function generatePermanentDeviceId(): string {
+  try {
+    // Generate a true UUID - unique per browser instance
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `device-${crypto.randomUUID()}`
+    }
+    
+    // Fallback: timestamp + high-entropy random string
+    const timestamp = Date.now().toString(36)
+    const random = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15)
+    
+    return `device-${timestamp}-${random}`
+  } catch (error) {
+    // Ultimate fallback
+    return `device-fallback-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
+  }
+}
+/**
+ * Generate a hardware fingerprint (non-unique)
+ * This is used to link independent sessions (App, Web) on the same physical device.
+ * It's based on OS and Screen Resolution.
+ */
+export function getDeviceFingerprint(): string {
   // Get screen characteristics (use consistent orientation - always width >= height)
-  const screenWidth = Math.max(screen.width, screen.height)  // Always use larger dimension as width
-  const screenHeight = Math.min(screen.width, screen.height) // Always use smaller dimension as height
+  const screenWidth = Math.max(screen.width, screen.height)
+  const screenHeight = Math.min(screen.width, screen.height)
   const screenResolution = `${screenWidth}x${screenHeight}`
   
   // Get simplified OS name for consistency with mobile app
   const userAgent = navigator.userAgent || ''
   let osName = 'Unknown'
   
-  // Normalize OS names to match mobile app detection
   if (userAgent.includes('Android')) osName = 'Android'
   else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) osName = 'iOS'
   else if (userAgent.includes('Windows')) osName = 'Windows'
   else if (userAgent.includes('Mac')) osName = 'macOS'
   else if (userAgent.includes('Linux')) osName = 'Linux'
   
-  // Create device string focusing on hardware characteristics
-  // This should match the mobile app's device string format
-  const deviceString = `${osName}-${screenResolution}`
-  
-  // Create a hash-like string (same algorithm as mobile app)
-  let hash = 0
-  for (let i = 0; i < deviceString.length; i++) {
-    const char = deviceString.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
-  }
-  
-  // Convert to positive string - same format as mobile app
-  const hashString = Math.abs(hash).toString(36)
-  
-  console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
-  
-  return `unified-${hashString}`
+  return `${osName}-${screenResolution}`
 }
+
 
 /**
  * Get device name for display purposes
@@ -57,22 +63,22 @@ function generateUnifiedDeviceId(): string {
 function generateDeviceName(): string {
   const userAgent = navigator.userAgent || ''
   
+  // Detect if mobile browser
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+  const deviceEmoji = isMobile ? '📱' : '💻'
+  const deviceType = isMobile ? 'Navigateur Mobile' : 'Navigateur Desktop'
+  
   // Detect browser
-  let browser = 'Unknown Browser'
-  if (userAgent.includes('Chrome')) browser = 'Chrome'
-  else if (userAgent.includes('Firefox')) browser = 'Firefox'
-  else if (userAgent.includes('Safari')) browser = 'Safari'
-  else if (userAgent.includes('Edge')) browser = 'Edge'
+  let browserName = ''
+  if (userAgent.includes('Edg') || userAgent.includes('Edge')) browserName = 'Edge'
+  else if (userAgent.includes('Chrome') && !userAgent.includes('Edge') && !userAgent.includes('Edg')) browserName = 'Chrome'
+  else if (userAgent.includes('Firefox')) browserName = 'Firefox'
+  else if (userAgent.includes('Safari') && !userAgent.includes('Chrome') && !userAgent.includes('Edg')) browserName = 'Safari'
   
-  // Detect OS
-  let os = 'Unknown OS'
-  if (userAgent.includes('Windows')) os = 'Windows'
-  else if (userAgent.includes('Mac')) os = 'macOS'
-  else if (userAgent.includes('Linux')) os = 'Linux'
-  else if (userAgent.includes('Android')) os = 'Android'
-  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS'
-  
-  return `${browser} sur ${os}`
+  if (browserName) {
+    return `${deviceEmoji} ${deviceType} (${browserName})`
+  }
+  return `${deviceEmoji} ${deviceType}`
 }
 
 // ============================================================================
@@ -88,23 +94,31 @@ export async function getDeviceId(): Promise<string> {
     // Check for existing stored device ID
     let deviceId = localStorage.getItem(DEVICE_ID_KEY)
     
+    // MIGRATION: If we have an old "unified-" ID, clear it to force new secure format
+    if (deviceId && deviceId.startsWith('unified-')) {
+      console.log('[DeviceId] Migrating from old unified id...')
+      deviceId = null
+      localStorage.setItem(DEVICE_ID_KEY, '')
+    }
+
     if (!deviceId) {
-      // Generate new device ID
-      deviceId = generateUnifiedDeviceId()
+      // Generate NEW permanent ID
+      deviceId = generatePermanentDeviceId()
       
       // Store for future consistency
       localStorage.setItem(DEVICE_ID_KEY, deviceId)
       
-      console.log('[DeviceId] Generated and stored web device ID')
+      console.log('[DeviceId] Generated and stored new permanent web device ID:', deviceId)
     }
     
-    return deviceId
+    return deviceId as string
   } catch (error) {
     console.error('[DeviceId] Error getting device ID:', error)
-    // Fallback to a simple ID
-    return `web-fallback-${Date.now()}`
+    // Fallback to a one-time ID for this session
+    return `web-temp-${Date.now()}`
   }
 }
+
 
 /**
  * Get device name for display

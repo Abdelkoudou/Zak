@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { useTheme } from "./ThemeProvider";
@@ -40,9 +40,12 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [isTogglingMaintenance, setIsTogglingMaintenance] = useState(false);
   const { resolvedTheme, toggleTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
+  // Fetch user role
   useEffect(() => {
     const fetchUserRole = async () => {
       const {
@@ -63,6 +66,77 @@ export default function Sidebar() {
 
     fetchUserRole();
   }, []);
+
+  // Fetch maintenance mode status
+  useEffect(() => {
+    const fetchMaintenanceMode = async () => {
+      const { data } = await supabase
+        .from("app_config")
+        .select("value")
+        .eq("key", "maintenance_mode")
+        .single();
+
+      if (data) {
+        setMaintenanceMode(data.value === "true");
+      }
+    };
+
+    fetchMaintenanceMode();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel("app_config_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "app_config",
+          filter: "key=eq.maintenance_mode",
+        },
+        (payload) => {
+          setMaintenanceMode(payload.new.value === "true");
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Toggle maintenance mode
+  const toggleMaintenanceMode = useCallback(async () => {
+    if (isTogglingMaintenance) return;
+
+    const newValue = !maintenanceMode;
+    const confirmMessage = newValue
+      ? "⚠️ Activer le mode maintenance ?\n\nLes utilisateurs ne pourront plus accéder à l'application mobile."
+      : "✅ Désactiver le mode maintenance ?\n\nLes utilisateurs pourront à nouveau accéder à l'application.";
+
+    if (!confirm(confirmMessage)) return;
+
+    setIsTogglingMaintenance(true);
+    try {
+      const { error } = await supabase
+        .from("app_config")
+        .update({
+          value: newValue ? "true" : "false",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("key", "maintenance_mode");
+
+      if (error) {
+        alert("Erreur: " + error.message);
+      } else {
+        setMaintenanceMode(newValue);
+      }
+    } catch (err) {
+      console.error("Failed to toggle maintenance mode:", err);
+    } finally {
+      setIsTogglingMaintenance(false);
+    }
+  }, [maintenanceMode, isTogglingMaintenance]);
 
   return (
     <>
@@ -140,7 +214,7 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div
         className={`
-          fixed md:sticky top-0 md:h-screen md:left-0 z-50
+          fixed md:sticky top-0 md:left-0 z-50
           w-72 h-[100dvh] md:h-screen bg-theme-card border-r border-theme p-6
           transform transition-transform duration-300 ease-in-out
           md:transform-none shadow-xl md:shadow-none flex flex-col overflow-y-auto
@@ -252,6 +326,50 @@ export default function Sidebar() {
 
         {/* Theme Toggle */}
         <div className={`mt-4 pt-4 border-t border-theme flex-shrink-0`}>
+          {/* Maintenance Mode Toggle - Owner Only */}
+          {userRole === "owner" && (
+            <button
+              onClick={toggleMaintenanceMode}
+              disabled={isTogglingMaintenance}
+              className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl mb-3 transition-all duration-300 group shadow-sm hover:shadow-md ${
+                maintenanceMode
+                  ? "bg-red-500/10 text-red-500 border-2 border-red-500/50"
+                  : "bg-theme-secondary text-theme-secondary border border-theme"
+              } ${isTogglingMaintenance ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div className="flex items-center gap-4">
+                <span
+                  className={`text-xl transition-all duration-300 ${maintenanceMode ? "animate-pulse" : ""}`}
+                >
+                  🔧
+                </span>
+                <div className="text-left">
+                  <span className="font-bold text-sm block">
+                    Mode Maintenance
+                  </span>
+                  <span
+                    className={`text-[10px] uppercase tracking-wider ${maintenanceMode ? "text-red-400" : "text-theme-muted"}`}
+                  >
+                    {maintenanceMode ? "🔴 Actif" : "⚪ Inactif"}
+                  </span>
+                </div>
+              </div>
+              <div
+                className={`w-10 h-6 flex items-center rounded-full p-1 transition-colors duration-300 ${
+                  maintenanceMode
+                    ? "bg-red-500"
+                    : "bg-neutral-light border border-theme"
+                }`}
+              >
+                <div
+                  className={`bg-white w-4 h-4 rounded-full shadow-lg transform transition-transform duration-300 ${
+                    maintenanceMode ? "translate-x-4" : "translate-x-0"
+                  }`}
+                ></div>
+              </div>
+            </button>
+          )}
+
           <button
             onClick={toggleTheme}
             className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl bg-theme-secondary text-theme-secondary border border-theme transition-all duration-300 group shadow-sm hover:shadow-md`}
@@ -260,7 +378,7 @@ export default function Sidebar() {
               <span className="text-xl transition-all duration-700 group-hover:rotate-[360deg] group-hover:scale-125">
                 {isDark ? "🌙" : "☀️"}
               </span>
-              <span className="font-bold tracking-tight text-sm uppercase tracking-widest px-1">
+              <span className="font-bold text-sm uppercase tracking-widest px-1">
                 {isDark ? "Nuit" : "Jour"}
               </span>
             </div>

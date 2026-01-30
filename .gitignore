@@ -32,3 +32,9 @@ Thumbs.db
 # Ignore virtual environment
 backend/venv/
 venv/
+
+**/testsprite_tests/
+**/load-tests/
+
+# Dependencies
+node_modules/

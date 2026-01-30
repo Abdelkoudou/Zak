@@ -77,17 +77,17 @@ export default function DeviceManagerModal({
     loadDevices();
   }, [loadDevices]);
 
-  const handleDelete = async (deviceId: string) => {
+  const handleDelete = async (sessionId: string) => {
     if (
       !confirm(
-        "Êtes-vous sûr de vouloir supprimer cet appareil ? L'utilisateur pourra en connecter un nouveau.",
+        "Êtes-vous sûr de vouloir supprimer cette session ? L'utilisateur pourra en reconnecter une nouvelle.",
       )
     ) {
       return;
     }
 
-    setDeletingId(deviceId);
-    const { error } = await deleteUserDevice(deviceId);
+    setDeletingId(sessionId);
+    const { error } = await deleteUserDevice(sessionId);
 
     if (error) {
       alert(`Erreur: ${error}`);
@@ -97,9 +97,69 @@ export default function DeviceManagerModal({
     setDeletingId(null);
   };
 
+  const handleDeleteDevice = async (
+    fingerprint: string,
+    sessions: DeviceSession[],
+  ) => {
+    if (
+      !confirm(
+        `Êtes-vous sûr de vouloir supprimer cet appareil (${sessions.length} sessions) ? Cela libérera un emplacement pour un nouvel appareil.`,
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    let hasError = false;
+
+    // Delete all sessions for this fingerprint
+    for (const session of sessions) {
+      const { error } = await deleteUserDevice(session.id);
+      if (error) {
+        alert(`Erreur lors de la suppression d'une session: ${error}`);
+        hasError = true;
+        break;
+      }
+    }
+
+    if (!hasError) {
+      await loadDevices();
+    }
+    setLoading(false);
+  };
+
   const toggleExpand = (deviceId: string) => {
     setExpandedDevice(expandedDevice === deviceId ? null : deviceId);
   };
+
+  // Grouping logic: Group sessions by fingerprint
+  // If fingerprint is missing, use device_id as a fallback
+  const groupedDevices = devices.reduce(
+    (acc, device, i) => {
+      const key = device.fingerprint || device.device_id || `__unknown_${i}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(device);
+      return acc;
+    },
+    {} as Record<string, DeviceSession[]>,
+  );
+
+  // Convert to array and sort by most recently active session
+  const physicalDevices = Object.entries(groupedDevices)
+    .map(([fingerprint, sessions]) => ({
+      fingerprint,
+      sessions: sessions.sort(
+        (a, b) =>
+          new Date(b.last_active_at).getTime() -
+          new Date(a.last_active_at).getTime(),
+      ),
+      lastActive: new Date(
+        Math.max(...sessions.map((s) => new Date(s.last_active_at).getTime())),
+      ),
+    }))
+    .sort((a, b) => b.lastActive.getTime() - a.lastActive.getTime());
 
   return (
     <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -109,10 +169,10 @@ export default function DeviceManagerModal({
             <span className="text-2xl">📱</span>
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                Appareils Connectés
+                Gestion des Appareils
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                {userName} • {devices.length}/2 appareils
+                {userName} • {physicalDevices.length}/2 appareils physiques
               </p>
             </div>
           </div>
@@ -131,7 +191,7 @@ export default function DeviceManagerModal({
               Chargement...
             </p>
           </div>
-        ) : devices.length === 0 ? (
+        ) : physicalDevices.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 dark:bg-slate-950/30 rounded-3xl border border-dashed border-slate-200 dark:border-white/5">
             <span className="text-4xl mb-4">📵</span>
             <p className="font-medium text-slate-900 dark:text-white mb-1">
@@ -143,58 +203,53 @@ export default function DeviceManagerModal({
           </div>
         ) : (
           <div className="space-y-4">
-            {devices.map((device, index) => {
-              const accessInfo = getAccessType(device);
-              const isExpanded = expandedDevice === device.id;
+            {physicalDevices.map((device, index) => {
+              const isExpanded = expandedDevice === device.fingerprint;
+              const mainSession = device.sessions[0];
+              const sessionCount = device.sessions.length;
 
               return (
                 <div
-                  key={device.id}
-                  className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl overflow-hidden transition-all"
+                  key={device.fingerprint}
+                  className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl overflow-hidden transition-all"
                 >
-                  {/* Main row - clickable to expand */}
+                  {/* Physical Device Header */}
                   <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-950/70 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:ring-inset"
-                    onClick={() => toggleExpand(device.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleExpand(device.id);
-                      }
-                    }}
+                    className="flex items-center justify-between p-5 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-950/70 transition-colors"
+                    onClick={() => toggleExpand(device.fingerprint)}
                     role="button"
                     tabIndex={0}
-                    aria-expanded={isExpanded}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center text-lg">
-                        {accessInfo.icon}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-primary-500/10 flex items-center justify-center text-xl shadow-inner">
+                        {index === 0 ? "➊" : "➋"}
                       </div>
                       <div>
-                        <h3 className="font-black text-slate-900 dark:text-white text-sm">
+                        <h3 className="font-black text-slate-900 dark:text-white text-base">
                           Appareil {index + 1}
                         </h3>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span
-                            className={`text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider ${
-                              accessInfo.type === "app"
-                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                                : accessInfo.type === "browser"
-                                  ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                                  : "bg-slate-500/10 text-slate-600 dark:text-slate-400"
-                            }`}
-                          >
-                            {accessInfo.label}
-                          </span>
-                          <span className="text-[10px] px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 font-black uppercase tracking-wider rounded-md">
-                            Actif
-                          </span>
-                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-widest font-bold mt-0.5">
+                          {sessionCount} session{sessionCount > 1 ? "s" : ""}{" "}
+                          active{sessionCount > 1 ? "s" : ""}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteDevice(
+                            device.fingerprint,
+                            device.sessions,
+                          );
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-colors"
+                        title="Supprimer cet appareil"
+                      >
+                        🗑️
+                      </button>
                       <span
-                        className="text-slate-400 text-sm transition-transform duration-200"
+                        className="text-slate-400 text-xs transition-transform duration-300"
                         style={{
                           transform: isExpanded
                             ? "rotate(180deg)"
@@ -206,69 +261,61 @@ export default function DeviceManagerModal({
                     </div>
                   </div>
 
-                  {/* Expanded details */}
+                  {/* Sessions List */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-2 border-t border-slate-100 dark:border-white/5 space-y-3 bg-white/50 dark:bg-slate-950/30">
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">
-                            Nom de l&apos;appareil
-                          </p>
-                          <p className="text-slate-700 dark:text-slate-300 font-medium break-all">
-                            {device.device_name || "Inconnu"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">
-                            Type d&apos;accès
-                          </p>
-                          <p className="text-slate-700 dark:text-slate-300 font-medium">
-                            {accessInfo.icon} {accessInfo.label}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">
-                            Dernière activité
-                          </p>
-                          <p className="text-slate-700 dark:text-slate-300 font-medium">
-                            {new Date(device.last_active_at).toLocaleDateString(
-                              "fr-FR",
-                              {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              },
-                            )}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-bold mb-1">
-                            Première connexion
-                          </p>
-                          <p className="text-slate-700 dark:text-slate-300 font-medium">
-                            {device.created_at
-                              ? new Date(device.created_at).toLocaleDateString(
-                                  "fr-FR",
-                                  { day: "numeric", month: "short" },
-                                )
-                              : "—"}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(device.id);
-                        }}
-                        disabled={deletingId === device.id}
-                        className="w-full mt-2 py-2 px-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-xl transition-colors disabled:opacity-50 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2"
-                      >
-                        {deletingId === device.id
-                          ? "⏳ Suppression..."
-                          : "🗑️ Supprimer cet appareil"}
-                      </button>
+                    <div className="px-5 pb-5 pt-1 space-y-3 bg-white/40 dark:bg-slate-950/20 border-t border-slate-100 dark:border-white/5 animate-in slide-in-from-top-2 duration-200">
+                      {device.sessions.map((session) => {
+                        const accessInfo = getAccessType(session);
+                        return (
+                          <div
+                            key={session.id}
+                            className="p-3 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">
+                                  {accessInfo.icon}
+                                </span>
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                  {accessInfo.label}
+                                </span>
+                              </div>
+                              <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">
+                                {new Date(
+                                  session.last_active_at,
+                                ).toLocaleDateString("fr-FR", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+
+                            <div className="mb-3">
+                              <p className="text-[11px] text-slate-700 dark:text-slate-300 font-bold break-all">
+                                {session.device_name || "Appareil Inconnu"}
+                              </p>
+                              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium truncate mt-0.5 opacity-60">
+                                ID: {session.device_id.substring(0, 16)}...
+                              </p>
+                            </div>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(session.id);
+                              }}
+                              disabled={deletingId === session.id}
+                              className="w-full py-1.5 px-3 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-50 text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                            >
+                              {deletingId === session.id
+                                ? "..."
+                                : "🗑️ Supprimer la session"}
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -279,10 +326,11 @@ export default function DeviceManagerModal({
 
         <div className="mt-8 pt-6 border-t border-slate-100 dark:border-white/5 text-center">
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-relaxed">
-            📱 = Application mobile • 🌐 = Navigateur web
+            Un <strong>appareil physique</strong> peut avoir plusieurs sessions
+            (App + Web).
             <br />
-            La limite est fixée à <strong>2 appareils physiques</strong> par
-            utilisateur.
+            Chaque utilisateur est limité à{" "}
+            <strong>2 appareils physiques</strong>.
           </p>
         </div>
       </div>

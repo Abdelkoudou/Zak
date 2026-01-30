@@ -4,7 +4,7 @@
 
 import { supabase, getRedirectUrl, isSupabaseConfigured, getSupabaseConfigStatus } from './supabase'
 import { User, RegisterFormData, ProfileUpdateData, ActivationResponse, DeviceSession } from '@/types'
-import { getDeviceId, getDeviceName } from './deviceId'
+import { getDeviceId, getDeviceName, getDeviceFingerprint } from './deviceId'
 import { clearQueryCache } from './query-client'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
@@ -65,6 +65,41 @@ export async function clearCachedUserProfile(): Promise<void> {
     if (__DEV__) {
       console.warn('[Auth] Failed to clear cached user profile:', error)
     }
+  }
+}
+
+/**
+ * Perform a ONE-TIME global reset for all users (v2 migration)
+ * Clears old device IDs and forces a fresh logout/login
+ */
+export async function performGlobalResetOnce(): Promise<void> {
+  const RESET_KEY = '@fmc_v2_migration_reset'
+  try {
+    const hasReset = await AsyncStorage.getItem(RESET_KEY)
+    if (hasReset === 'true') return
+
+    if (__DEV__) {
+      console.log('[Auth] 🚨 TRIGGERING ONE-TIME GLOBAL RESET (V2)')
+    }
+
+    // 1. Force logout from Supabase
+    await supabase.auth.signOut()
+
+    // 2. Clear old Device ID (forces new secure format generation)
+    // We already have a self-cleaning check in deviceId.ts, 
+    // but this ensures we start with a clean slate.
+    const { clearDeviceId } = require('./deviceId')
+    await clearDeviceId()
+
+    // 3. Clear cache
+    await clearCachedUserProfile()
+    await clearQueryCache()
+
+    // 4. Mark as reset
+    await AsyncStorage.setItem(RESET_KEY, 'true')
+    
+  } catch (error) {
+    console.error('[Auth] Global reset failed:', error)
   }
 }
 
@@ -299,14 +334,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
-    console.log('[Auth] Starting sign in for:', email)
+    if (__DEV__) console.log('[Auth] Starting sign in for:', email)
 
     // Check if Supabase is properly configured
     const configStatus = getSupabaseConfigStatus()
-    console.log('[Auth] Supabase config status:', configStatus)
+    if (__DEV__) console.log('[Auth] Supabase config status:', configStatus)
 
     if (!isSupabaseConfigured()) {
-      console.error('[Auth] Supabase not configured properly:', configStatus)
+      if (__DEV__) console.error('[Auth] Supabase not configured properly:', configStatus)
       return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
 
@@ -321,7 +356,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     }
 
     // Step 1: Authenticate with Supabase
-    console.log('[Auth] Calling signInWithPassword...')
+    if (__DEV__) console.log('[Auth] Calling signInWithPassword...')
     let authData: any = null
     let authError: any = null
 
@@ -333,7 +368,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       authData = result.data
       authError = result.error
     } catch (e: any) {
-      console.error('[Auth] signInWithPassword threw:', e)
+      if (__DEV__) console.error('[Auth] signInWithPassword threw:', e)
       const errorMessage = e?.message || ''
       // Check for network errors specifically
       if (errorMessage.toLowerCase().includes('network') ||
@@ -344,20 +379,20 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: translateAuthError(errorMessage || 'Erreur de connexion. Veuillez réessayer.') }
     }
 
-    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
+    if (__DEV__) console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
 
     if (authError) {
-      console.error('[Auth] Sign in error:', authError.message)
+      if (__DEV__) console.error('[Auth] Sign in error:', authError.message)
       return { user: null, error: translateAuthError(authError.message) }
     }
 
     if (!authData?.user) {
-      console.error('[Auth] No user returned from sign in')
+      if (__DEV__) console.error('[Auth] No user returned from sign in')
       return { user: null, error: 'Échec de la connexion. Veuillez réessayer.' }
     }
 
     // Step 2: Fetch user profile
-    console.log('[Auth] Fetching user profile for:', authData.user.id)
+    if (__DEV__) console.log('[Auth] Fetching user profile for:', authData.user.id)
     let userProfile: any = null
     let fetchError: any = null
 
@@ -371,14 +406,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       userProfile = result.data
       fetchError = result.error
     } catch (e: any) {
-      console.error('[Auth] Profile fetch threw:', e)
+      if (__DEV__) console.error('[Auth] Profile fetch threw:', e)
       return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
     }
 
-    console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
+    if (__DEV__) console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
 
     if (fetchError) {
-      console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
+      if (__DEV__) console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
       // Don't translate this error - show a specific message
       if (fetchError.code === 'PGRST116') {
         return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
@@ -387,30 +422,30 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     }
 
     if (!userProfile) {
-      console.error('[Auth] No profile data returned')
+      if (__DEV__) console.error('[Auth] No profile data returned')
       return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
     }
 
     // Step 3: Check device limit (skip for reviewers)
     const isReviewer = userProfile.is_reviewer === true
     if (!isReviewer) {
-      console.log('[Auth] Checking device limit...')
+      if (__DEV__) console.log('[Auth] Checking device limit...')
       const { canLogin, error: deviceError, isLimitReached } = await checkDeviceLimit(authData.user.id)
       
       // Only block login if the actual device limit is reached (not for transient errors)
       if (!canLogin && isLimitReached) {
-        console.warn('[Auth] Device limit reached, signing out')
+        if (__DEV__) console.warn('[Auth] Device limit reached, signing out')
         await supabase.auth.signOut()
         return { user: null, error: deviceError }
       }
       
       // Log transient errors but allow login (fail-open for network issues)
       if (!canLogin && !isLimitReached) {
-        console.warn('[Auth] Device check failed (transient error), allowing login:', deviceError)
+        if (__DEV__) console.warn('[Auth] Device check failed (transient error), allowing login:', deviceError)
       }
 
       // Step 4: Register device - NON-BLOCKING
-      console.log('[Auth] Registering device...')
+      if (__DEV__) console.log('[Auth] Registering device...')
       registerDevice(authData.user.id).catch(e => {
         console.warn('[Auth] Device registration failed (non-blocking):', e)
       })
@@ -426,10 +461,10 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     // Cache profile for offline use
     await cacheUserProfile(userProfile as User)
 
-    console.log('[Auth] Sign in complete!')
+    if (__DEV__) console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
-    console.error('[Auth] Unexpected sign in error:', error)
+    if (__DEV__) console.error('[Auth] Unexpected sign in error:', error)
     const errorMessage = error?.message || ''
     // Check for network errors
     if (errorMessage.toLowerCase().includes('network') ||
@@ -452,12 +487,22 @@ export async function signOut(): Promise<{ error: string | null }> {
     // Clear TanStack Query cache to prevent data leakage
     await clearQueryCache()
 
+    // Try to sign out from Supabase
+    // This may fail if there's no session, but that's OK - user is already logged out
     const { error } = await supabase.auth.signOut()
-    if (error) {
+    
+    // Ignore "Auth session missing" error - it just means the user was already logged out
+    if (error && !error.message.toLowerCase().includes('session missing')) {
       return { error: error.message }
     }
+    
     return { error: null }
-  } catch (error) {
+  } catch (error: any) {
+    // Also ignore "session missing" in catch block
+    const errorMessage = error?.message || ''
+    if (errorMessage.toLowerCase().includes('session missing')) {
+      return { error: null }
+    }
     return { error: 'An unexpected error occurred' }
   }
 }
@@ -677,17 +722,31 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
   try {
     const deviceId = await getDeviceId()
     const deviceName = await getDeviceName()
+    const fingerprint = getDeviceFingerprint()
+
+    // Clean up stale sessions from same physical device (e.g. app reinstall)
+    // We only delete if fingerprint is available to avoid over-deletion
+    if (fingerprint) {
+      await supabase
+        .from('device_sessions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('fingerprint', fingerprint)
+        .neq('device_id', deviceId)
+    }
 
     const { error } = await supabase
       .from('device_sessions')
       .upsert({
         user_id: userId,
         device_id: deviceId,
+        fingerprint: fingerprint,
         device_name: deviceName,
         last_active_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,device_id',
       })
+
 
     if (error) {
       if (__DEV__) {
@@ -724,6 +783,105 @@ export async function getDeviceSessions(userId: string): Promise<{ sessions: Dev
 }
 
 /**
+ * Verify if the current device's session still exists in the database
+ * Used for instant remote logout detection when app becomes active
+ */
+export async function verifySessionExists(): Promise<boolean> {
+  try {
+    const deviceId = await getDeviceId()
+    
+    const { data, error } = await supabase
+      .from('device_sessions')
+      .select('id')
+      .eq('device_id', deviceId)
+      .maybeSingle()
+    
+    if (error) {
+      if (__DEV__) {
+        console.error('[Auth] Error verifying session:', error.message)
+      }
+      // On error, assume session exists to avoid false positives
+      return true
+    }
+    
+    return !!data
+  } catch (error) {
+    if (__DEV__) {
+      console.error('[Auth] Failed to verify session:', error)
+    }
+    // On error, assume session exists to avoid false positives
+    return true
+  }
+}
+
+/**
+ * Represents a unique physical device with its sessions
+ */
+export interface UniqueDevice {
+  fingerprint: string
+  sessions: DeviceSession[]
+  representativeSession: DeviceSession
+}
+
+/**
+ * Group device sessions by physical device (fingerprint)
+ * Returns unique devices with their sessions sorted by last_active_at
+ */
+export function groupSessionsByDevice(sessions: DeviceSession[]): UniqueDevice[] {
+  // Group by fingerprint (fallback to device_id for legacy data)
+  const grouped = sessions.reduce((acc, session, index) => {
+    const key = session.fingerprint || session.device_id || `__unknown_${index}`
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(session)
+    return acc
+  }, {} as Record<string, DeviceSession[]>)
+
+  // Convert to array, sort sessions within each group, pick representative
+  return Object.entries(grouped)
+    .map(([fingerprint, deviceSessions]) => {
+      const sorted = deviceSessions.sort(
+        (a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime()
+      )
+      return {
+        fingerprint,
+        sessions: sorted,
+        representativeSession: sorted[0],
+      }
+    })
+    .sort((a, b) => 
+      new Date(b.representativeSession.last_active_at).getTime() - 
+      new Date(a.representativeSession.last_active_at).getTime()
+    )
+}
+
+/**
+ * Get unique physical devices for a user (deduplicated by fingerprint)
+ * Returns representative sessions for display purposes
+ */
+export async function getUniqueDevices(userId: string): Promise<{ 
+  devices: DeviceSession[]
+  uniqueCount: number
+  error: string | null 
+}> {
+  const { sessions, error } = await getDeviceSessions(userId)
+  
+  if (error) {
+    return { devices: [], uniqueCount: 0, error }
+  }
+
+  const uniqueDevices = groupSessionsByDevice(sessions)
+  
+  // Return representative sessions (1 per physical device)
+  return {
+    devices: uniqueDevices.map(d => d.representativeSession),
+    uniqueCount: uniqueDevices.length,
+    error: null
+  }
+}
+
+/**
  * Check if user has reached device limit (2 devices)
  * Returns canLogin: true if user can login, false if device limit reached
  * Returns isLimitReached: true only when the actual device limit is exceeded (not for transient errors)
@@ -734,16 +892,34 @@ export async function checkDeviceLimit(userId: string): Promise<{ canLogin: bool
     if (error) return { canLogin: false, error, isLimitReached: false }
 
     const currentDeviceId = await getDeviceId()
-    const isCurrentDeviceRegistered = sessions.some(s => s.device_id === currentDeviceId)
+    const currentFingerprint = getDeviceFingerprint()
+    
+    // Check if THIS specific session instance is already registered
+    if (sessions.some(s => s.device_id === currentDeviceId)) {
+      return { canLogin: true, error: null, isLimitReached: false }
+    }
 
-    // If this is a new device and user already has 2 devices, block login
-    if (!isCurrentDeviceRegistered && sessions.length >= 2) {
+    // Check if THIS physical hardware (fingerprint) is already registered
+    if (sessions.some(s => s.fingerprint === currentFingerprint)) {
+      return { canLogin: true, error: null, isLimitReached: false }
+    }
+
+    // Count unique physical devices already registered
+    // We use fingerprint if available, fallback to device_id for legacy sessions
+    const physicalDeviceFingerprints = new Set(
+      sessions.map(s => s.fingerprint || s.device_id)
+    )
+
+    // If already using 2 physical devices and this is a 3rd one, block login
+    if (physicalDeviceFingerprints.size >= 2) {
       return { 
         canLogin: false, 
-        error: 'Limite d\'appareils atteinte. Vous ne pouvez utiliser que 2 appareils maximum. Veuillez vous déconnecter d\'un autre appareil pour continuer.',
+        error: '🔴 Limite d\'appareils atteinte. Vous êtes déjà connecté sur 2 appareils',
         isLimitReached: true
       }
     }
+
+
     return { canLogin: true, error: null, isLimitReached: false }
   } catch (error) {
     if (__DEV__) {

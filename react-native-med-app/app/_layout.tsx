@@ -4,17 +4,18 @@
 
 import "../global.css";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Stack } from "expo-router";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { StatusBar, Platform } from "react-native";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { queryClient, asyncStoragePersister } from "@/lib/query-client";
-import { AuthProvider } from "@/context/AuthContext";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { AppVisibilityProvider } from "@/context/AppVisibilityContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { VideoSplashScreen } from "@/components/VideoSplashScreen";
+import { MaintenanceScreen } from "@/components/MaintenanceScreen";
 
 // Lazy-loaded modules - prevent crashes from top-level imports
 let _Platform: typeof import("react-native").Platform | null = null;
@@ -56,7 +57,9 @@ function initNativeModules() {
 
   try {
     _SplashScreen = require("expo-splash-screen");
-    _SplashScreen?.preventAutoHideAsync().catch(() => {});
+    // We remove preventAutoHideAsync so the native splash hides as soon as possible,
+    // allowing our custom VideoSplashScreen to take over immediately.
+    // _SplashScreen?.preventAutoHideAsync().catch(() => {});
   } catch {
     // Silent fail
   }
@@ -122,9 +125,70 @@ async function checkOfflineContentStatus(): Promise<void> {
 
 function RootLayoutContent() {
   const { isDark, colors } = useTheme();
+  const { user } = useAuth();
   const initStarted = useRef(false);
   const [isSplashAnimationFinished, setIsSplashAnimationFinished] =
     useState(false);
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState<string>("");
+
+  // Check if user is admin (bypass maintenance)
+  const isAdminUser =
+    user?.role === "owner" ||
+    user?.role === "admin" ||
+    user?.role === "manager";
+
+  // Fetch maintenance mode status
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+
+    const fetchMaintenanceStatus = async () => {
+      try {
+        const { data } = await supabase
+          .from("app_config")
+          .select("key, value")
+          .in("key", ["maintenance_mode", "maintenance_message"]);
+
+        if (data) {
+          const modeRow = data.find((r) => r.key === "maintenance_mode");
+          const msgRow = data.find((r) => r.key === "maintenance_message");
+          setMaintenanceMode(modeRow?.value === "true");
+          setMaintenanceMessage(msgRow?.value || "");
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.warn("[Maintenance] Failed to fetch status:", error);
+        }
+      }
+    };
+
+    fetchMaintenanceStatus();
+
+    // Subscribe to realtime changes for instant updates
+    const channel = supabase
+      .channel("maintenance_mode_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "app_config",
+          filter: "key=eq.maintenance_mode",
+        },
+        (payload) => {
+          if (__DEV__) {
+            console.log("[Maintenance] Status changed:", payload.new.value);
+          }
+          setMaintenanceMode(payload.new.value === "true");
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Web doesn't need video splash
   useEffect(() => {
@@ -223,6 +287,11 @@ function RootLayoutContent() {
     return (
       <VideoSplashScreen onFinish={() => setIsSplashAnimationFinished(true)} />
     );
+  }
+
+  // Show maintenance screen if active (unless user is admin)
+  if (maintenanceMode && !isAdminUser) {
+    return <MaintenanceScreen message={maintenanceMessage} />;
   }
 
   return (

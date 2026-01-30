@@ -78,62 +78,84 @@ async function getSecureStorage() {
 // Device ID Generation - Unified Approach for Consistency
 // ============================================================================
 
-function generateUnifiedDeviceId(): string {
+/**
+ * Generate a TRUE unique device identifier
+ * This ID is permanent - stored in SecureStore
+ * App reinstall = new device ID (intentional)
+ */
+function generatePermanentDeviceId(): string {
+  try {
+    // Generate a true UUID - unique per device installation
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `device-${crypto.randomUUID()}`
+    }
+    
+    // Fallback: timestamp + high-entropy random string
+    const timestamp = Date.now().toString(36)
+    const random = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15)
+    
+    return `device-${timestamp}-${random}`
+  } catch (error) {
+    // Ultimate fallback
+    return `device-fallback-${Date.now()}-${Math.floor(Math.random() * 1000000)}`
+  }
+}
+/**
+ * Generate a hardware fingerprint (non-unique)
+ * This is used to link independent sessions (App, Web) on the same physical device.
+ * It's based on OS and Screen Resolution.
+ */
+export function getDeviceFingerprint(): string {
   loadModules()
   
   // Get screen characteristics (use consistent orientation - always width >= height)
-  let screenWidth = 1920
-  let screenHeight = 1080
+  let screenWidth = -1
+  let screenHeight = -1
+  let dimensionsUnavailable = false
   
   try {
     if (_Dimensions) {
       const screen = _Dimensions.get('screen')
-      screenWidth = Math.max(screen.width, screen.height)  // Always use larger as width
-      screenHeight = Math.min(screen.width, screen.height) // Always use smaller as height
+      if (screen.width > 0 && screen.height > 0) {
+        screenWidth = Math.max(screen.width, screen.height)
+        screenHeight = Math.min(screen.width, screen.height)
+      } else {
+        dimensionsUnavailable = true
+      }
+    } else {
+      dimensionsUnavailable = true
     }
   } catch {
-    // Use defaults
+    dimensionsUnavailable = true
   }
   
-  // Get simplified OS name for consistency between mobile and web
+  // Get simplified OS name
   let osName = 'Unknown'
-  
   try {
     if (_Device?.osName) {
       const deviceOsName = _Device.osName.toLowerCase()
-      // Normalize OS names to match web detection
-      if (deviceOsName.includes('android')) osName = 'Android'
-      else if (deviceOsName.includes('ios')) osName = 'iOS'
-      else if (deviceOsName.includes('windows')) osName = 'Windows'
-      else if (deviceOsName.includes('mac')) osName = 'macOS'
-      else if (deviceOsName.includes('linux')) osName = 'Linux'
-      else osName = _Device.osName
+      // Consistently treat iPad as iOS
+      if (deviceOsName.includes('ios') || deviceOsName.includes('ipados') || deviceOsName.includes('ipad')) {
+        osName = 'iOS'
+      } else if (deviceOsName.includes('android')) {
+        osName = 'Android'
+      } else if (deviceOsName.includes('windows')) {
+        osName = 'Windows'
+      } else if (deviceOsName.includes('mac')) {
+        osName = 'macOS'
+      } else if (deviceOsName.includes('linux')) {
+        osName = 'Linux'
+      } else {
+        osName = _Device.osName
+      }
     }
-  } catch {
-    // Use default
-  }
+  } catch {}
   
-  // Create device string focusing on hardware characteristics
-  // This should be consistent whether accessed via mobile app or web browser
-  const screenInfo = `${screenWidth}x${screenHeight}`
-  const deviceString = `${osName}-${screenInfo}`
-  
-  // Create a hash-like identifier (same algorithm as web)
-  let hash = 0
-  for (let i = 0; i < deviceString.length; i++) {
-    const char = deviceString.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32-bit integer
-  }
-  
-  const hashString = Math.abs(hash).toString(36)
-  
-  if (__DEV__) {
-    console.log('[DeviceId] Device string:', deviceString, '-> Hash:', hashString)
-  }
-  
-  return `unified-${hashString}`
+  const resStr = dimensionsUnavailable ? 'unavail' : `${screenWidth}x${screenHeight}`
+  return `${osName}-${resStr}`
 }
+
 
 // ============================================================================
 // Device ID Functions
@@ -145,12 +167,21 @@ export async function getDeviceId(): Promise<string> {
     
     let deviceId = await storage.getItemAsync(DEVICE_ID_KEY)
     
+    // MIGRATION: If we have an old "unified-" ID, clear it to force new secure format
+    if (deviceId && deviceId.startsWith('unified-')) {
+      if (__DEV__) {
+        console.log('[DeviceId] Migrating from old unified id...')
+      }
+      deviceId = null
+      await storage.setItemAsync(DEVICE_ID_KEY, '')
+    }
+
     if (!deviceId) {
-      deviceId = generateUnifiedDeviceId()
+      deviceId = generatePermanentDeviceId()
       await storage.setItemAsync(DEVICE_ID_KEY, deviceId)
       
       if (__DEV__) {
-        console.log('[DeviceId] Generated device ID:', deviceId)
+        console.log('[DeviceId] Generated new permanent device ID:', deviceId)
       }
     }
     
@@ -159,9 +190,11 @@ export async function getDeviceId(): Promise<string> {
     if (__DEV__) {
       console.error('[DeviceId] Error getting device ID:', error)
     }
-    return generateUnifiedDeviceId()
+    // Fallback to a one-time ID for this session if storage fails
+    return `device-temp-${Date.now()}`
   }
 }
+
 
 export async function getDeviceName(): Promise<string> {
   loadModules()
@@ -169,11 +202,23 @@ export async function getDeviceName(): Promise<string> {
   try {
     if (_Platform?.OS === 'web') {
       const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-      if (userAgent.includes('Chrome')) return 'Chrome Browser'
-      if (userAgent.includes('Firefox')) return 'Firefox Browser'
-      if (userAgent.includes('Safari')) return 'Safari Browser'
-      if (userAgent.includes('Edge')) return 'Edge Browser'
-      return 'Web Browser'
+      
+      // Detect if mobile browser
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent)
+      const deviceEmoji = isMobile ? '📱' : '💻'
+      const deviceType = isMobile ? 'Navigateur Mobile' : 'Navigateur Desktop'
+      
+      // Detect browser name
+      let browserName = ''
+      if (userAgent.includes('Edg') || userAgent.includes('Edge')) browserName = 'Edge'
+      else if (userAgent.includes('Chrome') && !userAgent.includes('Edge') && !userAgent.includes('Edg')) browserName = 'Chrome'
+      else if (userAgent.includes('Firefox')) browserName = 'Firefox'
+      else if (userAgent.includes('Safari') && !userAgent.includes('Chrome') && !userAgent.includes('Edg')) browserName = 'Safari'
+      
+      if (browserName) {
+        return `${deviceEmoji} ${deviceType} (${browserName})`
+      }
+      return `${deviceEmoji} ${deviceType}`
     }
     
     const deviceName = _Device?.deviceName || 'Unknown Device'

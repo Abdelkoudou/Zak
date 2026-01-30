@@ -97,15 +97,18 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
         })),
       })) as QuestionWithAnswers[];
 
-      // Apply filters in memory
-      if (filters.exam_type) {
+      if (filters.exam_type && filters.exam_type.trim() !== '') {
         questions = questions.filter((q) => q.exam_type === filters.exam_type);
       }
-      if (filters.sub_discipline) {
+      if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
         questions = questions.filter((q) => q.sub_discipline === filters.sub_discipline);
       }
-      if (filters.cours) {
-        questions = questions.filter((q) => q.cours?.includes(filters.cours as string));
+      if (filters.cours && filters.cours.trim() !== '') {
+        const normalize = (s: string) => s.trim().toLowerCase();
+        const target = normalize(filters.cours as string);
+        questions = questions.filter((q) => 
+          Array.isArray(q.cours) && (q.cours as string[]).some(c => normalize(c) === target)
+        );
       }
       if (filters.exam_year) {
         questions = questions.filter((q) => q.exam_year === filters.exam_year);
@@ -122,7 +125,11 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
         questions = questions.slice(0, filters.limit);
       }
 
-      return { questions, total };
+      if (questions.length === 0 && filters.cours) {
+        // Fall back to Supabase if course not found in offline data
+      } else {
+        return { questions, total };
+      }
     }
   }
 
@@ -131,19 +138,19 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
     .from('questions')
     .select('*, answers (*)', { count: 'exact' });
 
-  if (filters.module_name) {
+  if (filters.module_name && filters.module_name.trim() !== '') {
     query = query.eq('module_name', filters.module_name);
   }
-  if (filters.exam_type) {
+  if (filters.exam_type && filters.exam_type.trim() !== '') {
     query = query.eq('exam_type', filters.exam_type);
   }
-  if (filters.sub_discipline) {
+  if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
     query = query.eq('sub_discipline', filters.sub_discipline);
   }
-  if (filters.cours) {
+  if (filters.cours && filters.cours.trim() !== '') {
     query = query.contains('cours', [filters.cours]);
   }
-  if (filters.year) {
+  if (filters.year && filters.year.trim() !== '') {
     query = query.eq('year', filters.year);
   }
   if (filters.exam_year) {
@@ -247,19 +254,25 @@ export function useQuestionCount(filters: QuestionFilters) {
         if (offlineData && offlineData.questions && offlineData.questions.length > 0) {
           let questions = offlineData.questions;
 
-          if (filters.exam_type) {
+          if (filters.exam_type && filters.exam_type.trim() !== '') {
             questions = questions.filter((q: Record<string, unknown>) => q.exam_type === filters.exam_type);
           }
-          if (filters.sub_discipline) {
+          if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
             questions = questions.filter((q: Record<string, unknown>) => q.sub_discipline === filters.sub_discipline);
           }
-          if (filters.cours) {
+          if (filters.cours && filters.cours.trim() !== '') {
+            const normalize = (s: string) => s.trim().toLowerCase();
+            const target = normalize(filters.cours as string);
             questions = questions.filter((q: Record<string, unknown>) => 
-              Array.isArray(q.cours) && (q.cours as string[]).includes(filters.cours as string)
+              Array.isArray(q.cours) && (q.cours as string[]).some(c => normalize(c) === target)
             );
           }
 
-          return questions.length;
+          if (questions.length === 0 && filters.cours) {
+            // Fall back to Supabase if course not found in offline data
+          } else {
+            return questions.length;
+          }
         }
       }
 
@@ -268,16 +281,16 @@ export function useQuestionCount(filters: QuestionFilters) {
         .from('questions')
         .select('*', { count: 'exact', head: true });
 
-      if (filters.module_name) {
+      if (filters.module_name && filters.module_name.trim() !== '') {
         query = query.eq('module_name', filters.module_name);
       }
-      if (filters.exam_type) {
+      if (filters.exam_type && filters.exam_type.trim() !== '') {
         query = query.eq('exam_type', filters.exam_type);
       }
-      if (filters.sub_discipline) {
+      if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
         query = query.eq('sub_discipline', filters.sub_discipline);
       }
-      if (filters.cours) {
+      if (filters.cours && filters.cours.trim() !== '') {
         query = query.contains('cours', [filters.cours]);
       }
 
