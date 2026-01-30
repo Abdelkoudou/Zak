@@ -16,6 +16,22 @@ module.exports = function (api) {
       "module-resolver",
       {
         root: [projectRoot],
+        extensions: [
+          ".ios.ts",
+          ".android.ts",
+          ".native.ts",
+          ".ts",
+          ".ios.tsx",
+          ".android.tsx",
+          ".native.tsx",
+          ".tsx",
+          ".ios.js",
+          ".android.js",
+          ".native.js",
+          ".js",
+          ".jsx",
+          ".json",
+        ],
         alias: {
           "@": path.join(projectRoot, "src"),
           "@/components": path.join(projectRoot, "src", "components"),
