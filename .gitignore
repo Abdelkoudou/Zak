@@ -38,5 +38,3 @@ venv/
 
 # Dependencies
 node_modules/
-supabase.js
-supabase.ts
