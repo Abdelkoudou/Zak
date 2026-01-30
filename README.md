@@ -1,6 +1,6 @@
 # FMC APP - Medical Exam Preparation Platform
 
-## Version 1.0.0 (Production Ready)
+## Version 1.0.0 
 
 Medical application for students to practice MCQ questions based on the medical curriculum.
 
