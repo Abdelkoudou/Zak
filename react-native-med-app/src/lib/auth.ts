@@ -487,12 +487,22 @@ export async function signOut(): Promise<{ error: string | null }> {
     // Clear TanStack Query cache to prevent data leakage
     await clearQueryCache()
 
+    // Try to sign out from Supabase
+    // This may fail if there's no session, but that's OK - user is already logged out
     const { error } = await supabase.auth.signOut()
-    if (error) {
+    
+    // Ignore "Auth session missing" error - it just means the user was already logged out
+    if (error && !error.message.toLowerCase().includes('session missing')) {
       return { error: error.message }
     }
+    
     return { error: null }
-  } catch (error) {
+  } catch (error: any) {
+    // Also ignore "session missing" in catch block
+    const errorMessage = error?.message || ''
+    if (errorMessage.toLowerCase().includes('session missing')) {
+      return { error: null }
+    }
     return { error: 'An unexpected error occurred' }
   }
 }
