@@ -21,28 +21,11 @@ export async function getResources(filters: ResourceFilters = {}): Promise<{
   error: string | null 
 }> {
   try {
-    // Debug: Log incoming filters
-    if (__DEV__) {
-      console.log('[Resources] getResources called with filters:', JSON.stringify(filters))
-      
-      // CRITICAL: Check auth state to debug RLS issues
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      console.log('[Resources] Auth state:', {
-        hasSession: !!session,
-        userId: session?.user?.id?.slice(0, 8) + '...',
-        expiresAt: session?.expires_at,
-        sessionError: sessionError?.message
-      })
-    }
-
     let query = supabase
       .from('course_resources')
       .select('*')
 
     if (filters.year) {
-      if (__DEV__) {
-        console.log('[Resources] Filtering by year:', filters.year, 'type:', typeof filters.year)
-      }
       query = query.eq('year', filters.year)
     }
     if (filters.module_name) {
@@ -52,9 +35,6 @@ export async function getResources(filters: ResourceFilters = {}): Promise<{
       query = query.eq('sub_discipline', filters.sub_discipline)
     }
     if (filters.type) {
-      if (__DEV__) {
-        console.log('[Resources] Filtering by type:', filters.type)
-      }
       query = query.eq('type', filters.type)
     }
 
@@ -62,21 +42,15 @@ export async function getResources(filters: ResourceFilters = {}): Promise<{
 
     const { data, error } = await query
 
-    if (__DEV__) {
-      console.log('[Resources] Query result:', { 
-        count: data?.length || 0, 
-        error: error?.message,
-        firstItem: data?.[0]?.title 
-      })
-    }
-
     if (error) {
       return { resources: [], error: error.message }
     }
 
     return { resources: data as CourseResource[], error: null }
   } catch (error) {
-    console.error('[Resources] Failed to fetch resources:', error)
+    if (__DEV__) {
+      console.error('[Resources] Failed to fetch resources:', error)
+    }
     return { resources: [], error: 'Failed to fetch resources' }
   }
 }

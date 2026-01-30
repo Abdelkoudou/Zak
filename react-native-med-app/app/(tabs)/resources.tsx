@@ -51,13 +51,6 @@ export default function ResourcesScreen() {
 
   const loadResources = useCallback(async () => {
     if (!user?.year_of_study) {
-      if (__DEV__) {
-        console.log("[Resources Screen] No user or year_of_study:", {
-          hasUser: !!user,
-          year: user?.year_of_study,
-          userId: user?.id,
-        });
-      }
       setIsLoading(false);
       return;
     }
@@ -68,23 +61,11 @@ export default function ResourcesScreen() {
           ? { year: user.year_of_study }
           : { year: user.year_of_study, type: selectedType };
 
-      if (__DEV__) {
-        console.log("[Resources Screen] Loading resources with:", {
-          year: user.year_of_study,
-          yearType: typeof user.year_of_study,
-          selectedType,
-          filters: JSON.stringify(filters),
-        });
-      }
-
       const { resources: data, error: apiError } = await getResources(filters);
       if (apiError) {
         setError(apiError);
         setResources([]);
       } else {
-        if (__DEV__) {
-          console.log("[Resources Screen] Loaded", data.length, "resources");
-        }
         setResources(data);
       }
     } catch {

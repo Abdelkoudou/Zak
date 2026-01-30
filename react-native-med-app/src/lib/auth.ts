@@ -334,14 +334,14 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
 
 export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   try {
-    console.log('[Auth] Starting sign in for:', email)
+    if (__DEV__) console.log('[Auth] Starting sign in for:', email)
 
     // Check if Supabase is properly configured
     const configStatus = getSupabaseConfigStatus()
-    console.log('[Auth] Supabase config status:', configStatus)
+    if (__DEV__) console.log('[Auth] Supabase config status:', configStatus)
 
     if (!isSupabaseConfigured()) {
-      console.error('[Auth] Supabase not configured properly:', configStatus)
+      if (__DEV__) console.error('[Auth] Supabase not configured properly:', configStatus)
       return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
 
@@ -356,7 +356,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     }
 
     // Step 1: Authenticate with Supabase
-    console.log('[Auth] Calling signInWithPassword...')
+    if (__DEV__) console.log('[Auth] Calling signInWithPassword...')
     let authData: any = null
     let authError: any = null
 
@@ -368,7 +368,7 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       authData = result.data
       authError = result.error
     } catch (e: any) {
-      console.error('[Auth] signInWithPassword threw:', e)
+      if (__DEV__) console.error('[Auth] signInWithPassword threw:', e)
       const errorMessage = e?.message || ''
       // Check for network errors specifically
       if (errorMessage.toLowerCase().includes('network') ||
@@ -379,20 +379,20 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       return { user: null, error: translateAuthError(errorMessage || 'Erreur de connexion. Veuillez réessayer.') }
     }
 
-    console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
+    if (__DEV__) console.log('[Auth] Sign in response:', { hasUser: !!authData?.user, hasSession: !!authData?.session, error: authError?.message })
 
     if (authError) {
-      console.error('[Auth] Sign in error:', authError.message)
+      if (__DEV__) console.error('[Auth] Sign in error:', authError.message)
       return { user: null, error: translateAuthError(authError.message) }
     }
 
     if (!authData?.user) {
-      console.error('[Auth] No user returned from sign in')
+      if (__DEV__) console.error('[Auth] No user returned from sign in')
       return { user: null, error: 'Échec de la connexion. Veuillez réessayer.' }
     }
 
     // Step 2: Fetch user profile
-    console.log('[Auth] Fetching user profile for:', authData.user.id)
+    if (__DEV__) console.log('[Auth] Fetching user profile for:', authData.user.id)
     let userProfile: any = null
     let fetchError: any = null
 
@@ -406,14 +406,14 @@ export async function signIn(email: string, password: string): Promise<{ user: U
       userProfile = result.data
       fetchError = result.error
     } catch (e: any) {
-      console.error('[Auth] Profile fetch threw:', e)
+      if (__DEV__) console.error('[Auth] Profile fetch threw:', e)
       return { user: null, error: 'Impossible de charger le profil. Veuillez réessayer.' }
     }
 
-    console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
+    if (__DEV__) console.log('[Auth] Profile fetch result:', { hasProfile: !!userProfile, error: fetchError?.message })
 
     if (fetchError) {
-      console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
+      if (__DEV__) console.error('[Auth] Profile fetch error:', fetchError.message, fetchError.code)
       // Don't translate this error - show a specific message
       if (fetchError.code === 'PGRST116') {
         return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
@@ -422,30 +422,30 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     }
 
     if (!userProfile) {
-      console.error('[Auth] No profile data returned')
+      if (__DEV__) console.error('[Auth] No profile data returned')
       return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
     }
 
     // Step 3: Check device limit (skip for reviewers)
     const isReviewer = userProfile.is_reviewer === true
     if (!isReviewer) {
-      console.log('[Auth] Checking device limit...')
+      if (__DEV__) console.log('[Auth] Checking device limit...')
       const { canLogin, error: deviceError, isLimitReached } = await checkDeviceLimit(authData.user.id)
       
       // Only block login if the actual device limit is reached (not for transient errors)
       if (!canLogin && isLimitReached) {
-        console.warn('[Auth] Device limit reached, signing out')
+        if (__DEV__) console.warn('[Auth] Device limit reached, signing out')
         await supabase.auth.signOut()
         return { user: null, error: deviceError }
       }
       
       // Log transient errors but allow login (fail-open for network issues)
       if (!canLogin && !isLimitReached) {
-        console.warn('[Auth] Device check failed (transient error), allowing login:', deviceError)
+        if (__DEV__) console.warn('[Auth] Device check failed (transient error), allowing login:', deviceError)
       }
 
       // Step 4: Register device - NON-BLOCKING
-      console.log('[Auth] Registering device...')
+      if (__DEV__) console.log('[Auth] Registering device...')
       registerDevice(authData.user.id).catch(e => {
         console.warn('[Auth] Device registration failed (non-blocking):', e)
       })
@@ -461,10 +461,10 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     // Cache profile for offline use
     await cacheUserProfile(userProfile as User)
 
-    console.log('[Auth] Sign in complete!')
+    if (__DEV__) console.log('[Auth] Sign in complete!')
     return { user: userProfile as User, error: null }
   } catch (error: any) {
-    console.error('[Auth] Unexpected sign in error:', error)
+    if (__DEV__) console.error('[Auth] Unexpected sign in error:', error)
     const errorMessage = error?.message || ''
     // Check for network errors
     if (errorMessage.toLowerCase().includes('network') ||
