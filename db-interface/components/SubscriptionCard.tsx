@@ -32,7 +32,7 @@ export function SubscriptionCard({ activationCode }: SubscriptionCardProps) {
         {/* Card Image */}
         <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl shadow-emerald-500/20 transition-transform duration-500 group-hover:scale-[1.02]">
           <Image
-            src="/assets/images/subscription-card.png"
+            src="/assets/images/subscription-card.jpg"
             alt="Carte d'abonnement Premium"
             fill
             className="object-cover"
@@ -45,26 +45,26 @@ export function SubscriptionCard({ activationCode }: SubscriptionCardProps) {
           <div className="absolute top-0 -left-[100%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-25deg] animate-[shine_3s_ease-in-out_infinite]" />
         </div>
 
-        {/* Activation Code Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pt-[8%]">
+        {/* Activation Code Overlay - positioned in the center empty space */}
+        <div className="absolute inset-0 flex items-center justify-center">
           <div
-            className="relative group/code cursor-pointer"
+            className="relative group/code cursor-pointer mt-[2.5%]"
             onClick={copyToClipboard}
           >
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.5 }}
-              className="px-6 py-2 rounded-xl backdrop-blur-sm bg-white/10 border border-emerald-500/20 hover:bg-white/20 transition-all duration-300"
+              className="px-4 py-1.5 hover:bg-white/20 rounded-lg transition-all duration-300"
             >
-              <code className="text-2xl md:text-3xl lg:text-4xl font-mono font-bold text-slate-800 tracking-widest drop-shadow-sm select-all">
+              <code className="text-sm md:text-md lg:text-lg font-mono font-bold text-slate-800 tracking-[0.1em] select-all">
                 {activationCode}
               </code>
             </motion.div>
 
             {/* Click to copy tooltip */}
             <div
-              className={`absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-800 text-white text-xs rounded-full transition-all duration-200 ${copied ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 group-hover/code:opacity-100 group-hover/code:translate-y-0"}`}
+              className={`absolute -bottom-8 left-1/2 -translate-x-1/2 px-3 py-1 bg-slate-800 text-white text-xs rounded-full transition-all duration-200 whitespace-nowrap ${copied ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 group-hover/code:opacity-100 group-hover/code:translate-y-0"}`}
             >
               {copied ? "Copié !" : "Cliquer pour copier"}
             </div>
