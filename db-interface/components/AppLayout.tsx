@@ -5,14 +5,15 @@ import Sidebar from "./Sidebar";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Check if we are on the buy page or any of its subpages
-  const isBuyPage = pathname?.startsWith("/buy");
+  // Check if we are on pages that should not show the sidebar
+  const isPublicPage = 
+    pathname?.startsWith("/buy") || 
+    pathname?.startsWith("/payment") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/delete-account");
 
-  if (isBuyPage) {
-    // For buy pages, we render just the children (the page content)
-    // We can wrap it in a div if specific background is needed, but the page/layout usually handles that.
-    // However, the root layout has specific styles, so we might want to reset or apply specific styles here
-    // to match the original buy layout intention (bg-gray-50).
+  if (isPublicPage) {
+    // For public pages (buy, payment, login, delete-account), render without sidebar
     return <div className="min-h-screen bg-theme-main">{children}</div>;
   }
 

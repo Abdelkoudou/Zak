@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "../globals.css";
 
 export const metadata: Metadata = {
   title: "Paiement - FMC App",
@@ -11,11 +10,7 @@ export default function PaymentLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <html lang="fr">
-      <body>
-        {children}
-      </body>
-    </html>
-  )
+  // No wrapper needed - AppLayout handles the layout
+  // This layout only provides metadata
+  return <>{children}</>;
 }
