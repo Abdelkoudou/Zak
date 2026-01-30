@@ -76,7 +76,7 @@ export default function BuyPage() {
       <header className="relative py-6 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Link
-            href="https://fmc-app-two.vercel.app"
+            href="https://www.fmcplatform.com"
             className="flex items-center group rounded-xl "
           >
             <Image
@@ -88,7 +88,7 @@ export default function BuyPage() {
             />
           </Link>
           <Link
-            href="https://fmc-app-two.vercel.app"
+            href="https://www.fmcplatform.com"
             className="hidden sm:flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
           >
             <span>Retour à l&apos;app</span>

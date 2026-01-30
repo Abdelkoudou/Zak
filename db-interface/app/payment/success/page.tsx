@@ -141,7 +141,7 @@ function PaymentSuccessContent() {
 
   const openInApp = () => {
     if (paymentStatus?.activationCode) {
-      const webAppUrl = `https://fmc-app-two.vercel.app/register?code=${encodeURIComponent(paymentStatus.activationCode)}`;
+      const webAppUrl = `https://www.fmcplatform.com/register?code=${encodeURIComponent(paymentStatus.activationCode)}`;
       window.location.href = webAppUrl;
     }
   };
@@ -184,7 +184,7 @@ function PaymentSuccessContent() {
       <header className="py-6 px-4">
         <div className="max-w-6xl mx-auto flex items-center justify-center">
           <Link
-            href="https://fmc-app-two.vercel.app"
+            href="https://www.fmcplatform.com"
             className="flex items-center gap-3"
           >
             <div className="relative w-10 h-10">
