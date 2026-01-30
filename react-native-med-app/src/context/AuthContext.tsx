@@ -151,21 +151,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (session && !user) {
           await refreshUser();
         } else if (!session) {
-          // No session from Supabase - but check if we have a cached profile
-          // This handles edge cases where session loading fails offline
-          const cachedUser = await authService.getCachedUserProfile();
-          if (cachedUser) {
-            if (__DEV__) {
-              console.log(
-                "[Auth] INITIAL_SESSION: Using cached profile (no session)",
-              );
-            }
-            setUser(cachedUser);
-            setIsLoading(false);
-          } else {
-            setUser(null);
-            setIsLoading(false);
+          // No session from Supabase
+          // CRITICAL: Don't use cached profile without a session!
+          // This causes "phantom login" where UI shows logged in but API calls fail
+          // because RLS checks auth.uid() which returns NULL without a session.
+
+          if (__DEV__) {
+            console.log(
+              "[Auth] INITIAL_SESSION: No session - clearing any cached profile",
+            );
           }
+
+          // Clear the stale cached profile to force re-login
+          await authService.clearCachedUserProfile();
+          setUser(null);
+          setIsLoading(false);
         }
       } else if (event === "USER_UPDATED") {
         // User was updated (e.g., password changed)
@@ -378,14 +378,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (__DEV__) {
         console.error("[Auth] Error checking session:", error);
       }
-      // Try cached profile as fallback
-      const cachedUser = await authService.getCachedUserProfile();
-      if (cachedUser) {
-        if (__DEV__) {
-          console.log("[Auth] checkSession: Using cached profile after error");
+      // CRITICAL: Don't use cached profile without verifying session exists
+      // This was causing "phantom login" states where UI showed logged in
+      // but all API calls failed because RLS couldn't find auth.uid()
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        // Session exists, safe to use cached profile as fallback
+        const cachedUser = await authService.getCachedUserProfile();
+        if (cachedUser && cachedUser.id === session.user.id) {
+          if (__DEV__) {
+            console.log(
+              "[Auth] checkSession: Using cached profile (session verified)",
+            );
+          }
+          setUser(cachedUser);
+        } else {
+          setUser(null);
         }
-        setUser(cachedUser);
       } else {
+        // No session - clear cached profile to force re-login
+        if (__DEV__) {
+          console.log("[Auth] checkSession: No session - forcing re-login");
+        }
+        await authService.clearCachedUserProfile();
         setUser(null);
       }
     } finally {
