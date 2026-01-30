@@ -1,7 +1,7 @@
 {
   "name": "fmc-app",
   "version": "5",
-  "main": "expo-router/entry",
+  "main": "./index.js",
   "scripts": {
     "start": "expo start --clear",
     "android": "expo run:android",
