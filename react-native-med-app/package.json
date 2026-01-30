@@ -1,6 +1,6 @@
 {
   "name": "fmc-app",
-  "version": "5",
+  "version": "7",
   "main": "./index.js",
   "scripts": {
     "start": "expo start --clear",
