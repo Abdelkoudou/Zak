@@ -118,10 +118,13 @@ export function getDeviceFingerprint(): string {
     if (_Dimensions) {
       const screen = _Dimensions.get('screen')
       if (screen.width > 0 && screen.height > 0) {
-        // Round to integers for consistent fingerprints across platforms
-        // Native can return decimals (e.g., 915.333), web returns integers
-        screenWidth = Math.round(Math.max(screen.width, screen.height))
-        screenHeight = Math.round(Math.min(screen.width, screen.height))
+        // Floor to nearest 10px for consistent fingerprints across platforms
+        // Native and browser can differ by a few pixels due to system UI
+        // Using floor ensures 914 and 919 both become 910
+        const rawWidth = Math.max(screen.width, screen.height)
+        const rawHeight = Math.min(screen.width, screen.height)
+        screenWidth = Math.floor(rawWidth / 10) * 10
+        screenHeight = Math.floor(rawHeight / 10) * 10
       } else {
         dimensionsUnavailable = true
       }

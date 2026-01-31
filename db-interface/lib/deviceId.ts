@@ -39,9 +39,12 @@ function generatePermanentDeviceId(): string {
  */
 export function getDeviceFingerprint(): string {
   // Get screen characteristics (use consistent orientation - always width >= height)
-  // Round to integers for consistency with mobile app
-  const screenWidth = Math.round(Math.max(screen.width, screen.height))
-  const screenHeight = Math.round(Math.min(screen.width, screen.height))
+  // Floor to nearest 10px for consistent fingerprints across platforms
+  // Using floor ensures 914 and 919 both become 910
+  const rawWidth = Math.max(screen.width, screen.height)
+  const rawHeight = Math.min(screen.width, screen.height)
+  const screenWidth = Math.floor(rawWidth / 10) * 10
+  const screenHeight = Math.floor(rawHeight / 10) * 10
   const screenResolution = `${screenWidth}x${screenHeight}`
   
   // Get simplified OS name for consistency with mobile app
