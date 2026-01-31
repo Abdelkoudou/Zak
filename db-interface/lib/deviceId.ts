@@ -79,9 +79,9 @@ function getDeviceModel(): string {
   if (ua.includes('iPad')) return 'iPad'
   if (ua.includes('iPhone')) return 'iPhone'
   
-  // Android detection - use generic "Mobile" (Chrome hides actual model)
+  // Android detection - always use "Mobile" to match native app
   if (ua.includes('Android')) {
-    return ua.includes('Mobile') ? 'Mobile' : 'Tablet'
+    return 'Mobile'
   }
   
   // Desktop detection
