@@ -78,10 +78,12 @@ export default function ChangePasswordScreen() {
           return;
         }
 
-        console.log(
-          "[ChangePassword] Valid session found for user:",
-          session.user.email,
-        );
+        if (__DEV__) {
+          console.log(
+            "[ChangePassword] Valid session found for user:",
+            session.user.email,
+          );
+        }
       } catch (err) {
         console.error("[ChangePassword] Session check failed:", err);
         setError("Impossible de vérifier votre session. Veuillez réessayer.");
