@@ -2,7 +2,7 @@
   "expo": {
     "name": "FMC App",
     "slug": "fmc",
-    "version": "1.0.0",
+    "version": "1.0.01",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "fmcapp",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.fmcapp.mobile",
-      "buildNumber": "34",
+      "buildNumber": "35",
       "splash": {
         "image": "./assets/icon.png",
         "resizeMode": "contain",
@@ -30,7 +30,7 @@
     },
     "android": {
       "package": "com.fmcapp.mobile",
-      "versionCode": 34,
+      "versionCode": 35,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#000000"
