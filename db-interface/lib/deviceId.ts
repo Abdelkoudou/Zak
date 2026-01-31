@@ -63,44 +63,33 @@ function getOSName(): string {
 
 /**
  * Get device model for fingerprinting
- * - iOS: Returns "iPhone" or "iPad" (specific model not available in UA)
- * - Android: Returns actual model like "Pixel9", "SMS928B"
- * - Desktop: Returns "Desktop"
+ * 
+ * IMPORTANT: Chrome 110+ uses "reduced" User-Agent that hides device model
+ * (shows "K" instead of actual model). To ensure fingerprints match between
+ * native app and browser, we use GENERIC categories:
+ * 
+ * - Android: "Mobile" or "Tablet" (not specific model)
+ * - iOS: "iPhone" or "iPad"
+ * - Desktop: "Desktop"
  */
 function getDeviceModel(): string {
   const ua = navigator.userAgent || ''
   
-  // Android: Extract model from UA
-  // Pattern: "Android XX; MODEL_NAME)" or "Android XX; MODEL_NAME Build/"
-  const androidMatch = ua.match(/Android\s+[\d.]+;\s*([^;)]+?)(?:\s+Build\/|\))/i)
-  if (androidMatch && androidMatch[1]) {
-    return normalizeModelName(androidMatch[1].trim())
-  }
-  
-  // iOS: Just return iPhone/iPad (model not in UA)
-  if (ua.includes('iPhone')) return 'iPhone'
+  // iOS detection
   if (ua.includes('iPad')) return 'iPad'
+  if (ua.includes('iPhone')) return 'iPhone'
   
-  // Android fallback (e.g., Firefox which doesn't expose model)
+  // Android detection - use generic "Mobile" (Chrome hides actual model)
   if (ua.includes('Android')) {
-    return ua.includes('Mobile') ? 'AndroidMobile' : 'AndroidTablet'
+    return ua.includes('Mobile') ? 'Mobile' : 'Tablet'
   }
   
   // Desktop detection
-  if (ua.includes('Windows')) return 'Desktop'
-  if (ua.includes('Macintosh')) return 'Desktop'
-  if (ua.includes('Linux')) return 'Desktop'
+  if (ua.includes('Windows') || ua.includes('Macintosh') || ua.includes('Linux')) {
+    return 'Desktop'
+  }
   
   return 'Unknown'
-}
-
-/**
- * Normalize model name: remove spaces, dashes, special chars
- * "Pixel 9" → "Pixel9"
- * "SM-S928B" → "SMS928B"
- */
-function normalizeModelName(model: string): string {
-  return model.replace(/[\s\-_]+/g, '').replace(/[^a-zA-Z0-9]/g, '')
 }
 
 /**

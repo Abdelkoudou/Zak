@@ -153,31 +153,29 @@ function getOSName(): string {
 
 /**
  * Get device model for fingerprinting
- * - iOS: Returns "iPhone" or "iPad" (specific model not available in web UA)
- * - Android: Returns actual model like "Pixel9", "SMS928B"
- * - Desktop/Unknown: Returns "Desktop" or "Unknown"
+ * 
+ * IMPORTANT: Chrome 110+ uses "reduced" User-Agent that hides device model
+ * (shows "K" instead of actual model like "Pixel 9"). To ensure fingerprints
+ * match between native app and browser, we use GENERIC categories:
+ * 
+ * - Android: "Mobile" or "Tablet" (not specific model)
+ * - iOS: "iPhone" or "iPad" (Safari also doesn't expose specific model)
+ * - Desktop: "Desktop"
  */
 function getDeviceModel(): string {
   try {
     // === NATIVE PLATFORM ===
     if (_Platform?.OS !== 'web') {
-      const modelName = _Device?.modelName
-      
       if (_Platform?.OS === 'ios') {
-        // For iOS, use generic "iPhone" or "iPad" to match web fingerprint
-        // (Safari UA doesn't include specific model)
-        if (modelName?.toLowerCase().includes('iphone')) return 'iPhone'
-        if (modelName?.toLowerCase().includes('ipad')) return 'iPad'
-        return 'iDevice'
+        const modelName = _Device?.modelName?.toLowerCase() || ''
+        if (modelName.includes('ipad')) return 'iPad'
+        return 'iPhone' // Default to iPhone for all iOS phones
       }
       
       if (_Platform?.OS === 'android') {
-        // For Android, use the specific model name
-        if (modelName) {
-          return normalizeModelName(modelName)
-        }
-        // Fallback if modelName unavailable (rare)
-        return 'AndroidDevice'
+        // Use generic "Mobile" to match Chrome's reduced UA
+        // Chrome 110+ hides device model, so we can't rely on specific models
+        return 'Mobile'
       }
     }
     
@@ -185,26 +183,19 @@ function getDeviceModel(): string {
     if (typeof navigator !== 'undefined') {
       const ua = navigator.userAgent
       
-      // Android: Extract model from UA
-      // Pattern: "Android XX; MODEL_NAME)" or "Android XX; MODEL_NAME Build/"
-      const androidMatch = ua.match(/Android\s+[\d.]+;\s*([^;)]+?)(?:\s+Build\/|\))/i)
-      if (androidMatch && androidMatch[1]) {
-        return normalizeModelName(androidMatch[1].trim())
-      }
-      
-      // iOS: Just return iPhone/iPad (model not in UA)
-      if (ua.includes('iPhone')) return 'iPhone'
+      // iOS detection
       if (ua.includes('iPad')) return 'iPad'
+      if (ua.includes('iPhone')) return 'iPhone'
       
-      // Android fallback (e.g., Firefox which doesn't expose model)
+      // Android detection - use generic "Mobile" (Chrome hides actual model)
       if (ua.includes('Android')) {
-        return ua.includes('Mobile') ? 'AndroidMobile' : 'AndroidTablet'
+        return ua.includes('Mobile') ? 'Mobile' : 'Tablet'
       }
       
       // Desktop detection
-      if (ua.includes('Windows')) return 'Desktop'
-      if (ua.includes('Macintosh')) return 'Desktop'
-      if (ua.includes('Linux')) return 'Desktop'
+      if (ua.includes('Windows') || ua.includes('Macintosh') || ua.includes('Linux')) {
+        return 'Desktop'
+      }
     }
   } catch {}
   
