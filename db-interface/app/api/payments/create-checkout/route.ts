@@ -45,6 +45,7 @@ interface CreateCheckoutRequest {
   customerPhone?: string;
   duration: SubscriptionDuration;
   locale?: 'ar' | 'en' | 'fr';
+  userId?: string; // Optional user ID for automatic activation
 }
 
 // ============================================================================
@@ -177,6 +178,7 @@ export async function POST(request: NextRequest) {
         source: 'web',
         customer_email: customerEmail,
         customer_name: customerName || '',
+        user_id: body.userId || '', // Include the user ID if the user is logged in
       },
     });
 

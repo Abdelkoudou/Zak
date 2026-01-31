@@ -157,6 +157,7 @@ $$;
 -- Fix activate_subscription function
 -- Secure and atomic implementation to prevent TOCTOU and search_path vulnerabilities
 -- Documented: This function is intended to be called via RPC from the User application
+-- FIXED: Changed duration_months to duration_days to match actual column name
 CREATE OR REPLACE FUNCTION public.activate_subscription(p_user_id uuid, p_key_code text)
 RETURNS json
 LANGUAGE plpgsql
@@ -164,8 +165,9 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_duration_months INTEGER;
+  v_duration_days INTEGER;
   v_key_id uuid;
+  v_expires_at TIMESTAMPTZ;
 BEGIN
   -- Authorization guard: caller must be activating for themselves
   -- OR caller must be an admin (though typically this is a user-facing RPC)
@@ -185,22 +187,31 @@ BEGIN
   UPDATE public.activation_keys
   SET is_used = TRUE,
       used_by = p_user_id,
-      used_at = NOW()
+      used_at = NOW(),
+      -- Also set the expiration on the key itself
+      expires_at = (NOW() + (duration_days || ' days')::INTERVAL)::DATE + TIME '23:59:59.999'
   WHERE key_code = p_key_code
     AND is_used = FALSE
-  RETURNING id, duration_months INTO v_key_id, v_duration_months;
+  RETURNING id, duration_days INTO v_key_id, v_duration_days;
 
   IF v_key_id IS NULL THEN
     RETURN json_build_object('success', false, 'error', 'Invalid or already used key');
   END IF;
 
+  -- Calculate expiration timestamp (end of day for the expiration date)
+  v_expires_at := (NOW() + (v_duration_days || ' days')::INTERVAL)::DATE + TIME '23:59:59.999';
+
   -- Update user subscription
   UPDATE public.users
   SET is_paid = TRUE,
-      subscription_expires_at = NOW() + (v_duration_months || ' months')::INTERVAL
+      subscription_expires_at = v_expires_at
   WHERE id = p_user_id;
 
-  RETURN json_build_object('success', true, 'duration_months', v_duration_months);
+  RETURN json_build_object(
+    'success', true, 
+    'duration_days', v_duration_days,
+    'expires_at', v_expires_at
+  );
 END;
 $$;
 

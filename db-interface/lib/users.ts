@@ -49,6 +49,7 @@ export interface UserStats {
   year1Users: number;
   year2Users: number;
   year3Users: number;
+  pendingPayments: number; // For admin awareness
 }
 
 /**
@@ -353,6 +354,7 @@ export async function fetchUserStats(): Promise<UserStats> {
     year1Result,
     year2Result,
     year3Result,
+    pendingPaymentsResult,
   ] = await Promise.all([
     supabase.from('users').select('id', { count: 'exact', head: true }),
     supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_paid', true),
@@ -362,6 +364,9 @@ export async function fetchUserStats(): Promise<UserStats> {
     supabase.from('users').select('id', { count: 'exact', head: true }).eq('year_of_study', '1'),
     supabase.from('users').select('id', { count: 'exact', head: true }).eq('year_of_study', '2'),
     supabase.from('users').select('id', { count: 'exact', head: true }).eq('year_of_study', '3'),
+    supabase.from('online_payments').select('id', { count: 'exact', head: true })
+      .eq('status', 'pending')
+      .gt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()), // Last 24h
   ]);
 
   const totalUsers = totalResult.count || 0;
@@ -379,6 +384,7 @@ export async function fetchUserStats(): Promise<UserStats> {
     year1Users: year1Result.count || 0,
     year2Users: year2Result.count || 0,
     year3Users: year3Result.count || 0,
+    pendingPayments: pendingPaymentsResult.count || 0,
   };
 }
 

@@ -139,7 +139,7 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
   // First, check if the payment record exists and is already processed
   const { data: existingPayment } = await supabaseAdmin
     .from('online_payments')
-    .select('id, status, activation_key_id')
+    .select('id, status, activation_key_id, user_id')
     .eq('checkout_id', checkout.id)
     .single();
   
@@ -170,7 +170,8 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
         amount: checkout.amount,
         currency: checkout.currency || 'dzd',
         status: 'pending',
-        duration_days: 365,
+        duration_days: parseInt(metadata?.duration_days || '365') || 365,
+        user_id: metadata?.user_id || null,
       });
     
     if (createError && createError.code !== '23505') { // Ignore duplicate key error
@@ -178,18 +179,27 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
     }
   }
   
-  // Generate secure activation code
   const keyCode = generateSecureActivationCode();
+  const durationDays = parseInt(metadata?.duration_days || '365') || 365;
+  const userId = metadata?.user_id || existingPayment?.user_id || null;
+
+  console.log(`[Chargily Webhook] Processing payment for ${customerEmail}. Duration: ${durationDays} days. User ID: ${userId || 'none'}`);
   
   // Create activation key
   const { data: newKey, error: keyError } = await supabaseAdmin
     .from('activation_keys')
     .insert({
       key_code: keyCode,
-      duration_days: 365,
+      duration_days: durationDays,
       payment_source: 'online',
       notes: `Auto-generated from online payment: ${checkout.id}`,
-      price_paid: checkout.amount / 100,
+      price_paid: checkout.amount, // Chargily amount is in DZD (not centimes for DZD)
+      is_used: userId ? true : false,
+      used_by: userId || null,
+      used_at: userId ? new Date().toISOString() : null,
+      expires_at: userId 
+        ? new Date(new Date().setHours(23, 59, 59, 999) + durationDays * 24 * 60 * 60 * 1000).toISOString()
+        : null
     })
     .select('id')
     .single();
@@ -211,6 +221,7 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
       payment_method: checkout.payment_method,
       webhook_payload: event,
       activation_key_id: newKey.id,
+      user_id: userId,
       paid_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -219,6 +230,29 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
   
   if (updateError) {
     console.error('[Chargily Webhook] Error updating payment:', updateError);
+  }
+
+  // AUTOMATED ACTIVATION: If user_id is present, update the user record directly
+  if (userId) {
+    console.log(`[Chargily Webhook] Performing automated activation for user: ${userId}`);
+    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    // Set to end of day
+    expiresAt.setHours(23, 59, 59, 999);
+
+    const { error: userUpdateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_paid: true,
+        subscription_expires_at: expiresAt.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+
+    if (userUpdateError) {
+      console.error('[Chargily Webhook] Error performing automated activation:', userUpdateError);
+    } else {
+      console.log(`[Chargily Webhook] Successfully activated user: ${userId}`);
+    }
   }
   
   // Update activation key with payment reference
