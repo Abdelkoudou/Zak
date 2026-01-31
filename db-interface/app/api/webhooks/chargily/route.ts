@@ -250,6 +250,22 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
 
     if (userUpdateError) {
       console.error('[Chargily Webhook] Error performing automated activation:', userUpdateError);
+      
+      // CRITICAL: Rollback activation key status to prevent "used but not received" state
+      console.warn(`[Chargily Webhook] Rolling back activation key ${newKey.id} usage due to user update failure`);
+      const { error: rollbackError } = await supabaseAdmin
+        .from('activation_keys')
+        .update({
+          is_used: false,
+          used_by: null,
+          used_at: null,
+          expires_at: null
+        })
+        .eq('id', newKey.id);
+        
+      if (rollbackError) {
+        console.error('[Chargily Webhook] CRITICAL: Failed to rollback activation key:', rollbackError);
+      }
     } else {
       console.log(`[Chargily Webhook] Successfully activated user: ${userId}`);
     }

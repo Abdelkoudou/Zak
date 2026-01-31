@@ -594,11 +594,13 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
  * Update expiration date for multiple activation keys
  * @param ids - Array of activation key IDs to update
  * @param expirationDate - New expiration date (ISO string)
+ * @param includeUsed - Whether to include used codes in the update (careful!)
  * @returns Object with success count and any errors
  */
 export async function updateActivationKeysExpiration(
   ids: string[],
-  expirationDate: string
+  expirationDate: string,
+  includeUsed: boolean = false
 ): Promise<{ successCount: number; errorCount: number; error?: string }> {
   if (ids.length === 0) {
     return { successCount: 0, errorCount: 0, error: 'No IDs provided' };
@@ -609,22 +611,86 @@ export async function updateActivationKeysExpiration(
   expDate.setHours(23, 59, 59, 999);
   const expiresAt = expDate.toISOString();
 
-  // Update all codes at once (only unused codes can be updated)
-  const { data, error } = await supabase
+  // Update all codes at once
+  let query = supabase
     .from('activation_keys')
     .update({ expires_at: expiresAt })
-    .in('id', ids)
-    .eq('is_used', false) // Only update unused codes
-    .select('id');
+    .in('id', ids);
+
+  if (!includeUsed) {
+    query = query.eq('is_used', false); // Default: only update unused codes
+  }
+
+  const { data, error } = await query.select('id, used_by, is_used');
 
   if (error) {
     return { successCount: 0, errorCount: ids.length, error: error.message };
+  }
+
+  // If we updated used codes, we also need to update the users' subscription_expires_at
+  const updatedUsedKeys = (data || []).filter(k => k.is_used && k.used_by);
+  if (updatedUsedKeys.length > 0) {
+    const results = await Promise.all(
+      updatedUsedKeys.map(async (key) => {
+        const { error } = await supabase
+          .from('users')
+          .update({ subscription_expires_at: expiresAt })
+          .eq('id', key.used_by);
+        return { userId: key.used_by, error };
+      })
+    );
+
+    const failedUpdates = results.filter(r => r.error);
+    if (failedUpdates.length > 0) {
+      const errorMsg = `Mise à jour partielle: ${data?.length} clés modifiées, mais échec pour ${failedUpdates.length} utilisateur(s).`;
+      return { 
+        successCount: data?.length || 0, 
+        errorCount: ids.length - (data?.length || 0) + failedUpdates.length, // Include user failures in error count or just report in message
+        error: errorMsg 
+      };
+    }
   }
 
   const successCount = data?.length || 0;
   const errorCount = ids.length - successCount;
 
   return { successCount, errorCount };
+}
+
+/**
+ * Update expiration date for a single activation key
+ * and sync with user subscription if key is used.
+ */
+export async function updateSingleKeyExpiration(
+  id: string,
+  expirationDate: string
+): Promise<{ error?: string }> {
+  // Set expiration to end of day
+  const expDate = new Date(expirationDate);
+  expDate.setHours(23, 59, 59, 999);
+  const expiresAt = expDate.toISOString();
+
+  // 1. Update the activation key
+  const { data, error: keyError } = await supabase
+    .from('activation_keys')
+    .update({ expires_at: expiresAt })
+    .eq('id', id)
+    .select('used_by, is_used')
+    .single();
+
+  if (keyError) return { error: keyError.message };
+
+  // 2. If used, update the user
+  if (data.is_used && data.used_by) {
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ subscription_expires_at: expiresAt })
+      .eq('id', data.used_by);
+      
+    if (userError) return { error: `Clé mise à jour, mais erreur utilisateur: ${userError.message}` };
+  }
+
+  return {};
 }
 
 /**

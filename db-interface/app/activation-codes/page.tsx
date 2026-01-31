@@ -16,6 +16,7 @@ import {
   exportToCsv,
   updateActivationKeysExpiration,
   updateActivationKeySalesPoint,
+  updateSingleKeyExpiration,
 } from "@/lib/activation-codes";
 import type {
   ActivationKey,
@@ -73,7 +74,9 @@ export default function ActivationCodesPage() {
 
   // Sales point form
   const [showSalesPointForm, setShowSalesPointForm] = useState(false);
-  const [editingSalesPointId, setEditingSalesPointId] = useState<string | null>(null);
+  const [editingSalesPointId, setEditingSalesPointId] = useState<string | null>(
+    null,
+  );
   const [salesPointForm, setSalesPointForm] = useState({
     code: "",
     name: "",
@@ -97,7 +100,7 @@ export default function ActivationCodesPage() {
   // Selection mode state (always active)
   const [selectionMode] = useState(true);
   const [selectedCodeIds, setSelectedCodeIds] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   // Bulk expiration update state
@@ -105,7 +108,10 @@ export default function ActivationCodesPage() {
   const [bulkExpirationDate, setBulkExpirationDate] = useState("");
   const [isEditingSalesPoint, setIsEditingSalesPoint] = useState(false);
   const [newSalesPointId, setNewSalesPointId] = useState("");
-  
+  const [isEditingExpiration, setIsEditingExpiration] = useState(false);
+  const [newExpirationDate, setNewExpirationDate] = useState("");
+  const [includeUsedInBulk, setIncludeUsedInBulk] = useState(false);
+
   // Expanded stats card state
   const [expandedStat, setExpandedStat] = useState<string | null>(null);
 
@@ -144,8 +150,8 @@ export default function ActivationCodesPage() {
             filters.status === "used"
               ? true
               : filters.status === "active"
-              ? false
-              : undefined,
+                ? false
+                : undefined,
           search: filters.search || undefined,
         }),
         fetchFaculties(),
@@ -185,7 +191,7 @@ export default function ActivationCodesPage() {
 
     setGenerating(true);
     const salesPoint = salesPoints.find(
-      (sp) => sp.id === generateForm.salesPointId
+      (sp) => sp.id === generateForm.salesPointId,
     );
 
     if (!salesPoint) {
@@ -207,7 +213,7 @@ export default function ActivationCodesPage() {
         quantity: generateForm.quantity,
       },
       salesPoint.code,
-      userId
+      userId,
     );
 
     if (result.error) {
@@ -275,7 +281,7 @@ export default function ActivationCodesPage() {
           commissionRate: salesPointForm.commissionRate,
           notes: salesPointForm.notes,
         },
-        userId
+        userId,
       );
 
       if (result.error) {
@@ -320,12 +326,12 @@ export default function ActivationCodesPage() {
 
     // Filter to only unused codes
     const unusedCodes = codes.filter(
-      (code) => selectedCodeIds.has(code.id) && !code.isUsed
+      (code) => selectedCodeIds.has(code.id) && !code.isUsed,
     );
 
     if (unusedCodes.length === 0) {
       alert(
-        "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être révoqués."
+        "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être révoqués.",
       );
       return;
     }
@@ -333,13 +339,13 @@ export default function ActivationCodesPage() {
     const count = unusedCodes.length;
     if (
       !confirm(
-        `Voulez-vous vraiment révoquer ${count} code(s) non utilisé(s) sélectionné(s)?`
+        `Voulez-vous vraiment révoquer ${count} code(s) non utilisé(s) sélectionné(s)?`,
       )
     )
       return;
 
     const results = await Promise.all(
-      unusedCodes.map((code) => revokeActivationKey(code.id))
+      unusedCodes.map((code) => revokeActivationKey(code.id)),
     );
 
     const errors = results.filter((r) => r.error);
@@ -360,19 +366,23 @@ export default function ActivationCodesPage() {
       return;
     }
 
-    // Filter to only unused codes
-    const unusedCodes = codes.filter(
-      (code) => selectedCodeIds.has(code.id) && !code.isUsed
+    // Filter codes based on user preference
+    const itemsToUpdate = codes.filter(
+      (code) =>
+        selectedCodeIds.has(code.id) &&
+        (includeUsedInBulk ? true : !code.isUsed),
     );
 
-    if (unusedCodes.length === 0) {
+    if (itemsToUpdate.length === 0) {
       alert(
-        "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être modifiés."
+        includeUsedInBulk
+          ? "Aucun code sélectionné."
+          : "Aucun code non utilisé sélectionné. Seuls les codes non utilisés peuvent être modifiés sans l'option 'Inclure utilisés'.",
       );
       return;
     }
 
-    const count = unusedCodes.length;
+    const count = itemsToUpdate.length;
     const formattedDate = new Date(bulkExpirationDate).toLocaleDateString(
       "fr-FR",
       {
@@ -380,32 +390,62 @@ export default function ActivationCodesPage() {
         year: "numeric",
         month: "long",
         day: "numeric",
-      }
+      },
     );
 
     if (
       !confirm(
-        `Voulez-vous vraiment mettre à jour la date d'expiration de ${count} code(s) au ${formattedDate}?`
+        `Voulez-vous vraiment mettre à jour la date d'expiration de ${count} code(s) au ${formattedDate}?${includeUsedInBulk ? "\n\nATTENTION: Cela mettra également à jour les abonnements des utilisateurs actifs!" : ""}`,
       )
     )
       return;
 
     const result = await updateActivationKeysExpiration(
-      unusedCodes.map((c) => c.id),
-      bulkExpirationDate
+      itemsToUpdate.map((c) => c.id),
+      bulkExpirationDate,
+      includeUsedInBulk,
     );
 
     if (result.error) {
       alert(`Erreur: ${result.error}`);
     } else if (result.errorCount > 0) {
       alert(
-        `${result.successCount} code(s) mis à jour avec succès, ${result.errorCount} échec(s)`
+        `${result.successCount} code(s) mis à jour avec succès, ${result.errorCount} échec(s)`,
       );
     } else {
       alert(`${result.successCount} code(s) mis à jour avec succès`);
       setShowBulkExpirationModal(false);
       setBulkExpirationDate("");
+      setIncludeUsedInBulk(false);
       setSelectedCodeIds(new Set());
+      loadData();
+    }
+  };
+
+  // Update single key expiration
+  const handleUpdateSingleExpiration = async () => {
+    if (!selectedCode || !newExpirationDate) return;
+
+    const result = await updateSingleKeyExpiration(
+      selectedCode.id,
+      newExpirationDate,
+    );
+
+    if (result.error) {
+      alert(`Erreur: ${result.error}`);
+    } else {
+      alert("Date d'expiration mise à jour avec succès");
+      setIsEditingExpiration(false);
+
+      // Update local selectedCode
+      setSelectedCode({
+        ...selectedCode,
+        expiresAt: new Date(
+          new Date(newExpirationDate).setHours(23, 59, 59, 999),
+        ),
+      });
+
+      setNewExpirationDate("");
       loadData();
     }
   };
@@ -416,7 +456,7 @@ export default function ActivationCodesPage() {
 
     const result = await updateActivationKeySalesPoint(
       selectedCode.id,
-      newSalesPointId
+      newSalesPointId,
     );
 
     if (result.error) {
@@ -424,7 +464,7 @@ export default function ActivationCodesPage() {
     } else {
       alert("Point de vente mis à jour avec succès");
       setIsEditingSalesPoint(false);
-      
+
       // Update local selectedCode
       const updatedSP = salesPoints.find((sp) => sp.id === newSalesPointId);
       if (updatedSP) {
@@ -434,7 +474,7 @@ export default function ActivationCodesPage() {
           salesPoint: updatedSP,
         });
       }
-      
+
       setNewSalesPointId("");
       loadData();
     }
@@ -586,13 +626,26 @@ export default function ActivationCodesPage() {
                 icon: "📊",
                 color: "primary",
                 details: [
-                  { label: "Actifs", value: stats.activeCodes, color: "text-green-500" },
-                  { label: "Utilisés", value: stats.usedCodes, color: "text-purple-500" },
-                  { label: "Expirés", value: stats.expiredCodes, color: "text-red-500" },
+                  {
+                    label: "Actifs",
+                    value: stats.activeCodes,
+                    color: "text-green-500",
+                  },
+                  {
+                    label: "Utilisés",
+                    value: stats.usedCodes,
+                    color: "text-purple-500",
+                  },
+                  {
+                    label: "Expirés",
+                    value: stats.expiredCodes,
+                    color: "text-red-500",
+                  },
                 ],
-                insight: stats.totalCodes > 0 
-                  ? `${Math.round((stats.usedCodes / stats.totalCodes) * 100)}% des codes ont été utilisés`
-                  : "Aucun code généré"
+                insight:
+                  stats.totalCodes > 0
+                    ? `${Math.round((stats.usedCodes / stats.totalCodes) * 100)}% des codes ont été utilisés`
+                    : "Aucun code généré",
               },
               {
                 id: "active",
@@ -601,14 +654,23 @@ export default function ActivationCodesPage() {
                 icon: "✅",
                 color: "blue",
                 details: [
-                  { label: "Prêts à vendre", value: stats.activeCodes, color: "text-blue-500" },
-                  { label: "% du total", value: `${stats.totalCodes > 0 ? Math.round((stats.activeCodes / stats.totalCodes) * 100) : 0}%`, color: "text-slate-500" },
+                  {
+                    label: "Prêts à vendre",
+                    value: stats.activeCodes,
+                    color: "text-blue-500",
+                  },
+                  {
+                    label: "% du total",
+                    value: `${stats.totalCodes > 0 ? Math.round((stats.activeCodes / stats.totalCodes) * 100) : 0}%`,
+                    color: "text-slate-500",
+                  },
                 ],
-                insight: stats.activeCodes > 50 
-                  ? "Stock suffisant pour les ventes" 
-                  : stats.activeCodes > 0 
-                  ? "Pensez à générer plus de codes" 
-                  : "Aucun code actif disponible"
+                insight:
+                  stats.activeCodes > 50
+                    ? "Stock suffisant pour les ventes"
+                    : stats.activeCodes > 0
+                      ? "Pensez à générer plus de codes"
+                      : "Aucun code actif disponible",
               },
               {
                 id: "used",
@@ -617,12 +679,21 @@ export default function ActivationCodesPage() {
                 icon: "👤",
                 color: "purple",
                 details: [
-                  { label: "Codes activés", value: stats.usedCodes, color: "text-purple-500" },
-                  { label: "Taux conversion", value: `${stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}%`, color: "text-slate-500" },
+                  {
+                    label: "Codes activés",
+                    value: stats.usedCodes,
+                    color: "text-purple-500",
+                  },
+                  {
+                    label: "Taux conversion",
+                    value: `${stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}%`,
+                    color: "text-slate-500",
+                  },
                 ],
-                insight: stats.usedCodes > 0 
-                  ? `${stats.usedCodes} utilisateur(s) avec abonnement actif`
-                  : "Aucun code n'a encore été utilisé"
+                insight:
+                  stats.usedCodes > 0
+                    ? `${stats.usedCodes} utilisateur(s) avec abonnement actif`
+                    : "Aucun code n'a encore été utilisé",
               },
               {
                 id: "expired",
@@ -631,12 +702,21 @@ export default function ActivationCodesPage() {
                 icon: "⏰",
                 color: "red",
                 details: [
-                  { label: "Non utilisés", value: stats.expiredCodes, color: "text-red-500" },
-                  { label: "Perte potentielle", value: `${stats.expiredCodes * 500} DA`, color: "text-orange-500" },
+                  {
+                    label: "Non utilisés",
+                    value: stats.expiredCodes,
+                    color: "text-red-500",
+                  },
+                  {
+                    label: "Perte potentielle",
+                    value: `${stats.expiredCodes * 500} DA`,
+                    color: "text-orange-500",
+                  },
                 ],
-                insight: stats.expiredCodes > 0 
-                  ? "Ces codes n'ont pas été vendus à temps"
-                  : "Aucun code expiré - Excellent!"
+                insight:
+                  stats.expiredCodes > 0
+                    ? "Ces codes n'ont pas été vendus à temps"
+                    : "Aucun code expiré - Excellent!",
               },
               {
                 id: "revenue",
@@ -645,51 +725,80 @@ export default function ActivationCodesPage() {
                 icon: "💰",
                 color: "green",
                 details: [
-                  { label: "Total encaissé", value: `${stats.totalRevenue.toLocaleString()} DA`, color: "text-green-500" },
-                  { label: "Moy. par code", value: stats.usedCodes > 0 ? `${Math.round(stats.totalRevenue / stats.usedCodes).toLocaleString()} DA` : "0 DA", color: "text-slate-500" },
+                  {
+                    label: "Total encaissé",
+                    value: `${stats.totalRevenue.toLocaleString()} DA`,
+                    color: "text-green-500",
+                  },
+                  {
+                    label: "Moy. par code",
+                    value:
+                      stats.usedCodes > 0
+                        ? `${Math.round(stats.totalRevenue / stats.usedCodes).toLocaleString()} DA`
+                        : "0 DA",
+                    color: "text-slate-500",
+                  },
                 ],
-                insight: stats.totalRevenue > 0 
-                  ? `Revenu moyen: ${stats.usedCodes > 0 ? Math.round(stats.totalRevenue / stats.usedCodes) : 0} DA/code`
-                  : "Aucun revenu enregistré"
+                insight:
+                  stats.totalRevenue > 0
+                    ? `Revenu moyen: ${stats.usedCodes > 0 ? Math.round(stats.totalRevenue / stats.usedCodes) : 0} DA/code`
+                    : "Aucun revenu enregistré",
               },
             ].map((item) => (
               <div
                 key={item.id}
-                onClick={() => setExpandedStat(expandedStat === item.id ? null : item.id)}
+                onClick={() =>
+                  setExpandedStat(expandedStat === item.id ? null : item.id)
+                }
                 className={`bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
-                  expandedStat === item.id 
-                    ? 'col-span-2 lg:col-span-2 p-6' 
-                    : 'p-5'
+                  expandedStat === item.id
+                    ? "col-span-2 lg:col-span-2 p-6"
+                    : "p-5"
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <span className={`text-xl transition-transform duration-300 ${expandedStat === item.id ? 'scale-125' : ''}`}>
+                    <span
+                      className={`text-xl transition-transform duration-300 ${expandedStat === item.id ? "scale-125" : ""}`}
+                    >
                       {item.icon}
                     </span>
                     <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
                       {item.label}
                     </p>
                   </div>
-                  <span className={`text-slate-400 transition-transform duration-300 ${expandedStat === item.id ? 'rotate-180' : ''}`}>
+                  <span
+                    className={`text-slate-400 transition-transform duration-300 ${expandedStat === item.id ? "rotate-180" : ""}`}
+                  >
                     ▼
                   </span>
                 </div>
-                <p className={`font-black text-slate-900 dark:text-white truncate transition-all duration-300 ${
-                  expandedStat === item.id ? 'text-3xl mb-4' : 'text-xl md:text-2xl'
-                }`}>
+                <p
+                  className={`font-black text-slate-900 dark:text-white truncate transition-all duration-300 ${
+                    expandedStat === item.id
+                      ? "text-3xl mb-4"
+                      : "text-xl md:text-2xl"
+                  }`}
+                >
                   {item.value}
                 </p>
-                
+
                 {/* Expanded Details */}
                 {expandedStat === item.id && (
                   <div className="space-y-3 animate-fadeIn">
                     <div className="h-px bg-slate-100 dark:bg-white/5" />
                     <div className="grid grid-cols-2 gap-3">
                       {item.details.map((detail, idx) => (
-                        <div key={idx} className="bg-slate-50 dark:bg-slate-950/50 rounded-xl p-3">
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{detail.label}</p>
-                          <p className={`text-lg font-black ${detail.color}`}>{detail.value}</p>
+                        <div
+                          key={idx}
+                          className="bg-slate-50 dark:bg-slate-950/50 rounded-xl p-3"
+                        >
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                            {detail.label}
+                          </p>
+                          <p className={`text-lg font-black ${detail.color}`}>
+                            {detail.value}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -779,7 +888,7 @@ export default function ActivationCodesPage() {
                               >
                                 {sp.totalCodes > 0
                                   ? Math.round(
-                                      (sp.usedCodes / sp.totalCodes) * 100
+                                      (sp.usedCodes / sp.totalCodes) * 100,
                                     )
                                   : 0}
                                 %
@@ -967,7 +1076,7 @@ export default function ActivationCodesPage() {
                         Expire le:{" "}
                         <span className="font-bold text-primary-600 dark:text-primary-400">
                           {new Date(
-                            generateForm.expirationDate
+                            generateForm.expirationDate,
                           ).toLocaleDateString("fr-FR", {
                             weekday: "long",
                             year: "numeric",
@@ -1314,8 +1423,8 @@ export default function ActivationCodesPage() {
                     const status = code.isUsed
                       ? "used"
                       : isExpired
-                      ? "expired"
-                      : "active";
+                        ? "expired"
+                        : "active";
                     const user = code.usedByUser;
                     const isSelected = selectedCodeIds.has(code.id);
 
@@ -1363,15 +1472,15 @@ export default function ActivationCodesPage() {
                               status === "active"
                                 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                                 : status === "used"
-                                ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                                : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                  ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
                             }`}
                           >
                             {status === "active"
                               ? "✅ Actif"
                               : status === "used"
-                              ? "👤 Utilisé"
-                              : "⏰ Expiré"}
+                                ? "👤 Utilisé"
+                                : "⏰ Expiré"}
                           </span>
                         </td>
                         <td className="px-6 py-5">
@@ -1414,14 +1523,14 @@ export default function ActivationCodesPage() {
                         <td className="px-6 py-5 text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">
                           <div>
                             {new Date(code.createdAt).toLocaleDateString(
-                              "fr-FR"
+                              "fr-FR",
                             )}
                           </div>
                           {code.usedAt && (
                             <div className="text-primary-600 dark:text-primary-400 mt-0.5">
                               Utilisé:{" "}
                               {new Date(code.usedAt).toLocaleDateString(
-                                "fr-FR"
+                                "fr-FR",
                               )}
                             </div>
                           )}
@@ -1697,17 +1806,17 @@ export default function ActivationCodesPage() {
                     selectedCode.isUsed
                       ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
                       : selectedCode.expiresAt &&
-                        new Date(selectedCode.expiresAt) < new Date()
-                      ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          new Date(selectedCode.expiresAt) < new Date()
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                   }`}
                 >
                   {selectedCode.isUsed
                     ? "👤 Utilisé"
                     : selectedCode.expiresAt &&
-                      new Date(selectedCode.expiresAt) < new Date()
-                    ? "⏰ Expiré"
-                    : "✅ Actif"}
+                        new Date(selectedCode.expiresAt) < new Date()
+                      ? "⏰ Expiré"
+                      : "✅ Actif"}
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -1787,13 +1896,75 @@ export default function ActivationCodesPage() {
                 </div>
               )}
 
-              {selectedCode.expiresAt && (
-                <DetailRow
-                  label="Date d'Expiration"
-                  value={new Date(selectedCode.expiresAt).toLocaleDateString(
-                    "fr-FR"
-                  )}
-                />
+              {isEditingExpiration ? (
+                <div className="py-3 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">
+                    Nouvelle Date d&apos;Expiration
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={
+                        newExpirationDate ||
+                        (selectedCode.expiresAt
+                          ? new Date(selectedCode.expiresAt)
+                              .toISOString()
+                              .split("T")[0]
+                          : "")
+                      }
+                      onChange={(e) => setNewExpirationDate(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white outline-none"
+                    />
+                    <button
+                      onClick={handleUpdateSingleExpiration}
+                      className="px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm hover:bg-emerald-600 transition-colors"
+                      title="Enregistrer"
+                    >
+                      ✅
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditingExpiration(false);
+                        setNewExpirationDate("");
+                      }}
+                      className="px-3 py-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                      title="Annuler"
+                    >
+                      ❌
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Date d&apos;Expiration
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                      {selectedCode.expiresAt
+                        ? new Date(selectedCode.expiresAt).toLocaleDateString(
+                            "fr-FR",
+                          )
+                        : "Jamais"}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setNewExpirationDate(
+                          selectedCode.expiresAt
+                            ? new Date(selectedCode.expiresAt)
+                                .toISOString()
+                                .split("T")[0]
+                            : "",
+                        );
+                        setIsEditingExpiration(true);
+                      }}
+                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      title="Modifier"
+                    >
+                      ✏️
+                    </button>
+                  </div>
+                </div>
               )}
               {selectedCode.notes && (
                 <div className="pt-2">
@@ -1858,7 +2029,7 @@ export default function ActivationCodesPage() {
                     <div className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest mt-6">
                       Activé le{" "}
                       {new Date(selectedCode.usedAt).toLocaleDateString(
-                        "fr-FR"
+                        "fr-FR",
                       )}
                     </div>
                   )}
@@ -1909,16 +2080,26 @@ export default function ActivationCodesPage() {
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-              Mettre à jour la date d&apos;expiration pour{" "}
-              <span className="font-bold text-primary-600 dark:text-primary-400">
-                {
-                  codes.filter(
-                    (code) => selectedCodeIds.has(code.id) && !code.isUsed
-                  ).length
-                }
-              </span>{" "}
-              code(s) non utilisé(s) sélectionné(s).
+              Mettre à jour la date d&apos;expiration pour les codes
+              sélectionnés.
             </p>
+
+            <div className="mb-6 flex items-center gap-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-2xl">
+              <input
+                type="checkbox"
+                id="includeUsed"
+                checked={includeUsedInBulk}
+                onChange={(e) => setIncludeUsedInBulk(e.target.checked)}
+                className="w-5 h-5 text-amber-600 bg-white border-amber-300 rounded focus:ring-amber-500 cursor-pointer"
+              />
+              <label
+                htmlFor="includeUsed"
+                className="text-xs font-bold text-amber-800 dark:text-amber-200 cursor-pointer"
+              >
+                Inclure les codes déjà utilisés (met à jour les abonnements
+                actifs)
+              </label>
+            </div>
 
             <div className="mb-6">
               <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
