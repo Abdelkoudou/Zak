@@ -186,11 +186,15 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
   console.log(`[Chargily Webhook] Processing payment for ${customerEmail}. Duration: ${durationDays} days. User ID: ${userId || 'none'}`);
   
   // Fetch "En ligne" sales point ID
-  const { data: onlineSP } = await supabaseAdmin
+  const { data: onlineSP, error: spError } = await supabaseAdmin
     .from('sales_points')
     .select('id')
     .eq('code', 'ONLINE')
     .single();
+
+  if (spError) {
+    console.error('[Chargily Webhook] Failed to fetch ONLINE sales_point:', spError);
+  }
 
   const salesPointId = onlineSP?.id || null;
 
