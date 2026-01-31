@@ -92,8 +92,8 @@ android {
         applicationId 'com.fmcapp.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 35
-        versionName "1.0.01"
+        versionCode 36
+        versionName "1.0.2"
     }
     signingConfigs {
         debug {
