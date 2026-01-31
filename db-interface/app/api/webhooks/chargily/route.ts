@@ -185,6 +185,15 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
 
   console.log(`[Chargily Webhook] Processing payment for ${customerEmail}. Duration: ${durationDays} days. User ID: ${userId || 'none'}`);
   
+  // Fetch "En ligne" sales point ID
+  const { data: onlineSP } = await supabaseAdmin
+    .from('sales_points')
+    .select('id')
+    .eq('code', 'ONLINE')
+    .single();
+
+  const salesPointId = onlineSP?.id || null;
+
   // Create activation key
   const { data: newKey, error: keyError } = await supabaseAdmin
     .from('activation_keys')
@@ -192,6 +201,7 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
       key_code: keyCode,
       duration_days: durationDays,
       payment_source: 'online',
+      sales_point_id: salesPointId,
       notes: `Auto-generated from online payment: ${checkout.id}`,
       price_paid: checkout.amount, // Chargily amount is in DZD (not centimes for DZD)
       is_used: userId ? true : false,
