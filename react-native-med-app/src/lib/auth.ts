@@ -724,15 +724,19 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
     const deviceName = await getDeviceName()
     const fingerprint = getDeviceFingerprint()
 
-    // Clean up stale sessions from same physical device (e.g. app reinstall)
-    // We only delete if fingerprint is available to avoid over-deletion
+    // Clean up STALE sessions from same physical device (e.g. app reinstall)
+    // Only delete sessions older than 30 days to allow app + browser to coexist
     if (fingerprint) {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
       await supabase
         .from('device_sessions')
         .delete()
         .eq('user_id', userId)
         .eq('fingerprint', fingerprint)
         .neq('device_id', deviceId)
+        .lt('last_active_at', thirtyDaysAgo.toISOString())
     }
 
     const { error } = await supabase
