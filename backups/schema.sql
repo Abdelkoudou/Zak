@@ -1412,10 +1412,10 @@ CREATE TABLE IF NOT EXISTS "public"."device_sessions" (
 ALTER TABLE "public"."device_sessions" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."device_sessions" IS 'User device tracking. Max 2 devices per user (enforced by trigger).
-Users CANNOT delete their own sessions - admin only.
-Device IDs should be UUIDs, not screen-based hashes.
-Updated in Migration 035.';
+COMMENT ON TABLE "public"."device_sessions" IS 'Stores device sessions for authenticated users. 
+Limited to 2 physical devices per regular user (enforced by enforce_max_devices trigger).
+Admin/owner/manager roles and reviewers are exempt from this limit.
+Physical devices are identified by fingerprint (OS + screen resolution).';
 
 
 
@@ -1998,6 +1998,10 @@ CREATE INDEX "idx_device_sessions_last_active" ON "public"."device_sessions" USI
 
 
 CREATE INDEX "idx_device_sessions_user" ON "public"."device_sessions" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_device_sessions_user_fingerprint" ON "public"."device_sessions" USING "btree" ("user_id", "fingerprint");
 
 
 
@@ -2680,6 +2684,10 @@ CREATE POLICY "Users delete own sessions" ON "public"."chat_sessions" FOR DELETE
 
 
 
+CREATE POLICY "Users delete own sessions" ON "public"."device_sessions" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
 CREATE POLICY "Users delete own test attempts" ON "public"."test_attempts" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
@@ -2841,6 +2849,10 @@ ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
 
+
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."app_config";
 
 
 
