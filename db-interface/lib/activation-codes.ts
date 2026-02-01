@@ -164,9 +164,12 @@ export async function generateBatchCodes(
       }
     }
     
-    // Fallback if explicit parsing fails
+    // Fallback if explicit parsing fails - but validate to prevent RangeError
     if (!expiresAt) {
       const expDate = new Date(params.expirationDate);
+      if (isNaN(expDate.getTime())) {
+        return { codes: [], batchId, error: `Format de date invalide: ${params.expirationDate}. Format attendu: AAAA-MM-JJ` };
+      }
       expDate.setHours(23, 59, 59, 999);
       expiresAt = expDate.toISOString();
     }
