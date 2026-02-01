@@ -148,10 +148,28 @@ export async function generateBatchCodes(
   // Calculate expiration date: use exact date if provided, otherwise calculate from duration
   let expiresAt: string | null = null;
   if (params.expirationDate) {
-    // Use the exact expiration date provided (set to end of day)
-    const expDate = new Date(params.expirationDate);
-    expDate.setHours(23, 59, 59, 999);
-    expiresAt = expDate.toISOString();
+    // Parse the date explicitly to avoid browser/locale inconsistencies
+    // Input format expected: "YYYY-MM-DD" from HTML date input
+    const dateParts = params.expirationDate.split('-');
+    if (dateParts.length === 3) {
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+      const day = parseInt(dateParts[2], 10);
+      
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+        const expDate = new Date(year, month, day, 23, 59, 59, 999);
+        if (!isNaN(expDate.getTime())) {
+          expiresAt = expDate.toISOString();
+        }
+      }
+    }
+    
+    // Fallback if explicit parsing fails
+    if (!expiresAt) {
+      const expDate = new Date(params.expirationDate);
+      expDate.setHours(23, 59, 59, 999);
+      expiresAt = expDate.toISOString();
+    }
   } else if (params.durationDays > 0) {
     // Calculate from duration days
     const expDate = new Date();
@@ -606,9 +624,30 @@ export async function updateActivationKeysExpiration(
     return { successCount: 0, errorCount: 0, error: 'No IDs provided' };
   }
 
-  // Set expiration to end of day
-  const expDate = new Date(expirationDate);
-  expDate.setHours(23, 59, 59, 999);
+  // Parse the date explicitly to avoid browser/locale inconsistencies
+  // Input format expected: "YYYY-MM-DD" from HTML date input
+  const dateParts = expirationDate.split('-');
+  if (dateParts.length !== 3) {
+    return { successCount: 0, errorCount: ids.length, error: `Format de date invalide: ${expirationDate}. Format attendu: AAAA-MM-JJ` };
+  }
+  
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+  const day = parseInt(dateParts[2], 10);
+  
+  // Validate parsed values
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return { successCount: 0, errorCount: ids.length, error: `Date invalide: ${expirationDate}` };
+  }
+  
+  // Create date with explicit local time components, set to end of day
+  const expDate = new Date(year, month, day, 23, 59, 59, 999);
+  
+  // Verify the date is valid
+  if (isNaN(expDate.getTime())) {
+    return { successCount: 0, errorCount: ids.length, error: `Date invalide: ${expirationDate}` };
+  }
+  
   const expiresAt = expDate.toISOString();
 
   // Update all codes at once
@@ -665,9 +704,30 @@ export async function updateSingleKeyExpiration(
   id: string,
   expirationDate: string
 ): Promise<{ error?: string }> {
-  // Set expiration to end of day
-  const expDate = new Date(expirationDate);
-  expDate.setHours(23, 59, 59, 999);
+  // Parse the date explicitly to avoid browser/locale inconsistencies
+  // Input format expected: "YYYY-MM-DD" from HTML date input
+  const dateParts = expirationDate.split('-');
+  if (dateParts.length !== 3) {
+    return { error: `Format de date invalide: ${expirationDate}. Format attendu: AAAA-MM-JJ` };
+  }
+  
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+  const day = parseInt(dateParts[2], 10);
+  
+  // Validate parsed values
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return { error: `Date invalide: ${expirationDate}` };
+  }
+  
+  // Create date with explicit local time components, set to end of day
+  const expDate = new Date(year, month, day, 23, 59, 59, 999);
+  
+  // Verify the date is valid
+  if (isNaN(expDate.getTime())) {
+    return { error: `Date invalide: ${expirationDate}` };
+  }
+  
   const expiresAt = expDate.toISOString();
 
   // 1. Update the activation key
