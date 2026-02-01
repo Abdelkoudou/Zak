@@ -205,46 +205,86 @@ CREATE OR REPLACE FUNCTION "public"."activate_subscription"("p_user_id" "uuid", 
     SET "search_path" TO ''
     AS $$
 DECLARE
-  v_duration_months INTEGER;
+  v_duration_days INTEGER;
   v_key_id uuid;
+  v_expires_at TIMESTAMPTZ;
+  v_user_created_at TIMESTAMPTZ;
 BEGIN
-  -- Authorization guard
+  -- ============================================================================
+  -- Authorization Guard (Updated for Registration Flow)
+  -- ============================================================================
+  -- Allow activation if:
+  -- 1. Caller is the user being activated (auth.uid() = p_user_id)
+  -- 2. OR user profile was created within last 5 minutes (registration grace period)
+  -- 3. OR caller is admin/owner
+  
   IF auth.uid() IS DISTINCT FROM p_user_id THEN
-    -- Allow owners/admins to activate for others
-    IF NOT EXISTS (
-      SELECT 1 FROM public.users
-      WHERE id = auth.uid()
-      AND role IN ('admin', 'owner')
-    ) THEN
-      RETURN json_build_object('success', false, 'error', 'Unauthorized');
+    -- Check registration grace period: profile created < 5 minutes ago
+    SELECT created_at INTO v_user_created_at
+    FROM public.users
+    WHERE id = p_user_id;
+    
+    -- If user doesn't exist, deny immediately
+    IF v_user_created_at IS NULL THEN
+      RETURN json_build_object('success', false, 'error', 'User not found');
     END IF;
+    
+    -- Check if within 5-minute registration grace period
+    IF v_user_created_at < NOW() - INTERVAL '5 minutes' THEN
+      -- Not in grace period, check if caller is admin/owner
+      IF NOT EXISTS (
+        SELECT 1 FROM public.users
+        WHERE id = auth.uid()
+        AND role IN ('admin', 'owner')
+      ) THEN
+        RETURN json_build_object('success', false, 'error', 'Unauthorized');
+      END IF;
+    END IF;
+    -- If within grace period, allow activation to proceed
   END IF;
 
-  -- Atomic check-and-mark
+  -- ============================================================================
+  -- Atomic check-and-mark: UPDATE ... RETURNING
+  -- ============================================================================
   UPDATE public.activation_keys
   SET is_used = TRUE,
       used_by = p_user_id,
-      used_at = NOW()
+      used_at = NOW(),
+      expires_at = (NOW() + (duration_days || ' days')::INTERVAL)::DATE + TIME '23:59:59.999'
   WHERE key_code = p_key_code
     AND is_used = FALSE
-  RETURNING id, duration_months INTO v_key_id, v_duration_months;
+  RETURNING id, duration_days INTO v_key_id, v_duration_days;
 
   IF v_key_id IS NULL THEN
     RETURN json_build_object('success', false, 'error', 'Invalid or already used key');
   END IF;
 
+  -- Calculate expiration timestamp (end of day for the expiration date)
+  v_expires_at := (NOW() + (v_duration_days || ' days')::INTERVAL)::DATE + TIME '23:59:59.999';
+
   -- Update user subscription
   UPDATE public.users
   SET is_paid = TRUE,
-      subscription_expires_at = NOW() + (v_duration_months || ' months')::INTERVAL
+      subscription_expires_at = v_expires_at
   WHERE id = p_user_id;
 
-  RETURN json_build_object('success', true, 'duration_months', v_duration_months);
+  RETURN json_build_object(
+    'success', true, 
+    'duration_days', v_duration_days,
+    'expires_at', v_expires_at
+  );
 END;
 $$;
 
 
 ALTER FUNCTION "public"."activate_subscription"("p_user_id" "uuid", "p_key_code" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."activate_subscription"("p_user_id" "uuid", "p_key_code" "text") IS 'Activates a subscription for a user using an activation key.
+Authorization: Allows activation if (1) caller is the user being activated,
+(2) user profile was created within last 5 minutes (registration grace period),
+or (3) caller is admin/owner. Uses atomic UPDATE...RETURNING to prevent race conditions.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."create_payment_record"("p_checkout_id" "text", "p_customer_email" "text", "p_customer_name" "text" DEFAULT NULL::"text", "p_customer_phone" "text" DEFAULT NULL::"text", "p_amount" integer DEFAULT 500000, "p_currency" "text" DEFAULT 'dzd'::"text", "p_duration_days" integer DEFAULT 365, "p_checkout_url" "text" DEFAULT NULL::"text", "p_success_url" "text" DEFAULT NULL::"text", "p_failure_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT NULL::"jsonb") RETURNS "jsonb"
