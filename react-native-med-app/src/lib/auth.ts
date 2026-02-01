@@ -135,7 +135,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
     }
 
     // 1. Create auth user with redirect URL for email verification
-    const redirectUrl = getRedirectUrl()
+    // Redirect to login page instead of auto-signing in
+    const redirectUrl = getRedirectUrl('login?verified=true')
     console.log('[Auth] Creating auth user...')
 
     let authData: any = null
