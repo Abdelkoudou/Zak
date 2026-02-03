@@ -135,7 +135,8 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
     }
 
     // 1. Create auth user with redirect URL for email verification
-    const redirectUrl = getRedirectUrl()
+    // Redirect to login page instead of auto-signing in
+    const redirectUrl = getRedirectUrl('login?verified=true')
     console.log('[Auth] Creating auth user...')
 
     let authData: any = null
@@ -211,44 +212,11 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 
     console.log('[Auth] Subscription activated')
 
-    // 4. Check if email confirmation is required
-    // If user identity is not confirmed, they need to verify email
-    if (authData.user.identities && authData.user.identities.length === 0) {
-      return { user: null, error: null, needsEmailVerification: true }
-    }
-
-    // Check if session exists (no session = email not confirmed yet)
-    if (!authData.session) {
-      return { user: null, error: null, needsEmailVerification: true }
-    }
-
-    // 5. Register device (non-blocking)
-    registerDevice(authData.user.id).catch(e => {
-      console.warn('[Auth] Device registration failed (non-blocking):', e)
-    })
-
-    // 6. Fetch complete user profile
-    try {
-      const { data: userProfile, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single()
-
-      if (fetchError) {
-        // Profile created but can't fetch - likely needs email verification
-        return { user: null, error: null, needsEmailVerification: true }
-      }
-
-      // Cache profile for offline use
-      await cacheUserProfile(userProfile as User)
-
-      console.log('[Auth] Sign up complete!')
-      return { user: userProfile as User, error: null }
-    } catch (e) {
-      console.error('[Auth] Profile fetch threw:', e)
-      return { user: null, error: null, needsEmailVerification: true }
-    }
+    // 4. Registration complete - always show email verification screen
+    // We intentionally DO NOT auto-login the user, even if a session exists.
+    // This ensures a consistent UX: register → verify email → login
+    console.log('[Auth] Sign up complete! Redirecting to email verification screen.')
+    return { user: null, error: null, needsEmailVerification: true }
   } catch (error: any) {
     console.error('[Auth] Unexpected sign up error:', error)
     const errorMessage = error?.message || ''
@@ -724,15 +692,19 @@ export async function registerDevice(userId: string): Promise<{ error: string | 
     const deviceName = await getDeviceName()
     const fingerprint = getDeviceFingerprint()
 
-    // Clean up stale sessions from same physical device (e.g. app reinstall)
-    // We only delete if fingerprint is available to avoid over-deletion
+    // Clean up STALE sessions from same physical device (e.g. app reinstall)
+    // Only delete sessions older than 30 days to allow app + browser to coexist
     if (fingerprint) {
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
       await supabase
         .from('device_sessions')
         .delete()
         .eq('user_id', userId)
         .eq('fingerprint', fingerprint)
         .neq('device_id', deviceId)
+        .lt('last_active_at', thirtyDaysAgo.toISOString())
     }
 
     const { error } = await supabase

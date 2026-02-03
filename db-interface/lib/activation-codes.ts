@@ -148,10 +148,31 @@ export async function generateBatchCodes(
   // Calculate expiration date: use exact date if provided, otherwise calculate from duration
   let expiresAt: string | null = null;
   if (params.expirationDate) {
-    // Use the exact expiration date provided (set to end of day)
-    const expDate = new Date(params.expirationDate);
-    expDate.setHours(23, 59, 59, 999);
-    expiresAt = expDate.toISOString();
+    // Parse the date explicitly to avoid browser/locale inconsistencies
+    // Input format expected: "YYYY-MM-DD" from HTML date input
+    const dateParts = params.expirationDate.split('-');
+    if (dateParts.length === 3) {
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+      const day = parseInt(dateParts[2], 10);
+      
+      if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+        const expDate = new Date(year, month, day, 23, 59, 59, 999);
+        if (!isNaN(expDate.getTime())) {
+          expiresAt = expDate.toISOString();
+        }
+      }
+    }
+    
+    // Fallback if explicit parsing fails - but validate to prevent RangeError
+    if (!expiresAt) {
+      const expDate = new Date(params.expirationDate);
+      if (isNaN(expDate.getTime())) {
+        return { codes: [], batchId, error: `Format de date invalide: ${params.expirationDate}. Format attendu: AAAA-MM-JJ` };
+      }
+      expDate.setHours(23, 59, 59, 999);
+      expiresAt = expDate.toISOString();
+    }
   } else if (params.durationDays > 0) {
     // Calculate from duration days
     const expDate = new Date();
@@ -594,37 +615,145 @@ export async function revokeActivationKey(id: string): Promise<{ error?: string 
  * Update expiration date for multiple activation keys
  * @param ids - Array of activation key IDs to update
  * @param expirationDate - New expiration date (ISO string)
+ * @param includeUsed - Whether to include used codes in the update (careful!)
  * @returns Object with success count and any errors
  */
 export async function updateActivationKeysExpiration(
   ids: string[],
-  expirationDate: string
+  expirationDate: string,
+  includeUsed: boolean = false
 ): Promise<{ successCount: number; errorCount: number; error?: string }> {
   if (ids.length === 0) {
     return { successCount: 0, errorCount: 0, error: 'No IDs provided' };
   }
 
-  // Set expiration to end of day
-  const expDate = new Date(expirationDate);
-  expDate.setHours(23, 59, 59, 999);
+  // Parse the date explicitly to avoid browser/locale inconsistencies
+  // Input format expected: "YYYY-MM-DD" from HTML date input
+  const dateParts = expirationDate.split('-');
+  if (dateParts.length !== 3) {
+    return { successCount: 0, errorCount: ids.length, error: `Format de date invalide: ${expirationDate}. Format attendu: AAAA-MM-JJ` };
+  }
+  
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+  const day = parseInt(dateParts[2], 10);
+  
+  // Validate parsed values
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return { successCount: 0, errorCount: ids.length, error: `Date invalide: ${expirationDate}` };
+  }
+  
+  // Create date with explicit local time components, set to end of day
+  const expDate = new Date(year, month, day, 23, 59, 59, 999);
+  
+  // Verify the date is valid
+  if (isNaN(expDate.getTime())) {
+    return { successCount: 0, errorCount: ids.length, error: `Date invalide: ${expirationDate}` };
+  }
+  
   const expiresAt = expDate.toISOString();
 
-  // Update all codes at once (only unused codes can be updated)
-  const { data, error } = await supabase
+  // Update all codes at once
+  let query = supabase
     .from('activation_keys')
     .update({ expires_at: expiresAt })
-    .in('id', ids)
-    .eq('is_used', false) // Only update unused codes
-    .select('id');
+    .in('id', ids);
+
+  if (!includeUsed) {
+    query = query.eq('is_used', false); // Default: only update unused codes
+  }
+
+  const { data, error } = await query.select('id, used_by, is_used');
 
   if (error) {
     return { successCount: 0, errorCount: ids.length, error: error.message };
+  }
+
+  // If we updated used codes, we also need to update the users' subscription_expires_at
+  const updatedUsedKeys = (data || []).filter(k => k.is_used && k.used_by);
+  if (updatedUsedKeys.length > 0) {
+    const results = await Promise.all(
+      updatedUsedKeys.map(async (key) => {
+        const { error } = await supabase
+          .from('users')
+          .update({ subscription_expires_at: expiresAt })
+          .eq('id', key.used_by);
+        return { userId: key.used_by, error };
+      })
+    );
+
+    const failedUpdates = results.filter(r => r.error);
+    if (failedUpdates.length > 0) {
+      const errorMsg = `Mise à jour partielle: ${data?.length} clés modifiées, mais échec pour ${failedUpdates.length} utilisateur(s).`;
+      return { 
+        successCount: data?.length || 0, 
+        errorCount: ids.length - (data?.length || 0) + failedUpdates.length, // Include user failures in error count or just report in message
+        error: errorMsg 
+      };
+    }
   }
 
   const successCount = data?.length || 0;
   const errorCount = ids.length - successCount;
 
   return { successCount, errorCount };
+}
+
+/**
+ * Update expiration date for a single activation key
+ * and sync with user subscription if key is used.
+ */
+export async function updateSingleKeyExpiration(
+  id: string,
+  expirationDate: string
+): Promise<{ error?: string }> {
+  // Parse the date explicitly to avoid browser/locale inconsistencies
+  // Input format expected: "YYYY-MM-DD" from HTML date input
+  const dateParts = expirationDate.split('-');
+  if (dateParts.length !== 3) {
+    return { error: `Format de date invalide: ${expirationDate}. Format attendu: AAAA-MM-JJ` };
+  }
+  
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10) - 1; // Months are 0-indexed
+  const day = parseInt(dateParts[2], 10);
+  
+  // Validate parsed values
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    return { error: `Date invalide: ${expirationDate}` };
+  }
+  
+  // Create date with explicit local time components, set to end of day
+  const expDate = new Date(year, month, day, 23, 59, 59, 999);
+  
+  // Verify the date is valid
+  if (isNaN(expDate.getTime())) {
+    return { error: `Date invalide: ${expirationDate}` };
+  }
+  
+  const expiresAt = expDate.toISOString();
+
+  // 1. Update the activation key
+  const { data, error: keyError } = await supabase
+    .from('activation_keys')
+    .update({ expires_at: expiresAt })
+    .eq('id', id)
+    .select('used_by, is_used')
+    .single();
+
+  if (keyError) return { error: keyError.message };
+
+  // 2. If used, update the user
+  if (data.is_used && data.used_by) {
+    const { error: userError } = await supabase
+      .from('users')
+      .update({ subscription_expires_at: expiresAt })
+      .eq('id', data.used_by);
+      
+    if (userError) return { error: `Clé mise à jour, mais erreur utilisateur: ${userError.message}` };
+  }
+
+  return {};
 }
 
 /**

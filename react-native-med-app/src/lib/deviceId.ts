@@ -104,56 +104,144 @@ function generatePermanentDeviceId(): string {
 /**
  * Generate a hardware fingerprint (non-unique)
  * This is used to link independent sessions (App, Web) on the same physical device.
- * It's based on OS and Screen Resolution.
+ * Format: {OS}-{Model}-{Dimensions}
+ * Example: Android-Pixel9-910x410, iOS-iPhone-1180x820
  */
 export function getDeviceFingerprint(): string {
   loadModules()
   
-  // Get screen characteristics (use consistent orientation - always width >= height)
-  let screenWidth = -1
-  let screenHeight = -1
-  let dimensionsUnavailable = false
+  const osName = getOSName()
+  const model = getDeviceModel()
+  const dims = getScreenDimensions()
   
-  try {
-    if (_Dimensions) {
-      const screen = _Dimensions.get('screen')
-      if (screen.width > 0 && screen.height > 0) {
-        screenWidth = Math.max(screen.width, screen.height)
-        screenHeight = Math.min(screen.width, screen.height)
-      } else {
-        dimensionsUnavailable = true
-      }
-    } else {
-      dimensionsUnavailable = true
-    }
-  } catch {
-    dimensionsUnavailable = true
-  }
-  
-  // Get simplified OS name
-  let osName = 'Unknown'
+  return `${osName}-${model}-${dims}`
+}
+
+/**
+ * Get simplified OS name
+ */
+function getOSName(): string {
   try {
     if (_Device?.osName) {
       const deviceOsName = _Device.osName.toLowerCase()
-      // Consistently treat iPad as iOS
       if (deviceOsName.includes('ios') || deviceOsName.includes('ipados') || deviceOsName.includes('ipad')) {
-        osName = 'iOS'
+        return 'iOS'
       } else if (deviceOsName.includes('android')) {
-        osName = 'Android'
+        return 'Android'
       } else if (deviceOsName.includes('windows')) {
-        osName = 'Windows'
+        return 'Windows'
       } else if (deviceOsName.includes('mac')) {
-        osName = 'macOS'
+        return 'macOS'
       } else if (deviceOsName.includes('linux')) {
-        osName = 'Linux'
-      } else {
-        osName = _Device.osName
+        return 'Linux'
+      }
+      return _Device.osName
+    }
+    
+    // Web fallback: parse from userAgent
+    if (_Platform?.OS === 'web' && typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase()
+      if (ua.includes('android')) return 'Android'
+      if (ua.includes('iphone') || ua.includes('ipad')) return 'iOS'
+      if (ua.includes('windows')) return 'Windows'
+      if (ua.includes('mac')) return 'macOS'
+      if (ua.includes('linux')) return 'Linux'
+    }
+  } catch {}
+  return 'Unknown'
+}
+
+/**
+ * Get device model for fingerprinting
+ * 
+ * IMPORTANT: Chrome 110+ uses "reduced" User-Agent that hides device model
+ * (shows "K" instead of actual model like "Pixel 9"). To ensure fingerprints
+ * match between native app and browser, we use GENERIC categories:
+ * 
+ * - Android: "Mobile" or "Tablet" (not specific model)
+ * - iOS: "iPhone" or "iPad" (Safari also doesn't expose specific model)
+ * - Desktop: "Desktop"
+ */
+function getDeviceModel(): string {
+  try {
+    // === NATIVE PLATFORM ===
+    if (_Platform?.OS !== 'web') {
+      if (_Platform?.OS === 'ios') {
+        const modelName = _Device?.modelName?.toLowerCase() || ''
+        if (modelName.includes('ipad')) return 'iPad'
+        return 'iPhone' // Default to iPhone for all iOS phones
+      }
+      
+      if (_Platform?.OS === 'android') {
+        // Use generic "Mobile" to match Chrome's reduced UA
+        // Chrome 110+ hides device model, so we can't rely on specific models
+        return 'Mobile'
+      }
+    }
+    
+    // === WEB PLATFORM ===
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent
+      
+      // iOS detection
+      if (ua.includes('iPad')) return 'iPad'
+      if (ua.includes('iPhone')) return 'iPhone'
+      
+      // Android detection - always use "Mobile" to match native branch
+      if (ua.includes('Android')) {
+        return 'Mobile'
+      }
+      
+      // Desktop detection
+      if (ua.includes('Windows') || ua.includes('Macintosh') || ua.includes('Linux')) {
+        return 'Desktop'
       }
     }
   } catch {}
   
-  const resStr = dimensionsUnavailable ? 'unavail' : `${screenWidth}x${screenHeight}`
-  return `${osName}-${resStr}`
+  return 'Unknown'
+}
+
+/**
+ * Normalize model name: remove spaces, dashes, special chars
+ * "Pixel 9" → "Pixel9"
+ * "SM-S928B" → "SMS928B"
+ * "sdk_gphone64_x86_64" → "sdkgphone64x8664"
+ */
+function normalizeModelName(model: string): string {
+  return model.replace(/[\s\-_]+/g, '').replace(/[^a-zA-Z0-9]/g, '')
+}
+
+/**
+ * Get bucketed screen dimensions
+ * Floor to nearest 10px for consistency between native and web
+ */
+function getScreenDimensions(): string {
+  try {
+    if (_Dimensions) {
+      const screen = _Dimensions.get('screen')
+      if (screen.width > 0 && screen.height > 0) {
+        // Ensure landscape orientation (width >= height)
+        const rawWidth = Math.max(screen.width, screen.height)
+        const rawHeight = Math.min(screen.width, screen.height)
+        // Floor to nearest 10px for tolerance
+        const width = Math.floor(rawWidth / 10) * 10
+        const height = Math.floor(rawHeight / 10) * 10
+        return `${width}x${height}`
+      }
+    }
+    
+    // Web fallback
+    if (typeof screen !== 'undefined' && screen.width > 0 && screen.height > 0) {
+      const rawWidth = Math.max(screen.width, screen.height)
+      const rawHeight = Math.min(screen.width, screen.height)
+      const width = Math.floor(rawWidth / 10) * 10
+      const height = Math.floor(rawHeight / 10) * 10
+      return `${width}x${height}`
+    }
+  } catch {}
+  
+  return 'unavail'
 }
 
 

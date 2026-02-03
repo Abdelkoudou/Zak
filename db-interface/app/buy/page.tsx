@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 const FEATURES = [
   {
@@ -38,6 +39,12 @@ export default function BuyPage() {
     setLoading(true);
 
     try {
+      // Get current user ID if logged in
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
       const response = await fetch("/api/payments/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -47,6 +54,7 @@ export default function BuyPage() {
           customerPhone: phone || undefined,
           duration: "365",
           locale: "fr",
+          userId: userId, // Pass student user ID for automatic activation
         }),
       });
 

@@ -35,25 +35,73 @@ function generatePermanentDeviceId(): string {
 /**
  * Generate a hardware fingerprint (non-unique)
  * This is used to link independent sessions (App, Web) on the same physical device.
- * It's based on OS and Screen Resolution.
+ * Format: {OS}-{Model}-{Dimensions}
+ * Example: Android-Pixel9-910x410, iOS-iPhone-1180x820
  */
 export function getDeviceFingerprint(): string {
-  // Get screen characteristics (use consistent orientation - always width >= height)
-  const screenWidth = Math.max(screen.width, screen.height)
-  const screenHeight = Math.min(screen.width, screen.height)
-  const screenResolution = `${screenWidth}x${screenHeight}`
+  const osName = getOSName()
+  const model = getDeviceModel()
+  const dims = getScreenDimensions()
   
-  // Get simplified OS name for consistency with mobile app
+  return `${osName}-${model}-${dims}`
+}
+
+/**
+ * Get simplified OS name
+ */
+function getOSName(): string {
   const userAgent = navigator.userAgent || ''
-  let osName = 'Unknown'
   
-  if (userAgent.includes('Android')) osName = 'Android'
-  else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) osName = 'iOS'
-  else if (userAgent.includes('Windows')) osName = 'Windows'
-  else if (userAgent.includes('Mac')) osName = 'macOS'
-  else if (userAgent.includes('Linux')) osName = 'Linux'
+  if (userAgent.includes('Android')) return 'Android'
+  if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS'
+  if (userAgent.includes('Windows')) return 'Windows'
+  if (userAgent.includes('Mac')) return 'macOS'
+  if (userAgent.includes('Linux')) return 'Linux'
   
-  return `${osName}-${screenResolution}`
+  return 'Unknown'
+}
+
+/**
+ * Get device model for fingerprinting
+ * 
+ * IMPORTANT: Chrome 110+ uses "reduced" User-Agent that hides device model
+ * (shows "K" instead of actual model). To ensure fingerprints match between
+ * native app and browser, we use GENERIC categories:
+ * 
+ * - Android: "Mobile" or "Tablet" (not specific model)
+ * - iOS: "iPhone" or "iPad"
+ * - Desktop: "Desktop"
+ */
+function getDeviceModel(): string {
+  const ua = navigator.userAgent || ''
+  
+  // iOS detection
+  if (ua.includes('iPad')) return 'iPad'
+  if (ua.includes('iPhone')) return 'iPhone'
+  
+  // Android detection - always use "Mobile" to match native app
+  if (ua.includes('Android')) {
+    return 'Mobile'
+  }
+  
+  // Desktop detection
+  if (ua.includes('Windows') || ua.includes('Macintosh') || ua.includes('Linux')) {
+    return 'Desktop'
+  }
+  
+  return 'Unknown'
+}
+
+/**
+ * Get bucketed screen dimensions
+ * Floor to nearest 10px for consistency with mobile app
+ */
+function getScreenDimensions(): string {
+  const rawWidth = Math.max(screen.width, screen.height)
+  const rawHeight = Math.min(screen.width, screen.height)
+  const width = Math.floor(rawWidth / 10) * 10
+  const height = Math.floor(rawHeight / 10) * 10
+  return `${width}x${height}`
 }
 
 

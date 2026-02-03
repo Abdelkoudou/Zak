@@ -1,265 +1,141 @@
-# MCQ Study App - Medical Exam Preparation Platform
+# FMC APP - Medical Exam Preparation Platform
 
-**Mobile application for Algerian medical students to practice MCQ questions based on the French medical curriculum.**
+## Version 1.0.0 
 
----
-
-## 🎯 Project Overview
-
-A React Native mobile app that helps medical students (1st, 2nd, 3rd year) prepare for their exams through:
-- 📚 Practice MCQ questions organized by year, module, and exam type
-- 💾 Save difficult questions for review
-- 📊 Track test results and progress
-- 📖 Access course resources (Google Drive, Telegram)
-- 🔌 Offline-first architecture (works without internet)
-- ⚡ Instant content updates (no app store approval needed)
+Medical application for students to practice MCQ questions based on the medical curriculum.
 
 ---
 
-## 🏗️ Architecture
+## Project Overview
 
-### Technology Stack
-- **Mobile App**: React Native with Expo SDK 50
-- **Backend**: Supabase (managed cloud platform)
-- **Database**: PostgreSQL (for user data)
-- **Storage**: JSON files (for questions)
-- **Authentication**: Email/password with JWT tokens
+A complete ecosystem for medical students to prepare for their exams:
 
-### Why This Architecture?
-- ✅ **$0/month** for up to 50,000 users
-- ✅ **Fast**: Questions load instantly (offline-first)
-- ✅ **Flexible**: Update questions without app store approval
-- ✅ **Scalable**: Handles thousands of concurrent users
+- Mobile App: Practice MCQs organized by year, module, and exam type.
+- Web Admin: Control panel for content, users, and app status.
+- Device Management: Secure session control and verification.
+- Maintenance Mode: Remote application control for the Administrator.
 
 ---
 
-## 📁 Project Structure
+## Technology Stack
 
-```
-mcq-study-app/
-│
-├── .git/                         # Version control
-├── .kiro/                        # Kiro steering files
-│   └── steering/
-│       ├── structure.md          # Project structure guidelines
-│       ├── tech.md               # Technology stack guidelines
-│       └── product.md            # Product requirements
-│
-├── react-native-med-app/         # Mobile app (React Native + Expo)
+### Mobile Application (react-native-med-app)
+
+- Framework: React Native + Expo SDK
+- Navigation: File-based routing
+- Styling: Utility-first CSS for Native
+- Local Cache: Data persistence for offline access
+- Security: Secure identifier storage
+
+### Web Admin Panel (db-interface)
+
+- Framework: Modern Web Framework
+- Styling: Utility-first CSS with animations
+- Features: Content management, Access control, Real-time monitoring
+
+### Backend
+
+- Database: Managed relational database with access policies
+- Authentication: Secure token-based authentication with deep linking
+- Realtime: Instant configuration updates and session management
+- Functions: Server-side logic for business rule enforcement
+
+---
+
+## Project Structure
+
+```text
+qcm-med/
+├── react-native-med-app/   # Mobile Application (iOS & Android)
+│   ├── app/                # Application routes
 │   ├── src/
-│   │   ├── components/           # Reusable UI components
-│   │   ├── screens/              # App screens
-│   │   ├── services/             # API services
-│   │   ├── navigation/           # Navigation configuration
-│   │   ├── context/              # React Context
-│   │   └── data/                 # Bundled JSON questions
-│   ├── assets/                   # Images, fonts, icons
-│   ├── App.tsx                   # Root component
-│   ├── app.json                  # Expo configuration
-│   └── package.json              # Dependencies
+│   │   ├── components/     # UI Components
+│   │   ├── context/        # State management
+│   │   └── lib/            # Client logic and utilities
+│   └── assets/             # Media and branding
 │
-├── docs/                          # Archived documentation
-│   ├── README.md                 # Documentation archive guide
-│   ├── ARCHITECTURE.md           # Old architecture (archived)
-│   ├── API_SPECIFICATION.md      # Old API docs (archived)
-│   └── ...                       # Other archived docs
+├── db-interface/           # Web Administration Panel
+│   ├── app/                # Web routes
+│   ├── components/         # Admin UI Components
+│   └── public/             # Domain verification files
 │
-├── CLIENT_ROADMAP.md             # Client presentation (20-day plan)
-├── ROADMAP.md                    # Technical roadmap (detailed)
-├── README.md                     # This file
-├── .gitignore
-└── .gitattributes
+└── supabase/               # Backend Configuration
+    ├── migrations/         # Database schema
+    └── seed.sql            # Initial data
 ```
 
 ---
 
-## 🚀 Quick Start
+## Key Features
+
+### Operational Control
+
+- Maintenance Mode: Administrators can activate a service screen to manage traffic during updates.
+- Device Restrictions: Secure enforcement of device limits per account.
+- Session Management: Ability to manage and terminate active sessions.
+- Deep Linking: Support for opening the application directly from external links.
+
+### Content and Education
+
+- Offline Access: Ability to practice without an active network connection.
+- Result Tracking: Persistence of performance metrics for user progress.
+- Content Delivery: Dynamic updates for educational materials.
+
+---
+
+## Development and Setup
 
 ### Prerequisites
-- Node.js 16+
-- npm or yarn
-- Expo CLI: `npm install -g @expo/cli`
-- Supabase account (free): https://supabase.com
 
-### Setup
+- Node.js LTS
+- Modern CLI tools
+- Backend account with required service access
 
-1. **Clone the repository**
+### Quick Start
+
+1. Clone and Install
+
    ```bash
-   git clone <repository-url>
-   cd mcq-study-app
+   git clone <repo>
+   # Install Mobile
+   cd react-native-med-app && npm install
+   # Install Web
+   cd ../db-interface && npm install
    ```
 
-2. **Setup Supabase** (see CLIENT_ROADMAP.md Day 1)
-   - Create Supabase project
-   - Setup database tables
-   - Configure authentication
-   - Upload initial JSON files
+2. Environment
 
-3. **Install mobile app dependencies**
-   ```bash
-   cd react-native-med-app
-   npm install
-   ```
+   - Configure environment variables in both directories using the provided examples.
+   - Add your service credentials.
 
-4. **Configure environment**
-   ```bash
-   # Create .env file
-   cp .env.example .env
-   
-   # Add your Supabase credentials
-   SUPABASE_URL=your-project-url
-   SUPABASE_ANON_KEY=your-anon-key
-   ```
+3. Database
 
-5. **Start development**
+   - Apply the provided schema migrations to your backend environment.
+
+4. Run
+
    ```bash
-   npm start
-   
-   # Then:
-   # - Press 'a' for Android emulator
-   # - Press 'i' for iOS simulator (Mac only)
-   # - Scan QR code with Expo Go app on your phone
+   # Mobile
+   npx expo start
+   # Web
+   npm run dev
    ```
 
 ---
 
-## 📅 Development Timeline
+## Curriculum Support
 
-**Total Duration**: 20 days
-
-- **Week 1 (Days 1-5)**: Foundation (Backend + Mobile setup)
-- **Week 2 (Days 6-10)**: Core Features (Auth + Questions)
-- **Week 3 (Days 11-15)**: Advanced Features (Saved, Results, Resources)
-- **Week 4 (Days 16-20)**: Polish & Launch (Testing + Deployment)
-
-See **CLIENT_ROADMAP.md** for detailed day-by-day breakdown.
+Full support for the structured medical curriculum including various module types and examination formats.
 
 ---
 
-## 📚 Documentation
+## Current Project Status
 
-- **CLIENT_ROADMAP.md** - Client presentation with 20-day timeline
-- **ROADMAP.md** - Detailed technical roadmap
-- **.kiro/steering/** - Project guidelines and standards
-
----
-
-## 🎓 French Medical Curriculum Support
-
-### 1st Year (1ère Année)
-- **Annual Modules**: Anatomie, Biochimie, Biophysique, Biostatistique, Chimie, Cytologie
-- **Semestrial Modules**: Embryologie, Histologie, Physiologie, S.S.H
-- **Exam Types**: EMD1, EMD2, Rattrapage
-
-### 2nd Year (2ème Année)
-- **Units**: Cardio-vasculaire, Digestif, Urinaire, Endocrinien, Nerveux
-- **Standalone**: Génétique, Immunologie
-- **Exam Types**: EMD, Rattrapage
-
-### 3rd Year (3ème Année)
-- **Units**: Similar to 2nd year
-- **Standalone**: Anatomie pathologique, Pharmacologie, Microbiologie, Parasitologie
-- **Exam Types**: EMD, Rattrapage
+- Version 1.0.0 released.
+- Security and reliability verification completed.
+- Performance and storage optimizations applied.
+- Remote management features deployed.
 
 ---
 
-## 💰 Cost Breakdown
-
-### Infrastructure (Monthly)
-- **0-50,000 users**: $0/month (Supabase free tier)
-- **50,000-100,000 users**: $25/month (Supabase Pro)
-- **100,000+ users**: $50-100/month
-
-### One-Time Costs
-- **Google Play Developer**: $25 (one-time)
-- **Apple Developer**: $99/year (optional, for iOS)
-
----
-
-## 🎯 Key Features
-
-### For Students
-- ✅ Practice MCQ questions by year, module, and exam type
-- ✅ Save difficult questions for review
-- ✅ Track test results and progress
-- ✅ Access course resources (Google Drive, Telegram)
-- ✅ Offline-first (works without internet)
-- ✅ View statistics and analytics
-
-### For Admins
-- ✅ Add/update questions via JSON
-- ✅ Generate activation keys
-- ✅ Manage users and subscriptions
-- ✅ View usage statistics
-- ✅ Instant content updates (no app store approval)
-
----
-
-## 🔒 Security & Privacy
-
-- Encrypted passwords (bcrypt)
-- Secure authentication (JWT tokens)
-- HTTPS only in production
-- Row-level security on database
-- Max 2 devices per user
-- GDPR compliant
-
----
-
-## 📱 Supported Platforms
-
-- **Android**: 8.0+ (API level 26+)
-- **iOS**: 13.0+ (optional, requires Mac for development)
-- **Devices**: Smartphones and tablets
-
----
-
-## 🤝 Contributing
-
-This is a client project. For development guidelines, see:
-- `.kiro/steering/structure.md` - Project structure
-- `.kiro/steering/tech.md` - Technology stack
-- `.kiro/steering/product.md` - Product requirements
-
----
-
-## 📞 Support
-
-For questions or issues:
-- Review **CLIENT_ROADMAP.md** for project plan
-- Review **ROADMAP.md** for technical details
-- Check `.kiro/steering/` for guidelines
-
----
-
-## 📈 Success Metrics
-
-### Launch Goals (First 3 Months)
-- 500+ registered users
-- 100+ paid subscriptions
-- 10,000+ questions attempted
-- 4.0+ app store rating
-
-### Growth Goals (6 Months)
-- 5,000+ registered users
-- 500+ paid subscriptions
-- 100,000+ questions attempted
-- 60% user retention
-
----
-
-## 🚀 Next Steps
-
-1. **Review** CLIENT_ROADMAP.md for the 20-day plan
-2. **Setup** Supabase project (Day 1)
-3. **Start** mobile app development (Day 2)
-4. **Test** thoroughly (Days 16-17)
-5. **Deploy** to app stores (Days 18-20)
-6. **Launch!** 🎉
-
----
-
-**Built for Algerian medical students following the French curriculum** 🇩🇿
-
-![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/eXemoumen/qcm-med?utm_source=oss&utm_medium=github&utm_campaign=eXemoumen%2Fqcm-med&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
-
+**Built for medical students to facilitate curriculum mastery.**
