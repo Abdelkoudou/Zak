@@ -187,23 +187,27 @@ export default function UsersPage() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
-            activeTab === "dashboard"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === "dashboard"
               ? "bg-primary-500 text-white shadow-lg shadow-primary-500/25"
               : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-          }`}
+            }`}
         >
           <span>📊</span> Dashboard
         </button>
         <button
           onClick={() => setActiveTab("users")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
-            activeTab === "users"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === "users"
               ? "bg-primary-500 text-white shadow-lg shadow-primary-500/25"
               : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-          }`}
+            }`}
         >
           <span>👤</span> Liste des Utilisateurs
+        </button>
+        <button
+          onClick={() => router.push("/users/real")}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg"
+        >
+          <span>✅</span> Utilisateurs Réels
         </button>
       </div>
 
