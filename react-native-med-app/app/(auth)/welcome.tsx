@@ -839,20 +839,6 @@ export default function WelcomeScreen() {
                   🇩🇿 Algérie
                 </Text>
               </View>
-              <View
-                style={{
-                  backgroundColor: "rgba(9, 178, 173, 0.1)",
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 14,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 13, color: "#09B2AD", fontWeight: "600" }}
-                >
-                  🇫🇷 Curriculum français
-                </Text>
-              </View>
             </View>
 
             {/* Années couvertes */}
