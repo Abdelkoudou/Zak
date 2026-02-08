@@ -38,6 +38,7 @@ interface RecentTransaction {
   type: 'online' | 'salesPoint';
   amount: number;
   customerEmail?: string;
+  salesPointName?: string;
   durationDays: number;
   date: Date;
 }
@@ -95,7 +96,7 @@ export default function RevenuePage() {
     // Fetch used activation keys (sales point revenue)
     let keysQuery = supabase
       .from('activation_keys')
-      .select('*')
+      .select('*, sales_point:sales_points(name)')
       .eq('is_used', true)
       .not('used_at', 'is', null);
 
@@ -174,11 +175,12 @@ export default function RevenuePage() {
         durationDays: p.duration_days,
         date: new Date(p.paid_at),
       })),
-      ...(usedKeys || []).slice(0, 10).map(k => ({
+      ...(usedKeys || []).slice(0, 10).map((k: any) => ({
         id: k.id,
         type: 'salesPoint' as const,
         amount: getKeyPrice(k.duration_days),
         durationDays: k.duration_days,
+        salesPointName: k.sales_point?.name,
         date: new Date(k.used_at),
       })),
     ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
@@ -501,7 +503,7 @@ export default function RevenuePage() {
                             ? 'bg-[#09b2ac]/10 text-[#09b2ac]'
                             : 'bg-amber-500/10 text-amber-600'
                         }`}>
-                          {tx.type === 'online' ? '💳 En ligne' : '🏪 Point de vente'}
+                          {tx.type === 'online' ? '💳 En ligne' : `🏪 ${tx.salesPointName || 'Point de vente'}`}
                         </span>
                       </td>
                       <td className="px-6 py-4 font-bold text-theme">
