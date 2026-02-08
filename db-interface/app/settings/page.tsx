@@ -70,9 +70,16 @@ export default async function SettingsPage() {
     .order('name');
 
   const currentMode = (analyticsMode?.value as 'dev' | 'production') || 'dev';
-  const currentProductionSalesPoints: string[] = productionSalesPoints?.value 
-    ? JSON.parse(productionSalesPoints.value) 
-    : [];
+  
+  let currentProductionSalesPoints: string[] = [];
+  try {
+    currentProductionSalesPoints = productionSalesPoints?.value 
+      ? JSON.parse(productionSalesPoints.value) 
+      : [];
+  } catch (e) {
+    console.error('Error parsing production_sales_points:', e);
+    currentProductionSalesPoints = [];
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto bg-white min-h-screen">

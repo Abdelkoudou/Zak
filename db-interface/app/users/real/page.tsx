@@ -67,10 +67,21 @@ export default function RealUsersPage() {
                             .eq('key', 'production_sales_points')
                             .single();
 
-                        const mode = (modeConfig?.value as 'dev' | 'production') || 'dev';
-                        const prodPoints: string[] = salesPointsConfig?.value
-                            ? JSON.parse(salesPointsConfig.value)
-                            : [];
+                        let mode = (modeConfig?.value as string) || 'dev';
+                        if (mode !== 'dev' && mode !== 'production') {
+                            console.warn(`Invalid analytics_mode: ${mode}, defaulting to dev`);
+                            mode = 'dev';
+                        }
+                        
+                        let prodPoints: string[] = [];
+                        try {
+                            prodPoints = salesPointsConfig?.value
+                                ? JSON.parse(salesPointsConfig.value)
+                                : [];
+                        } catch (e) {
+                            console.error('Error parsing production_sales_points:', e);
+                            prodPoints = [];
+                        }
 
                         // Fetch sales point names for display
                         let prodPointNames: string[] = [];
@@ -83,7 +94,7 @@ export default function RealUsersPage() {
                             prodPointNames = (salesPointsData || []).map(sp => sp.name);
                         }
 
-                        setAnalyticsMode(mode);
+                        setAnalyticsMode(mode as 'dev' | 'production');
                         setProductionSalesPoints(prodPoints);
                         setProductionSalesPointNames(prodPointNames);
                     }

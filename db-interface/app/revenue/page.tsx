@@ -94,7 +94,11 @@ export default function RevenuePage() {
       onlineQuery = onlineQuery.gte('paid_at', dateFilter);
     }
 
-    const { data: onlinePayments } = await onlineQuery;
+    const { data: onlinePayments, error: onlineError } = await onlineQuery;
+
+    if (onlineError) {
+      console.error('[Revenue] Error fetching online payments:', onlineError);
+    }
 
     // Fetch used activation keys (sales point revenue)
     let keysQuery = supabase
@@ -112,7 +116,11 @@ export default function RevenuePage() {
       keysQuery = keysQuery.in('sales_point_id', prodSalesPoints);
     }
 
-    const { data: usedKeys } = await keysQuery;
+    const { data: usedKeys, error: keysError } = await keysQuery;
+
+    if (keysError) {
+      console.error('[Revenue] Error fetching used keys:', keysError);
+    }
 
     // Calculate stats
     const onlineRevenue = (onlinePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -173,9 +181,9 @@ export default function RevenuePage() {
 
     setMonthlyData(Array.from(monthlyMap.values()));
 
-    // Recent transactions
+    // Recent transactions - Merge all then sort and slice
     const recent: RecentTransaction[] = [
-      ...(onlinePayments || []).slice(0, 10).map(p => ({
+      ...(onlinePayments || []).map(p => ({
         id: p.id,
         type: 'online' as const,
         amount: p.amount,
@@ -183,7 +191,7 @@ export default function RevenuePage() {
         durationDays: p.duration_days,
         date: new Date(p.paid_at),
       })),
-      ...(usedKeys || []).slice(0, 10).map((k: any) => ({
+      ...(usedKeys || []).map((k: any) => ({
         id: k.id,
         type: 'salesPoint' as const,
         amount: getKeyPrice(k.duration_days),
@@ -229,9 +237,16 @@ export default function RevenuePage() {
         .single();
 
       const mode = (modeConfig?.value as 'dev' | 'production') || 'dev';
-      const prodPoints: string[] = salesPointsConfig?.value 
-        ? JSON.parse(salesPointsConfig.value) 
-        : [];
+      
+      let prodPoints: string[] = [];
+      try {
+        prodPoints = salesPointsConfig?.value 
+          ? JSON.parse(salesPointsConfig.value) 
+          : [];
+      } catch (e) {
+        console.error('[Revenue] Error parsing production_sales_points:', e);
+        prodPoints = [];
+      }
 
       // Fetch sales point names for display
       let prodPointNames: string[] = [];

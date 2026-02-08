@@ -8,7 +8,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   // Check if we are on pages that should not show the sidebar
   const isPublicPage =
     pathname?.startsWith("/buy") ||
-    pathname?.startsWith("/buy") ||
     // Only hide sidebar for public payment flow (success/failure pages), not the admin payments list
     pathname === "/payment" ||
     pathname?.startsWith("/payment/") ||

@@ -136,6 +136,19 @@ export async function GET(request: NextRequest) {
       // Generate secure activation code
       const keyCode = generateSecureActivationCode();
       
+      // Fetch "En ligne" sales point ID
+      const { data: onlineSP, error: spError } = await supabaseAdmin
+        .from('sales_points')
+        .select('id')
+        .eq('code', 'ONLINE')
+        .single();
+
+      if (spError) {
+        console.error('[Poll Chargily] Failed to fetch ONLINE sales_point:', spError);
+      }
+
+      const salesPointId = onlineSP?.id || null;
+      
       // Create activation key
       const { data: newKey, error: keyError } = await supabaseAdmin
         .from('activation_keys')
@@ -143,6 +156,7 @@ export async function GET(request: NextRequest) {
           key_code: keyCode,
           duration_days: 365,
           payment_source: 'online',
+          sales_point_id: salesPointId,
           notes: `Auto-generated from online payment: ${checkout.id}`,
           price_paid: checkout.amount / 100,
         })
