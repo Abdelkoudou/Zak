@@ -45,11 +45,11 @@ interface RecentTransaction {
 
 // Estimated prices for activation keys by duration (for sales point revenue)
 const ACTIVATION_KEY_PRICES: Record<number, number> = {
-  30: 500,
-  60: 900,
-  90: 1200,
-  180: 2000,
-  365: 3500,
+  30: 1000,
+  60: 1000,
+  90: 1000,
+  180: 1000,
+  365: 1000,
 };
 
 const getKeyPrice = (durationDays: number): number => {
@@ -62,7 +62,10 @@ export default function RevenuePage() {
   const [stats, setStats] = useState<RevenueStats | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyRevenue[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
-  const [dateRange, setDateRange] = useState<'month' | '3months' | 'year' | 'all'>('year');
+  const [dateRange, setDateRange] = useState<'month' | '3months' | 'year' | 'all'>('month');
+  const [analyticsMode, setAnalyticsMode] = useState<'dev' | 'production'>('dev');
+  const [productionSalesPoints, setProductionSalesPoints] = useState<string[]>([]);
+  const [productionSalesPointNames, setProductionSalesPointNames] = useState<string[]>([]);
 
   const getDateFilter = useCallback(() => {
     const now = new Date();
@@ -78,7 +81,7 @@ export default function RevenuePage() {
     }
   }, [dateRange]);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (mode: 'dev' | 'production', prodSalesPoints: string[]) => {
     const dateFilter = getDateFilter();
 
     // Fetch online payments
@@ -96,12 +99,17 @@ export default function RevenuePage() {
     // Fetch used activation keys (sales point revenue)
     let keysQuery = supabase
       .from('activation_keys')
-      .select('*, sales_point:sales_points(name)')
+      .select('*, sales_point:sales_points(name, id)')
       .eq('is_used', true)
       .not('used_at', 'is', null);
 
     if (dateFilter) {
       keysQuery = keysQuery.gte('used_at', dateFilter);
+    }
+
+    // Filter by production sales points if in production mode
+    if (mode === 'production' && prodSalesPoints.length > 0) {
+      keysQuery = keysQuery.in('sales_point_id', prodSalesPoints);
     }
 
     const { data: usedKeys } = await keysQuery;
@@ -207,7 +215,40 @@ export default function RevenuePage() {
         return;
       }
 
-      await fetchData();
+      // Fetch analytics config
+      const { data: modeConfig } = await supabase
+        .from('app_config')
+        .select('value')
+        .eq('key', 'analytics_mode')
+        .single();
+
+      const { data: salesPointsConfig } = await supabase
+        .from('app_config')
+        .select('value')
+        .eq('key', 'production_sales_points')
+        .single();
+
+      const mode = (modeConfig?.value as 'dev' | 'production') || 'dev';
+      const prodPoints: string[] = salesPointsConfig?.value 
+        ? JSON.parse(salesPointsConfig.value) 
+        : [];
+
+      // Fetch sales point names for display
+      let prodPointNames: string[] = [];
+      if (prodPoints.length > 0) {
+        const { data: salesPointsData } = await supabase
+          .from('sales_points')
+          .select('id, name')
+          .in('id', prodPoints);
+        
+        prodPointNames = (salesPointsData || []).map(sp => sp.name);
+      }
+
+      setAnalyticsMode(mode);
+      setProductionSalesPoints(prodPoints);
+      setProductionSalesPointNames(prodPointNames);
+
+      await fetchData(mode, prodPoints);
       setLoading(false);
     };
 
@@ -216,9 +257,9 @@ export default function RevenuePage() {
 
   useEffect(() => {
     if (!loading) {
-      fetchData();
+      fetchData(analyticsMode, productionSalesPoints);
     }
-  }, [dateRange, fetchData, loading]);
+  }, [dateRange, fetchData, loading, analyticsMode, productionSalesPoints]);
 
   const pieData = useMemo(() => {
     if (!stats) return [];
@@ -249,11 +290,25 @@ export default function RevenuePage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-theme tracking-tight">
-              📈 Tableau des Revenus
-            </h1>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-theme tracking-tight">
+                📈 Tableau des Revenus
+              </h1>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                analyticsMode === 'dev'
+                  ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                  : 'bg-green-100 text-green-700 border border-green-300'
+              }`}>
+                {analyticsMode === 'dev' ? '🔧 Mode Dev' : '🚀 Production'}
+              </span>
+            </div>
             <p className="mt-2 text-theme-muted">
-              Analysez vos revenus par source et par période
+              {analyticsMode === 'production' 
+                ? productionSalesPointNames.length > 0
+                  ? productionSalesPointNames.join(', ')
+                  : 'Aucun point de vente sélectionné'
+                : 'Toutes les données (y compris les tests)'
+              }
             </p>
           </div>
           
