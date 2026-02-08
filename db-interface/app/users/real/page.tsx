@@ -19,6 +19,11 @@ export default function RealUsersPage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
+    // Analytics mode state
+    const [analyticsMode, setAnalyticsMode] = useState<'dev' | 'production'>('dev');
+    const [productionSalesPoints, setProductionSalesPoints] = useState<string[]>([]);
+    const [productionSalesPointNames, setProductionSalesPointNames] = useState<string[]>([]);
+
     // Data state
     const [users, setUsers] = useState<RealUser[]>([]);
     const [stats, setStats] = useState<RealUserStats | null>(null);
@@ -32,7 +37,7 @@ export default function RealUsersPage() {
         search: "",
     });
 
-    // Check user role
+    // Check user role and fetch analytics config
     useEffect(() => {
         const checkAuth = async () => {
             const {
@@ -47,6 +52,41 @@ export default function RealUsersPage() {
 
                 if (user) {
                     setUserRole(user.role);
+
+                    // Fetch analytics config if owner
+                    if (user.role === 'owner') {
+                        const { data: modeConfig } = await supabase
+                            .from('app_config')
+                            .select('value')
+                            .eq('key', 'analytics_mode')
+                            .single();
+
+                        const { data: salesPointsConfig } = await supabase
+                            .from('app_config')
+                            .select('value')
+                            .eq('key', 'production_sales_points')
+                            .single();
+
+                        const mode = (modeConfig?.value as 'dev' | 'production') || 'dev';
+                        const prodPoints: string[] = salesPointsConfig?.value
+                            ? JSON.parse(salesPointsConfig.value)
+                            : [];
+
+                        // Fetch sales point names for display
+                        let prodPointNames: string[] = [];
+                        if (prodPoints.length > 0) {
+                            const { data: salesPointsData } = await supabase
+                                .from('sales_points')
+                                .select('id, name')
+                                .in('id', prodPoints);
+
+                            prodPointNames = (salesPointsData || []).map(sp => sp.name);
+                        }
+
+                        setAnalyticsMode(mode);
+                        setProductionSalesPoints(prodPoints);
+                        setProductionSalesPointNames(prodPointNames);
+                    }
                 }
             }
             setLoading(false);
@@ -58,13 +98,19 @@ export default function RealUsersPage() {
     const loadData = useCallback(async () => {
         setFetching(true);
 
+        // Determine which sales points to filter by (production mode)
+        const productionFilter = analyticsMode === 'production' && productionSalesPoints.length > 0
+            ? productionSalesPoints
+            : undefined;
+
         const [usersResult, statsResult, pointsResult] = await Promise.all([
             fetchRealUsers({
                 salesPointId: filters.salesPointId || undefined,
                 status: filters.status || undefined,
                 search: filters.search || undefined,
+                productionSalesPointIds: productionFilter,
             }),
-            fetchRealUserStats(),
+            fetchRealUserStats(productionFilter),
             fetchSalesPoints(),
         ]);
 
@@ -74,7 +120,7 @@ export default function RealUsersPage() {
         setStats(statsResult);
         setSalesPoints(pointsResult.data || []);
         setFetching(false);
-    }, [filters]);
+    }, [filters, analyticsMode, productionSalesPoints]);
 
     useEffect(() => {
         if (userRole === "owner") {
@@ -154,9 +200,21 @@ export default function RealUsersPage() {
                     <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
                         Utilisateurs Réels
                     </h1>
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                        analyticsMode === 'dev'
+                            ? 'bg-amber-100 text-amber-700 border border-amber-300'
+                            : 'bg-green-100 text-green-700 border border-green-300'
+                    }`}>
+                        {analyticsMode === 'dev' ? '🔧 Mode Dev' : '🚀 Production'}
+                    </span>
                 </div>
                 <p className="text-slate-500 dark:text-slate-400">
-                    Utilisateurs ayant activé leur code via un point de vente ou paiement en ligne.
+                    {analyticsMode === 'production'
+                        ? productionSalesPointNames.length > 0
+                            ? productionSalesPointNames.join(', ')
+                            : 'Aucun point de vente sélectionné'
+                        : 'Toutes les données (y compris les tests)'
+                    }
                 </p>
             </div>
 

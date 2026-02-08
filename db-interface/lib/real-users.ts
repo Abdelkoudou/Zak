@@ -47,6 +47,7 @@ export async function fetchRealUsers(filters?: {
     status?: 'active' | 'expired' | '';
     search?: string;
     source?: 'sales_point' | 'online_payment' | '';
+    productionSalesPointIds?: string[]; // Filter by production sales points (analytics mode)
 }): Promise<{ data: RealUser[]; error?: string }> {
     try {
         const now = new Date();
@@ -78,6 +79,11 @@ export async function fetchRealUsers(filters?: {
 
             if (filters?.salesPointId) {
                 spQuery = spQuery.eq('sales_point_id', filters.salesPointId);
+            }
+            
+            // Apply production sales points filter (analytics mode)
+            if (filters?.productionSalesPointIds && filters.productionSalesPointIds.length > 0) {
+                spQuery = spQuery.in('sales_point_id', filters.productionSalesPointIds);
             }
 
             const { data: spKeys, error: spError } = await spQuery;
@@ -247,8 +253,8 @@ export async function fetchRealUsers(filters?: {
 /**
  * Fetch statistics for real users
  */
-export async function fetchRealUserStats(): Promise<RealUserStats> {
-    const { data: realUsers } = await fetchRealUsers();
+export async function fetchRealUserStats(productionSalesPointIds?: string[]): Promise<RealUserStats> {
+    const { data: realUsers } = await fetchRealUsers({ productionSalesPointIds });
 
     const activeUsers = realUsers.filter(u => u.isActive).length;
     const expiredUsers = realUsers.filter(u => !u.isActive).length;

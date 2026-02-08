@@ -53,7 +53,7 @@ const ACTIVATION_KEY_PRICES: Record<number, number> = {
 };
 
 const getKeyPrice = (durationDays: number): number => {
-  return ACTIVATION_KEY_PRICES[durationDays] || durationDays * 15;
+  return ACTIVATION_KEY_PRICES[durationDays] || 1000;
 };
 
 export default function RevenuePage() {

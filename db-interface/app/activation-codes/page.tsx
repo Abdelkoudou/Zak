@@ -572,52 +572,57 @@ export default function ActivationCodesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 mb-8">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-heading font-extrabold text-neutral-dark dark:text-white tracking-tight">
             Codes d&apos;Activation
           </h1>
-          <p className="text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">
-            Génération & Gestion de Licences • FMC APP
+          <p className="text-sm md:text-base font-body text-neutral-dark/60 dark:text-neutral-light/60 font-medium max-w-2xl">
+            Gérez la génération de licences, suivez les ventes et administrez les accès utilisateurs pour FMC App.
           </p>
         </div>
         <button
           onClick={() => router.push("/payments")}
-          className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-2xl font-bold text-sm hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-2"
+          className="group relative inline-flex items-center justify-center px-6 py-3 bg-white dark:bg-white/5 text-neutral-dark dark:text-white font-heading font-bold text-sm rounded-brand-lg border-2 border-primary/20 hover:border-primary transition-all shadow-sm hover:shadow-md active:scale-95 overflow-hidden"
         >
-          <span>💳</span>
-          <span>Paiements en Ligne</span>
+          <span className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="relative flex items-center gap-2">
+            <span>💳</span>
+            <span>Paiements en Ligne</span>
+          </span>
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-white/5 p-1.5 rounded-[1.5rem] border border-slate-200 dark:border-white/5">
+      {/* Navigation Tabs */}
+      <div className="flex p-1 bg-white dark:bg-white/5 rounded-brand-lg border border-neutral-200 dark:border-white/10 shadow-sm overflow-x-auto">
         {[
-          { id: "dashboard", label: "Dashboard", icon: "📊" },
-          { id: "generate", label: "Générer", icon: "🔑" },
+          { id: "dashboard", label: "Tableau de Bord", icon: "📊" },
+          { id: "generate", label: "Générer", icon: "✨" },
           { id: "codes", label: "Liste des Codes", icon: "📋" },
           { id: "points", label: "Points de Vente", icon: "🏪" },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
-            className={`flex-1 px-4 py-3 rounded-[1.25rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+            className={`flex-1 min-w-[140px] px-4 py-3 rounded-brand text-sm font-heading font-bold transition-all flex items-center justify-center gap-2.5 ${
               activeTab === tab.id
-                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-lg"
-                : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-primary text-white shadow-md transform scale-[1.02]"
+                : "text-neutral-dark/60 dark:text-neutral-light/60 hover:text-primary dark:hover:text-primary hover:bg-neutral-light/50 dark:hover:bg-white/5"
             }`}
           >
-            <span>{tab.icon}</span>
-            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="text-lg">{tab.icon}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
       {/* Dashboard Tab */}
       {activeTab === "dashboard" && (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Stats Cards - Interactive */}
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
               {
                 id: "total",
@@ -629,17 +634,17 @@ export default function ActivationCodesPage() {
                   {
                     label: "Actifs",
                     value: stats.activeCodes,
-                    color: "text-green-500",
+                    color: "text-success",
                   },
                   {
                     label: "Utilisés",
                     value: stats.usedCodes,
-                    color: "text-purple-500",
+                    color: "text-secondary",
                   },
                   {
                     label: "Expirés",
                     value: stats.expiredCodes,
-                    color: "text-red-500",
+                    color: "text-destructive",
                   },
                 ],
                 insight:
@@ -657,12 +662,12 @@ export default function ActivationCodesPage() {
                   {
                     label: "Prêts à vendre",
                     value: stats.activeCodes,
-                    color: "text-blue-500",
+                    color: "text-primary",
                   },
                   {
                     label: "% du total",
                     value: `${stats.totalCodes > 0 ? Math.round((stats.activeCodes / stats.totalCodes) * 100) : 0}%`,
-                    color: "text-slate-500",
+                    color: "text-neutral-500",
                   },
                 ],
                 insight:
@@ -682,12 +687,12 @@ export default function ActivationCodesPage() {
                   {
                     label: "Codes activés",
                     value: stats.usedCodes,
-                    color: "text-purple-500",
+                    color: "text-secondary",
                   },
                   {
                     label: "Taux conversion",
                     value: `${stats.totalCodes > 0 ? Math.round((stats.usedCodes / stats.totalCodes) * 100) : 0}%`,
-                    color: "text-slate-500",
+                    color: "text-neutral-500",
                   },
                 ],
                 insight:
@@ -705,7 +710,7 @@ export default function ActivationCodesPage() {
                   {
                     label: "Non utilisés",
                     value: stats.expiredCodes,
-                    color: "text-red-500",
+                    color: "text-destructive",
                   },
                   {
                     label: "Perte potentielle",
@@ -728,7 +733,7 @@ export default function ActivationCodesPage() {
                   {
                     label: "Total encaissé",
                     value: `${stats.totalRevenue.toLocaleString()} DA`,
-                    color: "text-green-500",
+                    color: "text-success",
                   },
                   {
                     label: "Moy. par code",
@@ -736,7 +741,7 @@ export default function ActivationCodesPage() {
                       stats.usedCodes > 0
                         ? `${Math.round(stats.totalRevenue / stats.usedCodes).toLocaleString()} DA`
                         : "0 DA",
-                    color: "text-slate-500",
+                    color: "text-neutral-500",
                   },
                 ],
                 insight:
@@ -750,33 +755,37 @@ export default function ActivationCodesPage() {
                 onClick={() =>
                   setExpandedStat(expandedStat === item.id ? null : item.id)
                 }
-                className={`bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/5 shadow-sm cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+                className={`group bg-white dark:bg-white/5 rounded-brand-lg border border-neutral-200 dark:border-white/10 shadow-sm cursor-pointer transition-all duration-300 hover:shadow-md hover:border-primary/50 relative overflow-hidden ${
                   expandedStat === item.id
-                    ? "col-span-2 lg:col-span-2 p-6"
+                    ? "col-span-1 sm:col-span-2 lg:col-span-2 p-6"
                     : "p-5"
                 }`}
               >
+                <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="w-2 h-2 rounded-full bg-primary/50" />
+                </div>
+                
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <span
-                      className={`text-xl transition-transform duration-300 ${expandedStat === item.id ? "scale-125" : ""}`}
+                      className={`text-xl transition-transform duration-300 flex items-center justify-center w-8 h-8 rounded-full bg-neutral-light dark:bg-white/10 ${expandedStat === item.id ? "scale-110 bg-primary/10 text-primary" : ""}`}
                     >
                       {item.icon}
                     </span>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    <p className="text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                       {item.label}
                     </p>
                   </div>
                   <span
-                    className={`text-slate-400 transition-transform duration-300 ${expandedStat === item.id ? "rotate-180" : ""}`}
+                    className={`text-neutral-dark/20 transition-transform duration-300 ${expandedStat === item.id ? "rotate-180 text-primary" : ""}`}
                   >
                     ▼
                   </span>
                 </div>
                 <p
-                  className={`font-black text-slate-900 dark:text-white truncate transition-all duration-300 ${
+                  className={`font-heading font-extrabold text-neutral-dark dark:text-white truncate transition-all duration-300 ${
                     expandedStat === item.id
-                      ? "text-3xl mb-4"
+                      ? "text-3xl mb-4 text-primary"
                       : "text-xl md:text-2xl"
                   }`}
                 >
@@ -785,26 +794,26 @@ export default function ActivationCodesPage() {
 
                 {/* Expanded Details */}
                 {expandedStat === item.id && (
-                  <div className="space-y-3 animate-fadeIn">
-                    <div className="h-px bg-slate-100 dark:bg-white/5" />
+                  <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="h-px bg-neutral-100 dark:bg-white/5" />
                     <div className="grid grid-cols-2 gap-3">
                       {item.details.map((detail, idx) => (
                         <div
                           key={idx}
-                          className="bg-slate-50 dark:bg-slate-950/50 rounded-xl p-3"
+                          className="bg-neutral-light dark:bg-white/5 rounded-brand-sm p-3"
                         >
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          <p className="text-[10px] font-bold text-neutral-dark/40 uppercase tracking-wider mb-1">
                             {detail.label}
                           </p>
-                          <p className={`text-lg font-black ${detail.color}`}>
+                          <p className={`text-lg font-heading font-bold ${detail.color}`}>
                             {detail.value}
                           </p>
                         </div>
                       ))}
                     </div>
-                    <div className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-3 border border-primary-100 dark:border-primary-800/30">
-                      <p className="text-xs font-semibold text-primary-700 dark:text-primary-300">
-                        💡 {item.insight}
+                    <div className="bg-primary/5 dark:bg-primary-900/20 rounded-brand-sm p-3 border border-primary/10 dark:border-primary-800/30">
+                      <p className="text-xs font-semibold text-primary dark:text-primary-300 flex gap-2">
+                        <span>💡</span> {item.insight}
                       </p>
                     </div>
                   </div>
@@ -813,77 +822,78 @@ export default function ActivationCodesPage() {
             ))}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] shadow-sm overflow-hidden mb-12">
-            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-white/5">
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                🏆 Performance des Points de Vente
+          <div className="bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand-lg shadow-sm overflow-hidden">
+            <div className="p-6 md:p-8 border-b border-neutral-100 dark:border-white/5 flex items-center gap-3">
+               <span className="text-xl">🏆</span>
+              <h2 className="text-sm font-heading font-extrabold text-neutral-dark dark:text-white uppercase tracking-widest">
+                Performance des Points de Vente
               </h2>
             </div>
-            <div className="p-6 md:p-8">
+            <div className="p-0">
               {salesPointStats.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
-                  <span className="text-4xl mb-4">🏪</span>
-                  <p className="font-medium">Aucun point de vente configuré</p>
+                <div className="flex flex-col items-center justify-center py-16 text-neutral-dark/40 dark:text-neutral-light/40">
+                  <span className="text-4xl mb-4 grayscale opacity-50">🏪</span>
+                  <p className="font-heading font-bold">Aucun point de vente configuré</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
-                    <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-950/50">
-                        <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <table className="w-full divide-y divide-neutral-100 dark:divide-white/5">
+                    <thead className="bg-neutral-light/50 dark:bg-white/5">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Point de Vente
                         </th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Total
                         </th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Vendus
                         </th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Actifs
                         </th>
-                        <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Taux
                         </th>
-                        <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                        <th className="px-6 py-4 text-right text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                           Revenus
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-white/5 bg-white dark:bg-transparent">
                       {salesPointStats
                         .sort((a, b) => b.usedCodes - a.usedCodes)
                         .map((sp) => (
                           <tr
                             key={sp.id}
-                            className="group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors"
+                            className="group hover:bg-neutral-light/50 dark:hover:bg-white/5 transition-colors"
                           >
-                            <td className="px-6 py-5">
-                              <div className="font-bold text-slate-900 dark:text-white">
+                            <td className="px-6 py-4">
+                              <div className="font-heading font-bold text-neutral-dark dark:text-white">
                                 {sp.name}
                               </div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-widest">
-                                {sp.location}
+                              <div className="text-[10px] text-neutral-dark/40 dark:text-neutral-light/40 font-bold uppercase tracking-widest flex items-center gap-1">
+                                <span>📍</span> {sp.location}
                               </div>
                             </td>
-                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                            <td className="px-6 py-4 text-center text-sm font-bold text-neutral-dark/60 dark:text-neutral-light/60">
                               {sp.totalCodes}
                             </td>
-                            <td className="px-6 py-5 text-center">
-                              <span className="text-sm font-black text-primary-600 dark:text-primary-400">
+                            <td className="px-6 py-4 text-center">
+                              <span className="text-sm font-bold text-secondary dark:text-secondary-400 bg-secondary/10 px-2 py-1 rounded-brand-sm">
                                 {sp.usedCodes}
                               </span>
                             </td>
-                            <td className="px-6 py-5 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                            <td className="px-6 py-4 text-center text-sm font-bold text-neutral-dark/60 dark:text-neutral-light/60">
                               {sp.activeCodes}
                             </td>
-                            <td className="px-6 py-5 text-center">
+                            <td className="px-6 py-4 text-center">
                               <span
-                                className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest ${
+                                className={`px-2 py-1 rounded-brand-sm text-[10px] font-bold uppercase tracking-widest ${
                                   sp.totalCodes > 0 &&
                                   sp.usedCodes / sp.totalCodes > 0.5
-                                    ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                                    : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-neutral-100 dark:bg-white/10 text-neutral-500"
                                 }`}
                               >
                                 {sp.totalCodes > 0
@@ -894,7 +904,7 @@ export default function ActivationCodesPage() {
                                 %
                               </span>
                             </td>
-                            <td className="px-6 py-5 text-right font-black text-slate-900 dark:text-white">
+                            <td className="px-6 py-4 text-right font-heading font-bold text-neutral-dark dark:text-white">
                               {sp.totalRevenue.toLocaleString()} DA
                             </td>
                           </tr>
@@ -1214,11 +1224,11 @@ export default function ActivationCodesPage() {
       )}
 
       {activeTab === "codes" && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand-lg shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Filters */}
-          <div className="p-6 border-b border-slate-100 dark:border-white/5">
+          <div className="p-6 border-b border-neutral-100 dark:border-white/5 bg-neutral-light/30 dark:bg-transparent">
             <div className="flex flex-wrap items-center gap-4">
-              <div className="relative">
+              <div className="relative flex-1 min-w-[200px] md:max-w-xs">
                 <input
                   type="text"
                   placeholder="Rechercher un code..."
@@ -1226,9 +1236,9 @@ export default function ActivationCodesPage() {
                   onChange={(e) =>
                     setFilters({ ...filters, search: e.target.value })
                   }
-                  className="pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none md:w-64"
+                  className="w-full pl-10 pr-4 py-3 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white placeholder:text-neutral-dark/40 dark:placeholder:text-neutral-light/40 transition-all outline-none"
                 />
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-dark/40 dark:text-neutral-light/40">
                   🔍
                 </span>
               </div>
@@ -1241,7 +1251,7 @@ export default function ActivationCodesPage() {
                     year: e.target.value as YearLevel | "",
                   })
                 }
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                className="px-4 py-3 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none cursor-pointer hover:border-primary/50"
               >
                 <option value="" className="bg-white dark:bg-slate-900">
                   Toutes les années
@@ -1262,7 +1272,7 @@ export default function ActivationCodesPage() {
                 onChange={(e) =>
                   setFilters({ ...filters, facultyId: e.target.value })
                 }
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                 className="px-4 py-3 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none cursor-pointer hover:border-primary/50"
               >
                 <option value="" className="bg-white dark:bg-slate-900">
                   Toutes les facultés
@@ -1283,10 +1293,10 @@ export default function ActivationCodesPage() {
                 onChange={(e) =>
                   setFilters({ ...filters, salesPointId: e.target.value })
                 }
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                 className="px-4 py-3 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none cursor-pointer hover:border-primary/50 md:max-w-[200px]"
               >
                 <option value="" className="bg-white dark:bg-slate-900">
-                  🏪 Tous les points de vente
+                  🏪 Tous les points
                 </option>
                 {salesPoints.map((sp) => (
                   <option
@@ -1307,7 +1317,7 @@ export default function ActivationCodesPage() {
                     status: e.target.value as typeof filters.status,
                   })
                 }
-                className="px-4 py-2.5 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                 className="px-4 py-3 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none cursor-pointer hover:border-primary/50"
               >
                 <option value="" className="bg-white dark:bg-slate-900">
                   Tous les statuts
@@ -1323,41 +1333,41 @@ export default function ActivationCodesPage() {
                 </option>
               </select>
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex flex-wrap items-center gap-2">
                 {selectedCodeIds.size > 0 ? (
                   <>
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <span className="text-sm font-bold text-neutral-dark dark:text-white hidden md:inline">
                       {selectedCodeIds.size} sélectionné(s)
                     </span>
                     <button
                       onClick={handleExportSelected}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-[10px] font-heading font-bold uppercase tracking-widest rounded-brand hover:bg-blue-700 transition-all active:scale-95 shadow-sm"
                     >
-                      <span>📥</span> Exporter
+                      <span>📥</span> <span className="hidden sm:inline">Exporter</span>
                     </button>
                     <button
                       onClick={() => setShowBulkExpirationModal(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-purple-700 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-white text-[10px] font-heading font-bold uppercase tracking-widest rounded-brand hover:bg-secondary-600 transition-all active:scale-95 shadow-sm"
                     >
-                      <span>📅</span> Modifier Expiration
+                      <span>📅</span> <span className="hidden sm:inline">Date Exp.</span>
                     </button>
                     <button
                       onClick={handleBulkRevoke}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-700 transition-all active:scale-95"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-destructive text-white text-[10px] font-heading font-bold uppercase tracking-widest rounded-brand hover:bg-red-600 transition-all active:scale-95 shadow-sm"
                     >
-                      <span>🗑️</span> Révoquer
+                      <span>🗑️</span> <span className="hidden sm:inline">Révoquer</span>
                     </button>
                     <button
                       onClick={clearSelection}
-                      className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                       className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-white/5 text-neutral-dark dark:text-neutral-light border border-neutral-200 dark:border-white/10 text-[10px] font-heading font-bold uppercase tracking-widest rounded-brand hover:bg-neutral-light dark:hover:bg-white/10 transition-all active:scale-95"
                     >
-                      <span>✖️</span> Effacer
+                      <span>✖️</span>
                     </button>
                   </>
                 ) : (
                   <button
                     onClick={handleExport}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all active:scale-95"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-white/10 text-neutral-dark dark:text-white border border-neutral-200 dark:border-white/10 text-[10px] font-heading font-bold uppercase tracking-widest rounded-brand hover:bg-neutral-light dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm"
                   >
                     <span>📥</span> Exporter CSV
                   </button>
@@ -1367,10 +1377,10 @@ export default function ActivationCodesPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-slate-100 dark:divide-white/5">
-              <thead>
-                <tr className="bg-slate-50 dark:bg-slate-950/50">
-                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+            <table className="w-full divide-y divide-neutral-100 dark:divide-white/5">
+              <thead className="bg-neutral-light/50 dark:bg-white/5">
+                <tr>
+                  <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest w-12">
                     <input
                       type="checkbox"
                       checked={
@@ -1378,41 +1388,43 @@ export default function ActivationCodesPage() {
                         codes.length > 0
                       }
                       onChange={toggleSelectAll}
-                      className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                      className="w-4 h-4 text-primary bg-white dark:bg-white/10 border-neutral-300 dark:border-white/20 rounded focus:ring-primary cursor-pointer"
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-left text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Code
                   </th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Année
                   </th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-left text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Point de Vente
                   </th>
-                  <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-center text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Statut
                   </th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-left text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Utilisateur
                   </th>
-                  <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  <th className="px-6 py-4 text-left text-[10px] font-heading font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Création
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
+              <tbody className="divide-y divide-neutral-100 dark:divide-white/5 bg-white dark:bg-transparent">
                 {codes.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-6 py-20 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-2">
-                        <span className="text-3xl">📭</span>
-                        <p className="text-slate-500 dark:text-slate-400 font-bold">
-                          Aucun code trouvé
-                        </p>
-                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                          Essayez de modifier vos filtres.
-                        </p>
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <span className="text-4xl opacity-50 grayscale">📭</span>
+                        <div>
+                          <p className="text-neutral-dark font-heading font-bold text-lg">
+                            Aucun code trouvé
+                          </p>
+                          <p className="text-sm text-neutral-dark/60 dark:text-neutral-light/60 font-medium mt-1">
+                            Essayez de modifier vos filtres de recherche.
+                          </p>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -1431,49 +1443,53 @@ export default function ActivationCodesPage() {
                     return (
                       <tr
                         key={code.id}
-                        className={`group hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors cursor-pointer ${
-                          code.isUsed ? "bg-primary-500/5" : ""
+                        className={`group hover:bg-neutral-light/50 dark:hover:bg-white/5 transition-colors cursor-pointer ${
+                          code.isUsed ? "bg-secondary/5" : ""
                         } ${
                           isSelected
-                            ? "bg-primary-500/10 dark:bg-primary-500/5"
+                            ? "bg-primary/5 dark:bg-primary/10"
                             : ""
                         }`}
                         onClick={() => setSelectedCode(code)}
                       >
                         <td
-                          className="px-6 py-5 text-center"
+                          className="px-6 py-4 text-center"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleCodeSelection(code.id)}
-                            className="w-4 h-4 text-primary-600 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 rounded focus:ring-primary-500 cursor-pointer"
+                            className="w-4 h-4 text-primary bg-white dark:bg-white/10 border-neutral-300 dark:border-white/20 rounded focus:ring-primary cursor-pointer"
                           />
                         </td>
-                        <td className="px-6 py-5">
-                          <code className="bg-slate-100 dark:bg-white/5 px-3 py-1.5 rounded-lg text-xs font-black font-mono text-slate-900 dark:text-white tracking-widest group-hover:bg-primary-500/10 group-hover:text-primary-600 transition-colors">
+                        <td className="px-6 py-4">
+                          <code className="bg-neutral-light dark:bg-white/5 px-3 py-1.5 rounded-brand-sm text-xs font-mono font-bold text-neutral-dark dark:text-white tracking-widest group-hover:bg-primary/10 group-hover:text-primary transition-colors border border-neutral-200 dark:border-white/5">
                             {code.keyCode}
                           </code>
                         </td>
-                        <td className="px-6 py-5 text-center">
-                          <span className="px-2 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-md text-[10px] font-black uppercase tracking-widest">
-                            {code.year}ère
-                          </span>
+                        <td className="px-6 py-4 text-center">
+                           {code.year ? (
+                            <span className="px-2.5 py-1 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300 rounded-brand-sm text-[10px] font-heading font-bold uppercase tracking-widest border border-blue-100 dark:border-blue-800/30">
+                              {code.year}ère
+                            </span>
+                          ) : (
+                             <span className="text-neutral-300 dark:text-neutral-700">-</span>
+                          )}
                         </td>
-                        <td className="px-6 py-5">
-                          <div className="font-bold text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
+                        <td className="px-6 py-4">
+                          <div className="font-heading font-bold text-neutral-dark dark:text-white text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px]">
                             {code.salesPoint?.name || "-"}
                           </div>
                         </td>
-                        <td className="px-6 py-5 text-center">
+                        <td className="px-6 py-4 text-center">
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap ${
+                            className={`px-2.5 py-1 rounded-brand-sm text-[10px] font-heading font-bold uppercase tracking-widest whitespace-nowrap border ${
                               status === "active"
-                                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                ? "bg-success/10 text-success border-success/20"
                                 : status === "used"
-                                  ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+                                  ? "bg-secondary/10 text-secondary border-secondary/20"
+                                  : "bg-destructive/10 text-destructive border-destructive/20"
                             }`}
                           >
                             {status === "active"
@@ -1483,20 +1499,20 @@ export default function ActivationCodesPage() {
                                 : "⏰ Expiré"}
                           </span>
                         </td>
-                        <td className="px-6 py-5">
+                        <td className="px-6 py-4">
                           {user ? (
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 uppercase">
+                              <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-[10px] font-black text-secondary uppercase border border-secondary/20">
                                 {user.fullName
                                   ?.split(" ")
                                   .map((n) => n[0])
                                   .join("") || "?"}
                               </div>
                               <div>
-                                <div className="text-sm font-bold text-slate-900 dark:text-white">
+                                <div className="text-sm font-heading font-bold text-neutral-dark dark:text-white">
                                   {user.fullName || "User"}
                                 </div>
-                                <div className="text-[10px] text-slate-500 font-medium">
+                                <div className="text-[10px] text-neutral-dark/60 dark:text-neutral-light/60 font-medium">
                                   {user.email}
                                 </div>
                               </div>
@@ -1508,26 +1524,26 @@ export default function ActivationCodesPage() {
                                     name: user.fullName || "User",
                                   });
                                 }}
-                                className="ml-2 p-1.5 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                className="ml-2 p-1.5 bg-neutral-light dark:bg-white/10 hover:bg-neutral-200 dark:hover:bg-white/20 rounded-brand-sm text-neutral-dark/60 dark:text-neutral-light/60 transition-colors"
                                 title="Gérer les appareils"
                               >
                                 📱
                               </button>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest italic">
+                            <span className="text-[10px] font-bold text-neutral-dark/30 dark:text-neutral-light/30 uppercase tracking-widest italic">
                               Disponible
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-5 text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">
+                        <td className="px-6 py-4 text-[10px] text-neutral-dark/60 dark:text-neutral-light/60 font-bold uppercase tracking-widest">
                           <div>
                             {new Date(code.createdAt).toLocaleDateString(
                               "fr-FR",
                             )}
                           </div>
                           {code.usedAt && (
-                            <div className="text-primary-600 dark:text-primary-400 mt-0.5">
+                            <div className="text-secondary dark:text-secondary-300 mt-0.5 font-bold">
                               Utilisé:{" "}
                               {new Date(code.usedAt).toLocaleDateString(
                                 "fr-FR",
@@ -1543,21 +1559,24 @@ export default function ActivationCodesPage() {
             </table>
           </div>
 
-          <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-white/5 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-            Affichage de {codes.length} code(s) actif(s)
+          <div className="p-4 bg-neutral-light/30 dark:bg-white/5 border-t border-neutral-100 dark:border-white/5 text-[10px] font-heading font-black text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] flex justify-between items-center">
+             <span>Affichage de {codes.length} code(s) actif(s)</span>
+             <div className="flex gap-2">
+                {/* Pagination placeholders if needed later */}
+             </div>
           </div>
         </div>
       )}
 
       {activeTab === "points" && (
-        <div className="space-y-8">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Add button */}
           <div className="flex justify-end">
             <button
               onClick={() => setShowSalesPointForm(true)}
-              className="px-8 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
+              className="px-8 py-3 bg-primary text-white rounded-brand-lg hover:bg-primary-600 transition-all font-heading font-bold shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2"
             >
-              ➕ Nouveau Point de Vente
+              <span>➕</span> Nouveau Point de Vente
             </button>
           </div>
 
@@ -1566,32 +1585,32 @@ export default function ActivationCodesPage() {
             {salesPoints.map((sp) => (
               <div
                 key={sp.id}
-                className={`group bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2rem] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-primary-500/5 ${
-                  !sp.isActive ? "opacity-50 grayscale" : ""
+                className={`group bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand-lg p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-primary/5 hover:border-primary/50 relative overflow-hidden ${
+                  !sp.isActive ? "opacity-60 grayscale" : ""
                 }`}
               >
                 <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="font-black text-slate-900 dark:text-white tracking-tight group-hover:text-primary-600 transition-colors">
+                    <h3 className="font-heading font-bold text-neutral-dark dark:text-white tracking-tight group-hover:text-primary transition-colors text-lg">
                       {sp.name}
                     </h3>
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
-                      {sp.location}
+                    <p className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest mt-1 flex items-center gap-1">
+                      <span>📍</span> {sp.location}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleEditSalesPoint(sp)}
-                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      className="p-1.5 text-neutral-dark/40 hover:text-primary transition-colors bg-neutral-light dark:bg-white/5 rounded-brand-sm"
                       title="Modifier"
                     >
                       ✏️
                     </button>
                     <span
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                      className={`px-2.5 py-1 rounded-brand-sm text-[10px] font-bold uppercase tracking-widest ${
                         sp.isActive
-                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                          : "bg-slate-100 dark:bg-white/5 text-slate-500"
+                          ? "bg-success/10 text-success"
+                          : "bg-neutral-100 dark:bg-white/5 text-neutral-500"
                       }`}
                     >
                       {sp.isActive ? "Actif" : "Inactif"}
@@ -1599,32 +1618,32 @@ export default function ActivationCodesPage() {
                   </div>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-dark/60 dark:text-neutral-light/60 border-b border-neutral-100 dark:border-white/5 pb-2">
                     <span>Code</span>
-                    <span className="bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded font-mono text-slate-900 dark:text-white">
+                    <span className="bg-neutral-light dark:bg-white/10 px-2 py-1 rounded-brand-sm font-mono text-neutral-dark dark:text-white">
                       {sp.code}
                     </span>
                   </div>
                   {sp.contactName && (
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-dark/60 dark:text-neutral-light/60">
                       <span>Contact</span>
-                      <span className="text-slate-700 dark:text-slate-300">
+                      <span className="text-neutral-dark dark:text-white">
                         {sp.contactName}
                       </span>
                     </div>
                   )}
                   {sp.contactPhone && (
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-dark/60 dark:text-neutral-light/60">
                       <span>Tél</span>
-                      <span className="text-slate-700 dark:text-slate-300">
+                      <span className="text-neutral-dark dark:text-white font-mono">
                         {sp.contactPhone}
                       </span>
                     </div>
                   )}
                   {sp.commissionRate > 0 && (
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-dark/60 dark:text-neutral-light/60 pt-2 border-t border-neutral-100 dark:border-white/5">
                       <span>Commission</span>
-                      <span className="px-2 py-0.5 bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-md">
+                      <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-brand-sm">
                         {sp.commissionRate}%
                       </span>
                     </div>
@@ -1636,11 +1655,11 @@ export default function ActivationCodesPage() {
 
           {/* Add/Edit Sales Point Modal */}
           {showSalesPointForm && (
-            <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md animate-in fade-in zoom-in duration-200">
+            <div className="fixed inset-0 bg-neutral-dark/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white dark:bg-neutral-dark border border-neutral-200 dark:border-white/10 rounded-brand-lg shadow-2xl p-8 w-full max-w-md animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center gap-3 mb-8">
-                  <span className="text-2xl">🏪</span>
-                  <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
+                  <span className="text-2xl w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full text-primary">🏪</span>
+                  <h2 className="text-sm font-heading font-extrabold text-neutral-dark dark:text-white uppercase tracking-widest">
                     {editingSalesPointId
                       ? "Modifier Point de Vente"
                       : "Nouveau Point de Vente"}
@@ -1650,7 +1669,7 @@ export default function ActivationCodesPage() {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                         Code *
                       </label>
                       <input
@@ -1662,13 +1681,13 @@ export default function ActivationCodesPage() {
                             code: e.target.value.toUpperCase(),
                           })
                         }
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                        className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none font-mono"
                         placeholder="ALG01"
                         maxLength={10}
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                      <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                         Commission %
                       </label>
                       <input
@@ -1682,13 +1701,13 @@ export default function ActivationCodesPage() {
                             commissionRate: Number(e.target.value),
                           })
                         }
-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                        className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                       Nom *
                     </label>
                     <input
@@ -1700,13 +1719,13 @@ export default function ActivationCodesPage() {
                           name: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                      className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none"
                       placeholder="Librairie El Ilm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                       Localisation
                     </label>
                     <input
@@ -1718,13 +1737,13 @@ export default function ActivationCodesPage() {
                           location: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                      className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none"
                       placeholder="Alger Centre"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                       Nom du Contact
                     </label>
                     <input
@@ -1736,12 +1755,12 @@ export default function ActivationCodesPage() {
                           contactName: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                      className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+                    <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                       Téléphone
                     </label>
                     <input
@@ -1753,7 +1772,7 @@ export default function ActivationCodesPage() {
                           contactPhone: e.target.value,
                         })
                       }
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none"
+                      className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none font-mono"
                       placeholder="0555 XX XX XX"
                     />
                   </div>
@@ -1762,13 +1781,13 @@ export default function ActivationCodesPage() {
                 <div className="flex gap-4 mt-10">
                   <button
                     onClick={closeSalesPointForm}
-                    className="flex-1 px-4 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
+                    className="flex-1 px-4 py-3 bg-neutral-light dark:bg-white/5 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand hover:bg-neutral-200 dark:hover:bg-white/10 transition-all font-heading font-bold active:scale-95"
                   >
                     Annuler
                   </button>
                   <button
                     onClick={handleSaveSalesPoint}
-                    className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 transition-all font-bold shadow-lg shadow-primary-500/20 active:scale-95"
+                    className="flex-1 px-4 py-3 bg-primary text-white rounded-brand hover:bg-primary-600 transition-all font-heading font-bold shadow-lg shadow-primary/20 active:scale-95"
                   >
                     {editingSalesPointId ? "Enregistrer" : "Créer"}
                   </button>
@@ -1781,34 +1800,34 @@ export default function ActivationCodesPage() {
 
       {/* Code Detail Modal */}
       {selectedCode && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/5 rounded-[2.5rem] shadow-2xl p-8 w-full max-w-lg animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div className="fixed inset-0 bg-neutral-dark/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-dark border border-neutral-200 dark:border-white/10 rounded-brand-lg shadow-2xl p-8 w-full max-w-lg animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                🔑 Détails du Code
+              <h2 className="text-sm font-heading font-extrabold text-neutral-dark dark:text-white uppercase tracking-widest flex items-center gap-2">
+                <span className="text-xl">🔑</span> Détails du Code
               </h2>
               <button
                 onClick={() => setSelectedCode(null)}
-                className="w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-white/5 text-slate-500 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold"
+                className="w-10 h-10 flex items-center justify-center bg-neutral-light dark:bg-white/5 text-neutral-dark/60 dark:text-neutral-light/60 rounded-full hover:bg-neutral-200 dark:hover:bg-white/10 transition-all font-bold"
               >
                 ×
               </button>
             </div>
 
             {/* Code Info */}
-            <div className="bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-3xl p-6 mb-8">
+            <div className="bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-brand p-6 mb-8">
               <div className="flex items-center justify-between mb-4">
-                <code className="text-2xl font-black font-mono text-primary-600 dark:text-primary-400 tracking-[0.2em]">
+                <code className="text-2xl font-black font-mono text-primary dark:text-primary tracking-[0.2em]">
                   {selectedCode.keyCode}
                 </code>
                 <span
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  className={`px-2.5 py-1 rounded-brand-sm text-[10px] font-heading font-bold uppercase tracking-widest border ${
                     selectedCode.isUsed
-                      ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
+                      ? "bg-secondary/10 text-secondary border-secondary/20"
                       : selectedCode.expiresAt &&
                           new Date(selectedCode.expiresAt) < new Date()
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
+                        : "bg-success/10 text-success border-success/20"
                   }`}
                 >
                   {selectedCode.isUsed
@@ -1820,14 +1839,14 @@ export default function ActivationCodesPage() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
+                <span className="px-2 py-0.5 bg-white dark:bg-white/10 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand-sm text-[10px] font-bold uppercase tracking-widest border border-neutral-200 dark:border-white/5">
                   {new Date(selectedCode.createdAt).toLocaleDateString("fr-FR")}
                 </span>
-                <span className="px-2 py-0.5 bg-slate-200 dark:bg-white/5 text-slate-600 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">
+                <span className="px-2 py-0.5 bg-white dark:bg-white/10 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand-sm text-[10px] font-bold uppercase tracking-widest border border-neutral-200 dark:border-white/5">
                   {selectedCode.durationDays} Jours
                 </span>
                 {selectedCode.year && (
-                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded text-[10px] font-black uppercase tracking-widest">
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300 rounded-brand-sm text-[10px] font-bold uppercase tracking-widest border border-blue-100 dark:border-blue-800/30">
                     {selectedCode.year}ère Année
                   </span>
                 )}
@@ -1837,26 +1856,26 @@ export default function ActivationCodesPage() {
             {/* Code Details */}
             <div className="space-y-4 mb-8">
               {isEditingSalesPoint ? (
-                <div className="py-3 border-b border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">
+                <div className="py-3 border-b border-neutral-100 dark:border-white/5">
+                  <span className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest block mb-2">
                     Nouveau Point de Vente
                   </span>
                   <div className="flex gap-2">
                     <select
                       value={newSalesPointId || selectedCode.salesPointId || ""}
                       onChange={(e) => setNewSalesPointId(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white outline-none"
+                      className="flex-1 px-3 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white outline-none cursor-pointer"
                     >
                       <option value="">Sélectionner...</option>
                       {salesPoints.map((sp) => (
-                        <option key={sp.id} value={sp.id}>
+                        <option key={sp.id} value={sp.id} className="bg-white dark:bg-neutral-dark">
                           {sp.name}
                         </option>
                       ))}
                     </select>
                     <button
                       onClick={handleUpdateSalesPoint}
-                      className="px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm hover:bg-emerald-600 transition-colors"
+                      className="px-3 py-2 bg-success text-white rounded-brand text-sm hover:bg-success/90 transition-colors"
                       title="Enregistrer"
                     >
                       ✅
@@ -1866,7 +1885,7 @@ export default function ActivationCodesPage() {
                         setIsEditingSalesPoint(false);
                         setNewSalesPointId("");
                       }}
-                      className="px-3 py-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                       className="px-3 py-2 bg-neutral-light dark:bg-white/10 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand text-sm hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors"
                       title="Annuler"
                     >
                       ❌
@@ -1874,12 +1893,12 @@ export default function ActivationCodesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                  <span className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Point de Vente
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    <span className="text-sm font-heading font-bold text-neutral-dark dark:text-white">
                       {selectedCode.salesPoint?.name || "-"}
                     </span>
                     <button
@@ -1887,7 +1906,7 @@ export default function ActivationCodesPage() {
                         setNewSalesPointId(selectedCode.salesPointId || "");
                         setIsEditingSalesPoint(true);
                       }}
-                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      className="p-1 text-neutral-dark/40 hover:text-primary transition-colors"
                       title="Modifier"
                     >
                       ✏️
@@ -1897,8 +1916,8 @@ export default function ActivationCodesPage() {
               )}
 
               {isEditingExpiration ? (
-                <div className="py-3 border-b border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2">
+                <div className="py-3 border-b border-neutral-100 dark:border-white/5">
+                  <span className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest block mb-2">
                     Nouvelle Date d&apos;Expiration
                   </span>
                   <div className="flex gap-2">
@@ -1913,11 +1932,11 @@ export default function ActivationCodesPage() {
                           : "")
                       }
                       onChange={(e) => setNewExpirationDate(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white outline-none"
+                      className="flex-1 px-3 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white outline-none"
                     />
                     <button
                       onClick={handleUpdateSingleExpiration}
-                      className="px-3 py-2 bg-emerald-500 text-white rounded-xl text-sm hover:bg-emerald-600 transition-colors"
+                      className="px-3 py-2 bg-success text-white rounded-brand text-sm hover:bg-success/90 transition-colors"
                       title="Enregistrer"
                     >
                       ✅
@@ -1927,7 +1946,7 @@ export default function ActivationCodesPage() {
                         setIsEditingExpiration(false);
                         setNewExpirationDate("");
                       }}
-                      className="px-3 py-2 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-xl text-sm hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors"
+                      className="px-3 py-2 bg-neutral-light dark:bg-white/10 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand text-sm hover:bg-neutral-200 dark:hover:bg-white/20 transition-colors"
                       title="Annuler"
                     >
                       ❌
@@ -1935,12 +1954,12 @@ export default function ActivationCodesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                  <span className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest">
                     Date d&apos;Expiration
                   </span>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    <span className="text-sm font-heading font-bold text-neutral-dark dark:text-white">
                       {selectedCode.expiresAt
                         ? new Date(selectedCode.expiresAt).toLocaleDateString(
                             "fr-FR",
@@ -1958,7 +1977,7 @@ export default function ActivationCodesPage() {
                         );
                         setIsEditingExpiration(true);
                       }}
-                      className="p-1 text-slate-400 hover:text-primary-500 transition-colors"
+                      className="p-1 text-neutral-dark/40 hover:text-primary transition-colors"
                       title="Modifier"
                     >
                       ✏️
@@ -1968,10 +1987,10 @@ export default function ActivationCodesPage() {
               )}
               {selectedCode.notes && (
                 <div className="pt-2">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-2 px-1">
+                  <span className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest block mb-2 px-1">
                     Notes
                   </span>
-                  <div className="p-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-100 dark:border-white/5 rounded-2xl text-xs text-slate-700 dark:text-slate-300 italic">
+                  <div className="p-4 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-brand-lg text-xs text-neutral-dark dark:text-white italic">
                     &quot;{selectedCode.notes}&quot;
                   </div>
                 </div>
@@ -1980,23 +1999,23 @@ export default function ActivationCodesPage() {
 
             {/* User Info (if used) */}
             {selectedCode.usedByUser ? (
-              <div className="pt-8 border-t border-slate-100 dark:border-white/5">
-                <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="pt-8 border-t border-neutral-100 dark:border-white/5">
+                <h3 className="text-[10px] font-heading font-extrabold text-neutral-dark dark:text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                   <span>👤</span> Utilisateur Inscrit
                 </h3>
-                <div className="bg-primary-500/5 border border-primary-500/10 rounded-3xl p-6">
+                <div className="bg-secondary/5 border border-secondary/10 rounded-brand-lg p-6">
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-sm font-black text-primary-600 uppercase">
+                    <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-sm font-black text-secondary uppercase border border-secondary/20">
                       {selectedCode.usedByUser.fullName
                         ?.split(" ")
                         .map((n) => n[0])
                         .join("") || "?"}
                     </div>
                     <div>
-                      <div className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                      <div className="text-lg font-heading font-extrabold text-neutral-dark dark:text-white tracking-tight">
                         {selectedCode.usedByUser.fullName || "Sans nom"}
                       </div>
-                      <div className="text-xs text-slate-500 font-medium">
+                      <div className="text-xs text-neutral-dark/60 dark:text-neutral-light/60 font-medium">
                         {selectedCode.usedByUser.email}
                       </div>
                     </div>
@@ -2004,29 +2023,29 @@ export default function ActivationCodesPage() {
 
                   <div className="flex flex-wrap gap-2 mt-4">
                     {selectedCode.usedByUser.faculty && (
-                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-neutral-dark text-neutral-dark dark:text-white rounded-brand-sm text-[10px] font-bold uppercase tracking-widest shadow-sm border border-neutral-100 dark:border-white/5">
                         🏛️ {selectedCode.usedByUser.faculty}
                       </span>
                     )}
                     {selectedCode.usedByUser.speciality && (
-                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-neutral-dark text-neutral-dark dark:text-white rounded-brand-sm text-[10px] font-bold uppercase tracking-widest shadow-sm border border-neutral-100 dark:border-white/5">
                         🎓 {selectedCode.usedByUser.speciality}
                       </span>
                     )}
                     {selectedCode.usedByUser.yearOfStudy && (
-                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-neutral-dark text-neutral-dark dark:text-white rounded-brand-sm text-[10px] font-bold uppercase tracking-widest shadow-sm border border-neutral-100 dark:border-white/5">
                         📚 {selectedCode.usedByUser.yearOfStudy}ère année
                       </span>
                     )}
                     {selectedCode.usedByUser.region && (
-                      <span className="px-2 py-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-[10px] font-black uppercase tracking-widest shadow-sm">
+                      <span className="px-2 py-1 bg-white dark:bg-neutral-dark text-neutral-dark dark:text-white rounded-brand-sm text-[10px] font-bold uppercase tracking-widest shadow-sm border border-neutral-100 dark:border-white/5">
                         📍 {selectedCode.usedByUser.region}
                       </span>
                     )}
                   </div>
 
                   {selectedCode.usedAt && (
-                    <div className="text-[10px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest mt-6">
+                    <div className="text-[10px] font-bold text-secondary dark:text-secondary-400 uppercase tracking-widest mt-6">
                       Activé le{" "}
                       {new Date(selectedCode.usedAt).toLocaleDateString(
                         "fr-FR",
@@ -2036,14 +2055,14 @@ export default function ActivationCodesPage() {
                 </div>
               </div>
             ) : (
-              <div className="pt-8 border-t border-slate-100 dark:border-white/5 text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-50 dark:bg-white/5 rounded-full mb-4">
-                  <span className="text-2xl">🔒</span>
+              <div className="pt-8 border-t border-neutral-100 dark:border-white/5 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-neutral-light dark:bg-white/5 rounded-full mb-4">
+                  <span className="text-2xl text-neutral-dark/40 dark:text-neutral-light/40">🔒</span>
                 </div>
-                <p className="text-sm font-bold text-slate-500">
+                <p className="text-sm font-heading font-bold text-neutral-dark/60 dark:text-neutral-light/60">
                   Code non encore activé
                 </p>
-                <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                <p className="text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-widest mt-1">
                   Disponible pour une nouvelle inscription.
                 </p>
               </div>
@@ -2051,7 +2070,7 @@ export default function ActivationCodesPage() {
 
             <button
               onClick={() => setSelectedCode(null)}
-              className="w-full mt-10 px-8 py-4 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
+              className="w-full mt-10 px-8 py-4 bg-neutral-light dark:bg-white/5 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand hover:bg-neutral-200 dark:hover:bg-white/10 transition-all font-heading font-bold active:scale-95"
             >
               Fermer
             </button>
@@ -2070,31 +2089,31 @@ export default function ActivationCodesPage() {
 
       {/* Bulk Expiration Update Modal */}
       {showBulkExpirationModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-white/5 shadow-2xl max-w-md w-full p-8">
+        <div className="fixed inset-0 bg-neutral-dark/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-dark rounded-brand-lg border border-neutral-200 dark:border-white/10 shadow-2xl max-w-md w-full p-8 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center gap-3 mb-6">
               <span className="text-3xl">📅</span>
-              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+              <h2 className="text-xl font-heading font-extrabold text-neutral-dark dark:text-white uppercase tracking-tight">
                 Modifier l&apos;Expiration
               </h2>
             </div>
 
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+            <p className="text-sm text-neutral-dark/60 dark:text-neutral-light/60 mb-6 font-medium">
               Mettre à jour la date d&apos;expiration pour les codes
               sélectionnés.
             </p>
 
-            <div className="mb-6 flex items-center gap-3 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 p-4 rounded-2xl">
+            <div className="mb-6 flex items-center gap-3 bg-secondary/10 border border-secondary/20 p-4 rounded-brand-lg">
               <input
                 type="checkbox"
                 id="includeUsed"
                 checked={includeUsedInBulk}
                 onChange={(e) => setIncludeUsedInBulk(e.target.checked)}
-                className="w-5 h-5 text-amber-600 bg-white border-amber-300 rounded focus:ring-amber-500 cursor-pointer"
+                className="w-5 h-5 text-secondary bg-white border-secondary/30 rounded focus:ring-secondary cursor-pointer"
               />
               <label
                 htmlFor="includeUsed"
-                className="text-xs font-bold text-amber-800 dark:text-amber-200 cursor-pointer"
+                className="text-xs font-bold text-secondary-800 dark:text-secondary-200 cursor-pointer"
               >
                 Inclure les codes déjà utilisés (met à jour les abonnements
                 actifs)
@@ -2102,7 +2121,7 @@ export default function ActivationCodesPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-2 px-1">
+              <label className="block text-[10px] font-bold text-neutral-dark/40 dark:text-neutral-light/40 uppercase tracking-[0.2em] mb-2 px-1">
                 Nouvelle Date d&apos;Expiration *
               </label>
               <input
@@ -2110,12 +2129,12 @@ export default function ActivationCodesPage() {
                 value={bulkExpirationDate}
                 min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => setBulkExpirationDate(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-white/5 rounded-2xl focus:ring-2 focus:ring-primary-500 text-slate-900 dark:text-white transition-all outline-none cursor-pointer"
+                className="w-full px-4 py-3 bg-neutral-light dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-brand text-sm focus:ring-2 focus:ring-primary text-neutral-dark dark:text-white transition-all outline-none cursor-pointer"
               />
               {bulkExpirationDate && (
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 px-1">
+                <p className="text-[10px] text-neutral-dark/60 dark:text-neutral-light/60 mt-2 px-1">
                   Les codes expireront le:{" "}
-                  <span className="font-bold text-primary-600 dark:text-primary-400">
+                  <span className="font-bold text-primary">
                     {new Date(bulkExpirationDate).toLocaleDateString("fr-FR", {
                       weekday: "long",
                       year: "numeric",
@@ -2133,14 +2152,14 @@ export default function ActivationCodesPage() {
                   setShowBulkExpirationModal(false);
                   setBulkExpirationDate("");
                 }}
-                className="flex-1 px-6 py-3 bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all font-bold active:scale-95"
+                className="flex-1 px-6 py-3 bg-neutral-light dark:bg-white/5 text-neutral-dark/60 dark:text-neutral-light/60 rounded-brand hover:bg-neutral-200 dark:hover:bg-white/10 transition-all font-heading font-bold active:scale-95"
               >
                 Annuler
               </button>
               <button
                 onClick={handleBulkUpdateExpiration}
                 disabled={!bulkExpirationDate}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-2xl font-bold hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 bg-secondary text-white rounded-brand font-heading font-bold hover:bg-secondary-600 transition-all shadow-lg hover:shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Mettre à Jour
               </button>
@@ -2152,52 +2171,4 @@ export default function ActivationCodesPage() {
   );
 }
 
-// Detail Row Component
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-white/5 last:border-0">
-      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-        {label}
-      </span>
-      <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-        {value}
-      </span>
-    </div>
-  );
-}
 
-// Stat Card Component
-function StatCard({
-  title,
-  value,
-  icon,
-  color,
-}: {
-  title: string;
-  value: number | string;
-  icon: string;
-  color: string;
-}) {
-  const colorClasses: Record<string, string> = {
-    blue: "bg-blue-50 border-blue-200",
-    green: "bg-green-50 border-green-200",
-    purple: "bg-purple-50 border-purple-200",
-    red: "bg-red-50 border-red-200",
-    yellow: "bg-yellow-50 border-yellow-200",
-    orange: "bg-orange-50 border-orange-200",
-  };
-
-  return (
-    <div
-      className={`rounded-lg border p-4 ${
-        colorClasses[color] || colorClasses.blue
-      }`}
-    >
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-xl">{icon}</span>
-        <span className="text-sm text-gray-600">{title}</span>
-      </div>
-      <div className="text-2xl font-bold">{value}</div>
-    </div>
-  );
-}
