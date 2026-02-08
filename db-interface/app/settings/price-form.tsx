@@ -27,9 +27,9 @@ export default function PriceForm({ initialPrice }: PriceFormProps) {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4 max-w-md p-6 bg-white rounded-lg shadow border border-gray-200">
+    <form action={handleSubmit} className="space-y-4 max-w-md p-6 bg-white rounded-brand shadow-sm border border-gray-100">
       <div>
-        <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="price" className="block text-sm font-body font-medium text-brand-black mb-1">
           Subscription Price (DZD)
         </label>
         <div className="relative rounded-md shadow-sm">
@@ -40,20 +40,20 @@ export default function PriceForm({ initialPrice }: PriceFormProps) {
             defaultValue={initialPrice}
             required
             min="0"
-            className="block w-full rounded-md border-gray-300 pl-3 pr-12 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2 border"
+            className="block w-full rounded-brand border-gray-300 pl-3 pr-12 focus:border-brand-teal focus:ring-brand-teal sm:text-sm py-2 border font-body"
             placeholder="1000"
           />
           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-            <span className="text-gray-500 sm:text-sm">DZD</span>
+            <span className="text-gray-500 sm:text-sm font-body">DZD</span>
           </div>
         </div>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-xs font-body text-gray-500">
           This price will be used for all new 1-year subscriptions.
         </p>
       </div>
 
       {message && (
-        <div className={`p-3 rounded-md text-sm ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+        <div className={`p-3 rounded-brand text-sm font-body ${message.type === 'success' ? 'bg-teal-50 text-brand-teal border border-teal-100' : 'bg-red-50 text-destructive border border-red-100'}`}>
           {message.text}
         </div>
       )}
@@ -61,7 +61,7 @@ export default function PriceForm({ initialPrice }: PriceFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-brand shadow-sm text-sm font-heading font-semibold text-white bg-brand-teal hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-teal disabled:opacity-50"
       >
         {isLoading ? 'Updating...' : 'Update Price'}
       </button>

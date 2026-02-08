@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const backupDir = path.join(process.cwd(), '..', 'backups');
     const filePath = path.join(backupDir, fileName);
-    
+
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
@@ -36,37 +36,65 @@ export async function GET(req: NextRequest) {
       const tables: Record<string, { col: string, type: string }[]> = {};
       const relations: { from: string, to: string, label: string }[] = [];
       let currentTable: string | null = null;
+      let lastAlterTable: string | null = null;
 
       for await (const line of rl) {
-        // CREATE TABLE "public"."users" (
-        const tableMatch = line.match(/^CREATE TABLE "([^"]+)"\."([^"]+)" \(/);
+        const trimmedLine = line.trim();
+
+        // Match: CREATE TABLE IF NOT EXISTS "public"."users" (
+        // or: CREATE TABLE "public"."users" (
+        const tableMatch = trimmedLine.match(/^CREATE TABLE (?:IF NOT EXISTS )?"([^"]+)"\."([^"]+)" \(/i);
         if (tableMatch) {
           currentTable = `${tableMatch[1]}.${tableMatch[2]}`;
           tables[currentTable] = [];
           continue;
         }
 
-        if (currentTable && line.startsWith(');')) {
+        if (currentTable && (trimmedLine === ');' || trimmedLine.startsWith(');'))) {
           currentTable = null;
           continue;
         }
 
         if (currentTable) {
-          // "id" uuid DEFAULT ...
-          const colMatch = line.match(/^\s+"([^"]+)"\s+([^,\s]+)/);
+          // Match: "id" uuid DEFAULT ...
+          const colMatch = trimmedLine.match(/^"([^"]+)"\s+([^,\s\)]+)/);
           if (colMatch) {
-            tables[currentTable].push({ col: colMatch[1], type: colMatch[2] });
+            tables[currentTable].push({
+              col: colMatch[1],
+              type: colMatch[2].replace(/"/g, '')
+            });
           }
         }
 
-        // ALTER TABLE ONLY "public"."questions" ADD CONSTRAINT ... FOREIGN KEY ("module_id") REFERENCES "public"."modules"("id");
-        const relMatch = line.match(/ALTER TABLE ONLY "([^"]+)"\."([^"]+)" .* FOREIGN KEY \("([^"]+)"\) REFERENCES "([^"]+)"\."([^"]+)"\("([^"]+)"\)/);
-        if (relMatch) {
-          relations.push({
-            from: `${relMatch[1]}.${relMatch[2]}`,
-            to: `${relMatch[4]}.${relMatch[5]}`,
-            label: relMatch[3]
-          });
+        // Handle multi-line ALTER TABLE statements
+        const alterTableMatch = trimmedLine.match(/^ALTER TABLE (?:ONLY )?"([^"]+)"\."([^"]+)"/i);
+        if (alterTableMatch) {
+          lastAlterTable = `${alterTableMatch[1]}.${alterTableMatch[2]}`;
+        }
+
+        // Match: ADD CONSTRAINT ... FOREIGN KEY ("module_id") REFERENCES "public"."modules"("id");
+        // or merged: ALTER TABLE ONLY "public"."questions" ADD CONSTRAINT ... FOREIGN KEY ("module_id") REFERENCES "public"."modules"("id");
+        const relMatch = trimmedLine.match(/(?:ADD CONSTRAINT .* )?FOREIGN KEY \("([^"]+)"\) REFERENCES "([^"]+)"\."([^"]+)"\("([^"]+)"\)/i);
+        if (relMatch && (lastAlterTable || trimmedLine.match(/ALTER TABLE/i))) {
+          let fromTable = lastAlterTable;
+
+          if (trimmedLine.match(/ALTER TABLE (?:ONLY )?"([^"]+)"\."([^"]+)"/i)) {
+            const m = trimmedLine.match(/ALTER TABLE (?:ONLY )?"([^"]+)"\."([^"]+)"/i);
+            if (m) fromTable = `${m[1]}.${m[2]}`;
+          }
+
+          if (fromTable) {
+            relations.push({
+              from: fromTable,
+              to: `${relMatch[2]}.${relMatch[3]}`,
+              label: relMatch[1]
+            });
+          }
+        }
+
+        // Reset alter table if we move to a different statement
+        if (trimmedLine.endsWith(';')) {
+          lastAlterTable = null;
         }
       }
 
@@ -80,8 +108,8 @@ export async function GET(req: NextRequest) {
       crlfDelay: Infinity
     });
 
-    const tables: {schema: string, table: string}[] = [];
-    let currentTable: {schema: string, table: string, columns: string[]} | null = null;
+    const tables: { schema: string, table: string }[] = [];
+    let currentTable: { schema: string, table: string, columns: string[] } | null = null;
     let inDataSection = false;
     const tableDataRows: string[][] = [];
 
@@ -92,7 +120,7 @@ export async function GET(req: NextRequest) {
           const schema = parts[1];
           const table = parts[2];
           const columns = parts[3].split(',').map(c => c.trim().replace(/"/g, ''));
-          
+
           const fullTableName = `${schema}.${table}`;
           tables.push({ schema, table });
 

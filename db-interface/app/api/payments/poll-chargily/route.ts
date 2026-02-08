@@ -136,6 +136,28 @@ export async function GET(request: NextRequest) {
       // Generate secure activation code
       const keyCode = generateSecureActivationCode();
       
+      // Fetch "En ligne" sales point ID
+      const { data: onlineSP, error: spError } = await supabaseAdmin
+        .from('sales_points')
+        .select('id')
+        .eq('code', 'ONLINE')
+        .single();
+
+      if (spError) {
+        console.error('[Poll Chargily] Failed to fetch ONLINE sales_point:', spError);
+      }
+
+      // Explicit check for not found case - stop creating keys without a valid sales point
+      if (!onlineSP) {
+        console.error('[Poll Chargily] ONLINE sales_point not found (onlineSP is null). spError:', spError, 'Cannot create activation key without sales point.');
+        return NextResponse.json(
+          { error: 'Configuration error: ONLINE sales point not found. Please create a sales point with code "ONLINE".' },
+          { status: 500, headers: getSecurityHeaders() }
+        );
+      }
+
+      const salesPointId = onlineSP.id;
+      
       // Create activation key
       const { data: newKey, error: keyError } = await supabaseAdmin
         .from('activation_keys')
@@ -143,6 +165,7 @@ export async function GET(request: NextRequest) {
           key_code: keyCode,
           duration_days: 365,
           payment_source: 'online',
+          sales_point_id: salesPointId,
           notes: `Auto-generated from online payment: ${checkout.id}`,
           price_paid: checkout.amount / 100,
         })
