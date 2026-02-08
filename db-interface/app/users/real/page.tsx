@@ -75,9 +75,17 @@ export default function RealUsersPage() {
                         
                         let prodPoints: string[] = [];
                         try {
-                            prodPoints = salesPointsConfig?.value
+                            const parsed = salesPointsConfig?.value
                                 ? JSON.parse(salesPointsConfig.value)
                                 : [];
+                            // Validate that parsed is an array and normalize members to strings
+                            if (Array.isArray(parsed)) {
+                                prodPoints = parsed
+                                    .filter((item): item is string => typeof item === 'string' && item.length > 0);
+                            } else {
+                                console.warn('production_sales_points is not an array:', parsed);
+                                prodPoints = [];
+                            }
                         } catch (e) {
                             console.error('Error parsing production_sales_points:', e);
                             prodPoints = [];

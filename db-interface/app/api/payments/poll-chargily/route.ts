@@ -147,7 +147,16 @@ export async function GET(request: NextRequest) {
         console.error('[Poll Chargily] Failed to fetch ONLINE sales_point:', spError);
       }
 
-      const salesPointId = onlineSP?.id || null;
+      // Explicit check for not found case - stop creating keys without a valid sales point
+      if (!onlineSP) {
+        console.error('[Poll Chargily] ONLINE sales_point not found (onlineSP is null). spError:', spError, 'Cannot create activation key without sales point.');
+        return NextResponse.json(
+          { error: 'Configuration error: ONLINE sales point not found. Please create a sales point with code "ONLINE".' },
+          { status: 500, headers: getSecurityHeaders() }
+        );
+      }
+
+      const salesPointId = onlineSP.id;
       
       // Create activation key
       const { data: newKey, error: keyError } = await supabaseAdmin

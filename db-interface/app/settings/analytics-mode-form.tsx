@@ -69,10 +69,15 @@ export default function AnalyticsModeForm({
 
       if (spError) {
         // Rollback analytics_mode if sales points update fails
-        await supabase
-          .from('app_config')
-          .update({ value: previousMode, updated_at: new Date().toISOString() })
-          .eq('key', 'analytics_mode');
+        try {
+          await supabase
+            .from('app_config')
+            .update({ value: previousMode, updated_at: new Date().toISOString() })
+            .eq('key', 'analytics_mode');
+        } catch (rollbackError) {
+          console.error('[AnalyticsModeForm] Rollback failed for analytics_mode! Original spError:', spError, 'previousMode:', previousMode, 'Rollback error:', rollbackError);
+          throw new Error(`Failed to save sales points AND rollback failed: ${spError.message}. Rollback error: ${rollbackError}`);
+        }
         throw spError;
       }
 

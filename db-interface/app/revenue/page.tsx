@@ -66,6 +66,8 @@ export default function RevenuePage() {
   const [analyticsMode, setAnalyticsMode] = useState<'dev' | 'production'>('dev');
   const [productionSalesPoints, setProductionSalesPoints] = useState<string[]>([]);
   const [productionSalesPointNames, setProductionSalesPointNames] = useState<string[]>([]);
+  const [onlineDataError, setOnlineDataError] = useState<string | null>(null);
+  const [keysDataError, setKeysDataError] = useState<string | null>(null);
 
   const getDateFilter = useCallback(() => {
     const now = new Date();
@@ -98,6 +100,9 @@ export default function RevenuePage() {
 
     if (onlineError) {
       console.error('[Revenue] Error fetching online payments:', onlineError);
+      setOnlineDataError('Erreur lors du chargement des paiements en ligne');
+    } else {
+      setOnlineDataError(null);
     }
 
     // Fetch used activation keys (sales point revenue)
@@ -120,6 +125,9 @@ export default function RevenuePage() {
 
     if (keysError) {
       console.error('[Revenue] Error fetching used keys:', keysError);
+      setKeysDataError('Erreur lors du chargement des ventes par points de vente');
+    } else {
+      setKeysDataError(null);
     }
 
     // Calculate stats
@@ -325,6 +333,35 @@ export default function RevenuePage() {
                 : 'Toutes les données (y compris les tests)'
               }
             </p>
+            {/* Error Banners */}
+            {(onlineDataError || keysDataError) && (
+              <div className="mt-3 space-y-2">
+                {onlineDataError && (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <span>⚠️</span>
+                    <span>{onlineDataError}</span>
+                    <button 
+                      onClick={() => fetchData(analyticsMode, productionSalesPoints)}
+                      className="ml-2 text-xs font-medium underline hover:no-underline"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
+                )}
+                {keysDataError && (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                    <span>⚠️</span>
+                    <span>{keysDataError}</span>
+                    <button 
+                      onClick={() => fetchData(analyticsMode, productionSalesPoints)}
+                      className="ml-2 text-xs font-medium underline hover:no-underline"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           
           {/* Date Range Filter */}
