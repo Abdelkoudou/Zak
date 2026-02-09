@@ -106,11 +106,13 @@ export default function RevenuePage() {
     }
 
     // Fetch used activation keys (sales point revenue)
+    // Exclude keys with payment_source='online' as they're already counted in online_payments
     let keysQuery = supabase
       .from('activation_keys')
       .select('*, sales_point:sales_points(name, id)')
       .eq('is_used', true)
-      .not('used_at', 'is', null);
+      .not('used_at', 'is', null)
+      .neq('payment_source', 'online');
 
     if (dateFilter) {
       keysQuery = keysQuery.gte('used_at', dateFilter);
