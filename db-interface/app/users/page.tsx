@@ -14,6 +14,7 @@ import {
 import type { YearLevel } from "@/types/database";
 import UserEditModal from "@/components/UserEditModal";
 import DeviceManagerModal from "@/components/DeviceManagerModal";
+import EmailConfirmationPanel from "@/components/EmailConfirmationPanel";
 
 export default function UsersPage() {
   // Auth state
@@ -27,9 +28,9 @@ export default function UsersPage() {
   const [fetching, setFetching] = useState(false);
 
   // UI state
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users">(
-    "dashboard",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "dashboard" | "users" | "email-confirmation"
+  >("dashboard");
   const [filters, setFilters] = useState({
     role: "" as UserRole | "",
     isPaid: "" as "true" | "false" | "",
@@ -187,21 +188,33 @@ export default function UsersPage() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === "dashboard"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+            activeTab === "dashboard"
               ? "bg-primary-500 text-white shadow-lg shadow-primary-500/25"
               : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+          }`}
         >
           <span>📊</span> Dashboard
         </button>
         <button
           onClick={() => setActiveTab("users")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${activeTab === "users"
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+            activeTab === "users"
               ? "bg-primary-500 text-white shadow-lg shadow-primary-500/25"
               : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
+          }`}
         >
           <span>👤</span> Liste des Utilisateurs
+        </button>
+        <button
+          onClick={() => setActiveTab("email-confirmation")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+            activeTab === "email-confirmation"
+              ? "bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+              : "bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 border border-orange-200 dark:border-orange-500/20"
+          }`}
+        >
+          <span>📧</span> Confirmation Email
         </button>
         <button
           onClick={() => router.push("/users/real")}
@@ -573,6 +586,9 @@ export default function UsersPage() {
           </p>
         </div>
       )}
+
+      {/* Email Confirmation Tab */}
+      {activeTab === "email-confirmation" && <EmailConfirmationPanel />}
 
       {/* Edit Modal */}
       {editingUserId && (
