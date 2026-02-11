@@ -9,9 +9,8 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
+      return NextResponse.json({ error: 'JSON malformé' }, { status: 400 });
     }
-
     const { userId } = body;
 
     if (!userId) {

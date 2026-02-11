@@ -46,30 +46,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé — réservé au propriétaire' }, { status: 403 });
     }
 
-    // Check that the target email belongs to an existing auth user
-    const { data: existingUsers, error: lookupError } =
-      await supabaseAdmin.auth.admin.listUsers();
-
-    if (lookupError) {
-      console.error('Error looking up user by email:', lookupError);
-      return NextResponse.json(
-        { error: `Erreur lors de la recherche de l'utilisateur: ${lookupError.message}` },
-        { status: 400 },
-      );
-    }
-
-    const targetUser = existingUsers.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase(),
-    );
-
-    if (!targetUser) {
-      return NextResponse.json(
-        { error: `Aucun utilisateur trouvé avec l'email: ${email}` },
-        { status: 404 },
-      );
-    }
-
-    // Resend confirmation email
+    // Resend confirmation email (resend will return its own error if user not found)
     const { error: resendError } = await supabaseAdmin.auth.resend({
       type: 'signup',
       email,
