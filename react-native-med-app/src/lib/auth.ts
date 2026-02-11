@@ -134,8 +134,20 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: 'L\'application n\'est pas correctement configurée. Veuillez contacter le support.' }
     }
 
-    // 1. Create auth user with redirect URL for email verification
-    // Redirect to login page instead of auto-signing in
+    // ========================================================================
+    // Step 0: Pre-validate activation key BEFORE creating any user
+    // ========================================================================
+    console.log('[Auth] Pre-validating activation key...')
+    const keyValidation = await validateActivationKey(data.activation_code)
+    if (!keyValidation.valid) {
+      console.error('[Auth] Activation key invalid:', keyValidation.error)
+      return { user: null, error: keyValidation.error || 'Code d\'activation invalide' }
+    }
+    console.log('[Auth] Activation key is valid, proceeding with signup...')
+
+    // ========================================================================
+    // Step 1: Create auth user
+    // ========================================================================
     const redirectUrl = getRedirectUrl('login?verified=true')
     console.log('[Auth] Creating auth user...')
 
@@ -171,13 +183,16 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
       return { user: null, error: 'Échec de la création du compte' }
     }
 
+    const userId = authData.user.id
     console.log('[Auth] Auth user created, creating profile...')
 
-    // 2. Create user profile using RPC function (bypasses RLS issues)
+    // ========================================================================
+    // Step 2: Create user profile
+    // ========================================================================
     try {
       const { data: profileResult, error: profileError } = await supabase
         .rpc('create_user_profile', {
-          p_user_id: authData.user.id,
+          p_user_id: userId,
           p_email: data.email,
           p_full_name: data.full_name,
           p_speciality: data.speciality,
@@ -188,33 +203,42 @@ export async function signUp(data: RegisterFormData): Promise<{ user: User | nul
 
       if (profileError) {
         console.error('[Auth] Profile creation error:', profileError.message)
+        // Rollback: delete the auth user we just created
+        await rollbackAuthUser(userId)
         return { user: null, error: profileError.message }
       }
 
-      // Check if profile creation was successful (RPC returns JSON object)
       const result = profileResult as { success: boolean; message: string } | null
       if (result && !result.success) {
+        await rollbackAuthUser(userId)
         return { user: null, error: result.message || 'Échec de la création du profil' }
       }
     } catch (e: any) {
       console.error('[Auth] Profile creation threw:', e)
+      await rollbackAuthUser(userId)
       return { user: null, error: 'Erreur lors de la création du profil. Veuillez réessayer.' }
     }
 
     console.log('[Auth] Profile created, activating subscription...')
 
-    // 3. Activate subscription with code
-    const activationResult = await activateSubscription(authData.user.id, data.activation_code)
+    // ========================================================================
+    // Step 3: Activate subscription (with p_is_registration flag)
+    // ========================================================================
+    const activationResult = await activateSubscription(userId, data.activation_code, true)
 
     if (!activationResult.success) {
-      return { user: null, error: activationResult.message }
+      console.error('[Auth] Activation failed:', activationResult.message)
+      // Rollback: delete profile and auth user
+      await rollbackUserProfile(userId)
+      await rollbackAuthUser(userId)
+      return { user: null, error: activationResult.message || 'Échec de l\'activation. Veuillez réessayer.' }
     }
 
     console.log('[Auth] Subscription activated')
 
-    // 4. Registration complete - always show email verification screen
-    // We intentionally DO NOT auto-login the user, even if a session exists.
-    // This ensures a consistent UX: register → verify email → login
+    // ========================================================================
+    // Step 4: Registration complete — show email verification screen
+    // ========================================================================
     console.log('[Auth] Sign up complete! Redirecting to email verification screen.')
     return { user: null, error: null, needsEmailVerification: true }
   } catch (error: any) {
@@ -392,6 +416,31 @@ export async function signIn(email: string, password: string): Promise<{ user: U
     if (!userProfile) {
       if (__DEV__) console.error('[Auth] No profile data returned')
       return { user: null, error: 'Profil utilisateur introuvable. Veuillez contacter le support.' }
+    }
+
+    // Step 2.5: Check subscription status (block unpaid users)
+    // Admins, owners, and reviewers bypass this check
+    const isPrivileged = ['admin', 'owner'].includes(userProfile.role) || userProfile.is_reviewer === true
+    if (!isPrivileged && !userProfile.is_paid) {
+      if (__DEV__) console.warn('[Auth] User is not paid, blocking login:', userProfile.email)
+      await supabase.auth.signOut()
+      return {
+        user: null,
+        error: 'Votre abonnement n\'est pas actif. Veuillez activer votre compte avec un code d\'activation lors de l\'inscription.',
+      }
+    }
+
+    // Check subscription expiration
+    if (!isPrivileged && userProfile.subscription_expires_at) {
+      const expiresAt = new Date(userProfile.subscription_expires_at)
+      if (expiresAt < new Date()) {
+        if (__DEV__) console.warn('[Auth] Subscription expired for:', userProfile.email)
+        await supabase.auth.signOut()
+        return {
+          user: null,
+          error: 'Votre abonnement a expiré. Veuillez renouveler votre abonnement.',
+        }
+      }
     }
 
     // Step 3: Check device limit (skip for reviewers)
@@ -625,21 +674,93 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
 // Activate Subscription
 // ============================================================================
 
-export async function activateSubscription(userId: string, keyCode: string): Promise<ActivationResponse> {
+export async function activateSubscription(userId: string, keyCode: string, isRegistration: boolean = false): Promise<ActivationResponse> {
   try {
     const { data, error } = await supabase.rpc('activate_subscription', {
       p_user_id: userId,
       p_key_code: keyCode,
+      p_is_registration: isRegistration,
     })
 
     if (error) {
+      console.error('[Auth] activate_subscription RPC error:', error.message)
       return { success: false, message: error.message }
     }
 
+    if (!data) {
+      console.error('[Auth] activate_subscription returned null data')
+      return { success: false, message: 'Erreur inattendue lors de l\'activation' }
+    }
+
     return data as ActivationResponse
-  } catch (error) {
-    return { success: false, message: 'An unexpected error occurred' }
+  } catch (error: any) {
+    console.error('[Auth] activate_subscription threw:', error)
+    return { success: false, message: 'Une erreur inattendue s\'est produite' }
   }
+}
+
+// ============================================================================
+// Validate Activation Key (Pre-registration check)
+// ============================================================================
+
+interface KeyValidationResult {
+  valid: boolean
+  error: string | null
+}
+
+export async function validateActivationKey(keyCode: string): Promise<KeyValidationResult> {
+  try {
+    const { data, error } = await supabase.rpc('validate_activation_key', {
+      p_key_code: keyCode,
+    })
+
+    if (error) {
+      console.error('[Auth] validate_activation_key RPC error:', error.message)
+      return { valid: false, error: 'Impossible de vérifier le code. Veuillez réessayer.' }
+    }
+
+    if (!data) {
+      return { valid: false, error: 'Impossible de vérifier le code' }
+    }
+
+    return data as KeyValidationResult
+  } catch (error: any) {
+    console.error('[Auth] validate_activation_key threw:', error)
+    return { valid: false, error: 'Erreur de connexion. Veuillez réessayer.' }
+  }
+}
+
+// ============================================================================
+// Rollback Helpers (for failed registration cleanup)
+// ============================================================================
+
+async function rollbackUserProfile(userId: string): Promise<void> {
+  try {
+    console.log('[Auth] Rolling back failed registration for:', userId)
+    const { data, error } = await supabase.rpc('rollback_failed_registration', {
+      p_user_id: userId,
+    })
+    if (error) {
+      console.error('[Auth] Rollback RPC error:', error.message)
+    } else {
+      const result = data as { success: boolean; error?: string }
+      if (result?.success) {
+        console.log('[Auth] Profile rollback successful')
+      } else {
+        console.error('[Auth] Rollback returned:', result?.error)
+      }
+    }
+  } catch (e: any) {
+    console.error('[Auth] Rollback threw:', e)
+  }
+}
+
+async function rollbackAuthUser(userId: string): Promise<void> {
+  // Auth users can't be deleted from the client SDK.
+  // The orphan auth user without a profile can't log in meaningfully
+  // since the signIn flow requires a users table profile.
+  // These can be cleaned up via the Supabase dashboard or a scheduled function.
+  console.log('[Auth] Auth user rollback noted for:', userId, '(orphan — no profile)')
 }
 
 // ============================================================================
