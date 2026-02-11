@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 
 // Unconfirmed user type from our API
@@ -27,6 +27,15 @@ export default function EmailConfirmationPanel() {
   const [successMessages, setSuccessMessages] = useState<
     Record<string, string>
   >({});
+  const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  // Cleanup all pending timeouts on unmount
+  useEffect(() => {
+    const timers = timeoutsRef.current;
+    return () => {
+      Object.values(timers).forEach(clearTimeout);
+    };
+  }, []);
 
   const getAuthToken = useCallback(async (): Promise<string | null> => {
     const {
@@ -107,12 +116,15 @@ export default function EmailConfirmationPanel() {
       }));
 
       // Clear success message after 5 seconds
-      setTimeout(() => {
+      if (timeoutsRef.current[userId])
+        clearTimeout(timeoutsRef.current[userId]);
+      timeoutsRef.current[userId] = setTimeout(() => {
         setSuccessMessages((prev) => {
           const next = { ...prev };
           delete next[userId];
           return next;
         });
+        delete timeoutsRef.current[userId];
       }, 5000);
     } catch (err) {
       setError((err as Error).message);
@@ -153,12 +165,15 @@ export default function EmailConfirmationPanel() {
         [userId]: `📧 Email de confirmation renvoyé à ${email}`,
       }));
 
-      setTimeout(() => {
+      if (timeoutsRef.current[userId])
+        clearTimeout(timeoutsRef.current[userId]);
+      timeoutsRef.current[userId] = setTimeout(() => {
         setSuccessMessages((prev) => {
           const next = { ...prev };
           delete next[userId];
           return next;
         });
+        delete timeoutsRef.current[userId];
       }, 5000);
     } catch (err) {
       setError((err as Error).message);
@@ -278,9 +293,9 @@ export default function EmailConfirmationPanel() {
       )}
 
       {/* Success Messages */}
-      {Object.values(successMessages).map((msg, i) => (
+      {Object.entries(successMessages).map(([userId, msg]) => (
         <div
-          key={i}
+          key={userId}
           className="bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-xl p-3"
         >
           <p className="text-sm text-green-600 dark:text-green-400 font-medium">

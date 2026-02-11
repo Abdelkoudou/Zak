@@ -4,19 +4,27 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    // Parse JSON body with explicit error handling
+    let body: { userId?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
+    }
+
+    const { userId } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'userId requis' }, { status: 400 });
     }
 
-    // Verify the caller is authenticated
+    // Verify the caller is authenticated — robust Bearer extraction
     const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '');
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -48,7 +56,7 @@ export async function POST(request: NextRequest) {
       console.error('Error confirming email:', updateError);
       return NextResponse.json(
         { error: `Erreur lors de la confirmation: ${updateError.message}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 

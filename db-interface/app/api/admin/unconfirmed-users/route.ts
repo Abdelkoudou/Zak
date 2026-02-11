@@ -2,15 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin, verifyOwner } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
 
+const PER_PAGE = 1000;
+const MAX_PAGES = 20; // Safety guard: max 20,000 users
+
 export async function GET(request: NextRequest) {
   try {
-    // Verify the caller is authenticated
+    // Verify the caller is authenticated — robust Bearer extraction
     const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '');
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -32,36 +35,66 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    // Fetch all auth users to check email_confirmed_at
-    // The admin API uses pagination, fetch up to 1000
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
+    // Fetch all auth users with pagination to avoid truncation
+    const allUsers: any[] = [];
+    let page = 1;
+    let truncated = false;
 
-    if (authError) {
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 500 }
-      );
+    while (page <= MAX_PAGES) {
+      const { data: authData, error: authError } =
+        await supabaseAdmin.auth.admin.listUsers({
+          page,
+          perPage: PER_PAGE,
+        });
+
+      if (authError) {
+        return NextResponse.json(
+          { error: authError.message },
+          { status: 500 },
+        );
+      }
+
+      allUsers.push(...authData.users);
+
+      // If we got fewer than PER_PAGE, we've reached the last page
+      if (authData.users.length < PER_PAGE) {
+        break;
+      }
+
+      page++;
+
+      // Safety guard reached
+      if (page > MAX_PAGES) {
+        console.warn(
+          `[unconfirmed-users] Reached max page limit (${MAX_PAGES}). Results may be truncated. Total fetched: ${allUsers.length}`,
+        );
+        truncated = true;
+      }
     }
 
     // Filter to unconfirmed users
-    const unconfirmedAuthUsers = authData.users.filter(
-      (u) => !u.email_confirmed_at
+    const unconfirmedAuthUsers = allUsers.filter(
+      (u) => !u.email_confirmed_at,
     );
 
     if (unconfirmedAuthUsers.length === 0) {
-      return NextResponse.json({ data: [] });
+      return NextResponse.json({ data: [], truncated });
     }
 
-    // Fetch public.users data for these users
+    // Fetch public.users data for these users — with error handling
     const userIds = unconfirmedAuthUsers.map((u) => u.id);
-    const { data: publicUsers } = await supabaseAdmin
+    const { data: publicUsers, error: publicError } = await supabaseAdmin
       .from('users')
       .select('id, email, full_name, role, is_paid, subscription_expires_at, year_of_study, speciality, created_at')
       .in('id', userIds);
+
+    if (publicError) {
+      console.error('Error fetching public user data:', publicError);
+      return NextResponse.json(
+        { error: `Erreur lors de la récupération des données utilisateur: ${publicError.message}` },
+        { status: 500 },
+      );
+    }
 
     // Merge auth + public data
     const merged = unconfirmedAuthUsers.map((authUser) => {
@@ -87,7 +120,7 @@ export async function GET(request: NextRequest) {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    return NextResponse.json({ data: merged });
+    return NextResponse.json({ data: merged, truncated });
   } catch (error) {
     console.error('Fetch unconfirmed users error:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

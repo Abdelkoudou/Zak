@@ -4,19 +4,27 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    // Parse JSON body with explicit error handling
+    let body: { email?: string };
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'Malformed JSON' }, { status: 400 });
+    }
+
+    const { email } = body;
 
     if (!email) {
       return NextResponse.json({ error: 'Email requis' }, { status: 400 });
     }
 
-    // Verify the caller is authenticated
+    // Verify the caller is authenticated — robust Bearer extraction
     const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    const token = authHeader.replace(/^Bearer\s+/i, '');
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -38,6 +46,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Accès refusé — réservé au propriétaire' }, { status: 403 });
     }
 
+    // Check that the target email belongs to an existing auth user
+    const { data: existingUsers, error: lookupError } =
+      await supabaseAdmin.auth.admin.listUsers();
+
+    if (lookupError) {
+      console.error('Error looking up user by email:', lookupError);
+      return NextResponse.json(
+        { error: `Erreur lors de la recherche de l'utilisateur: ${lookupError.message}` },
+        { status: 400 },
+      );
+    }
+
+    const targetUser = existingUsers.users.find(
+      (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    );
+
+    if (!targetUser) {
+      return NextResponse.json(
+        { error: `Aucun utilisateur trouvé avec l'email: ${email}` },
+        { status: 404 },
+      );
+    }
+
     // Resend confirmation email
     const { error: resendError } = await supabaseAdmin.auth.resend({
       type: 'signup',
@@ -46,9 +77,19 @@ export async function POST(request: NextRequest) {
 
     if (resendError) {
       console.error('Error resending confirmation:', resendError);
+
+      // Map known error patterns to appropriate status codes
+      const message = resendError.message.toLowerCase();
+      const status =
+        message.includes('not found') || message.includes('no user')
+          ? 404
+          : message.includes('invalid') || message.includes('validation')
+            ? 422
+            : 500;
+
       return NextResponse.json(
         { error: `Erreur lors du renvoi: ${resendError.message}` },
-        { status: 500 }
+        { status },
       );
     }
 
