@@ -25,8 +25,19 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace(/^Bearer\s+/i, '');
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('[stats] Missing env vars:', {
+        NEXT_PUBLIC_SUPABASE_URL: !!supabaseUrl,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: !!supabaseAnonKey,
+      });
+      return NextResponse.json(
+        { error: 'Configuration serveur manquante (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)' },
+        { status: 500 }
+      );
+    }
 
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
@@ -87,40 +98,46 @@ export async function GET(request: NextRequest) {
     // Users: always fetch all (needed for demographic breakdowns)
     const usersQuery = supabaseAdmin
       .from('users')
-      .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at');
+      .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
+      .limit(10000);
 
     // Questions: apply date filter server-side
     let questionsQuery = supabaseAdmin
       .from('questions')
-      .select('id, module_name, exam_type, year, faculty_source, speciality, created_at');
+      .select('id, module_name, exam_type, year, faculty_source, speciality, created_at')
+      .limit(10000);
     if (dateFrom) questionsQuery = questionsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) questionsQuery = questionsQuery.lte('created_at', dateTo.toISOString());
 
     // Test attempts: filter by completed_at
     let testAttemptsQuery = supabaseAdmin
       .from('test_attempts')
-      .select('id, user_id, module_name, score_percentage, time_spent_seconds, total_questions, correct_answers, completed_at');
+      .select('id, user_id, module_name, score_percentage, time_spent_seconds, total_questions, correct_answers, completed_at')
+      .limit(10000);
     if (dateFrom) testAttemptsQuery = testAttemptsQuery.gte('completed_at', dateFrom.toISOString());
     if (dateTo) testAttemptsQuery = testAttemptsQuery.lte('completed_at', dateTo.toISOString());
 
     // Activation keys: filter by created_at
     let activationKeysQuery = supabaseAdmin
       .from('activation_keys')
-      .select('id, is_used, payment_source, used_at, created_at, faculty_id, sales_point_id');
+      .select('id, is_used, payment_source, used_at, created_at, faculty_id, sales_point_id')
+      .limit(10000);
     if (dateFrom) activationKeysQuery = activationKeysQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) activationKeysQuery = activationKeysQuery.lte('created_at', dateTo.toISOString());
 
     // Device sessions: filter by last_active_at
     let deviceSessionsQuery = supabaseAdmin
       .from('device_sessions')
-      .select('id, user_id, last_active_at, device_name');
+      .select('id, user_id, last_active_at, device_name')
+      .limit(10000);
     if (dateFrom) deviceSessionsQuery = deviceSessionsQuery.gte('last_active_at', dateFrom.toISOString());
     if (dateTo) deviceSessionsQuery = deviceSessionsQuery.lte('last_active_at', dateTo.toISOString());
 
     // Online payments: filter by created_at
     let onlinePaymentsQuery = supabaseAdmin
       .from('online_payments')
-      .select('id, status, amount, payment_method, created_at, paid_at');
+      .select('id, status, amount, payment_method, created_at, paid_at')
+      .limit(10000);
     if (dateFrom) onlinePaymentsQuery = onlinePaymentsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) onlinePaymentsQuery = onlinePaymentsQuery.lte('created_at', dateTo.toISOString());
 
@@ -132,40 +149,46 @@ export async function GET(request: NextRequest) {
     // Saved questions
     let savedQuestionsQuery = supabaseAdmin
       .from('saved_questions')
-      .select('id, created_at');
+      .select('id, created_at')
+      .limit(10000);
     if (dateFrom) savedQuestionsQuery = savedQuestionsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) savedQuestionsQuery = savedQuestionsQuery.lte('created_at', dateTo.toISOString());
 
     // Question reports
     let questionReportsQuery = supabaseAdmin
       .from('question_reports')
-      .select('id, status, created_at');
+      .select('id, status, created_at')
+      .limit(10000);
     if (dateFrom) questionReportsQuery = questionReportsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) questionReportsQuery = questionReportsQuery.lte('created_at', dateTo.toISOString());
 
     // User feedback
     let feedbackQuery = supabaseAdmin
       .from('user_feedback')
-      .select('id, feedback_type, rating, created_at');
+      .select('id, feedback_type, rating, created_at')
+      .limit(10000);
     if (dateFrom) feedbackQuery = feedbackQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) feedbackQuery = feedbackQuery.lte('created_at', dateTo.toISOString());
 
     // Chat logs
     let chatLogsQuery = supabaseAdmin
       .from('chat_logs')
-      .select('id, created_at');
+      .select('id, created_at')
+      .limit(10000);
     if (dateFrom) chatLogsQuery = chatLogsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) chatLogsQuery = chatLogsQuery.lte('created_at', dateTo.toISOString());
 
     // Also fetch unfiltered activation keys for timeline (used_at filter is different)
     const allActivationKeysQuery = supabaseAdmin
       .from('activation_keys')
-      .select('id, is_used, used_at, created_at');
+      .select('id, is_used, used_at, created_at')
+      .limit(10000);
 
     // Also fetch all device sessions for active users calculation
     const allDeviceSessionsQuery = supabaseAdmin
       .from('device_sessions')
-      .select('id, user_id, last_active_at');
+      .select('id, user_id, last_active_at')
+      .limit(10000);
 
     // ── 4. Execute all queries in parallel ──────────────────────────
     const [
@@ -256,27 +279,30 @@ export async function GET(request: NextRequest) {
       usersBySpeciality[key] = (usersBySpeciality[key] || 0) + 1;
     });
 
-    // Questions by module
+    // Questions by module (normalize null keys)
     const questionsByModule: Record<string, number> = {};
     questions.forEach((q) => {
-      questionsByModule[q.module_name] = (questionsByModule[q.module_name] || 0) + 1;
+      const key = q.module_name ?? 'Inconnu';
+      questionsByModule[key] = (questionsByModule[key] || 0) + 1;
     });
 
-    // Questions by exam type
+    // Questions by exam type (normalize null keys)
     const questionsByExamType: Record<string, number> = {};
     questions.forEach((q) => {
-      questionsByExamType[q.exam_type] = (questionsByExamType[q.exam_type] || 0) + 1;
+      const key = q.exam_type ?? 'Inconnu';
+      questionsByExamType[key] = (questionsByExamType[key] || 0) + 1;
     });
 
     // Test attempts by module
     const attemptsByModule: Record<string, { attempts: number; totalScore: number; uniqueUsers: Set<string> }> = {};
     testAttempts.forEach((t) => {
-      if (!attemptsByModule[t.module_name]) {
-        attemptsByModule[t.module_name] = { attempts: 0, totalScore: 0, uniqueUsers: new Set() };
+      const key = t.module_name ?? 'Inconnu';
+      if (!attemptsByModule[key]) {
+        attemptsByModule[key] = { attempts: 0, totalScore: 0, uniqueUsers: new Set() };
       }
-      attemptsByModule[t.module_name].attempts += 1;
-      attemptsByModule[t.module_name].totalScore += Number(t.score_percentage);
-      attemptsByModule[t.module_name].uniqueUsers.add(t.user_id);
+      attemptsByModule[key].attempts += 1;
+      attemptsByModule[key].totalScore += Number(t.score_percentage);
+      attemptsByModule[key].uniqueUsers.add(t.user_id);
     });
 
     const topModulesByAttempts = Object.entries(attemptsByModule)
