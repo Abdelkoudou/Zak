@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import {
@@ -250,22 +250,46 @@ export default function StatisticsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  // Persist last-used filter params for retry
+  const lastFilterRef = useRef<{ from: string | null; to: string | null }>({
+    from: null,
+    to: null,
+  });
 
   const fetchStats = useCallback(
     async (from?: string | null, to?: string | null) => {
       setLoading(true);
       setError(null);
+      // Persist filter params for retry
+      lastFilterRef.current = { from: from ?? null, to: to ?? null };
       try {
+        // Get current session for auth header
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          setError("Session expirée. Veuillez vous reconnecter.");
+          setLoading(false);
+          return;
+        }
+
         const params = new URLSearchParams();
         if (from) params.set("from", from);
         if (to) params.set("to", to);
         const qs = params.toString();
-        const res = await fetch(`/api/stats${qs ? `?${qs}` : ""}`);
-        if (!res.ok) throw new Error("Failed to fetch statistics");
+        const res = await fetch(`/api/stats${qs ? `?${qs}` : ""}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Erreur ${res.status}`);
+        }
         const json = await res.json();
         setData(json);
       } catch (err: any) {
-        setError(err.message || "Unknown error");
+        setError(err.message || "Erreur inconnue");
       } finally {
         setLoading(false);
       }
@@ -276,25 +300,45 @@ export default function StatisticsPage() {
   // Auth check + initial load
   useEffect(() => {
     const checkAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) {
-        router.push("/login");
-        return;
-      }
-      const { data: user } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", session.user.id)
-        .single();
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error("[stats] Session error:", sessionError);
+          router.push("/login");
+          return;
+        }
+        if (!session) {
+          router.push("/login");
+          return;
+        }
 
-      if (!user || user.role !== "owner") {
-        router.push("/");
-        return;
-      }
+        const { data: user, error: userError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", session.user.id)
+          .single();
 
-      fetchStats();
+        if (userError) {
+          console.error("[stats] User query error:", userError);
+          setError("Impossible de vérifier votre rôle.");
+          setLoading(false);
+          return;
+        }
+
+        if (!user || user.role !== "owner") {
+          router.push("/");
+          return;
+        }
+
+        fetchStats();
+      } catch (err: any) {
+        console.error("[stats] Auth check failed:", err);
+        setError("Erreur d'authentification.");
+        setLoading(false);
+      }
     };
     checkAuth();
   }, [router, fetchStats]);
@@ -323,7 +367,9 @@ export default function StatisticsPage() {
             {error || "Données indisponibles."}
           </p>
           <button
-            onClick={() => fetchStats()}
+            onClick={() =>
+              fetchStats(lastFilterRef.current.from, lastFilterRef.current.to)
+            }
             className="px-5 py-2.5 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors"
           >
             Réessayer

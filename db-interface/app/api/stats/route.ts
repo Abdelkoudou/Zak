@@ -1,35 +1,173 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { supabaseAdmin, verifyOwner } from '@/lib/supabase-admin';
+import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+// ── Helper: validate a Supabase query result ────────────────────────
+function checkResult<T>(
+  result: { data: T | null; error: any },
+  queryName: string
+): T {
+  if (result.error) {
+    console.error(`[stats] Query "${queryName}" failed:`, result.error);
+    throw new Error(`Query "${queryName}" failed: ${result.error.message}`);
+  }
+  return result.data ?? ([] as unknown as T);
+}
+
 export async function GET(request: NextRequest) {
   try {
-    // Parse date filter from query params
+    // ── 1. Auth gate: verify caller is authenticated owner ──────────
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+    });
+
+    const { data: { user: currentUser } } = await supabaseClient.auth.getUser();
+    if (!currentUser) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const { isOwner } = await verifyOwner(currentUser.id);
+    if (!isOwner) {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    // ── 2. Parse & validate date filters ────────────────────────────
     const { searchParams } = new URL(request.url);
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
 
-    const dateFrom = fromParam ? new Date(fromParam) : null;
-    const dateTo = toParam ? new Date(toParam) : null;
+    let dateFrom: Date | null = null;
+    let dateTo: Date | null = null;
 
-    // Helper: check if a date string falls within the filter range
-    function inRange(dateStr: string | null | undefined): boolean {
+    if (fromParam) {
+      dateFrom = new Date(fromParam);
+      if (isNaN(dateFrom.getTime())) {
+        return NextResponse.json(
+          { error: `Paramètre "from" invalide: "${fromParam}"` },
+          { status: 400 }
+        );
+      }
+    }
+    if (toParam) {
+      dateTo = new Date(toParam);
+      if (isNaN(dateTo.getTime())) {
+        return NextResponse.json(
+          { error: `Paramètre "to" invalide: "${toParam}"` },
+          { status: 400 }
+        );
+      }
+      // Set to end of day for inclusive filtering
+      dateTo.setHours(23, 59, 59, 999);
+    }
+
+    const hasDateFilter = !!(dateFrom || dateTo);
+
+    // Helper: check if a date falls within range
+    function inRangeOrNoFilter(dateStr: string | null | undefined): boolean {
+      if (!hasDateFilter) return true;
       if (!dateStr) return false;
-      if (!dateFrom && !dateTo) return true;
       const d = new Date(dateStr);
       if (dateFrom && d < dateFrom) return false;
       if (dateTo && d > dateTo) return false;
       return true;
     }
 
-    // Helper: check if a date falls within range (always true when no filter)
-    function inRangeOrNoFilter(dateStr: string | null | undefined): boolean {
-      if (!dateFrom && !dateTo) return true;
-      return inRange(dateStr);
-    }
+    // ── 3. Build server-side filtered queries ───────────────────────
+    // Users: always fetch all (needed for demographic breakdowns)
+    const usersQuery = supabaseAdmin
+      .from('users')
+      .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at');
 
-    // Run all queries in parallel for performance
+    // Questions: apply date filter server-side
+    let questionsQuery = supabaseAdmin
+      .from('questions')
+      .select('id, module_name, exam_type, year, faculty_source, speciality, created_at');
+    if (dateFrom) questionsQuery = questionsQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) questionsQuery = questionsQuery.lte('created_at', dateTo.toISOString());
+
+    // Test attempts: filter by completed_at
+    let testAttemptsQuery = supabaseAdmin
+      .from('test_attempts')
+      .select('id, user_id, module_name, score_percentage, time_spent_seconds, total_questions, correct_answers, completed_at');
+    if (dateFrom) testAttemptsQuery = testAttemptsQuery.gte('completed_at', dateFrom.toISOString());
+    if (dateTo) testAttemptsQuery = testAttemptsQuery.lte('completed_at', dateTo.toISOString());
+
+    // Activation keys: filter by created_at
+    let activationKeysQuery = supabaseAdmin
+      .from('activation_keys')
+      .select('id, is_used, payment_source, used_at, created_at, faculty_id, sales_point_id');
+    if (dateFrom) activationKeysQuery = activationKeysQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) activationKeysQuery = activationKeysQuery.lte('created_at', dateTo.toISOString());
+
+    // Device sessions: filter by last_active_at
+    let deviceSessionsQuery = supabaseAdmin
+      .from('device_sessions')
+      .select('id, user_id, last_active_at, device_name');
+    if (dateFrom) deviceSessionsQuery = deviceSessionsQuery.gte('last_active_at', dateFrom.toISOString());
+    if (dateTo) deviceSessionsQuery = deviceSessionsQuery.lte('last_active_at', dateTo.toISOString());
+
+    // Online payments: filter by created_at
+    let onlinePaymentsQuery = supabaseAdmin
+      .from('online_payments')
+      .select('id, status, amount, payment_method, created_at, paid_at');
+    if (dateFrom) onlinePaymentsQuery = onlinePaymentsQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) onlinePaymentsQuery = onlinePaymentsQuery.lte('created_at', dateTo.toISOString());
+
+    // Modules: small table, no filter needed
+    const modulesQuery = supabaseAdmin
+      .from('modules')
+      .select('id, name, year, type');
+
+    // Saved questions
+    let savedQuestionsQuery = supabaseAdmin
+      .from('saved_questions')
+      .select('id, created_at');
+    if (dateFrom) savedQuestionsQuery = savedQuestionsQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) savedQuestionsQuery = savedQuestionsQuery.lte('created_at', dateTo.toISOString());
+
+    // Question reports
+    let questionReportsQuery = supabaseAdmin
+      .from('question_reports')
+      .select('id, status, created_at');
+    if (dateFrom) questionReportsQuery = questionReportsQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) questionReportsQuery = questionReportsQuery.lte('created_at', dateTo.toISOString());
+
+    // User feedback
+    let feedbackQuery = supabaseAdmin
+      .from('user_feedback')
+      .select('id, feedback_type, rating, created_at');
+    if (dateFrom) feedbackQuery = feedbackQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) feedbackQuery = feedbackQuery.lte('created_at', dateTo.toISOString());
+
+    // Chat logs
+    let chatLogsQuery = supabaseAdmin
+      .from('chat_logs')
+      .select('id, created_at');
+    if (dateFrom) chatLogsQuery = chatLogsQuery.gte('created_at', dateFrom.toISOString());
+    if (dateTo) chatLogsQuery = chatLogsQuery.lte('created_at', dateTo.toISOString());
+
+    // Also fetch unfiltered activation keys for timeline (used_at filter is different)
+    const allActivationKeysQuery = supabaseAdmin
+      .from('activation_keys')
+      .select('id, is_used, used_at, created_at');
+
+    // Also fetch all device sessions for active users calculation
+    const allDeviceSessionsQuery = supabaseAdmin
+      .from('device_sessions')
+      .select('id, user_id, last_active_at');
+
+    // ── 4. Execute all queries in parallel ──────────────────────────
     const [
       usersResult,
       questionsResult,
@@ -42,88 +180,49 @@ export async function GET(request: NextRequest) {
       questionReportsResult,
       feedbackResult,
       chatLogsResult,
+      allActivationKeysResult,
+      allDeviceSessionsResult,
     ] = await Promise.all([
-      supabaseAdmin
-        .from('users')
-        .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at'),
-      supabaseAdmin
-        .from('questions')
-        .select('id, module_name, exam_type, year, faculty_source, speciality, created_at'),
-      supabaseAdmin
-        .from('test_attempts')
-        .select('id, user_id, module_name, score_percentage, time_spent_seconds, total_questions, correct_answers, completed_at'),
-      supabaseAdmin
-        .from('activation_keys')
-        .select('id, is_used, payment_source, used_at, created_at, faculty_id, sales_point_id'),
-      supabaseAdmin
-        .from('device_sessions')
-        .select('id, user_id, last_active_at, device_name'),
-      supabaseAdmin
-        .from('online_payments')
-        .select('id, status, amount, payment_method, created_at, paid_at'),
-      supabaseAdmin
-        .from('modules')
-        .select('id, name, year, type'),
-      supabaseAdmin
-        .from('saved_questions')
-        .select('id, created_at'),
-      supabaseAdmin
-        .from('question_reports')
-        .select('id, status, created_at'),
-      supabaseAdmin
-        .from('user_feedback')
-        .select('id, feedback_type, rating, created_at'),
-      supabaseAdmin
-        .from('chat_logs')
-        .select('id, created_at'),
+      usersQuery,
+      questionsQuery,
+      testAttemptsQuery,
+      activationKeysQuery,
+      deviceSessionsQuery,
+      onlinePaymentsQuery,
+      modulesQuery,
+      savedQuestionsQuery,
+      questionReportsQuery,
+      feedbackQuery,
+      chatLogsQuery,
+      allActivationKeysQuery,
+      allDeviceSessionsQuery,
     ]);
 
-    const allUsers = usersResult.data || [];
-    const allQuestions = questionsResult.data || [];
-    const allTestAttempts = testAttemptsResult.data || [];
-    const allActivationKeys = activationKeysResult.data || [];
-    const allDeviceSessions = deviceSessionsResult.data || [];
-    const allOnlinePayments = onlinePaymentsResult.data || [];
-    const modules = modulesResult.data || [];
-    const allSavedQuestions = savedQuestionsResult.data || [];
-    const allQuestionReports = questionReportsResult.data || [];
-    const allFeedback = feedbackResult.data || [];
-    const allChatLogs = chatLogsResult.data || [];
+    // ── 5. Validate all query results ───────────────────────────────
+    const allUsers = checkResult(usersResult, 'users');
+    const questions = checkResult(questionsResult, 'questions');
+    const testAttempts = checkResult(testAttemptsResult, 'test_attempts');
+    const activationKeys = checkResult(activationKeysResult, 'activation_keys');
+    const deviceSessions = checkResult(deviceSessionsResult, 'device_sessions');
+    const onlinePayments = checkResult(onlinePaymentsResult, 'online_payments');
+    const modules = checkResult(modulesResult, 'modules');
+    const savedQuestions = checkResult(savedQuestionsResult, 'saved_questions');
+    const questionReports = checkResult(questionReportsResult, 'question_reports');
+    const feedback = checkResult(feedbackResult, 'user_feedback');
+    const chatLogs = checkResult(chatLogsResult, 'chat_logs');
+    const allActivationKeys = checkResult(allActivationKeysResult, 'activation_keys (all)');
+    const allDeviceSessions = checkResult(allDeviceSessionsResult, 'device_sessions (all)');
 
-    // Apply date filters to time-sensitive data
-    // Users: filter by created_at (registrations in range)
+    // ── 6. Compute stats ────────────────────────────────────────────
     const allStudents = allUsers.filter((u) => u.role === 'student');
     const students = allStudents.filter((s) => s.is_paid && s.faculty && s.faculty.trim() !== '');
     const studentsInRange = students.filter((u) => inRangeOrNoFilter(u.created_at));
-
-    // Questions created in range
-    const questions = allQuestions.filter((q) => inRangeOrNoFilter(q.created_at));
-
-    // Test attempts completed in range
-    const testAttempts = allTestAttempts.filter((t) => inRangeOrNoFilter(t.completed_at));
-
-    // Activation keys created in range
-    const activationKeys = allActivationKeys.filter((k) => inRangeOrNoFilter(k.created_at));
-
-    // Device sessions active in range
-    const deviceSessions = allDeviceSessions.filter((s) => inRangeOrNoFilter(s.last_active_at));
-
-    // Online payments in range
-    const onlinePayments = allOnlinePayments.filter((p) => inRangeOrNoFilter(p.created_at));
-
-    // Other tables filtered by created_at
-    const savedQuestions = allSavedQuestions.filter((s) => inRangeOrNoFilter(s.created_at));
-    const questionReports = allQuestionReports.filter((r) => inRangeOrNoFilter(r.created_at));
-    const feedback = allFeedback.filter((f) => inRangeOrNoFilter(f.created_at));
-    const chatLogs = allChatLogs.filter((c) => inRangeOrNoFilter(c.created_at));
-
-    // --- Computed Stats ---
 
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Active users (always based on real-time, not date filter)
+    // Active users (always real-time)
     const activeUsersLast7Days = new Set(
       allDeviceSessions
         .filter((s) => new Date(s.last_active_at) > sevenDaysAgo)
@@ -136,7 +235,7 @@ export async function GET(request: NextRequest) {
         .map((s) => s.user_id)
     ).size;
 
-    // Users by faculty (use all students for distribution, not filtered)
+    // Users by faculty
     const usersByFaculty: Record<string, number> = {};
     students.forEach((u) => {
       const key = u.faculty || 'Non renseigné';
@@ -157,19 +256,19 @@ export async function GET(request: NextRequest) {
       usersBySpeciality[key] = (usersBySpeciality[key] || 0) + 1;
     });
 
-    // Questions by module (filtered)
+    // Questions by module
     const questionsByModule: Record<string, number> = {};
     questions.forEach((q) => {
       questionsByModule[q.module_name] = (questionsByModule[q.module_name] || 0) + 1;
     });
 
-    // Questions by exam type (filtered)
+    // Questions by exam type
     const questionsByExamType: Record<string, number> = {};
     questions.forEach((q) => {
       questionsByExamType[q.exam_type] = (questionsByExamType[q.exam_type] || 0) + 1;
     });
 
-    // Test attempts by module (filtered)
+    // Test attempts by module
     const attemptsByModule: Record<string, { attempts: number; totalScore: number; uniqueUsers: Set<string> }> = {};
     testAttempts.forEach((t) => {
       if (!attemptsByModule[t.module_name]) {
@@ -190,14 +289,14 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.attempts - a.attempts)
       .slice(0, 10);
 
-    // Avg score & time (filtered)
+    // Avg score & time
     const totalScore = testAttempts.reduce((sum, t) => sum + Number(t.score_percentage), 0);
     const avgScore = testAttempts.length > 0 ? Math.round(totalScore / testAttempts.length * 10) / 10 : 0;
     const totalTimeSeconds = testAttempts.reduce((sum, t) => sum + (t.time_spent_seconds || 0), 0);
     const avgTimeSeconds = testAttempts.length > 0 ? Math.round(totalTimeSeconds / testAttempts.length) : 0;
     const totalQuestionsAnswered = testAttempts.reduce((sum, t) => sum + t.total_questions, 0);
 
-    // User registrations by month (filtered)
+    // Registrations by month
     const registrationsByMonth: Record<string, number> = {};
     studentsInRange.forEach((u) => {
       if (u.created_at) {
@@ -210,7 +309,7 @@ export async function GET(request: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, count]) => ({ month, count }));
 
-    // Activation key usage over time (filtered by used_at)
+    // Activation key usage over time
     const activationsByMonth: Record<string, number> = {};
     allActivationKeys
       .filter((k) => k.is_used && k.used_at && inRangeOrNoFilter(k.used_at))
@@ -223,17 +322,17 @@ export async function GET(request: NextRequest) {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, count]) => ({ month, count }));
 
-    // Activation key breakdown (filtered)
+    // Activation key breakdown
     const keysUsed = activationKeys.filter((k) => k.is_used).length;
     const keysUnused = activationKeys.filter((k) => !k.is_used).length;
     const keysManual = activationKeys.filter((k) => k.payment_source === 'manual').length;
     const keysOnline = activationKeys.filter((k) => k.payment_source === 'online').length;
 
-    // Online payments stats (filtered)
+    // Online payments stats
     const paidPayments = onlinePayments.filter((p) => p.status === 'paid');
     const totalOnlineRevenue = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
-    // Subscription status (always current snapshot, only paid students)
+    // Subscription status (always current snapshot)
     const expiredSubs = students.filter(
       (s) => s.subscription_expires_at && new Date(s.subscription_expires_at) < now
     ).length;
@@ -242,12 +341,11 @@ export async function GET(request: NextRequest) {
       dateFilter: {
         from: fromParam || null,
         to: toParam || null,
-        applied: !!(fromParam || toParam),
+        applied: hasDateFilter,
       },
       overview: {
         totalStudents: students.length,
         newStudentsInRange: studentsInRange.length,
-
         expiredSubscriptions: expiredSubs,
         totalQuestions: questions.length,
         totalModules: modules.length,
@@ -303,10 +401,10 @@ export async function GET(request: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('Stats API Error:', error);
+  } catch (error: any) {
+    console.error('[stats] API Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch statistics' },
+      { error: error.message || 'Failed to fetch statistics' },
       { status: 500 }
     );
   }
