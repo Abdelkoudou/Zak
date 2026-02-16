@@ -1,9 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface Plan {
+  id: string;
+  name: string;
+  duration: string;
+  durationDays: number;
+  amount: number;
+  amountFormatted: string;
+  label: string;
+  isFeatured: boolean;
+  description: string | null;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
 
 const FEATURES = [
   {
@@ -26,15 +46,81 @@ const FEATURES = [
   { icon: "🔄", text: "Mises à jour du contenu" },
 ];
 
+// Fallback plan if API fails
+const FALLBACK_PLANS: Plan[] = [
+  {
+    id: "fallback-365",
+    name: "1 An",
+    duration: "365",
+    durationDays: 365,
+    amount: 1000,
+    amountFormatted: "1000 DA",
+    label: "1 An - 1000 DA",
+    isFeatured: true,
+    description: "Accès pendant 1 an",
+  },
+];
+
+// ============================================================================
+// Duration label helper
+// ============================================================================
+
+function formatDuration(days: number): string {
+  if (days >= 365) {
+    const years = Math.floor(days / 365);
+    return years === 1 ? "1 an" : `${years} ans`;
+  }
+  if (days >= 30) {
+    const months = Math.round(days / 30);
+    return `${months} mois`;
+  }
+  return `${days} jours`;
+}
+
+// ============================================================================
+// Component
+// ============================================================================
+
 export default function BuyPage() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [plansLoading, setPlansLoading] = useState(true);
+
+  // Fetch plans on mount
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const response = await fetch("/api/payments/create-checkout");
+        if (!response.ok) throw new Error("Failed to fetch plans");
+        const data = await response.json();
+
+        if (data.plans && data.plans.length > 0) {
+          setPlans(data.plans);
+          // Default to featured plan, or first
+          const featured = data.plans.find((p: Plan) => p.isFeatured);
+          setSelectedPlan(featured || data.plans[0]);
+        } else {
+          setPlans(FALLBACK_PLANS);
+          setSelectedPlan(FALLBACK_PLANS[0]);
+        }
+      } catch {
+        setPlans(FALLBACK_PLANS);
+        setSelectedPlan(FALLBACK_PLANS[0]);
+      } finally {
+        setPlansLoading(false);
+      }
+    }
+    fetchPlans();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedPlan) return;
     setError(null);
     setLoading(true);
 
@@ -52,9 +138,9 @@ export default function BuyPage() {
           customerEmail: email,
           customerName: name || undefined,
           customerPhone: phone || undefined,
-          duration: "365",
+          duration: selectedPlan.duration,
           locale: "fr",
-          userId: userId, // Pass student user ID for automatic activation
+          userId: userId,
         }),
       });
 
@@ -128,7 +214,7 @@ export default function BuyPage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               <span className="text-emerald-400 text-sm font-medium">
-                Paiement unique • Accès jusqu&apos;à la fin d&apos;année
+                Paiement unique • Activation instantanée
               </span>
             </div>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 tracking-tight">
@@ -146,6 +232,85 @@ export default function BuyPage() {
           <div className="grid lg:grid-cols-5 gap-8 items-start">
             {/* Features Card - Left Side */}
             <div className="lg:col-span-3 space-y-6 order-2 lg:order-1">
+              {/* Plan Selector Cards */}
+              {!plansLoading && plans.length > 1 && (
+                <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                      <svg
+                        className="w-4 h-4 text-emerald-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                        />
+                      </svg>
+                    </span>
+                    Choisissez votre offre
+                  </h3>
+                  <div className="grid gap-3">
+                    {plans.map((plan) => (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setSelectedPlan(plan)}
+                        className={`relative flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${
+                          selectedPlan?.id === plan.id
+                            ? "border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
+                            : "border-slate-700/50 bg-slate-800/50 hover:border-slate-600/50"
+                        }`}
+                      >
+                        {/* Radio circle */}
+                        <div
+                          className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                            selectedPlan?.id === plan.id
+                              ? "border-emerald-500"
+                              : "border-slate-500"
+                          }`}
+                        >
+                          {selectedPlan?.id === plan.id && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          )}
+                        </div>
+
+                        {/* Plan info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-white">
+                              {plan.name}
+                            </span>
+                            {plan.isFeatured && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                ⭐ Populaire
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-slate-400 mt-0.5">
+                            {formatDuration(plan.durationDays)}
+                            {plan.description && ` • ${plan.description}`}
+                          </p>
+                        </div>
+
+                        {/* Price */}
+                        <div className="flex-shrink-0 text-right">
+                          <span className="text-xl font-bold text-white">
+                            {plan.amount}
+                          </span>
+                          <span className="text-sm text-slate-400 ml-1">
+                            DA
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Features List */}
               <div className="bg-slate-800/60 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
                 <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -223,22 +388,33 @@ export default function BuyPage() {
               <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl shadow-black/20">
                 {/* Price Display */}
                 <div className="text-center mb-6 pb-6 border-b border-slate-100">
-                  <div className="inline-block bg-emerald-50 rounded-full px-4 py-1.5 mb-3">
-                    <span className="text-emerald-600 text-xs font-bold uppercase tracking-wider">
-                      Abonnement Annuel
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-center gap-1">
-                    <span className="text-5xl font-bold text-slate-900">
-                      1000
-                    </span>
-                    <span className="text-xl text-slate-500 font-medium">
-                      DA
-                    </span>
-                  </div>
-                  <p className="text-slate-500 text-sm mt-1">
-                    Paiement unique • Accès jusqu&apos;à fin d&apos;année
-                  </p>
+                  {plansLoading ? (
+                    <div className="animate-pulse">
+                      <div className="h-6 bg-slate-200 rounded-full w-32 mx-auto mb-3" />
+                      <div className="h-12 bg-slate-200 rounded-lg w-24 mx-auto mb-1" />
+                      <div className="h-4 bg-slate-100 rounded w-40 mx-auto" />
+                    </div>
+                  ) : selectedPlan ? (
+                    <>
+                      <div className="inline-block bg-emerald-50 rounded-full px-4 py-1.5 mb-3">
+                        <span className="text-emerald-600 text-xs font-bold uppercase tracking-wider">
+                          {selectedPlan.name}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-5xl font-bold text-slate-900">
+                          {selectedPlan.amount}
+                        </span>
+                        <span className="text-xl text-slate-500 font-medium">
+                          DA
+                        </span>
+                      </div>
+                      <p className="text-slate-500 text-sm mt-1">
+                        Paiement unique •{" "}
+                        {formatDuration(selectedPlan.durationDays)}
+                      </p>
+                    </>
+                  ) : null}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -303,24 +479,29 @@ export default function BuyPage() {
                   )}
 
                   {/* Order Summary */}
-                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    <div className="flex justify-between items-center mb-2 text-sm">
-                      <span className="text-slate-600">Abonnement 1 an</span>
-                      <span className="font-medium text-slate-900">
-                        1000 DA
-                      </span>
+                  {selectedPlan && (
+                    <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                      <div className="flex justify-between items-center mb-2 text-sm">
+                        <span className="text-slate-600">
+                          {selectedPlan.name} (
+                          {formatDuration(selectedPlan.durationDays)})
+                        </span>
+                        <span className="font-medium text-slate-900">
+                          {selectedPlan.amount} DA
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                        <span className="font-bold text-slate-900">Total</span>
+                        <span className="text-xl font-bold text-emerald-600">
+                          {selectedPlan.amount} DA
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                      <span className="font-bold text-slate-900">Total</span>
-                      <span className="text-xl font-bold text-emerald-600">
-                        1000 DA
-                      </span>
-                    </div>
-                  </div>
+                  )}
 
                   <button
                     type="submit"
-                    disabled={loading || !email}
+                    disabled={loading || !email || !selectedPlan}
                     className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-emerald-600 hover:to-teal-600 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-3"
                   >
                     {loading ? (
@@ -361,7 +542,7 @@ export default function BuyPage() {
                             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                           />
                         </svg>
-                        Payer 1000 DA
+                        Payer {selectedPlan?.amount ?? ""} DA
                       </>
                     )}
                   </button>
