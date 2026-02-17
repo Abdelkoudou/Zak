@@ -1860,6 +1860,45 @@ COMMENT ON TABLE "public"."saved_questions" IS 'User bookmarked questions';
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."subscription_plans" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "name" "text" NOT NULL,
+    "duration_days" integer NOT NULL,
+    "price" integer NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_featured" boolean DEFAULT false NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "subscription_plans_duration_days_check" CHECK (("duration_days" > 0)),
+    CONSTRAINT "subscription_plans_price_check" CHECK (("price" > 0))
+);
+
+
+ALTER TABLE "public"."subscription_plans" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."subscription_plans" IS 'Dynamic subscription plans configurable by the owner from the admin settings page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."duration_days" IS 'Number of days the subscription lasts (owner sets freely)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."price" IS 'Price in DZD (whole dinars, not centimes)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_active" IS 'Whether this plan is shown on the buy page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_featured" IS 'Whether to show a highlight badge on the buy page';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."test_attempts" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2058,6 +2097,11 @@ ALTER TABLE ONLY "public"."saved_questions"
 
 ALTER TABLE ONLY "public"."saved_questions"
     ADD CONSTRAINT "saved_questions_user_id_question_id_key" UNIQUE ("user_id", "question_id");
+
+
+
+ALTER TABLE ONLY "public"."subscription_plans"
+    ADD CONSTRAINT "subscription_plans_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2397,6 +2441,14 @@ CREATE INDEX "idx_saved_questions_user" ON "public"."saved_questions" USING "btr
 
 
 
+CREATE INDEX "idx_subscription_plans_active" ON "public"."subscription_plans" USING "btree" ("is_active");
+
+
+
+CREATE INDEX "idx_subscription_plans_sort" ON "public"."subscription_plans" USING "btree" ("sort_order");
+
+
+
 CREATE INDEX "idx_test_attempts_completed" ON "public"."test_attempts" USING "btree" ("completed_at");
 
 
@@ -2502,6 +2554,10 @@ CREATE OR REPLACE TRIGGER "update_resources_updated_at" BEFORE UPDATE ON "public
 
 
 CREATE OR REPLACE TRIGGER "update_sales_points_updated_at" BEFORE UPDATE ON "public"."sales_points" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_subscription_plans_updated_at" BEFORE UPDATE ON "public"."subscription_plans" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -2724,6 +2780,10 @@ CREATE POLICY "Allow update for owners" ON "public"."app_config" FOR UPDATE USIN
 
 
 
+CREATE POLICY "Anyone can read subscription plans" ON "public"."subscription_plans" FOR SELECT USING (true);
+
+
+
 CREATE POLICY "Authenticated users insert courses" ON "public"."courses" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
 
 
@@ -2756,6 +2816,12 @@ CREATE POLICY "Managers can update resources" ON "public"."course_resources" FOR
 
 
 
+CREATE POLICY "Owners can create plans" ON "public"."subscription_plans" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
 CREATE POLICY "Owners can delete chat logs" ON "public"."chat_logs" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_owner"() AS "is_owner"));
 
 
@@ -2770,11 +2836,23 @@ CREATE POLICY "Owners can delete feedback" ON "public"."user_feedback" FOR DELET
 
 
 
+CREATE POLICY "Owners can delete plans" ON "public"."subscription_plans" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
 CREATE POLICY "Owners can update courses" ON "public"."courses" FOR UPDATE TO "authenticated" USING ("public"."is_owner"()) WITH CHECK ("public"."is_owner"());
 
 
 
 CREATE POLICY "Owners can update feedback" ON "public"."user_feedback" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
+CREATE POLICY "Owners can update plans" ON "public"."subscription_plans" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."users"
   WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
 
@@ -3032,6 +3110,9 @@ ALTER TABLE "public"."sales_points" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."saved_questions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."subscription_plans" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."test_attempts" ENABLE ROW LEVEL SECURITY;
@@ -3966,6 +4047,12 @@ GRANT ALL ON TABLE "public"."sales_point_stats" TO "service_role";
 GRANT ALL ON TABLE "public"."saved_questions" TO "anon";
 GRANT ALL ON TABLE "public"."saved_questions" TO "authenticated";
 GRANT ALL ON TABLE "public"."saved_questions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."subscription_plans" TO "anon";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "authenticated";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "service_role";
 
 
 
