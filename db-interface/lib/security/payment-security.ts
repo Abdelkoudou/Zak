@@ -206,10 +206,3 @@ export const RATE_LIMITS = {
   // Create checkout: 100 per hour per IP
   CREATE_PER_IP: { maxRequests: 100, windowMs: 3600000 },
 } as const;
-
-export const VALID_DURATIONS = ['365'] as const;
-export type ValidDuration = typeof VALID_DURATIONS[number];
-
-export function isValidDuration(duration: string): duration is ValidDuration {
-  return VALID_DURATIONS.includes(duration as ValidDuration);
-}

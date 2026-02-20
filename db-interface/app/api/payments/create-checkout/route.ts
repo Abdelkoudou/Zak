@@ -7,18 +7,18 @@
  * SECURITY:
  * - Rate limited per email and IP
  * - Input validation and sanitization
- * - Validates subscription duration against allowed values
+ * - Validates subscription duration against active plans in DB
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getChargilyClient, SUBSCRIPTION_PRICES, SubscriptionDuration } from '@/lib/chargily';
+import { getChargilyClient } from '@/lib/chargily';
+import { getActivePlanByDuration, getActivePlans } from '@/lib/subscription-plans';
 import {
   isRateLimited,
   isValidEmail,
   isValidPhone,
   sanitizeString,
-  isValidDuration,
   getSecurityHeaders,
   RATE_LIMITS,
 } from '@/lib/security/payment-security';
@@ -43,7 +43,7 @@ interface CreateCheckoutRequest {
   customerEmail: string;
   customerName?: string;
   customerPhone?: string;
-  duration: SubscriptionDuration;
+  duration: string; // duration_days as string (e.g. "60", "365")
   locale?: 'ar' | 'en' | 'fr';
   userId?: string; // Optional user ID for automatic activation
 }
@@ -95,8 +95,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate duration
-    if (!duration || !isValidDuration(duration)) {
+    // Validate duration is a number
+    const durationDays = parseInt(duration);
+    if (!duration || isNaN(durationDays) || durationDays <= 0) {
       return NextResponse.json(
         { error: 'Invalid subscription duration' },
         { status: 400, headers: getSecurityHeaders() }
@@ -129,29 +130,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get subscription price (validated above)
-    // Default to hardcoded value
-    let subscriptionAmount: number = SUBSCRIPTION_PRICES[duration].amount;
-    let subscriptionLabel: string = SUBSCRIPTION_PRICES[duration].label;
+    // ====================================================================
+    // Look up the plan dynamically from DB
+    // ====================================================================
+    const plan = await getActivePlanByDuration(durationDays);
 
-    // Try to fetch dynamic price from DB
-    if (duration === '365') {
-      const { data: configPrice, error: configError } = await supabaseAdmin
-        .from('app_config')
-        .select('value')
-        .eq('key', 'chargily_price_365')
-        .single();
-
-      if (!configError && configPrice?.value) {
-        const dbPrice = parseInt(configPrice.value);
-        if (!isNaN(dbPrice) && dbPrice > 0) {
-          subscriptionAmount = dbPrice; // Amount in DA (Chargily uses DA for DZD currency, not centimes)
-          subscriptionLabel = `1 An - ${dbPrice} DA`; // Update label to match new price
-        }
-      }
+    if (!plan) {
+      return NextResponse.json(
+        { error: 'No active subscription plan found for this duration' },
+        { status: 400, headers: getSecurityHeaders() }
+      );
     }
 
-    const durationDays = parseInt(duration);
+    const subscriptionAmount = plan.price;
+    const subscriptionLabel = `${plan.name} - ${plan.price} DA`;
 
     // Build URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
@@ -179,6 +171,8 @@ export async function POST(request: NextRequest) {
         customer_email: customerEmail,
         customer_name: customerName || '',
         user_id: body.userId || '', // Include the user ID if the user is logged in
+        plan_id: plan.id,
+        plan_name: plan.name,
       },
     });
 
@@ -202,6 +196,8 @@ export async function POST(request: NextRequest) {
           locale: body.locale || 'fr',
           source: 'web',
           client_ip: clientIP,
+          plan_id: plan.id,
+          plan_name: plan.name,
         },
       });
 
@@ -235,16 +231,30 @@ export async function POST(request: NextRequest) {
 // ============================================================================
 
 export async function GET() {
-  const plans = Object.entries(SUBSCRIPTION_PRICES).map(([duration, price]) => ({
-    duration,
-    durationDays: parseInt(duration),
-    amount: price.amount,
-    amountFormatted: `${price.amount / 100} DA`,
-    label: price.label,
-  }));
+  try {
+    const activePlans = await getActivePlans();
 
-  return NextResponse.json({
-    plans,
-    currency: 'dzd',
-  }, { headers: getSecurityHeaders() });
+    const plans = activePlans.map((plan) => ({
+      id: plan.id,
+      name: plan.name,
+      duration: plan.duration_days.toString(),
+      durationDays: plan.duration_days,
+      amount: plan.price,
+      amountFormatted: `${plan.price} DA`,
+      label: `${plan.name} - ${plan.price} DA`,
+      isFeatured: plan.is_featured,
+      description: plan.description,
+    }));
+
+    return NextResponse.json({
+      plans,
+      currency: 'dzd',
+    }, { headers: getSecurityHeaders() });
+  } catch (error) {
+    console.error('[Get Plans] Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch plans' },
+      { status: 500, headers: getSecurityHeaders() }
+    );
+  }
 }

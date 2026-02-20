@@ -313,9 +313,3 @@ export function parseWebhookEventType(type: string): {
 
 export const CHARGILY_CURRENCIES = ['dzd', 'usd', 'eur'] as const;
 export const CHARGILY_LOCALES = ['ar', 'en', 'fr'] as const;
-
-export const SUBSCRIPTION_PRICES = {
-  '365': { amount: 1000, label: '1 An - 1000 DA' },      // 1000 DA for 1 year
-} as const;
-
-export type SubscriptionDuration = keyof typeof SUBSCRIPTION_PRICES;
