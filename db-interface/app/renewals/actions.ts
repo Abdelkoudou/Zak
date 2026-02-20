@@ -107,8 +107,8 @@ export async function getExpiredUsers(): Promise<{
         subscriptionExpiresAt: u.subscription_expires_at,
         daysSinceExpiry: diffDays,
         status: diffDays >= 0 ? 'expired' : 'expiring',
-        lastActivationCode: lastKey?.key_code || null,
-        lastDurationDays: lastKey?.duration_days || null,
+        lastActivationCode: lastKey?.key_code ?? null,
+        lastDurationDays: lastKey?.duration_days ?? null,
       };
     });
 
@@ -168,8 +168,8 @@ export async function searchUserByEmail(
         region: user.region,
         isPaid: user.is_paid,
         subscriptionExpiresAt: user.subscription_expires_at,
-        lastActivationCode: lastKey?.key_code || null,
-        lastDurationDays: lastKey?.duration_days || null,
+        lastActivationCode: lastKey?.key_code ?? null,
+        lastDurationDays: lastKey?.duration_days ?? null,
       },
     };
   } catch (err) {
@@ -234,6 +234,23 @@ export async function renewSubscription(params: {
       .limit(1)
       .maybeSingle();
 
+    // ── Step 1: Update user FIRST (easier to undo a field than delete a key) ──
+    const previousExpiry = user.subscription_expires_at;
+    const { error: updateError } = await supabaseAdmin
+      .from('users')
+      .update({
+        is_paid: true,
+        subscription_expires_at: newExpiry.toISOString(),
+        updated_at: now.toISOString(),
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('[Renewals] Error updating user:', updateError);
+      return { error: 'Erreur lors de la mise à jour de l\'abonnement' };
+    }
+
+    // ── Step 2: Create or extend the activation key ──
     let keyCode: string;
 
     if (existingKey) {
@@ -256,8 +273,13 @@ export async function renewSubscription(params: {
         .eq('id', existingKey.id);
 
       if (keyUpdateError) {
-        console.error('[Renewals] Error extending key:', keyUpdateError);
-        return { error: 'Erreur lors de l\'extension du code' };
+        console.error('[Renewals] Error extending key — rolling back user update:', keyUpdateError);
+        // Rollback: restore previous expiry on the user row
+        await supabaseAdmin
+          .from('users')
+          .update({ subscription_expires_at: previousExpiry, updated_at: now.toISOString() })
+          .eq('id', userId);
+        return { error: 'Erreur lors de l\'extension du code (annulation effectuée)' };
       }
 
       keyCode = existingKey.key_code;
@@ -291,24 +313,14 @@ export async function renewSubscription(params: {
         .single();
 
       if (keyError) {
-        console.error('[Renewals] Error creating key:', keyError);
-        return { error: 'Erreur lors de la création du code' };
+        console.error('[Renewals] Error creating key — rolling back user update:', keyError);
+        // Rollback: restore previous expiry on the user row
+        await supabaseAdmin
+          .from('users')
+          .update({ subscription_expires_at: previousExpiry, updated_at: now.toISOString() })
+          .eq('id', userId);
+        return { error: 'Erreur lors de la création du code (annulation effectuée)' };
       }
-    }
-
-    // Update user subscription
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .update({
-        is_paid: true,
-        subscription_expires_at: newExpiry.toISOString(),
-        updated_at: now.toISOString(),
-      })
-      .eq('id', userId);
-
-    if (updateError) {
-      console.error('[Renewals] Error updating user:', updateError);
-      return { error: 'Erreur lors de la mise à jour de l\'abonnement' };
     }
 
     return {
@@ -327,12 +339,31 @@ export async function renewSubscription(params: {
 // Upload receipt to storage (returns the file path)
 // ============================================================================
 
+const MAX_RECEIPT_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_RECEIPT_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+];
+
 export async function uploadReceipt(
   formData: FormData
 ): Promise<{ path?: string; error?: string }> {
   const file = formData.get('receipt') as File | null;
   if (!file) {
     return { error: 'Aucun fichier fourni' };
+  }
+
+  // Validate MIME type
+  if (!ALLOWED_RECEIPT_MIME_TYPES.includes(file.type)) {
+    return { error: 'Type de fichier non autorisé (JPEG, PNG, WebP, GIF ou PDF uniquement)' };
+  }
+
+  // Validate file size
+  if (file.size > MAX_RECEIPT_SIZE_BYTES) {
+    return { error: `Le fichier est trop volumineux (maximum ${MAX_RECEIPT_SIZE_BYTES / 1024 / 1024} Mo)` };
   }
 
   const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;

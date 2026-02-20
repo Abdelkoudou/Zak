@@ -82,6 +82,15 @@ function compressToWebP(
 }
 
 // ============================================================================
+// French ordinal helper (1ère, 2ème, ...)
+// ============================================================================
+
+function formatOrdinalFr(n: string | number): string {
+  const num = typeof n === "string" ? parseInt(n, 10) : n;
+  return num === 1 ? "1ère" : `${num}ème`;
+}
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -234,6 +243,12 @@ export default function RenewalsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Revoke previous preview URL to avoid memory leaks
+    setReceiptPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+
     setReceiptFile(file);
     setOriginalSize(file.size);
     setCompressing(true);
@@ -242,10 +257,7 @@ export default function RenewalsPage() {
       const webpBlob = await compressToWebP(file);
       setCompressedBlob(webpBlob);
       setCompressedSize(webpBlob.size);
-
-      // Preview
-      const previewUrl = URL.createObjectURL(webpBlob);
-      setReceiptPreview(previewUrl);
+      setReceiptPreview(URL.createObjectURL(webpBlob));
     } catch {
       // Fallback: use original
       setCompressedBlob(null);
@@ -255,6 +267,14 @@ export default function RenewalsPage() {
       setCompressing(false);
     }
   };
+
+  // Revoke object URL on unmount or when preview becomes null
+  useEffect(() => {
+    return () => {
+      if (receiptPreview) URL.revokeObjectURL(receiptPreview);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [receiptPreview]);
 
   // ============================================================================
   // Submit renewal
@@ -320,7 +340,10 @@ export default function RenewalsPage() {
     setFoundUser(null);
     setSearchError("");
     setReceiptFile(null);
-    setReceiptPreview(null);
+    setReceiptPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setCompressedBlob(null);
     setOriginalSize(0);
     setCompressedSize(0);
@@ -748,7 +771,7 @@ export default function RenewalsPage() {
                         </p>
                         <p className="text-sm text-slate-700 dark:text-slate-300">
                           {foundUser.yearOfStudy
-                            ? `${foundUser.yearOfStudy}ème`
+                            ? formatOrdinalFr(foundUser.yearOfStudy)
                             : "—"}
                         </p>
                       </div>
@@ -902,14 +925,24 @@ export default function RenewalsPage() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">
                               {receiptFile?.name}
                             </p>
-                            <p className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1">
-                              ✅ Compressé: {(originalSize / 1024).toFixed(0)}KB
-                              → {(compressedSize / 1024).toFixed(0)}KB (
-                              {Math.round(
-                                (1 - compressedSize / originalSize) * 100,
-                              )}
-                              % réduit)
-                            </p>
+                            {compressedBlob ? (
+                              <p className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-1">
+                                ✅ Compressé :{" "}
+                                {(originalSize / 1024).toFixed(0)}KB  → 
+                                {(compressedSize / 1024).toFixed(0)}KB (
+                                {originalSize > 0
+                                  ? Math.round(
+                                      (1 - compressedSize / originalSize) * 100,
+                                    )
+                                  : 0}
+                                % réduit)
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-orange-500 font-bold mt-1">
+                                ⚠️ Compression échouée — fichier original
+                                utilisé
+                              </p>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -1276,7 +1309,7 @@ export default function RenewalsPage() {
                   </p>
                   {receiptLoading ? (
                     <div className="flex items-center justify-center py-8">
-                      <div className="w-6 h-6 border-3 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
+                      <div className="w-6 h-6 border-2 border-primary-500/20 border-t-primary-500 rounded-full animate-spin" />
                     </div>
                   ) : receiptImgUrl ? (
                     <a

@@ -731,7 +731,7 @@ export default function RevenuePage() {
 
         {/* Additional Stats */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-theme-card rounded-xl p-4 border border-theme">
               <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
                 Transactions
@@ -767,6 +767,19 @@ export default function RevenuePage() {
                 {stats.totalRevenue > 0
                   ? Math.round(
                       (stats.salesPointRevenue / stats.totalRevenue) * 100,
+                    )
+                  : 0}
+                %
+              </p>
+            </div>
+            <div className="bg-theme-card rounded-xl p-4 border border-theme">
+              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
+                % Renouvellements
+              </p>
+              <p className="text-xl font-bold text-purple-500">
+                {stats.totalRevenue > 0
+                  ? Math.round(
+                      (stats.renewalRevenue / stats.totalRevenue) * 100,
                     )
                   : 0}
                 %
