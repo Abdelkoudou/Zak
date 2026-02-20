@@ -180,7 +180,18 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
   }
   
   const keyCode = generateSecureActivationCode();
-  const durationDays = parseInt(metadata?.duration_days || '365') || 365;
+  // CRITICAL: Read duration from the existing payment record first (reliably stored during checkout creation).
+  // Chargily metadata may not return duration_days in the webhook, causing fallback to 365.
+  const durationDays = existingPayment
+    ? await (async () => {
+        const { data: paymentData } = await supabaseAdmin
+          .from('online_payments')
+          .select('duration_days')
+          .eq('id', existingPayment.id)
+          .single();
+        return paymentData?.duration_days || parseInt(metadata?.duration_days || '365') || 365;
+      })()
+    : parseInt(metadata?.duration_days || '365') || 365;
   const userId = metadata?.user_id || existingPayment?.user_id || null;
 
   console.log(`[Chargily Webhook] Processing payment for ${customerEmail}. Duration: ${durationDays} days. User ID: ${userId || 'none'}`);

@@ -27,6 +27,7 @@ const ownerOnlyNavigation = [
     badge: "Owner",
   },
   { name: "Paiements", href: "/payments", icon: "💳", badge: "Owner" },
+  { name: "Renouvellements", href: "/renewals", icon: "🔄", badge: "Owner" },
   { name: "Revenus", href: "/revenue", icon: "📈", badge: "Owner" },
   { name: "Contributions", href: "/contributions", icon: "💰", badge: "Owner" },
   { name: "Signalements", href: "/reports", icon: "🚩", badge: "Owner" },

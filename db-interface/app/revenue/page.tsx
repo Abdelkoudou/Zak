@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 import {
   AreaChart,
   Area,
@@ -15,12 +15,13 @@ import {
   Pie,
   Cell,
   Legend,
-} from 'recharts';
+} from "recharts";
 
 interface MonthlyRevenue {
   month: string;
   online: number;
   salesPoint: number;
+  renewal: number;
   total: number;
 }
 
@@ -29,13 +30,14 @@ interface RevenueStats {
   thisMonthRevenue: number;
   onlineRevenue: number;
   salesPointRevenue: number;
+  renewalRevenue: number;
   totalTransactions: number;
   averageTransactionValue: number;
 }
 
 interface RecentTransaction {
   id: string;
-  type: 'online' | 'salesPoint';
+  type: "online" | "salesPoint" | "renewal";
   amount: number;
   customerEmail?: string;
   salesPointName?: string;
@@ -61,200 +63,293 @@ export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<RevenueStats | null>(null);
   const [monthlyData, setMonthlyData] = useState<MonthlyRevenue[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<RecentTransaction[]>([]);
-  const [dateRange, setDateRange] = useState<'month' | '3months' | 'year' | 'all'>('month');
-  const [analyticsMode, setAnalyticsMode] = useState<'dev' | 'production'>('dev');
-  const [productionSalesPoints, setProductionSalesPoints] = useState<string[]>([]);
-  const [productionSalesPointNames, setProductionSalesPointNames] = useState<string[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<
+    RecentTransaction[]
+  >([]);
+  const [dateRange, setDateRange] = useState<
+    "month" | "3months" | "year" | "all"
+  >("month");
+  const [analyticsMode, setAnalyticsMode] = useState<"dev" | "production">(
+    "dev",
+  );
+  const [productionSalesPoints, setProductionSalesPoints] = useState<string[]>(
+    [],
+  );
+  const [productionSalesPointNames, setProductionSalesPointNames] = useState<
+    string[]
+  >([]);
   const [onlineDataError, setOnlineDataError] = useState<string | null>(null);
   const [keysDataError, setKeysDataError] = useState<string | null>(null);
 
   const getDateFilter = useCallback(() => {
     const now = new Date();
     switch (dateRange) {
-      case 'month':
+      case "month":
         return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      case '3months':
+      case "3months":
         return new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString();
-      case 'year':
+      case "year":
         return new Date(now.getFullYear(), 0, 1).toISOString();
       default:
         return null;
     }
   }, [dateRange]);
 
-  const fetchData = useCallback(async (mode: 'dev' | 'production', prodSalesPoints: string[]) => {
-    const dateFilter = getDateFilter();
+  const fetchData = useCallback(
+    async (mode: "dev" | "production", prodSalesPoints: string[]) => {
+      const dateFilter = getDateFilter();
 
-    // Fetch online payments
-    let onlineQuery = supabase
-      .from('online_payments')
-      .select('*')
-      .eq('status', 'paid');
+      // Fetch online payments
+      let onlineQuery = supabase
+        .from("online_payments")
+        .select("*")
+        .eq("status", "paid");
 
-    if (dateFilter) {
-      onlineQuery = onlineQuery.gte('paid_at', dateFilter);
-    }
-
-    const { data: onlinePayments, error: onlineError } = await onlineQuery;
-
-    if (onlineError) {
-      console.error('[Revenue] Error fetching online payments:', onlineError);
-      setOnlineDataError('Erreur lors du chargement des paiements en ligne');
-    } else {
-      setOnlineDataError(null);
-    }
-
-    // Fetch used activation keys (sales point revenue)
-    // Exclude keys with payment_source='online' as they're already counted in online_payments
-    let keysQuery = supabase
-      .from('activation_keys')
-      .select('*, sales_point:sales_points(name, id)')
-      .eq('is_used', true)
-      .not('used_at', 'is', null)
-      .neq('payment_source', 'online');
-
-    if (dateFilter) {
-      keysQuery = keysQuery.gte('used_at', dateFilter);
-    }
-
-    // Filter by production sales points if in production mode
-    if (mode === 'production' && prodSalesPoints.length > 0) {
-      keysQuery = keysQuery.in('sales_point_id', prodSalesPoints);
-    }
-
-    const { data: usedKeys, error: keysError } = await keysQuery;
-
-    if (keysError) {
-      console.error('[Revenue] Error fetching used keys:', keysError);
-      setKeysDataError('Erreur lors du chargement des ventes par points de vente');
-    } else {
-      setKeysDataError(null);
-    }
-
-    // Calculate stats
-    const onlineRevenue = (onlinePayments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-    const salesPointRevenue = (usedKeys || []).reduce((sum, k) => sum + getKeyPrice(k.duration_days), 0);
-    const totalRevenue = onlineRevenue + salesPointRevenue;
-
-    // This month's revenue
-    const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const thisMonthOnline = (onlinePayments || [])
-      .filter(p => new Date(p.paid_at) >= thisMonthStart)
-      .reduce((sum, p) => sum + (p.amount || 0), 0);
-    const thisMonthSalesPoint = (usedKeys || [])
-      .filter(k => new Date(k.used_at) >= thisMonthStart)
-      .reduce((sum, k) => sum + getKeyPrice(k.duration_days), 0);
-
-    const totalTransactions = (onlinePayments?.length || 0) + (usedKeys?.length || 0);
-
-    setStats({
-      totalRevenue,
-      thisMonthRevenue: thisMonthOnline + thisMonthSalesPoint,
-      onlineRevenue,
-      salesPointRevenue,
-      totalTransactions,
-      averageTransactionValue: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
-    });
-
-    // Build monthly data for chart (last 12 months)
-    const monthlyMap = new Map<string, MonthlyRevenue>();
-    const now = new Date();
-    
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = d.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
-      monthlyMap.set(key, { month: monthName, online: 0, salesPoint: 0, total: 0 });
-    }
-
-    (onlinePayments || []).forEach(p => {
-      const d = new Date(p.paid_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const entry = monthlyMap.get(key);
-      if (entry) {
-        entry.online += p.amount || 0;
-        entry.total += p.amount || 0;
+      if (dateFilter) {
+        onlineQuery = onlineQuery.gte("paid_at", dateFilter);
       }
-    });
 
-    (usedKeys || []).forEach(k => {
-      const d = new Date(k.used_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const entry = monthlyMap.get(key);
-      if (entry) {
-        const price = getKeyPrice(k.duration_days);
-        entry.salesPoint += price;
-        entry.total += price;
+      const { data: onlinePayments, error: onlineError } = await onlineQuery;
+
+      if (onlineError) {
+        console.error("[Revenue] Error fetching online payments:", onlineError);
+        setOnlineDataError("Erreur lors du chargement des paiements en ligne");
+      } else {
+        setOnlineDataError(null);
       }
-    });
 
-    setMonthlyData(Array.from(monthlyMap.values()));
+      // Fetch used activation keys (sales point revenue)
+      // Exclude keys with payment_source='online' as they're already counted in online_payments
+      let keysQuery = supabase
+        .from("activation_keys")
+        .select("*, sales_point:sales_points(name, id)")
+        .eq("is_used", true)
+        .not("used_at", "is", null)
+        .neq("payment_source", "online");
 
-    // Recent transactions - Merge all then sort and slice
-    const recent: RecentTransaction[] = [
-      ...(onlinePayments || []).map(p => ({
-        id: p.id,
-        type: 'online' as const,
-        amount: p.amount,
-        customerEmail: p.customer_email,
-        durationDays: p.duration_days,
-        date: new Date(p.paid_at),
-      })),
-      ...(usedKeys || []).map((k: any) => ({
-        id: k.id,
-        type: 'salesPoint' as const,
-        amount: getKeyPrice(k.duration_days),
-        durationDays: k.duration_days,
-        salesPointName: k.sales_point?.name,
-        date: new Date(k.used_at),
-      })),
-    ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+      if (dateFilter) {
+        keysQuery = keysQuery.gte("used_at", dateFilter);
+      }
 
-    setRecentTransactions(recent);
-  }, [getDateFilter]);
+      // Filter by production sales points if in production mode
+      if (mode === "production" && prodSalesPoints.length > 0) {
+        keysQuery = keysQuery.in("sales_point_id", prodSalesPoints);
+      }
+
+      const { data: usedKeys, error: keysError } = await keysQuery;
+
+      if (keysError) {
+        console.error("[Revenue] Error fetching used keys:", keysError);
+        setKeysDataError(
+          "Erreur lors du chargement des ventes par points de vente",
+        );
+      } else {
+        setKeysDataError(null);
+      }
+
+      // Separate renewal keys from sales point keys
+      const renewalKeys = (usedKeys || []).filter(
+        (k: any) =>
+          k.notes &&
+          typeof k.notes === "string" &&
+          k.notes.startsWith("Renouvellement manuel"),
+      );
+      const salesPointKeys = (usedKeys || []).filter(
+        (k: any) =>
+          !(
+            k.notes &&
+            typeof k.notes === "string" &&
+            k.notes.startsWith("Renouvellement manuel")
+          ),
+      );
+
+      // Calculate stats
+      const onlineRevenue = (onlinePayments || []).reduce(
+        (sum, p) => sum + (p.amount || 0),
+        0,
+      );
+      const salesPointRevenue = salesPointKeys.reduce(
+        (sum: number, k: any) =>
+          sum + (k.price_paid || getKeyPrice(k.duration_days)),
+        0,
+      );
+      const renewalRevenue = renewalKeys.reduce(
+        (sum: number, k: any) =>
+          sum + (k.price_paid || getKeyPrice(k.duration_days)),
+        0,
+      );
+      const totalRevenue = onlineRevenue + salesPointRevenue + renewalRevenue;
+
+      // This month's revenue
+      const thisMonthStart = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1,
+      );
+      const thisMonthOnline = (onlinePayments || [])
+        .filter((p) => new Date(p.paid_at) >= thisMonthStart)
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      const thisMonthSalesPoint = salesPointKeys
+        .filter((k: any) => new Date(k.used_at) >= thisMonthStart)
+        .reduce(
+          (sum: number, k: any) =>
+            sum + (k.price_paid || getKeyPrice(k.duration_days)),
+          0,
+        );
+      const thisMonthRenewal = renewalKeys
+        .filter((k: any) => new Date(k.used_at) >= thisMonthStart)
+        .reduce(
+          (sum: number, k: any) =>
+            sum + (k.price_paid || getKeyPrice(k.duration_days)),
+          0,
+        );
+
+      const totalTransactions =
+        (onlinePayments?.length || 0) + (usedKeys?.length || 0);
+
+      setStats({
+        totalRevenue,
+        thisMonthRevenue:
+          thisMonthOnline + thisMonthSalesPoint + thisMonthRenewal,
+        onlineRevenue,
+        salesPointRevenue,
+        renewalRevenue,
+        totalTransactions,
+        averageTransactionValue:
+          totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+      });
+
+      // Build monthly data for chart (last 12 months)
+      const monthlyMap = new Map<string, MonthlyRevenue>();
+      const now = new Date();
+
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const monthName = d.toLocaleDateString("fr-FR", {
+          month: "short",
+          year: "2-digit",
+        });
+        monthlyMap.set(key, {
+          month: monthName,
+          online: 0,
+          salesPoint: 0,
+          renewal: 0,
+          total: 0,
+        });
+      }
+
+      (onlinePayments || []).forEach((p) => {
+        const d = new Date(p.paid_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const entry = monthlyMap.get(key);
+        if (entry) {
+          entry.online += p.amount || 0;
+          entry.total += p.amount || 0;
+        }
+      });
+
+      salesPointKeys.forEach((k: any) => {
+        const d = new Date(k.used_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const entry = monthlyMap.get(key);
+        if (entry) {
+          const price = k.price_paid || getKeyPrice(k.duration_days);
+          entry.salesPoint += price;
+          entry.total += price;
+        }
+      });
+
+      renewalKeys.forEach((k: any) => {
+        const d = new Date(k.used_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        const entry = monthlyMap.get(key);
+        if (entry) {
+          const price = k.price_paid || getKeyPrice(k.duration_days);
+          entry.renewal += price;
+          entry.total += price;
+        }
+      });
+
+      setMonthlyData(Array.from(monthlyMap.values()));
+
+      // Recent transactions - Merge all then sort and slice
+      const recent: RecentTransaction[] = [
+        ...(onlinePayments || []).map((p) => ({
+          id: p.id,
+          type: "online" as const,
+          amount: p.amount,
+          customerEmail: p.customer_email,
+          durationDays: p.duration_days,
+          date: new Date(p.paid_at),
+        })),
+        ...salesPointKeys.map((k: any) => ({
+          id: k.id,
+          type: "salesPoint" as const,
+          amount: k.price_paid || getKeyPrice(k.duration_days),
+          durationDays: k.duration_days,
+          salesPointName: k.sales_point?.name,
+          date: new Date(k.used_at),
+        })),
+        ...renewalKeys.map((k: any) => ({
+          id: k.id,
+          type: "renewal" as const,
+          amount: k.price_paid || getKeyPrice(k.duration_days),
+          durationDays: k.duration_days,
+          date: new Date(k.used_at),
+        })),
+      ]
+        .sort((a, b) => b.date.getTime() - a.date.getTime())
+        .slice(0, 10);
+
+      setRecentTransactions(recent);
+    },
+    [getDateFilter],
+  );
 
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
       const { data: user } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
         .single();
 
-      if (!user || user.role !== 'owner') {
-        router.push('/');
+      if (!user || user.role !== "owner") {
+        router.push("/");
         return;
       }
 
       // Fetch analytics config
       const { data: modeConfig } = await supabase
-        .from('app_config')
-        .select('value')
-        .eq('key', 'analytics_mode')
+        .from("app_config")
+        .select("value")
+        .eq("key", "analytics_mode")
         .single();
 
       const { data: salesPointsConfig } = await supabase
-        .from('app_config')
-        .select('value')
-        .eq('key', 'production_sales_points')
+        .from("app_config")
+        .select("value")
+        .eq("key", "production_sales_points")
         .single();
 
-      const mode = (modeConfig?.value as 'dev' | 'production') || 'dev';
-      
+      const mode = (modeConfig?.value as "dev" | "production") || "dev";
+
       let prodPoints: string[] = [];
       try {
-        prodPoints = salesPointsConfig?.value 
-          ? JSON.parse(salesPointsConfig.value) 
+        prodPoints = salesPointsConfig?.value
+          ? JSON.parse(salesPointsConfig.value)
           : [];
       } catch (e) {
-        console.error('[Revenue] Error parsing production_sales_points:', e);
+        console.error("[Revenue] Error parsing production_sales_points:", e);
         prodPoints = [];
       }
 
@@ -262,11 +357,11 @@ export default function RevenuePage() {
       let prodPointNames: string[] = [];
       if (prodPoints.length > 0) {
         const { data: salesPointsData } = await supabase
-          .from('sales_points')
-          .select('id, name')
-          .in('id', prodPoints);
-        
-        prodPointNames = (salesPointsData || []).map(sp => sp.name);
+          .from("sales_points")
+          .select("id, name")
+          .in("id", prodPoints);
+
+        prodPointNames = (salesPointsData || []).map((sp) => sp.name);
       }
 
       setAnalyticsMode(mode);
@@ -289,13 +384,26 @@ export default function RevenuePage() {
   const pieData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: 'Paiements en ligne', value: stats.onlineRevenue, color: '#09b2ac' },
-      { name: 'Points de vente', value: stats.salesPointRevenue, color: '#f59e0b' },
-    ].filter(d => d.value > 0);
+      {
+        name: "Paiements en ligne",
+        value: stats.onlineRevenue,
+        color: "#09b2ac",
+      },
+      {
+        name: "Points de vente",
+        value: stats.salesPointRevenue,
+        color: "#f59e0b",
+      },
+      {
+        name: "Renouvellements",
+        value: stats.renewalRevenue,
+        color: "#8b5cf6",
+      },
+    ].filter((d) => d.value > 0);
   }, [stats]);
 
   const formatCurrency = (value: number) => {
-    return `${value.toLocaleString('fr-DZ')} DA`;
+    return `${value.toLocaleString("fr-DZ")} DA`;
   };
 
   if (loading) {
@@ -303,7 +411,9 @@ export default function RevenuePage() {
       <div className="min-h-screen flex items-center justify-center bg-theme">
         <div className="flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-primary"></div>
-          <p className="text-theme-muted text-sm font-medium">Chargement des revenus...</p>
+          <p className="text-theme-muted text-sm font-medium">
+            Chargement des revenus...
+          </p>
         </div>
       </div>
     );
@@ -319,21 +429,22 @@ export default function RevenuePage() {
               <h1 className="text-3xl md:text-4xl font-extrabold text-theme tracking-tight">
                 📈 Tableau des Revenus
               </h1>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
-                analyticsMode === 'dev'
-                  ? 'bg-amber-100 text-amber-700 border border-amber-300'
-                  : 'bg-green-100 text-green-700 border border-green-300'
-              }`}>
-                {analyticsMode === 'dev' ? '🔧 Mode Dev' : '🚀 Production'}
+              <span
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${
+                  analyticsMode === "dev"
+                    ? "bg-amber-100 text-amber-700 border border-amber-300"
+                    : "bg-green-100 text-green-700 border border-green-300"
+                }`}
+              >
+                {analyticsMode === "dev" ? "🔧 Mode Dev" : "🚀 Production"}
               </span>
             </div>
             <p className="mt-2 text-theme-muted">
-              {analyticsMode === 'production' 
+              {analyticsMode === "production"
                 ? productionSalesPointNames.length > 0
-                  ? productionSalesPointNames.join(', ')
-                  : 'Aucun point de vente sélectionné'
-                : 'Toutes les données (y compris les tests)'
-              }
+                  ? productionSalesPointNames.join(", ")
+                  : "Aucun point de vente sélectionné"
+                : "Toutes les données (y compris les tests)"}
             </p>
             {/* Error Banners */}
             {(onlineDataError || keysDataError) && (
@@ -342,8 +453,10 @@ export default function RevenuePage() {
                   <div className="inline-flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                     <span>⚠️</span>
                     <span>{onlineDataError}</span>
-                    <button 
-                      onClick={() => fetchData(analyticsMode, productionSalesPoints)}
+                    <button
+                      onClick={() =>
+                        fetchData(analyticsMode, productionSalesPoints)
+                      }
                       className="ml-2 text-xs font-medium underline hover:no-underline"
                     >
                       Réessayer
@@ -354,8 +467,10 @@ export default function RevenuePage() {
                   <div className="inline-flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                     <span>⚠️</span>
                     <span>{keysDataError}</span>
-                    <button 
-                      onClick={() => fetchData(analyticsMode, productionSalesPoints)}
+                    <button
+                      onClick={() =>
+                        fetchData(analyticsMode, productionSalesPoints)
+                      }
                       className="ml-2 text-xs font-medium underline hover:no-underline"
                     >
                       Réessayer
@@ -365,22 +480,22 @@ export default function RevenuePage() {
               </div>
             )}
           </div>
-          
+
           {/* Date Range Filter */}
           <div className="flex bg-theme-secondary rounded-2xl p-1.5 border border-theme">
             {[
-              { value: 'month', label: 'Ce mois' },
-              { value: '3months', label: '3 mois' },
-              { value: 'year', label: 'Cette année' },
-              { value: 'all', label: 'Tout' },
+              { value: "month", label: "Ce mois" },
+              { value: "3months", label: "3 mois" },
+              { value: "year", label: "Cette année" },
+              { value: "all", label: "Tout" },
             ].map((option) => (
               <button
                 key={option.value}
                 onClick={() => setDateRange(option.value as typeof dateRange)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
                   dateRange === option.value
-                    ? 'bg-primary text-white shadow-lg'
-                    : 'text-theme-secondary hover:text-theme'
+                    ? "bg-primary text-white shadow-lg"
+                    : "text-theme-secondary hover:text-theme"
                 }`}
               >
                 {option.label}
@@ -391,44 +506,64 @@ export default function RevenuePage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-theme-card rounded-2xl p-6 border border-theme shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">💰</span>
-                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Revenus Totaux</p>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                  Revenus Totaux
+                </p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-primary">
                 {formatCurrency(stats.totalRevenue)}
               </p>
             </div>
-            
+
             <div className="bg-theme-card rounded-2xl p-6 border border-theme shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">📅</span>
-                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Ce Mois</p>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                  Ce Mois
+                </p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-theme">
                 {formatCurrency(stats.thisMonthRevenue)}
               </p>
             </div>
-            
+
             <div className="bg-theme-card rounded-2xl p-6 border border-theme shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">💳</span>
-                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Paiements en ligne</p>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                  Paiements en ligne
+                </p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-[#09b2ac]">
                 {formatCurrency(stats.onlineRevenue)}
               </p>
             </div>
-            
+
             <div className="bg-theme-card rounded-2xl p-6 border border-theme shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xl">🏪</span>
-                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">Points de vente</p>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                  Points de vente
+                </p>
               </div>
               <p className="text-2xl md:text-3xl font-black text-amber-500">
                 {formatCurrency(stats.salesPointRevenue)}
+              </p>
+            </div>
+
+            <div className="bg-theme-card rounded-2xl p-6 border border-theme shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">🔄</span>
+                <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                  Renouvellements
+                </p>
+              </div>
+              <p className="text-2xl md:text-3xl font-black text-purple-500">
+                {formatCurrency(stats.renewalRevenue)}
               </p>
             </div>
           </div>
@@ -443,36 +578,65 @@ export default function RevenuePage() {
             </h2>
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <AreaChart
+                  data={monthlyData}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="colorOnline" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="colorOnline"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#09b2ac" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#09b2ac" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="colorSalesPoint" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="colorSalesPoint"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                     </linearGradient>
+                    <linearGradient
+                      id="colorRenewal"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                    </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fill: '#6b7280', fontSize: 11 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                    opacity={0.5}
                   />
-                  <YAxis 
-                    tick={{ fill: '#6b7280', fontSize: 11 }}
-                    axisLine={{ stroke: '#e5e7eb' }}
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                    axisLine={{ stroke: "#e5e7eb" }}
+                  />
+                  <YAxis
+                    tick={{ fill: "#6b7280", fontSize: 11 }}
+                    axisLine={{ stroke: "#e5e7eb" }}
                     tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: "rgba(255, 255, 255, 0.95)",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "12px",
+                      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                     }}
-                    formatter={(value) => [formatCurrency(value as number), '']}
+                    formatter={(value) => [formatCurrency(value as number), ""]}
                   />
                   <Legend />
                   <Area
@@ -492,6 +656,15 @@ export default function RevenuePage() {
                     strokeWidth={2}
                     fillOpacity={1}
                     fill="url(#colorSalesPoint)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="renewal"
+                    name="Renouvellements"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorRenewal)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -520,7 +693,9 @@ export default function RevenuePage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Tooltip
+                      formatter={(value) => formatCurrency(value as number)}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -532,15 +707,22 @@ export default function RevenuePage() {
             {/* Legend */}
             <div className="mt-4 space-y-2">
               {pieData.map((entry) => (
-                <div key={entry.name} className="flex items-center justify-between">
+                <div
+                  key={entry.name}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center gap-2">
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: entry.color }}
                     />
-                    <span className="text-sm text-theme-secondary">{entry.name}</span>
+                    <span className="text-sm text-theme-secondary">
+                      {entry.name}
+                    </span>
                   </div>
-                  <span className="text-sm font-bold text-theme">{formatCurrency(entry.value)}</span>
+                  <span className="text-sm font-bold text-theme">
+                    {formatCurrency(entry.value)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -551,23 +733,43 @@ export default function RevenuePage() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-theme-card rounded-xl p-4 border border-theme">
-              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">Transactions</p>
-              <p className="text-xl font-bold text-theme">{stats.totalTransactions}</p>
-            </div>
-            <div className="bg-theme-card rounded-xl p-4 border border-theme">
-              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">Valeur Moyenne</p>
-              <p className="text-xl font-bold text-theme">{formatCurrency(Math.round(stats.averageTransactionValue))}</p>
-            </div>
-            <div className="bg-theme-card rounded-xl p-4 border border-theme">
-              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">% En ligne</p>
-              <p className="text-xl font-bold text-[#09b2ac]">
-                {stats.totalRevenue > 0 ? Math.round((stats.onlineRevenue / stats.totalRevenue) * 100) : 0}%
+              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
+                Transactions
+              </p>
+              <p className="text-xl font-bold text-theme">
+                {stats.totalTransactions}
               </p>
             </div>
             <div className="bg-theme-card rounded-xl p-4 border border-theme">
-              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">% Points de vente</p>
+              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
+                Valeur Moyenne
+              </p>
+              <p className="text-xl font-bold text-theme">
+                {formatCurrency(Math.round(stats.averageTransactionValue))}
+              </p>
+            </div>
+            <div className="bg-theme-card rounded-xl p-4 border border-theme">
+              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
+                % En ligne
+              </p>
+              <p className="text-xl font-bold text-[#09b2ac]">
+                {stats.totalRevenue > 0
+                  ? Math.round((stats.onlineRevenue / stats.totalRevenue) * 100)
+                  : 0}
+                %
+              </p>
+            </div>
+            <div className="bg-theme-card rounded-xl p-4 border border-theme">
+              <p className="text-[10px] font-bold text-theme-muted uppercase tracking-widest mb-1">
+                % Points de vente
+              </p>
               <p className="text-xl font-bold text-amber-500">
-                {stats.totalRevenue > 0 ? Math.round((stats.salesPointRevenue / stats.totalRevenue) * 100) : 0}%
+                {stats.totalRevenue > 0
+                  ? Math.round(
+                      (stats.salesPointRevenue / stats.totalRevenue) * 100,
+                    )
+                  : 0}
+                %
               </p>
             </div>
           </div>
@@ -580,7 +782,7 @@ export default function RevenuePage() {
               <span>📋</span> Transactions Récentes
             </h2>
             <button
-              onClick={() => router.push('/payments')}
+              onClick={() => router.push("/payments")}
               className="text-sm text-primary font-medium hover:underline"
             >
               Voir tout →
@@ -590,29 +792,51 @@ export default function RevenuePage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-theme-secondary border-b border-theme">
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">Type</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">Montant</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">Durée</th>
-                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">Date</th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                    Montant
+                  </th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                    Durée
+                  </th>
+                  <th className="px-6 py-3 text-left text-[10px] font-bold text-theme-muted uppercase tracking-widest">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-theme">
                 {recentTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-theme-muted">
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-theme-muted"
+                    >
                       Aucune transaction récente
                     </td>
                   </tr>
                 ) : (
                   recentTransactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-theme-secondary transition-colors">
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-theme-secondary transition-colors"
+                    >
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                          tx.type === 'online'
-                            ? 'bg-[#09b2ac]/10 text-[#09b2ac]'
-                            : 'bg-amber-500/10 text-amber-600'
-                        }`}>
-                          {tx.type === 'online' ? '💳 En ligne' : `🏪 ${tx.salesPointName || 'Point de vente'}`}
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                            tx.type === "online"
+                              ? "bg-[#09b2ac]/10 text-[#09b2ac]"
+                              : tx.type === "renewal"
+                                ? "bg-purple-500/10 text-purple-600"
+                                : "bg-amber-500/10 text-amber-600"
+                          }`}
+                        >
+                          {tx.type === "online"
+                            ? "💳 En ligne"
+                            : tx.type === "renewal"
+                              ? "🔄 Renouvellement"
+                              : `🏪 ${tx.salesPointName || "Point de vente"}`}
                         </span>
                       </td>
                       <td className="px-6 py-4 font-bold text-theme">
@@ -622,7 +846,11 @@ export default function RevenuePage() {
                         {tx.durationDays} jours
                       </td>
                       <td className="px-6 py-4 text-sm text-theme-muted">
-                        {tx.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {tx.date.toLocaleDateString("fr-FR", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </td>
                     </tr>
                   ))
