@@ -46,6 +46,26 @@ export interface UpdatePlanInput {
 }
 
 // ============================================================================
+// Custom Error Classes
+// ============================================================================
+
+/** Thrown when attempting to deactivate or delete the last active plan */
+export class LastActivePlanError extends Error {
+  constructor(message = 'Cannot deactivate the last active plan') {
+    super(message);
+    this.name = 'LastActivePlanError';
+  }
+}
+
+/** Thrown when a plan cannot be found */
+export class PlanNotFoundError extends Error {
+  constructor(id?: string) {
+    super(id ? `Plan not found: ${id}` : 'Plan not found');
+    this.name = 'PlanNotFoundError';
+  }
+}
+
+// ============================================================================
 // Read operations
 // ============================================================================
 
@@ -89,11 +109,11 @@ export async function getActivePlanByDuration(
     .select('*')
     .eq('is_active', true)
     .eq('duration_days', durationDays)
-    .single();
+    .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
-    // PGRST116 = no rows found — that's fine, return null
+  if (error) {
     console.error('[SubscriptionPlans] Error fetching plan by duration:', error);
+    throw new Error('Failed to fetch plan by duration');
   }
 
   return data || null;
@@ -171,43 +191,59 @@ export async function updatePlan(
   return data;
 }
 
-/** Toggle plan active status */
+/**
+ * Toggle plan active status (atomic via DB RPC).
+ * Uses row-level locking to prevent TOCTOU race conditions.
+ */
 export async function togglePlanActive(id: string): Promise<SubscriptionPlan> {
-  // Get current state
-  const plan = await getPlanById(id);
-  if (!plan) {
-    throw new Error('Plan not found');
-  }
-
-  // If deactivating, ensure there's at least one other active plan
-  if (plan.is_active) {
-    const activePlans = await getActivePlans();
-    if (activePlans.length <= 1) {
-      throw new Error('Cannot deactivate the last active plan');
-    }
-  }
-
-  return updatePlan({ id, is_active: !plan.is_active });
-}
-
-/** Delete a plan */
-export async function deletePlan(id: string): Promise<void> {
-  // Ensure not deleting the last active plan
-  const plan = await getPlanById(id);
-  if (plan?.is_active) {
-    const activePlans = await getActivePlans();
-    if (activePlans.length <= 1) {
-      throw new Error('Cannot delete the last active plan');
-    }
-  }
-
-  const { error } = await supabaseAdmin
-    .from('subscription_plans')
-    .delete()
-    .eq('id', id);
+  const { data, error } = await supabaseAdmin.rpc('toggle_plan_active', {
+    plan_id: id,
+  });
 
   if (error) {
+    // Map DB error codes to typed errors
+    if (error.message?.includes('Plan not found')) {
+      throw new PlanNotFoundError(id);
+    }
+    if (error.message?.includes('last active plan')) {
+      throw new LastActivePlanError();
+    }
+    console.error('[SubscriptionPlans] Error toggling plan:', error);
+    throw new Error('Failed to toggle plan status');
+  }
+
+  // RPC returns an array (SETOF); take the first row
+  const plan = Array.isArray(data) ? data[0] : data;
+  if (!plan) {
+    throw new PlanNotFoundError(id);
+  }
+
+  return plan as SubscriptionPlan;
+}
+
+/**
+ * Delete a plan (atomic via DB RPC).
+ * Uses row-level locking to prevent TOCTOU race conditions.
+ */
+export async function deletePlan(id: string): Promise<void> {
+  const { data, error } = await supabaseAdmin.rpc('delete_plan_safe', {
+    plan_id: id,
+  });
+
+  if (error) {
+    // Map DB error codes to typed errors
+    if (error.message?.includes('Plan not found')) {
+      throw new PlanNotFoundError(id);
+    }
+    if (error.message?.includes('last active plan')) {
+      throw new LastActivePlanError('Cannot delete the last active plan');
+    }
     console.error('[SubscriptionPlans] Error deleting plan:', error);
     throw new Error('Failed to delete plan');
+  }
+
+  const deleted = Array.isArray(data) ? data[0] : data;
+  if (!deleted) {
+    throw new PlanNotFoundError(id);
   }
 }

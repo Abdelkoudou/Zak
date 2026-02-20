@@ -6,6 +6,8 @@ import {
   updatePlan,
   togglePlanActive,
   deletePlan,
+  LastActivePlanError,
+  PlanNotFoundError,
 } from '@/lib/subscription-plans';
 
 // ============================================================================
@@ -118,9 +120,11 @@ export async function togglePlanAction(planId: string): Promise<ActionResult> {
 
     return { success: true, message: 'Statut mis à jour' };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur inconnue';
-    if (message.includes('last active plan')) {
+    if (err instanceof LastActivePlanError) {
       return { error: 'Impossible de désactiver la dernière offre active' };
+    }
+    if (err instanceof PlanNotFoundError) {
+      return { error: 'Offre introuvable' };
     }
     console.error('Error toggling plan:', err);
     return { error: 'Erreur lors de la mise à jour du statut' };
@@ -142,9 +146,11 @@ export async function deletePlanAction(planId: string): Promise<ActionResult> {
 
     return { success: true, message: 'Offre supprimée' };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Erreur inconnue';
-    if (message.includes('last active plan')) {
+    if (err instanceof LastActivePlanError) {
       return { error: 'Impossible de supprimer la dernière offre active' };
+    }
+    if (err instanceof PlanNotFoundError) {
+      return { error: 'Offre introuvable' };
     }
     console.error('Error deleting plan:', err);
     return { error: 'Erreur lors de la suppression de l\'offre' };
