@@ -145,6 +145,17 @@ export async function POST(request: NextRequest) {
     const subscriptionAmount = plan.price;
     const subscriptionLabel = `${plan.name} - ${plan.price} DA`;
 
+    // Auto-resolve userId from email if not provided (for renewal page guests)
+    let resolvedUserId = body.userId || '';
+    if (!resolvedUserId && customerEmail) {
+      const { data: userLookup } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('email', customerEmail)
+        .single();
+      resolvedUserId = userLookup?.id || '';
+    }
+
     // Build URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
     const successUrl = `${baseUrl}/payment/success`;
@@ -170,7 +181,7 @@ export async function POST(request: NextRequest) {
         source: 'web',
         customer_email: customerEmail,
         customer_name: customerName || '',
-        user_id: body.userId || '', // Include the user ID if the user is logged in
+        user_id: resolvedUserId, // Auto-resolved from email if not provided
         plan_id: plan.id,
         plan_name: plan.name,
       },

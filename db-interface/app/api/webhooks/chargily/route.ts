@@ -249,7 +249,21 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
   // AUTOMATED ACTIVATION: If user_id is present, update the user record directly
   if (userId) {
     console.log(`[Chargily Webhook] Performing automated activation for user: ${userId}`);
-    const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+    
+    // Extension logic: extend from current expiry if subscription is still active
+    const { data: currentUser } = await supabaseAdmin
+      .from('users')
+      .select('subscription_expires_at')
+      .eq('id', userId)
+      .single();
+    
+    const now = new Date();
+    const currentExpiry = currentUser?.subscription_expires_at
+      ? new Date(currentUser.subscription_expires_at)
+      : now;
+    // If still active, extend from current expiry; if expired, start from NOW()
+    const baseDate = currentExpiry > now ? currentExpiry : now;
+    const expiresAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
     // Set to end of day
     expiresAt.setHours(23, 59, 59, 999);
 

@@ -324,7 +324,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
   ])
 }
 
-export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+export async function signIn(email: string, password: string): Promise<{ user: User | null; error: string | null; subscriptionExpired?: boolean; expiredEmail?: string }> {
   try {
     if (__DEV__) console.log('[Auth] Starting sign in for:', email)
 
@@ -439,6 +439,8 @@ export async function signIn(email: string, password: string): Promise<{ user: U
         return {
           user: null,
           error: 'Votre abonnement a expiré. Veuillez renouveler votre abonnement.',
+          subscriptionExpired: true,
+          expiredEmail: userProfile.email,
         }
       }
     }
