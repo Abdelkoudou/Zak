@@ -205,7 +205,7 @@ export async function renewSubscription(params: {
     // Verify user exists
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .select('id, email, full_name, subscription_expires_at')
+      .select('id, email, full_name, is_paid, subscription_expires_at')
       .eq('id', userId)
       .single();
 
@@ -236,6 +236,7 @@ export async function renewSubscription(params: {
 
     // ── Step 1: Update user FIRST (easier to undo a field than delete a key) ──
     const previousExpiry = user.subscription_expires_at;
+    const previousIsPaid = user.is_paid;
     const { error: updateError } = await supabaseAdmin
       .from('users')
       .update({
@@ -274,11 +275,19 @@ export async function renewSubscription(params: {
 
       if (keyUpdateError) {
         console.error('[Renewals] Error extending key — rolling back user update:', keyUpdateError);
-        // Rollback: restore previous expiry on the user row
-        await supabaseAdmin
+        // Rollback: restore previous is_paid and expiry on the user row
+        const { error: rollbackError } = await supabaseAdmin
           .from('users')
-          .update({ subscription_expires_at: previousExpiry, updated_at: now.toISOString() })
+          .update({
+            is_paid: previousIsPaid,
+            subscription_expires_at: previousExpiry,
+            updated_at: now.toISOString(),
+          })
           .eq('id', userId);
+        if (rollbackError) {
+          console.error('[Renewals] CRITICAL: rollback after key extension failure also failed:', rollbackError);
+          return { error: 'Erreur critique: échec de l\'extension ET de l\'annulation — contactez le support' };
+        }
         return { error: 'Erreur lors de l\'extension du code (annulation effectuée)' };
       }
 
@@ -314,11 +323,19 @@ export async function renewSubscription(params: {
 
       if (keyError) {
         console.error('[Renewals] Error creating key — rolling back user update:', keyError);
-        // Rollback: restore previous expiry on the user row
-        await supabaseAdmin
+        // Rollback: restore previous is_paid and expiry on the user row
+        const { error: rollbackError } = await supabaseAdmin
           .from('users')
-          .update({ subscription_expires_at: previousExpiry, updated_at: now.toISOString() })
+          .update({
+            is_paid: previousIsPaid,
+            subscription_expires_at: previousExpiry,
+            updated_at: now.toISOString(),
+          })
           .eq('id', userId);
+        if (rollbackError) {
+          console.error('[Renewals] CRITICAL: rollback after key creation failure also failed:', rollbackError);
+          return { error: 'Erreur critique: échec de la création ET de l\'annulation — contactez le support' };
+        }
         return { error: 'Erreur lors de la création du code (annulation effectuée)' };
       }
     }

@@ -87,6 +87,7 @@ function compressToWebP(
 
 function formatOrdinalFr(n: string | number): string {
   const num = typeof n === "string" ? parseInt(n, 10) : n;
+  if (Number.isNaN(num)) return "";
   return num === 1 ? "1ère" : `${num}ème`;
 }
 
