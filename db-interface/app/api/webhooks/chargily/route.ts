@@ -223,7 +223,7 @@ async function handleCheckoutPaid(event: ChargilyWebhookEvent) {
       used_by: userId || null,
       used_at: userId ? new Date().toISOString() : null,
       expires_at: userId 
-        ? new Date(new Date().setHours(23, 59, 59, 999) + durationDays * 24 * 60 * 60 * 1000).toISOString()
+        ? (() => { const d = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000); d.setHours(23, 59, 59, 999); return d.toISOString(); })()
         : null
     })
     .select('id')
