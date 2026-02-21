@@ -125,11 +125,18 @@ export default function BuyPage() {
     setLoading(true);
 
     try {
-      // Get current user ID if logged in
+      // Get current user session if logged in
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
+
+      // OPTION 2: Smart Auto-Activation
+      // Only auto-activate if the logged-in user is purchasing for themselves (email match).
+      // This prevents admin/owner accounts from hijacking auto-activation for other customers.
+      const userId =
+        session?.user?.id && session?.user?.email === email
+          ? session.user.id
+          : undefined;
 
       const response = await fetch("/api/payments/create-checkout", {
         method: "POST",
