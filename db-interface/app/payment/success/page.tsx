@@ -236,7 +236,9 @@ function PaymentSuccessContent() {
             {loading
               ? "Veuillez patienter pendant que nous générons votre code d'activation..."
               : paymentStatus?.autoActivated
-                ? "Votre abonnement a été activé automatiquement sur votre compte ! Vous pouvez également noter votre code ci-dessous."
+                ? paymentStatus?.activationCode
+                  ? "Votre abonnement a été activé automatiquement sur votre compte ! Vous pouvez également noter votre code ci-dessous."
+                  : "Votre abonnement a été activé automatiquement sur votre compte !"
                 : paymentStatus?.activationCode
                   ? "Merci pour votre achat. Votre code d'activation est prêt !"
                   : "Merci pour votre achat."}

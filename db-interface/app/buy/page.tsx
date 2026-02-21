@@ -133,8 +133,12 @@ export default function BuyPage() {
       // OPTION 2: Smart Auto-Activation
       // Only auto-activate if the logged-in user is purchasing for themselves (email match).
       // This prevents admin/owner accounts from hijacking auto-activation for other customers.
+      // We use case-insensitive and trimmed comparison for reliability.
+      const userEmail = session?.user?.email?.toLowerCase().trim();
+      const formEmail = email.toLowerCase().trim();
+
       const userId =
-        session?.user?.id && session?.user?.email === email
+        session?.user?.id && userEmail === formEmail
           ? session.user.id
           : undefined;
 
