@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     // Online payments: filter by created_at
     let onlinePaymentsQuery = supabaseAdmin
       .from('online_payments')
-      .select('id, status, amount, payment_method, created_at, paid_at')
+      .select('id, status, amount, duration_days, payment_method, created_at, paid_at')
       .limit(10000);
     if (dateFrom) onlinePaymentsQuery = onlinePaymentsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) onlinePaymentsQuery = onlinePaymentsQuery.lte('created_at', dateTo.toISOString());
@@ -358,6 +358,32 @@ export async function GET(request: NextRequest) {
     const paidPayments = onlinePayments.filter((p) => p.status === 'paid');
     const totalOnlineRevenue = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+    // Per-offer breakdown
+    const offerMap: Record<string, { count: number; revenue: number; durationDays: number }> = {};
+    paidPayments.forEach((p) => {
+      const key = `${p.amount}`;
+      if (!offerMap[key]) {
+        offerMap[key] = { count: 0, revenue: 0, durationDays: p.duration_days || 0 };
+      }
+      offerMap[key].count += 1;
+      offerMap[key].revenue += p.amount || 0;
+    });
+
+    const OFFER_LABELS: Record<string, string> = {
+      '1000': '1 An (1000 DA)',
+      '300': '20 Jours (300 DA)',
+    };
+
+    const offerBreakdown = Object.entries(offerMap)
+      .map(([amount, data]) => ({
+        offerName: OFFER_LABELS[amount] || `${amount} DA`,
+        amount: parseInt(amount),
+        count: data.count,
+        revenue: data.revenue,
+        durationDays: data.durationDays,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+
     // Subscription status (always current snapshot)
     const expiredSubs = students.filter(
       (s) => s.subscription_expires_at && new Date(s.subscription_expires_at) < now
@@ -423,6 +449,7 @@ export async function GET(request: NextRequest) {
         keysOnline,
         totalOnlineRevenue,
         paidPaymentsCount: paidPayments.length,
+        offerBreakdown,
       },
     };
 

@@ -106,6 +106,13 @@ interface StatsData {
     keysOnline: number;
     totalOnlineRevenue: number;
     paidPaymentsCount: number;
+    offerBreakdown: {
+      offerName: string;
+      amount: number;
+      count: number;
+      revenue: number;
+      durationDays: number;
+    }[];
   };
 }
 
@@ -911,6 +918,89 @@ export default function StatisticsPage() {
             value={`${(revenue.totalOnlineRevenue / 100).toLocaleString("fr-FR")} DA`}
           />
         </div>
+
+        {/* Offer Breakdown Chart */}
+        {revenue.offerBreakdown && revenue.offerBreakdown.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Pie Chart - Sales by offer */}
+            <div className="bg-theme-card border border-theme rounded-2xl p-5">
+              <h3 className="text-sm font-bold text-theme-secondary mb-4">
+                Ventes par Offre
+              </h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={revenue.offerBreakdown.map((o) => ({
+                      name: o.offerName,
+                      value: o.count,
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {revenue.offerBreakdown.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Per-offer KPIs */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {revenue.offerBreakdown.map((offer, i) => (
+                <div
+                  key={offer.offerName}
+                  className={`bg-theme-card border border-theme rounded-2xl p-5 flex flex-col gap-2 transition-shadow hover:shadow-lg ${
+                    i === 0 ? "ring-2 ring-primary/30" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                      }}
+                    />
+                    <span className="text-sm font-bold text-theme-main">
+                      {offer.offerName}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div>
+                      <p className="text-xs text-theme-muted uppercase tracking-wider font-semibold">
+                        Ventes
+                      </p>
+                      <p className="text-2xl font-extrabold font-heading text-theme-main">
+                        {offer.count}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-theme-muted uppercase tracking-wider font-semibold">
+                        Revenu
+                      </p>
+                      <p className="text-2xl font-extrabold font-heading text-theme-main">
+                        {offer.revenue.toLocaleString("fr-FR")}{" "}
+                        <span className="text-sm font-medium text-theme-muted">
+                          DA
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Footer */}
