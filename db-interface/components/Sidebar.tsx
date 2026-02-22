@@ -18,6 +18,7 @@ const navigation = [
 
 const ownerOnlyNavigation = [
   { name: "Statistiques", href: "/statistics", icon: "📈", badge: "Owner" },
+  { name: "Tendance", href: "/tendance", icon: "🔥", badge: "Owner" },
   { name: "Utilisateurs", href: "/users", icon: "👥", badge: "Owner" },
   { name: "Courses", href: "/courses", icon: "📝", badge: "Owner" },
   {

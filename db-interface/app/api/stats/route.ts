@@ -16,6 +16,92 @@ function checkResult<T>(
   return result.data ?? ([] as unknown as T);
 }
 
+// ── Helper: compute tendance (course repetition) stats ──────────────
+function computeTendance(questions: any[]) {
+  // Flatten: one entry per (module, cours_topic, exam_year)
+  const flat: { module: string; cours: string; examYear: number; examType: string }[] = [];
+  for (const q of questions) {
+    if (!q.cours || !Array.isArray(q.cours) || !q.exam_year) continue;
+    for (const c of q.cours) {
+      flat.push({ module: q.module_name, cours: c, examYear: q.exam_year, examType: q.exam_type });
+    }
+  }
+
+  // Total distinct exam years in the dataset
+  const allExamYears = new Set(flat.map((f) => f.examYear));
+  const totalExamYears = allExamYears.size;
+
+  // Per-cours stats
+  const coursMap: Record<string, {
+    module: string;
+    yearsSet: Set<number>;
+    totalQuestions: number;
+    examYears: number[];
+  }> = {};
+
+  for (const f of flat) {
+    const key = `${f.module}|||${f.cours}`;
+    if (!coursMap[key]) {
+      coursMap[key] = { module: f.module, yearsSet: new Set(), totalQuestions: 0, examYears: [] };
+    }
+    coursMap[key].yearsSet.add(f.examYear);
+    coursMap[key].totalQuestions += 1;
+  }
+
+  const coursStats = Object.entries(coursMap)
+    .map(([key, data]) => {
+      const [module, cours] = key.split('|||');
+      const yearsAppeared = data.yearsSet.size;
+      return {
+        module,
+        cours,
+        yearsAppeared,
+        totalQuestions: data.totalQuestions,
+        tendanceScore: Math.round((yearsAppeared / totalExamYears) * 100),
+        examYears: Array.from(data.yearsSet).sort((a, b) => a - b),
+      };
+    })
+    .sort((a, b) => b.tendanceScore - a.tendanceScore || b.totalQuestions - a.totalQuestions);
+
+  // Per-module summary
+  const moduleMap: Record<string, {
+    totalCours: number;
+    alwaysTendable: number;
+    oftenTendable: number;
+    totalQuestions: number;
+    coursTopics: string[];
+  }> = {};
+
+  for (const cs of coursStats) {
+    if (!moduleMap[cs.module]) {
+      moduleMap[cs.module] = { totalCours: 0, alwaysTendable: 0, oftenTendable: 0, totalQuestions: 0, coursTopics: [] };
+    }
+    moduleMap[cs.module].totalCours += 1;
+    moduleMap[cs.module].totalQuestions += cs.totalQuestions;
+    if (cs.yearsAppeared === totalExamYears) moduleMap[cs.module].alwaysTendable += 1;
+    else if (cs.yearsAppeared >= totalExamYears - 2) moduleMap[cs.module].oftenTendable += 1;
+  }
+
+  const moduleSummary = Object.entries(moduleMap)
+    .map(([name, data]) => ({
+      module: name,
+      totalCours: data.totalCours,
+      alwaysTendable: data.alwaysTendable,
+      oftenTendable: data.oftenTendable,
+      totalQuestions: data.totalQuestions,
+      tendabilityPct: Math.round((data.alwaysTendable / data.totalCours) * 100),
+    }))
+    .sort((a, b) => b.tendabilityPct - a.tendabilityPct);
+
+  return {
+    totalExamYears,
+    totalCours: coursStats.length,
+    alwaysTendableCount: coursStats.filter((c) => c.yearsAppeared === totalExamYears).length,
+    topCours: coursStats.slice(0, 30), // Top 30 for the chart
+    moduleSummary,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     // ── 1. Auth gate: verify caller is authenticated owner ──────────
@@ -184,6 +270,14 @@ export async function GET(request: NextRequest) {
       .select('id, is_used, used_at, created_at')
       .limit(10000);
 
+    // Also fetch all questions for tendance analysis (unfiltered — needs all historical data)
+    const tendanceQuestionsQuery = supabaseAdmin
+      .from('questions')
+      .select('module_name, cours, exam_year, exam_type')
+      .not('cours', 'is', null)
+      .not('exam_year', 'is', null)
+      .limit(10000);
+
     // Also fetch all device sessions for active users calculation
     const allDeviceSessionsQuery = supabaseAdmin
       .from('device_sessions')
@@ -205,6 +299,7 @@ export async function GET(request: NextRequest) {
       chatLogsResult,
       allActivationKeysResult,
       allDeviceSessionsResult,
+      tendanceQuestionsResult,
     ] = await Promise.all([
       usersQuery,
       questionsQuery,
@@ -219,6 +314,7 @@ export async function GET(request: NextRequest) {
       chatLogsQuery,
       allActivationKeysQuery,
       allDeviceSessionsQuery,
+      tendanceQuestionsQuery,
     ]);
 
     // ── 5. Validate all query results ───────────────────────────────
@@ -235,6 +331,7 @@ export async function GET(request: NextRequest) {
     const chatLogs = checkResult(chatLogsResult, 'chat_logs');
     const allActivationKeys = checkResult(allActivationKeysResult, 'activation_keys (all)');
     const allDeviceSessions = checkResult(allDeviceSessionsResult, 'device_sessions (all)');
+    const tendanceQuestions = checkResult(tendanceQuestionsResult, 'tendance_questions') as any[];
 
     // ── 6. Compute stats ────────────────────────────────────────────
     const allStudents = allUsers.filter((u) => u.role === 'student');
@@ -451,6 +548,7 @@ export async function GET(request: NextRequest) {
         paidPaymentsCount: paidPayments.length,
         offerBreakdown,
       },
+      tendance: computeTendance(tendanceQuestions),
     };
 
     return NextResponse.json(response);

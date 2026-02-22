@@ -114,6 +114,27 @@ interface StatsData {
       durationDays: number;
     }[];
   };
+  tendance: {
+    totalExamYears: number;
+    totalCours: number;
+    alwaysTendableCount: number;
+    topCours: {
+      module: string;
+      cours: string;
+      yearsAppeared: number;
+      totalQuestions: number;
+      tendanceScore: number;
+      examYears: number[];
+    }[];
+    moduleSummary: {
+      module: string;
+      totalCours: number;
+      alwaysTendable: number;
+      oftenTendable: number;
+      totalQuestions: number;
+      tendabilityPct: number;
+    }[];
+  };
 }
 
 // ── Chart colors ────────────────────────────────────────────────────
@@ -254,9 +275,10 @@ export default function StatisticsPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [datePreset, setDatePreset] = useState<DatePreset>("1y");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [tendanceModule, setTendanceModule] = useState<string>("all");
   // Persist last-used filter params for retry
   const lastFilterRef = useRef<{ from: string | null; to: string | null }>({
     from: null,
@@ -386,7 +408,8 @@ export default function StatisticsPage() {
     );
   }
 
-  const { overview, users, engagement, content, growth, revenue } = data;
+  const { overview, users, engagement, content, growth, revenue, tendance } =
+    data;
 
   // Handle preset change
   const handlePresetChange = (preset: DatePreset) => {
@@ -823,6 +846,181 @@ export default function StatisticsPage() {
           </div>
         </div>
       </Section>
+
+      {/* ④b Cours Tendables Section */}
+      {tendance && (
+        <Section title="Cours Tendables" icon="🔥">
+          {/* KPI cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <KpiCard
+              icon="📚"
+              label="Total Cours"
+              value={tendance.totalCours}
+              sub={`dans ${tendance.moduleSummary.length} modules`}
+            />
+            <KpiCard
+              icon="🔥"
+              label="Tombent chaque année"
+              value={tendance.alwaysTendableCount}
+              sub={`${tendance.totalExamYears}/${tendance.totalExamYears} promos`}
+              accent
+            />
+            <KpiCard
+              icon="📊"
+              label="Taux de tendabilité"
+              value={`${Math.round((tendance.alwaysTendableCount / tendance.totalCours) * 100)}%`}
+              sub="cours récurrents"
+            />
+            <KpiCard
+              icon="🗓️"
+              label="Promos analysées"
+              value={tendance.totalExamYears}
+              sub="années d'examens"
+            />
+          </div>
+
+          {/* Module filter */}
+          <div className="bg-theme-card border border-theme rounded-2xl p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <span className="text-sm font-semibold text-theme-secondary flex items-center gap-1.5">
+                🎯 Filtrer par module :
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setTendanceModule("all")}
+                  className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    tendanceModule === "all"
+                      ? "bg-primary text-white shadow-md shadow-primary/25"
+                      : "bg-theme-secondary text-theme-secondary hover:bg-primary/10"
+                  }`}
+                >
+                  Tous
+                </button>
+                {tendance.moduleSummary.map((m) => (
+                  <button
+                    key={m.module}
+                    onClick={() => setTendanceModule(m.module)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      tendanceModule === m.module
+                        ? "bg-primary text-white shadow-md shadow-primary/25"
+                        : "bg-theme-secondary text-theme-secondary hover:bg-primary/10"
+                    }`}
+                  >
+                    {truncateLabel(m.module, 20)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Top Cours Bar Chart */}
+            <div className="bg-theme-card border border-theme rounded-2xl p-5 lg:col-span-2">
+              <h3 className="text-sm font-bold text-theme-secondary mb-4">
+                Top Cours les plus Tendables
+                {tendanceModule !== "all" && (
+                  <span className="ml-2 text-primary font-normal">
+                    — {truncateLabel(tendanceModule, 30)}
+                  </span>
+                )}
+              </h3>
+              <ResponsiveContainer
+                width="100%"
+                height={Math.max(
+                  320,
+                  (tendanceModule === "all"
+                    ? tendance.topCours.slice(0, 15)
+                    : tendance.topCours.filter(
+                        (c) => c.module === tendanceModule,
+                      )
+                  ).length * 28,
+                )}
+              >
+                <BarChart
+                  data={(tendanceModule === "all"
+                    ? tendance.topCours.slice(0, 15)
+                    : tendance.topCours.filter(
+                        (c) => c.module === tendanceModule,
+                      )
+                  ).map((c) => ({
+                    name: truncateLabel(c.cours, 28),
+                    "Score %": c.tendanceScore,
+                    Questions: c.totalQuestions,
+                  }))}
+                  layout="vertical"
+                  margin={{ left: 5, right: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={200}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                  <Bar
+                    dataKey="Questions"
+                    fill="#09b2ac"
+                    radius={[0, 6, 6, 0]}
+                    barSize={12}
+                  />
+                  <Bar
+                    dataKey="Score %"
+                    fill="#f59e0b"
+                    radius={[0, 6, 6, 0]}
+                    barSize={12}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Module Tendability Comparison */}
+            <div className="bg-theme-card border border-theme rounded-2xl p-5">
+              <h3 className="text-sm font-bold text-theme-secondary mb-4">
+                Tendabilité par Module
+              </h3>
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart
+                  data={tendance.moduleSummary.map((m) => ({
+                    name: truncateLabel(m.module, 14),
+                    "Toujours 🔥": m.alwaysTendable,
+                    Souvent: m.oftenTendable,
+                  }))}
+                  layout="vertical"
+                  margin={{ left: 5, right: 20 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={120}
+                    tick={{ fontSize: 10 }}
+                  />
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                  <Bar
+                    dataKey="Toujours 🔥"
+                    stackId="a"
+                    fill="#ef4444"
+                    radius={[0, 0, 0, 0]}
+                    barSize={16}
+                  />
+                  <Bar
+                    dataKey="Souvent"
+                    stackId="a"
+                    fill="#f59e0b"
+                    radius={[0, 6, 6, 0]}
+                    barSize={16}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Section>
+      )}
 
       {/* ⑤ Growth Section */}
       <Section title="Croissance" icon="📈">
