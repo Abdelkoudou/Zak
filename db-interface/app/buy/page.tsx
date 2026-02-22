@@ -302,8 +302,8 @@ export default function BuyPage() {
                             )}
                           </div>
                           <p className="text-sm text-slate-400 mt-0.5">
-                            {formatDuration(plan.durationDays)}
-                            {plan.description && ` • ${plan.description}`}
+                            {plan.description ||
+                              formatDuration(plan.durationDays)}
                           </p>
                         </div>
 
@@ -495,7 +495,9 @@ export default function BuyPage() {
                       <div className="flex justify-between items-center mb-2 text-sm">
                         <span className="text-slate-600">
                           {selectedPlan.name} (
-                          {formatDuration(selectedPlan.durationDays)})
+                          {selectedPlan.description ||
+                            formatDuration(selectedPlan.durationDays)}
+                          )
                         </span>
                         <span className="font-medium text-slate-900">
                           {selectedPlan.amount} DA
