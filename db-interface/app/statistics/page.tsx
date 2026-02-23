@@ -78,6 +78,7 @@ interface StatsData {
   };
   users: {
     byFaculty: { name: string; count: number }[];
+    byFacultyGroup: { name: string; count: number }[];
     byYear: { name: string; count: number }[];
     bySpeciality: { name: string; count: number }[];
   };
@@ -275,7 +276,7 @@ export default function StatisticsPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [datePreset, setDatePreset] = useState<DatePreset>("1y");
+  const [datePreset, setDatePreset] = useState<DatePreset>("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [tendanceModule, setTendanceModule] = useState<string>("all");
@@ -570,7 +571,7 @@ export default function StatisticsPage() {
 
       {/* ② Users Section */}
       <Section title="Utilisateurs" icon="👥">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Paid vs Free Pie */}
           <div className="bg-theme-card border border-theme rounded-2xl p-5">
             <h3 className="text-sm font-bold text-theme-secondary mb-4">
@@ -634,6 +635,33 @@ export default function StatisticsPage() {
                   barSize={18}
                 />
               </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Fac. Mère vs Annexes Pie */}
+          <div className="bg-theme-card border border-theme rounded-2xl p-5">
+            <h3 className="text-sm font-bold text-theme-secondary mb-4">
+              Fac. Mère vs Annexes
+            </h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={users.byFacultyGroup}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={3}
+                  dataKey="count"
+                  nameKey="name"
+                  stroke="none"
+                >
+                  <Cell fill="#09b2ac" />
+                  <Cell fill="#9941ff" />
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </div>

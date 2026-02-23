@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
     // Users: always fetch all (needed for demographic breakdowns)
     const usersQuery = supabaseAdmin
       .from('users')
-      .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
+      .select('id, email, full_name, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
       .limit(10000);
 
     // Questions: apply date filter server-side
@@ -267,8 +267,13 @@ export async function GET(request: NextRequest) {
     // Also fetch unfiltered activation keys for timeline (used_at filter is different)
     const allActivationKeysQuery = supabaseAdmin
       .from('activation_keys')
-      .select('id, is_used, used_at, created_at')
+      .select('id, is_used, used_by, used_at, created_at, sales_point_id')
       .limit(10000);
+
+    // Sales points: small table, needed to identify test/delegate points
+    const salesPointsQuery = supabaseAdmin
+      .from('sales_points')
+      .select('id, name');
 
     // Also fetch all questions for tendance analysis (unfiltered — needs all historical data)
     const TENDANCE_LIMIT = 50000;
@@ -301,6 +306,7 @@ export async function GET(request: NextRequest) {
       allActivationKeysResult,
       allDeviceSessionsResult,
       tendanceQuestionsResult,
+      salesPointsResult,
     ] = await Promise.all([
       usersQuery,
       questionsQuery,
@@ -316,6 +322,7 @@ export async function GET(request: NextRequest) {
       allActivationKeysQuery,
       allDeviceSessionsQuery,
       tendanceQuestionsQuery,
+      salesPointsQuery,
     ]);
 
     // ── 5. Validate all query results ───────────────────────────────
@@ -333,10 +340,45 @@ export async function GET(request: NextRequest) {
     const allActivationKeys = checkResult(allActivationKeysResult, 'activation_keys (all)');
     const allDeviceSessions = checkResult(allDeviceSessionsResult, 'device_sessions (all)');
     const tendanceQuestions = checkResult(tendanceQuestionsResult, 'tendance_questions') as any[];
+    const salesPoints = checkResult(salesPointsResult, 'sales_points') as any[];
 
     // ── 6. Compute stats ────────────────────────────────────────────
+    // Pattern to exclude test / dev / demo accounts
+    const TEST_PATTERNS = /test|\bdev\b|fake|demo/i;
+
+    // Identify test/delegate sales point IDs
+    const TEST_SP_PATTERN = /test|delegate/i;
+    const testSalesPointIds = new Set(
+      salesPoints
+        .filter((sp: any) => TEST_SP_PATTERN.test(sp.name ?? ''))
+        .map((sp: any) => sp.id)
+    );
+
+    // Build map: user_id → sales_point_id (from their used activation key)
+    const userSalesPointMap = new Map<string, string>();
+    const usersWithActivationKey = new Set<string>();
+    for (const ak of allActivationKeys as any[]) {
+      if (ak.is_used && ak.used_by) {
+        usersWithActivationKey.add(ak.used_by);
+        if (ak.sales_point_id) {
+          userSalesPointMap.set(ak.used_by, ak.sales_point_id);
+        }
+      }
+    }
+
     const allStudents = allUsers.filter((u) => u.role === 'student');
-    const students = allStudents.filter((s) => s.is_paid && s.faculty && s.faculty.trim() !== '');
+    const students = allStudents.filter(
+      (s) =>
+        s.is_paid &&
+        s.faculty &&
+        s.faculty.trim() !== '' &&
+        !TEST_PATTERNS.test(s.email ?? '') &&
+        !TEST_PATTERNS.test(s.full_name ?? '') &&
+        // Exclude users with no activation key
+        usersWithActivationKey.has(s.id) &&
+        // Exclude users whose activation key came from a test/delegate sales point
+        !testSalesPointIds.has(userSalesPointMap.get(s.id) ?? '')
+    );
     const studentsInRange = students.filter((u) => inRangeOrNoFilter(u.created_at));
 
     const now = new Date();
@@ -356,23 +398,36 @@ export async function GET(request: NextRequest) {
         .map((s) => s.user_id)
     ).size;
 
+    // Use date-filtered students for demographic breakdowns when filter is active
+    const demographicStudents = hasDateFilter ? studentsInRange : students;
+
     // Users by faculty
     const usersByFaculty: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.faculty || 'Non renseigné';
       usersByFaculty[key] = (usersByFaculty[key] || 0) + 1;
     });
 
+    // Users by faculty group (Fac Mère vs Annexes)
+    const usersByFacultyGroup: Record<string, number> = { 'Fac. Mère': 0, Annexes: 0 };
+    demographicStudents.forEach((u) => {
+      if (u.faculty === 'fac_mere') {
+        usersByFacultyGroup['Fac. Mère'] += 1;
+      } else if (u.faculty && u.faculty.startsWith('annexe_')) {
+        usersByFacultyGroup['Annexes'] += 1;
+      }
+    });
+
     // Users by year of study
     const usersByYear: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.year_of_study || 'Non renseigné';
       usersByYear[key] = (usersByYear[key] || 0) + 1;
     });
 
     // Users by speciality
     const usersBySpeciality: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.speciality || 'Non renseigné';
       usersBySpeciality[key] = (usersBySpeciality[key] || 0) + 1;
     });
@@ -514,6 +569,9 @@ export async function GET(request: NextRequest) {
       },
       users: {
         byFaculty: Object.entries(usersByFaculty)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count),
+        byFacultyGroup: Object.entries(usersByFacultyGroup)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count),
         byYear: Object.entries(usersByYear)
