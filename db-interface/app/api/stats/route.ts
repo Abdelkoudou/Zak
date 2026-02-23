@@ -57,7 +57,7 @@ function computeTendance(questions: any[]) {
         cours,
         yearsAppeared,
         totalQuestions: data.totalQuestions,
-        tendanceScore: Math.round((yearsAppeared / totalExamYears) * 100),
+        tendanceScore: totalExamYears > 0 ? Math.round((yearsAppeared / totalExamYears) * 100) : 0,
         examYears: Array.from(data.yearsSet).sort((a, b) => a - b),
       };
     })
@@ -89,7 +89,7 @@ function computeTendance(questions: any[]) {
       alwaysTendable: data.alwaysTendable,
       oftenTendable: data.oftenTendable,
       totalQuestions: data.totalQuestions,
-      tendabilityPct: Math.round((data.alwaysTendable / data.totalCours) * 100),
+      tendabilityPct: data.totalCours > 0 ? Math.round((data.alwaysTendable / data.totalCours) * 100) : 0,
     }))
     .sort((a, b) => b.tendabilityPct - a.tendabilityPct);
 
@@ -271,12 +271,13 @@ export async function GET(request: NextRequest) {
       .limit(10000);
 
     // Also fetch all questions for tendance analysis (unfiltered — needs all historical data)
+    const TENDANCE_LIMIT = 50000;
     const tendanceQuestionsQuery = supabaseAdmin
       .from('questions')
       .select('module_name, cours, exam_year, exam_type')
       .not('cours', 'is', null)
       .not('exam_year', 'is', null)
-      .limit(10000);
+      .limit(TENDANCE_LIMIT);
 
     // Also fetch all device sessions for active users calculation
     const allDeviceSessionsQuery = supabaseAdmin

@@ -59,10 +59,12 @@ export default function TendancePage() {
 
   // ── Auth + Fetch ──────────────────────────────────────────────────
   useEffect(() => {
+    const controller = new AbortController();
     const fetchData = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      if (controller.signal.aborted) return;
       if (!session) {
         router.push("/login");
         return;
@@ -71,9 +73,11 @@ export default function TendancePage() {
       try {
         const res = await fetch("/api/tendance", {
           headers: { Authorization: `Bearer ${session.access_token}` },
+          signal: controller.signal,
         });
         if (!res.ok) throw new Error("Failed to fetch tendance data");
         const json = await res.json();
+        if (controller.signal.aborted) return;
         setData(json.data || []);
         // Default to first module
         if (json.data?.length > 0) {
@@ -83,12 +87,14 @@ export default function TendancePage() {
           setSelectedModule(modules[0] as string);
         }
       } catch (err: any) {
-        setError(err.message);
+        if (err.name === "AbortError") return;
+        if (!controller.signal.aborted) setError(err.message);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchData();
+    return () => controller.abort();
   }, [router]);
 
   // ── Derived Data ──────────────────────────────────────────────────
@@ -297,9 +303,10 @@ export default function TendancePage() {
                 <div className="space-y-1.5">
                   {entries.map((entry, idx) => {
                     const fire = getFireIndicator(entry.years_appeared);
+                    const safeBase = entries[0]?.question_count || 1;
                     const barWidth = Math.max(
                       8,
-                      (entry.question_count / entries[0].question_count) * 100,
+                      (entry.question_count / safeBase) * 100,
                     );
 
                     return (

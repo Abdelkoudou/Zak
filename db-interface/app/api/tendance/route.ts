@@ -32,15 +32,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Owner access required' }, { status: 403 });
     }
 
-    // Fetch all questions with cours and exam_year
+    // Fetch all questions with cours and exam_year (no hard limit for analytics accuracy)
+    const FETCH_LIMIT = 50000;
     const { data: questions, error } = await supabaseAdmin
       .from('questions')
       .select('module_name, sub_discipline, cours, exam_year')
       .not('cours', 'is', null)
       .not('exam_year', 'is', null)
-      .limit(10000);
+      .limit(FETCH_LIMIT);
 
     if (error) throw error;
+    const isTruncated = (questions?.length ?? 0) >= FETCH_LIMIT;
 
     // Flatten: one entry per (module, sub_discipline, cours_topic, exam_year)
     interface FlatEntry {
@@ -52,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     const flat: FlatEntry[] = [];
     for (const q of questions || []) {
-      if (!q.cours || !Array.isArray(q.cours) || !q.exam_year) continue;
+      if (!q.cours || !Array.isArray(q.cours) || !q.exam_year || !q.module_name) continue;
       const subDisc = q.sub_discipline || q.module_name;
       for (const c of q.cours) {
         flat.push({
@@ -107,7 +109,7 @@ export async function GET(request: NextRequest) {
       });
 
     return NextResponse.json(
-      { data: result, totalExamYears: allExamYears.size },
+      { data: result, totalExamYears: allExamYears.size, isTruncated },
       { headers: rateLimitResult.headers }
     );
   } catch (error: any) {

@@ -868,7 +868,7 @@ export default function StatisticsPage() {
             <KpiCard
               icon="📊"
               label="Taux de tendabilité"
-              value={`${Math.round((tendance.alwaysTendableCount / tendance.totalCours) * 100)}%`}
+              value={`${tendance.totalCours > 0 ? Math.round((tendance.alwaysTendableCount / tendance.totalCours) * 100) : 0}%`}
               sub="cours récurrents"
             />
             <KpiCard
