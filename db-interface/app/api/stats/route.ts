@@ -181,10 +181,11 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. Build server-side filtered queries ───────────────────────
-    // Users: always fetch all (needed for demographic breakdowns)
+    // Users: fetch all non-test students (needed for demographic breakdowns)
     const usersQuery = supabaseAdmin
       .from('users')
-      .select('id, email, full_name, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
+      .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
+      .eq('is_test', false)
       .limit(10000);
 
     // Questions: apply date filter server-side
@@ -268,6 +269,7 @@ export async function GET(request: NextRequest) {
     const allActivationKeysQuery = supabaseAdmin
       .from('activation_keys')
       .select('id, is_used, used_by, used_at, created_at, sales_point_id')
+      .order('used_at', { ascending: false })
       .limit(10000);
 
     // Sales points: small table, needed to identify test/delegate points
@@ -343,11 +345,8 @@ export async function GET(request: NextRequest) {
     const salesPoints = checkResult(salesPointsResult, 'sales_points') as any[];
 
     // ── 6. Compute stats ────────────────────────────────────────────
-    // Pattern to exclude test / dev / demo accounts
-    const TEST_PATTERNS = /test|\bdev\b|fake|demo/i;
-
     // Identify test/delegate sales point IDs
-    const TEST_SP_PATTERN = /test|delegate/i;
+    const TEST_SP_PATTERN = /\btest\b|\bdelegate\b/i;
     const testSalesPointIds = new Set(
       salesPoints
         .filter((sp: any) => TEST_SP_PATTERN.test(sp.name ?? ''))
@@ -355,12 +354,14 @@ export async function GET(request: NextRequest) {
     );
 
     // Build map: user_id → sales_point_id (from their used activation key)
+    // Keys are already sorted by used_at DESC from the query, so the first match wins (deterministic)
     const userSalesPointMap = new Map<string, string>();
     const usersWithActivationKey = new Set<string>();
     for (const ak of allActivationKeys as any[]) {
       if (ak.is_used && ak.used_by) {
         usersWithActivationKey.add(ak.used_by);
-        if (ak.sales_point_id) {
+        // If we haven't seen this user yet, this is their latest key (due to sorting)
+        if (ak.sales_point_id && !userSalesPointMap.has(ak.used_by)) {
           userSalesPointMap.set(ak.used_by, ak.sales_point_id);
         }
       }
@@ -372,8 +373,6 @@ export async function GET(request: NextRequest) {
         s.is_paid &&
         s.faculty &&
         s.faculty.trim() !== '' &&
-        !TEST_PATTERNS.test(s.email ?? '') &&
-        !TEST_PATTERNS.test(s.full_name ?? '') &&
         // Exclude users with no activation key
         usersWithActivationKey.has(s.id) &&
         // Exclude users whose activation key came from a test/delegate sales point

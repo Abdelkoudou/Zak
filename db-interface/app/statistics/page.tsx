@@ -363,7 +363,9 @@ export default function StatisticsPage() {
           return;
         }
 
-        fetchStats();
+        // Initial fetch with default '30d' preset
+        const { from, to } = getPresetDates("30d");
+        fetchStats(from, to);
       } catch (err: any) {
         console.error("[stats] Auth check failed:", err);
         setError("Erreur d'authentification.");
@@ -646,7 +648,7 @@ export default function StatisticsPage() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={users.byFacultyGroup}
+                  data={users?.byFacultyGroup || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={50}
@@ -656,8 +658,12 @@ export default function StatisticsPage() {
                   nameKey="name"
                   stroke="none"
                 >
-                  <Cell fill="#09b2ac" />
-                  <Cell fill="#9941ff" />
+                  {(users?.byFacultyGroup || []).map((_, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={CHART_COLORS[index % CHART_COLORS.length]}
+                    />
+                  ))}
                 </Pie>
                 <Tooltip content={<ChartTooltip />} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
