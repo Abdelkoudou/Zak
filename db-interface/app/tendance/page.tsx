@@ -73,7 +73,6 @@ export default function TendancePage() {
   // Selection state
   const [selectedExamTypes, setSelectedExamTypes] = useState<string[]>([]); // empty = all
   const [selectedPromos, setSelectedPromos] = useState<number[]>([]); // empty = all
-  const [showFilters, setShowFilters] = useState(false);
 
   // ── Auth + Fetch ──────────────────────────────────────────────────
   useEffect(() => {
@@ -129,8 +128,10 @@ export default function TendancePage() {
 
     // 1. Filter raw entries
     const filtered = rawEntries.filter((e) => {
-      const matchType = selectedExamTypes.includes(e.et);
-      const matchPromo = selectedPromos.includes(e.ey);
+      const matchType =
+        selectedExamTypes.length === 0 || selectedExamTypes.includes(e.et);
+      const matchPromo =
+        selectedPromos.length === 0 || selectedPromos.includes(e.ey);
       return matchType && matchPromo;
     });
 
@@ -201,6 +202,18 @@ export default function TendancePage() {
       }))
       .sort((a, b) => b.total_questions - a.total_questions);
   }, [filteredData]);
+
+  // Keep selectedModule valid when filters change
+  useEffect(() => {
+    if (
+      modules.length > 0 &&
+      !modules.some((m) => m.module_name === selectedModule)
+    ) {
+      setSelectedModule(modules[0].module_name);
+    } else if (modules.length === 0 && selectedModule !== "") {
+      setSelectedModule("");
+    }
+  }, [modules, selectedModule]);
 
   const filteredByModule = useMemo(() => {
     return filteredData.filter((d) => d.module_name === selectedModule);
@@ -347,111 +360,99 @@ export default function TendancePage() {
             ({examYearsRange}).
           </p>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all ${
-            showFilters
-              ? "bg-primary text-white shadow-lg shadow-primary/30"
-              : "bg-theme-secondary text-theme-main border border-theme"
-          }`}
-        >
-          {showFilters ? "✨ Cacher les filtres" : "🔍 Afficher les filtres"}
-        </button>
       </div>
 
       {/* Filters Section */}
-      {showFilters && (
-        <div className="bg-theme-card border-2 border-primary/20 rounded-2xl p-6 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Exam Type Filter */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-theme-main flex items-center gap-2">
-                  📝 Type d&apos;examen
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={selectAllTypes}
-                    className="text-[10px] uppercase font-bold text-primary hover:underline"
-                  >
-                    Tous
-                  </button>
-                  <button
-                    onClick={selectEMDOnly}
-                    className="text-[10px] uppercase font-bold text-primary hover:underline"
-                  >
-                    EMD UNIQUEMENT
-                  </button>
-                  <button
-                    onClick={selectRattrapageOnly}
-                    className="text-[10px] uppercase font-bold text-primary hover:underline"
-                  >
-                    RATTRAPAGE
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {availableExamTypes.map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => toggleType(type)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                      selectedExamTypes.includes(type)
-                        ? "bg-primary border-primary text-white"
-                        : "bg-theme-secondary border-theme text-theme-muted hover:border-primary/50"
-                    }`}
-                  >
-                    {type}
-                  </button>
-                ))}
+      <div className="bg-theme-card border-2 border-primary/20 rounded-2xl p-6 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Exam Type Filter */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-theme-main flex items-center gap-2">
+                📝 Type d&apos;examen
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={selectAllTypes}
+                  className="text-[10px] uppercase font-bold text-primary hover:underline"
+                >
+                  Tous
+                </button>
+                <button
+                  onClick={selectEMDOnly}
+                  className="text-[10px] uppercase font-bold text-primary hover:underline"
+                >
+                  EMD UNIQUEMENT
+                </button>
+                <button
+                  onClick={selectRattrapageOnly}
+                  className="text-[10px] uppercase font-bold text-primary hover:underline"
+                >
+                  RATTRAPAGE
+                </button>
               </div>
             </div>
+            <div className="flex flex-wrap gap-2">
+              {availableExamTypes.map((type) => (
+                <button
+                  key={type}
+                  onClick={() => toggleType(type)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                    selectedExamTypes.includes(type)
+                      ? "bg-primary border-primary text-white"
+                      : "bg-theme-secondary border-theme text-theme-muted hover:border-primary/50"
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
 
-            {/* Promo Filter */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-theme-main flex items-center gap-2">
-                  🎓 Promotions (Années)
-                </h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={selectAllPromos}
-                    className="text-[10px] uppercase font-bold text-primary hover:underline"
-                  >
-                    Sélectionner tout
-                  </button>
-                  <button
-                    onClick={deselectAllPromos}
-                    className="text-[10px] uppercase font-bold text-primary hover:underline"
-                  >
-                    Désélectionner tout
-                  </button>
-                </div>
+          {/* Promo Filter */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-theme-main flex items-center gap-2">
+                🎓 Promotions (Années)
+              </h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={selectAllPromos}
+                  className="text-[10px] uppercase font-bold text-primary hover:underline"
+                >
+                  Sélectionner tout
+                </button>
+                <button
+                  onClick={deselectAllPromos}
+                  className="text-[10px] uppercase font-bold text-primary hover:underline"
+                >
+                  Désélectionner tout
+                </button>
               </div>
-              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                {availablePromos.map((year) => (
-                  <label
-                    key={year}
-                    className={`flex items-center justify-center px-2 py-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
-                      selectedPromos.includes(year)
-                        ? "bg-primary/10 border-primary text-primary"
-                        : "bg-theme-secondary border-theme text-theme-muted"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      className="hidden"
-                      checked={selectedPromos.includes(year)}
-                      onChange={() => togglePromo(year)}
-                    />
-                    {year}
-                  </label>
-                ))}
-              </div>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+              {availablePromos.map((year) => (
+                <label
+                  key={year}
+                  className={`flex items-center justify-center px-2 py-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                    selectedPromos.includes(year)
+                      ? "bg-primary/10 border-primary text-primary"
+                      : "bg-theme-secondary border-theme text-theme-muted"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={selectedPromos.includes(year)}
+                    onChange={() => togglePromo(year)}
+                  />
+                  {year}
+                </label>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Module Tabs */}
       <div className="bg-theme-card border border-theme rounded-2xl p-4 shadow-sm">

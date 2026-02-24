@@ -62,11 +62,11 @@ export async function GET(request: NextRequest) {
       if (!q.cours || !Array.isArray(q.cours) || !q.exam_year || !q.module_name) continue;
       const subDisc = q.sub_discipline || q.module_name;
       const examType = q.exam_type || 'Inconnu';
-      
-      allExamYears.add(q.exam_year);
-      allExamTypes.add(examType);
 
       for (const c of q.cours) {
+        allExamYears.add(q.exam_year);
+        allExamTypes.add(examType);
+        
         const key = `${q.module_name}|||${subDisc}|||${c}|||${q.exam_year}|||${examType}`;
         if (!granularMap[key]) {
           granularMap[key] = {
