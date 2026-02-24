@@ -5,6 +5,15 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 
 // ── Types ───────────────────────────────────────────────────────────
+interface GranularEntry {
+  m: string; // module
+  sd: string; // sub-discipline
+  c: string; // course
+  ey: number; // exam year
+  et: string; // exam type
+  cnt: number; // question count
+}
+
 interface CoursEntry {
   module_name: string;
   sub_discipline: string;
@@ -52,10 +61,19 @@ const SUB_DISC_BG: Record<string, string> = {
 
 export default function TendancePage() {
   const router = useRouter();
-  const [data, setData] = useState<CoursEntry[]>([]);
+  const [rawEntries, setRawEntries] = useState<GranularEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedModule, setSelectedModule] = useState<string>("");
+
+  // Available filters (from API)
+  const [availableExamTypes, setAvailableExamTypes] = useState<string[]>([]);
+  const [availablePromos, setAvailablePromos] = useState<number[]>([]);
+
+  // Selection state
+  const [selectedExamTypes, setSelectedExamTypes] = useState<string[]>([]); // empty = all
+  const [selectedPromos, setSelectedPromos] = useState<number[]>([]); // empty = all
+  const [showFilters, setShowFilters] = useState(false);
 
   // ── Auth + Fetch ──────────────────────────────────────────────────
   useEffect(() => {
@@ -78,11 +96,19 @@ export default function TendancePage() {
         if (!res.ok) throw new Error("Failed to fetch tendance data");
         const json = await res.json();
         if (controller.signal.aborted) return;
-        setData(json.data || []);
-        // Default to first module
+
+        setRawEntries(json.data || []);
+        setAvailableExamTypes(json.availableExamTypes || []);
+        setAvailablePromos(json.availableExamYears || []);
+
+        // Default to all selected
+        setSelectedExamTypes(json.availableExamTypes || []);
+        setSelectedPromos(json.availableExamYears || []);
+
+        // Default module
         if (json.data?.length > 0) {
           const modules = [
-            ...new Set(json.data.map((d: CoursEntry) => d.module_name)),
+            ...new Set(json.data.map((d: GranularEntry) => d.m)),
           ];
           setSelectedModule(modules[0] as string);
         }
@@ -97,10 +123,69 @@ export default function TendancePage() {
     return () => controller.abort();
   }, [router]);
 
-  // ── Derived Data ──────────────────────────────────────────────────
+  // ── Filtering + Aggregation ───────────────────────────────────────
+  const filteredData: CoursEntry[] = useMemo(() => {
+    if (!rawEntries.length) return [];
+
+    // 1. Filter raw entries
+    const filtered = rawEntries.filter((e) => {
+      const matchType = selectedExamTypes.includes(e.et);
+      const matchPromo = selectedPromos.includes(e.ey);
+      return matchType && matchPromo;
+    });
+
+    // 2. Aggregate by (module, subDisc, course)
+    const aggMap = new Map<
+      string,
+      {
+        m: string;
+        sd: string;
+        c: string;
+        years: Set<number>;
+        count: number;
+      }
+    >();
+
+    for (const e of filtered) {
+      const key = `${e.m}|||${e.sd}|||${e.c}`;
+      if (!aggMap.has(key)) {
+        aggMap.set(key, {
+          m: e.m,
+          sd: e.sd,
+          c: e.c,
+          years: new Set(),
+          count: 0,
+        });
+      }
+      const item = aggMap.get(key)!;
+      item.years.add(e.ey);
+      item.count += e.cnt;
+    }
+
+    // 3. Convert to CoursEntry format
+    return Array.from(aggMap.values())
+      .map((v) => ({
+        module_name: v.m,
+        sub_discipline: v.sd,
+        cours_topic: v.c,
+        question_count: v.count,
+        years_appeared: v.years.size,
+        exam_years_list: Array.from(v.years).sort((a, b) => a - b),
+      }))
+      .sort((a, b) => {
+        // Sort by module, then sub_discipline, then count DESC
+        if (a.module_name !== b.module_name)
+          return a.module_name.localeCompare(b.module_name);
+        if (a.sub_discipline !== b.sub_discipline)
+          return a.sub_discipline.localeCompare(b.sub_discipline);
+        return b.question_count - a.question_count;
+      });
+  }, [rawEntries, selectedExamTypes, selectedPromos]);
+
+  // ── Derived View Data ─────────────────────────────────────────────
   const modules: ModuleInfo[] = useMemo(() => {
     const moduleMap = new Map<string, { subs: Set<string>; totalQ: number }>();
-    for (const d of data) {
+    for (const d of filteredData) {
       if (!moduleMap.has(d.module_name)) {
         moduleMap.set(d.module_name, { subs: new Set(), totalQ: 0 });
       }
@@ -115,11 +200,11 @@ export default function TendancePage() {
         total_questions: info.totalQ,
       }))
       .sort((a, b) => b.total_questions - a.total_questions);
-  }, [data]);
+  }, [filteredData]);
 
   const filteredByModule = useMemo(() => {
-    return data.filter((d) => d.module_name === selectedModule);
-  }, [data, selectedModule]);
+    return filteredData.filter((d) => d.module_name === selectedModule);
+  }, [filteredData, selectedModule]);
 
   const groupedBySubDisc = useMemo(() => {
     const groups: Record<string, CoursEntry[]> = {};
@@ -148,20 +233,49 @@ export default function TendancePage() {
 
   const totalExamYears = useMemo(() => {
     const years = new Set<number>();
-    for (const d of data) {
+    for (const d of filteredData) {
       for (const y of d.exam_years_list) years.add(y);
     }
     return years.size;
-  }, [data]);
+  }, [filteredData]);
 
   const examYearsRange = useMemo(() => {
     const years = new Set<number>();
-    for (const d of data) {
+    for (const d of filteredData) {
       for (const y of d.exam_years_list) years.add(y);
     }
     const sorted = Array.from(years).sort((a, b) => a - b);
     return sorted.length > 0 ? `${sorted[0]}–${sorted[sorted.length - 1]}` : "";
-  }, [data]);
+  }, [filteredData]);
+
+  // ── Helpers for Filter UI ─────────────────────────────────────────
+  const toggleType = (type: string) => {
+    setSelectedExamTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+  };
+
+  const togglePromo = (promo: number) => {
+    setSelectedPromos((prev) =>
+      prev.includes(promo) ? prev.filter((p) => p !== promo) : [...prev, promo],
+    );
+  };
+
+  const selectEMDOnly = () => {
+    const emdTypes = availableExamTypes.filter((t) => t.startsWith("EMD"));
+    setSelectedExamTypes(emdTypes);
+  };
+
+  const selectRattrapageOnly = () => {
+    const rattrapageTypes = availableExamTypes.filter(
+      (t) => t === "Rattrapage",
+    );
+    setSelectedExamTypes(rattrapageTypes);
+  };
+
+  const selectAllTypes = () => setSelectedExamTypes(availableExamTypes);
+  const selectAllPromos = () => setSelectedPromos(availablePromos);
+  const deselectAllPromos = () => setSelectedPromos([]);
 
   // ── Fire intensity indicator ──────────────────────────────────────
   const getFireIndicator = (yearsAppeared: number) => {
@@ -220,24 +334,133 @@ export default function TendancePage() {
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-theme-main tracking-tight">
-          🔥 Classement des Cours par Tendance
-        </h1>
-        <p className="text-theme-muted text-sm md:text-base max-w-2xl">
-          Classement des cours selon leur importance d&apos;après les{" "}
-          <span className="font-bold text-primary">
-            {totalExamYears} dernières promos
-          </span>{" "}
-          ({examYearsRange}). Les cours qui tombent le plus souvent aux examens
-          sont en haut.
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-theme-main tracking-tight">
+            🔥 Classement des Cours par Tendance
+          </h1>
+          <p className="text-theme-muted text-sm md:text-base max-w-2xl">
+            Classement selon l&apos;importance d&apos;après les{" "}
+            <span className="font-bold text-primary">
+              {totalExamYears} promos sélectionnées
+            </span>{" "}
+            ({examYearsRange}).
+          </p>
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all ${
+            showFilters
+              ? "bg-primary text-white shadow-lg shadow-primary/30"
+              : "bg-theme-secondary text-theme-main border border-theme"
+          }`}
+        >
+          {showFilters ? "✨ Cacher les filtres" : "🔍 Afficher les filtres"}
+        </button>
       </div>
+
+      {/* Filters Section */}
+      {showFilters && (
+        <div className="bg-theme-card border-2 border-primary/20 rounded-2xl p-6 shadow-xl space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Exam Type Filter */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-theme-main flex items-center gap-2">
+                  📝 Type d&apos;examen
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllTypes}
+                    className="text-[10px] uppercase font-bold text-primary hover:underline"
+                  >
+                    Tous
+                  </button>
+                  <button
+                    onClick={selectEMDOnly}
+                    className="text-[10px] uppercase font-bold text-primary hover:underline"
+                  >
+                    EMD UNIQUEMENT
+                  </button>
+                  <button
+                    onClick={selectRattrapageOnly}
+                    className="text-[10px] uppercase font-bold text-primary hover:underline"
+                  >
+                    RATTRAPAGE
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableExamTypes.map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => toggleType(type)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+                      selectedExamTypes.includes(type)
+                        ? "bg-primary border-primary text-white"
+                        : "bg-theme-secondary border-theme text-theme-muted hover:border-primary/50"
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Promo Filter */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-theme-main flex items-center gap-2">
+                  🎓 Promotions (Années)
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllPromos}
+                    className="text-[10px] uppercase font-bold text-primary hover:underline"
+                  >
+                    Sélectionner tout
+                  </button>
+                  <button
+                    onClick={deselectAllPromos}
+                    className="text-[10px] uppercase font-bold text-primary hover:underline"
+                  >
+                    Désélectionner tout
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                {availablePromos.map((year) => (
+                  <label
+                    key={year}
+                    className={`flex items-center justify-center px-2 py-2 rounded-lg border text-xs font-bold cursor-pointer transition-all ${
+                      selectedPromos.includes(year)
+                        ? "bg-primary/10 border-primary text-primary"
+                        : "bg-theme-secondary border-theme text-theme-muted"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="hidden"
+                      checked={selectedPromos.includes(year)}
+                      onChange={() => togglePromo(year)}
+                    />
+                    {year}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Module Tabs */}
       <div className="bg-theme-card border border-theme rounded-2xl p-4 shadow-sm">
-        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3">
-          📚 Sélectionner un module
+        <p className="text-xs font-bold text-theme-muted uppercase tracking-wider mb-3 flex items-center justify-between">
+          <span>📚 Sélectionner un module</span>
+          <span className="text-[10px] font-normal opacity-60">
+            Montrant {filteredByModule.length} cours sur {filteredData.length}{" "}
+            au total
+          </span>
         </p>
         <div className="flex flex-wrap gap-2">
           {modules.map((m) => (
@@ -361,7 +584,7 @@ export default function TendancePage() {
       {/* Footer */}
       <div className="text-center text-xs text-theme-muted pt-4 border-t border-theme">
         Données basées sur {totalExamYears} promos ({examYearsRange}) · Analyse
-        automatique de {data.length} cours
+        automatique de {filteredData.length} cours
       </div>
     </div>
   );

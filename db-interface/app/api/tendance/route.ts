@@ -32,11 +32,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Owner access required' }, { status: 403 });
     }
 
-    // Fetch all questions with cours and exam_year (no hard limit for analytics accuracy)
+    // Fetch all questions with cours, exam_year, and exam_type
     const FETCH_LIMIT = 50000;
     const { data: questions, error } = await supabaseAdmin
       .from('questions')
-      .select('module_name, sub_discipline, cours, exam_year')
+      .select('module_name, sub_discipline, cours, exam_year, exam_type')
       .not('cours', 'is', null)
       .not('exam_year', 'is', null)
       .limit(FETCH_LIMIT);
@@ -44,72 +44,53 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
     const isTruncated = (questions?.length ?? 0) >= FETCH_LIMIT;
 
-    // Flatten: one entry per (module, sub_discipline, cours_topic, exam_year)
-    interface FlatEntry {
-      module: string;
-      subDisc: string;
-      cours: string;
-      examYear: number;
+    // Granular aggregation: (module, subDisc, course, examYear, examType)
+    interface GranularEntry {
+      m: string;   // module
+      sd: string;  // sub-discipline
+      c: string;   // course
+      ey: number;  // exam year
+      et: string;  // exam type
+      cnt: number; // total questions for this combination
     }
 
-    const flat: FlatEntry[] = [];
+    const granularMap: Record<string, GranularEntry> = {};
+    const allExamYears = new Set<number>();
+    const allExamTypes = new Set<string>();
+
     for (const q of questions || []) {
       if (!q.cours || !Array.isArray(q.cours) || !q.exam_year || !q.module_name) continue;
       const subDisc = q.sub_discipline || q.module_name;
+      const examType = q.exam_type || 'Inconnu';
+      
+      allExamYears.add(q.exam_year);
+      allExamTypes.add(examType);
+
       for (const c of q.cours) {
-        flat.push({
-          module: q.module_name,
-          subDisc,
-          cours: c,
-          examYear: q.exam_year,
-        });
+        const key = `${q.module_name}|||${subDisc}|||${c}|||${q.exam_year}|||${examType}`;
+        if (!granularMap[key]) {
+          granularMap[key] = {
+            m: q.module_name,
+            sd: subDisc,
+            c: c,
+            ey: q.exam_year,
+            et: examType,
+            cnt: 0,
+          };
+        }
+        granularMap[key].cnt += 1;
       }
     }
 
-    // Get total distinct exam years
-    const allExamYears = new Set(flat.map((f) => f.examYear));
-
-    // Group by (module, subDisc, cours) → count questions + years appeared
-    const coursMap: Record<
-      string,
-      { module: string; subDisc: string; cours: string; yearsSet: Set<number>; count: number }
-    > = {};
-
-    for (const f of flat) {
-      const key = `${f.module}|||${f.subDisc}|||${f.cours}`;
-      if (!coursMap[key]) {
-        coursMap[key] = {
-          module: f.module,
-          subDisc: f.subDisc,
-          cours: f.cours,
-          yearsSet: new Set(),
-          count: 0,
-        };
-      }
-      coursMap[key].yearsSet.add(f.examYear);
-      coursMap[key].count += 1;
-    }
-
-    // Convert to sorted array
-    const result = Object.values(coursMap)
-      .map((entry) => ({
-        module_name: entry.module,
-        sub_discipline: entry.subDisc,
-        cours_topic: entry.cours,
-        question_count: entry.count,
-        years_appeared: entry.yearsSet.size,
-        exam_years_list: Array.from(entry.yearsSet).sort((a, b) => a - b),
-      }))
-      .sort((a, b) => {
-        // Sort by module, then sub_discipline, then question_count DESC
-        if (a.module_name !== b.module_name) return a.module_name.localeCompare(b.module_name);
-        if (a.sub_discipline !== b.sub_discipline)
-          return a.sub_discipline.localeCompare(b.sub_discipline);
-        return b.question_count - a.question_count;
-      });
+    const data = Object.values(granularMap);
 
     return NextResponse.json(
-      { data: result, totalExamYears: allExamYears.size, isTruncated },
+      { 
+        data, 
+        availableExamYears: Array.from(allExamYears).sort((a, b) => b - a),
+        availableExamTypes: Array.from(allExamTypes).sort(),
+        isTruncated 
+      },
       { headers: rateLimitResult.headers }
     );
   } catch (error: any) {
