@@ -1407,6 +1407,7 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "year_of_study" "text",
     "faculty" "text",
     "is_reviewer" boolean DEFAULT false,
+    "is_test" boolean DEFAULT false,
     CONSTRAINT "users_speciality_check" CHECK ((("speciality" IS NULL) OR ("speciality" = ANY (ARRAY['Médecine'::"text", 'Pharmacie'::"text", 'Dentaire'::"text"])))),
     CONSTRAINT "users_year_of_study_check" CHECK ((("year_of_study" IS NULL) OR ("year_of_study" = ANY (ARRAY['1'::"text", '2'::"text", '3'::"text"]))))
 );
