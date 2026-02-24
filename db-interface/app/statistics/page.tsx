@@ -78,6 +78,7 @@ interface StatsData {
   };
   users: {
     byFaculty: { name: string; count: number }[];
+    byFacultyGroup: { name: string; count: number }[];
     byYear: { name: string; count: number }[];
     bySpeciality: { name: string; count: number }[];
   };
@@ -106,6 +107,34 @@ interface StatsData {
     keysOnline: number;
     totalOnlineRevenue: number;
     paidPaymentsCount: number;
+    offerBreakdown: {
+      offerName: string;
+      amount: number;
+      count: number;
+      revenue: number;
+      durationDays: number;
+    }[];
+  };
+  tendance: {
+    totalExamYears: number;
+    totalCours: number;
+    alwaysTendableCount: number;
+    topCours: {
+      module: string;
+      cours: string;
+      yearsAppeared: number;
+      totalQuestions: number;
+      tendanceScore: number;
+      examYears: number[];
+    }[];
+    moduleSummary: {
+      module: string;
+      totalCours: number;
+      alwaysTendable: number;
+      oftenTendable: number;
+      totalQuestions: number;
+      tendabilityPct: number;
+    }[];
   };
 }
 
@@ -247,9 +276,10 @@ export default function StatisticsPage() {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [datePreset, setDatePreset] = useState<DatePreset>("all");
+  const [datePreset, setDatePreset] = useState<DatePreset>("30d");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [tendanceModule, setTendanceModule] = useState<string>("all");
   // Persist last-used filter params for retry
   const lastFilterRef = useRef<{ from: string | null; to: string | null }>({
     from: null,
@@ -333,7 +363,9 @@ export default function StatisticsPage() {
           return;
         }
 
-        fetchStats();
+        // Initial fetch with default '30d' preset
+        const { from, to } = getPresetDates("30d");
+        fetchStats(from, to);
       } catch (err: any) {
         console.error("[stats] Auth check failed:", err);
         setError("Erreur d'authentification.");
@@ -379,7 +411,8 @@ export default function StatisticsPage() {
     );
   }
 
-  const { overview, users, engagement, content, growth, revenue } = data;
+  const { overview, users, engagement, content, growth, revenue, tendance } =
+    data;
 
   // Handle preset change
   const handlePresetChange = (preset: DatePreset) => {
@@ -540,7 +573,7 @@ export default function StatisticsPage() {
 
       {/* ② Users Section */}
       <Section title="Utilisateurs" icon="👥">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Paid vs Free Pie */}
           <div className="bg-theme-card border border-theme rounded-2xl p-5">
             <h3 className="text-sm font-bold text-theme-secondary mb-4">
@@ -606,6 +639,37 @@ export default function StatisticsPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {/* Fac. Mère vs Annexes Pie */}
+          <div className="bg-theme-card border border-theme rounded-2xl p-5">
+            <h3 className="text-sm font-bold text-theme-secondary mb-4">
+              Fac. Mère vs Annexes
+            </h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <PieChart>
+                <Pie
+                  data={users?.byFacultyGroup || []}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={80}
+                  paddingAngle={3}
+                  dataKey="count"
+                  nameKey="name"
+                  stroke="none"
+                >
+                  {(users?.byFacultyGroup || []).map((_, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={CHART_COLORS[index % CHART_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<ChartTooltip />} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Year of study + speciality row */}
@@ -662,147 +726,6 @@ export default function StatisticsPage() {
                   stroke="none"
                 >
                   {users.bySpeciality.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={CHART_COLORS[i % CHART_COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip content={<ChartTooltip />} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </Section>
-
-      {/* ③ Engagement Section */}
-      <Section title="Engagement" icon="🎯">
-        {/* Engagement KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <KpiCard
-            icon="📊"
-            label="Score moyen"
-            value={`${engagement.avgScore}%`}
-            accent
-          />
-          <KpiCard
-            icon="⏱️"
-            label="Temps moyen / test"
-            value={formatMinutes(engagement.avgTimeSeconds)}
-          />
-          <KpiCard
-            icon="📝"
-            label="Questions répondues"
-            value={engagement.totalQuestionsAnswered.toLocaleString("fr-FR")}
-          />
-          <KpiCard
-            icon="👤"
-            label="Testeurs uniques"
-            value={engagement.uniqueTesters}
-          />
-        </div>
-
-        {/* Top modules bar chart */}
-        <div className="bg-theme-card border border-theme rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-theme-secondary mb-4">
-            Modules les plus pratiqués
-          </h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart
-              data={engagement.topModulesByAttempts.map((m) => ({
-                name: truncateLabel(m.module),
-                tentatives: m.attempts,
-                "score moyen": m.avgScore,
-              }))}
-              layout="vertical"
-              margin={{ left: 5, right: 30 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-              <XAxis type="number" tick={{ fontSize: 11 }} />
-              <YAxis
-                dataKey="name"
-                type="category"
-                width={150}
-                tick={{ fontSize: 11 }}
-              />
-              <Tooltip content={<ChartTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-              <Bar
-                dataKey="tentatives"
-                fill="#09b2ac"
-                radius={[0, 6, 6, 0]}
-                barSize={14}
-              />
-              <Bar
-                dataKey="score moyen"
-                fill="#9941ff"
-                radius={[0, 6, 6, 0]}
-                barSize={14}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </Section>
-
-      {/* ④ Content Section */}
-      <Section title="Contenu" icon="📚">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Questions by module */}
-          <div className="bg-theme-card border border-theme rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-theme-secondary mb-4">
-              Questions par Module
-            </h3>
-            <ResponsiveContainer
-              width="100%"
-              height={Math.max(280, content.questionsByModule.length * 30)}
-            >
-              <BarChart
-                data={content.questionsByModule.map((m) => ({
-                  name: truncateLabel(m.name, 22),
-                  questions: m.count,
-                }))}
-                layout="vertical"
-                margin={{ left: 5, right: 20 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  width={170}
-                  tick={{ fontSize: 10 }}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Bar
-                  dataKey="questions"
-                  fill="#09b2ac"
-                  radius={[0, 6, 6, 0]}
-                  barSize={14}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Questions by exam type */}
-          <div className="bg-theme-card border border-theme rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-theme-secondary mb-4">
-              Questions par Type d&apos;Examen
-            </h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={content.questionsByExamType}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={3}
-                  dataKey="count"
-                  nameKey="name"
-                  stroke="none"
-                >
-                  {content.questionsByExamType.map((_, i) => (
                     <Cell
                       key={i}
                       fill={CHART_COLORS[i % CHART_COLORS.length]}
@@ -911,6 +834,89 @@ export default function StatisticsPage() {
             value={`${(revenue.totalOnlineRevenue / 100).toLocaleString("fr-FR")} DA`}
           />
         </div>
+
+        {/* Offer Breakdown Chart */}
+        {revenue.offerBreakdown && revenue.offerBreakdown.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Pie Chart - Sales by offer */}
+            <div className="bg-theme-card border border-theme rounded-2xl p-5">
+              <h3 className="text-sm font-bold text-theme-secondary mb-4">
+                Ventes par Offre
+              </h3>
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={revenue.offerBreakdown.map((o) => ({
+                      name: o.offerName,
+                      value: o.count,
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {revenue.offerBreakdown.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={CHART_COLORS[i % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ChartTooltip />} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Per-offer KPIs */}
+            <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {revenue.offerBreakdown.map((offer, i) => (
+                <div
+                  key={offer.offerName}
+                  className={`bg-theme-card border border-theme rounded-2xl p-5 flex flex-col gap-2 transition-shadow hover:shadow-lg ${
+                    i === 0 ? "ring-2 ring-primary/30" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                      }}
+                    />
+                    <span className="text-sm font-bold text-theme-main">
+                      {offer.offerName}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-1">
+                    <div>
+                      <p className="text-xs text-theme-muted uppercase tracking-wider font-semibold">
+                        Ventes
+                      </p>
+                      <p className="text-2xl font-extrabold font-heading text-theme-main">
+                        {offer.count}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-theme-muted uppercase tracking-wider font-semibold">
+                        Revenu
+                      </p>
+                      <p className="text-2xl font-extrabold font-heading text-theme-main">
+                        {offer.revenue.toLocaleString("fr-FR")}{" "}
+                        <span className="text-sm font-medium text-theme-muted">
+                          DA
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Footer */}

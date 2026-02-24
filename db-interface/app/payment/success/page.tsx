@@ -12,6 +12,7 @@ interface PaymentStatus {
   customerEmail: string;
   amount: number;
   currency: string;
+  autoActivated?: boolean;
 }
 
 function PaymentSuccessContent() {
@@ -234,9 +235,13 @@ function PaymentSuccessContent() {
           <p className="text-slate-600 mb-6">
             {loading
               ? "Veuillez patienter pendant que nous générons votre code d'activation..."
-              : paymentStatus?.activationCode
-                ? "Merci pour votre achat. Votre code d'activation est prêt !"
-                : "Merci pour votre achat."}
+              : paymentStatus?.autoActivated
+                ? paymentStatus?.activationCode
+                  ? "Votre abonnement a été activé automatiquement sur votre compte ! Vous pouvez également noter votre code ci-dessous."
+                  : "Votre abonnement a été activé automatiquement sur votre compte !"
+                : paymentStatus?.activationCode
+                  ? "Merci pour votre achat. Votre code d'activation est prêt !"
+                  : "Merci pour votre achat."}
           </p>
 
           {loading && (

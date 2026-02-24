@@ -114,12 +114,15 @@ export async function GET(request: NextRequest) {
         }
       }
       
+      // Extract metadata
+      const metadata = checkout.metadata as Record<string, string> | null;
+      const customerEmail = metadata?.customer_email || 'unknown@payment.com';
+      const customerName = metadata?.customer_name || null;
+      const userId = metadata?.user_id || null;
+      const metadataDurationDays = parseInt(metadata?.duration_days || '365') || 365;
+
       // Create payment record if it doesn't exist
       if (!currentPayment) {
-        const metadata = checkout.metadata as Record<string, string> | null;
-        const customerEmail = metadata?.customer_email || 'unknown@payment.com';
-        const customerName = metadata?.customer_name || null;
-        
         await supabaseAdmin
           .from('online_payments')
           .insert({
@@ -129,12 +132,29 @@ export async function GET(request: NextRequest) {
             amount: checkout.amount,
             currency: checkout.currency || 'dzd',
             status: 'pending',
-            duration_days: 365,
+            duration_days: metadataDurationDays,
+            user_id: userId || null,
           });
       }
       
       // Generate secure activation code
       const keyCode = generateSecureActivationCode();
+
+      // CRITICAL: Read duration from the existing online_payments record first,
+      // which was correctly stored during checkout creation. Fall back to metadata.
+      let durationDays = metadataDurationDays;
+      if (currentPayment) {
+        const { data: paymentDurationData } = await supabaseAdmin
+          .from('online_payments')
+          .select('duration_days')
+          .eq('id', currentPayment.id)
+          .single();
+        durationDays = paymentDurationData?.duration_days || metadataDurationDays;
+      }
+
+      // Mask email for logs (avoid raw PII in server output)
+      const maskedEmail = customerEmail.replace(/^(.{3}).*(@.*)$/, '$1***$2');
+      console.log(`[Poll Chargily] Processing payment for ${maskedEmail}. Duration: ${durationDays} days. User ID: ${userId || 'none'}`);
       
       // Fetch "En ligne" sales point ID
       const { data: onlineSP, error: spError } = await supabaseAdmin
@@ -163,11 +183,17 @@ export async function GET(request: NextRequest) {
         .from('activation_keys')
         .insert({
           key_code: keyCode,
-          duration_days: 365,
+          duration_days: durationDays,
           payment_source: 'online',
           sales_point_id: salesPointId,
           notes: `Auto-generated from online payment: ${checkout.id}`,
-          price_paid: checkout.amount / 100,
+          price_paid: checkout.amount, // Chargily v2 uses exact DZD (not centimes)
+          is_used: userId ? true : false,
+          used_by: userId || null,
+          used_at: userId ? new Date().toISOString() : null,
+          expires_at: userId
+            ? (() => { const d = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000); d.setHours(23, 59, 59, 999); return d.toISOString(); })()
+            : null,
         })
         .select('id')
         .single();
@@ -227,7 +253,59 @@ export async function GET(request: NextRequest) {
       if (updateError) {
         console.error('[Poll Chargily] Error updating payment:', updateError);
       }
+
+      // Link activation key to payment record (parity with webhook)
+      const { data: linkedPayment } = await supabaseAdmin
+        .from('online_payments')
+        .select('id')
+        .eq('checkout_id', checkoutId)
+        .single();
+
+      if (linkedPayment) {
+        await supabaseAdmin
+          .from('activation_keys')
+          .update({ payment_id: linkedPayment.id })
+          .eq('id', newKey.id);
+      }
       
+      // AUTOMATED ACTIVATION: If user_id is present, update the user record directly
+      if (userId) {
+        console.log(`[Poll Chargily] Performing automated activation for user: ${userId}`);
+        const expiresAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+        expiresAt.setHours(23, 59, 59, 999);
+
+        const { error: userUpdateError } = await supabaseAdmin
+          .from('users')
+          .update({
+            is_paid: true,
+            subscription_expires_at: expiresAt.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', userId);
+
+        if (userUpdateError) {
+          console.error('[Poll Chargily] Error performing automated activation:', userUpdateError);
+
+          // CRITICAL: Rollback activation key status to prevent "used but not received" state
+          console.warn(`[Poll Chargily] Rolling back activation key ${newKey.id} usage due to user update failure`);
+          const { error: rollbackError } = await supabaseAdmin
+            .from('activation_keys')
+            .update({
+              is_used: false,
+              used_by: null,
+              used_at: null,
+              expires_at: null,
+            })
+            .eq('id', newKey.id);
+
+          if (rollbackError) {
+            console.error('[Poll Chargily] CRITICAL: Failed to rollback activation key:', rollbackError);
+          }
+        } else {
+          console.log(`[Poll Chargily] Successfully activated user: ${userId}`);
+        }
+      }
+
       // Get customer email from payment record
       const { data: paymentData } = await supabaseAdmin
         .from('online_payments')

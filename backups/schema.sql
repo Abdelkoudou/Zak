@@ -495,6 +495,101 @@ $$;
 
 ALTER FUNCTION "public"."create_user_profile"("p_user_id" "uuid", "p_email" "text", "p_full_name" "text", "p_speciality" "text", "p_year_of_study" "text", "p_region" "text", "p_faculty" "text") OWNER TO "postgres";
 
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."subscription_plans" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "name" "text" NOT NULL,
+    "duration_days" integer NOT NULL,
+    "price" integer NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_featured" boolean DEFAULT false NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "subscription_plans_duration_days_check" CHECK (("duration_days" > 0)),
+    CONSTRAINT "subscription_plans_price_check" CHECK (("price" > 0))
+);
+
+
+ALTER TABLE "public"."subscription_plans" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."subscription_plans" IS 'Dynamic subscription plans configurable by the owner from the admin settings page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."duration_days" IS 'Number of days the subscription lasts (owner sets freely)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."price" IS 'Price in DZD (whole dinars, not centimes)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_active" IS 'Whether this plan is shown on the buy page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_featured" IS 'Whether to show a highlight badge on the buy page';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") RETURNS SETOF "public"."subscription_plans"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  target_plan public.subscription_plans;
+  active_count INTEGER;
+BEGIN
+  -- Authorization: allow service-role (auth.uid() IS NULL) or owner users
+  IF auth.uid() IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'Permission denied: only owners can delete plans'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  SELECT * INTO target_plan
+  FROM public.subscription_plans
+  WHERE id = plan_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Plan not found'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_plan.is_active THEN
+    SELECT COUNT(*) INTO active_count
+    FROM public.subscription_plans
+    WHERE is_active = true
+    FOR UPDATE;
+
+    IF active_count <= 1 THEN
+      RAISE EXCEPTION 'Cannot delete the last active plan'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  DELETE FROM public.subscription_plans
+  WHERE id = plan_id
+  RETURNING *;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") OWNER TO "postgres";
+
 
 CREATE OR REPLACE FUNCTION "public"."enforce_max_devices"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1098,6 +1193,61 @@ $$;
 ALTER FUNCTION "public"."search_knowledge_base"("query_embedding" "extensions"."vector", "match_threshold" double precision, "match_count" integer, "filter_category" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") RETURNS SETOF "public"."subscription_plans"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  target_plan public.subscription_plans;
+  active_count INTEGER;
+BEGIN
+  -- Authorization: allow service-role (auth.uid() IS NULL) or owner users
+  IF auth.uid() IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'Permission denied: only owners can toggle plans'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  SELECT * INTO target_plan
+  FROM public.subscription_plans
+  WHERE id = plan_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Plan not found'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_plan.is_active THEN
+    SELECT COUNT(*) INTO active_count
+    FROM public.subscription_plans
+    WHERE is_active = true
+    FOR UPDATE;
+
+    IF active_count <= 1 THEN
+      RAISE EXCEPTION 'Cannot deactivate the last active plan'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  UPDATE public.subscription_plans
+  SET
+    is_active = NOT target_plan.is_active,
+    updated_at = NOW()
+  WHERE id = plan_id
+  RETURNING *;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_session_on_message"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1178,10 +1328,6 @@ $$;
 
 ALTER FUNCTION "public"."validate_activation_key"("p_key_code" "text") OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
 
 CREATE TABLE IF NOT EXISTS "public"."activation_keys" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
@@ -1261,6 +1407,7 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "year_of_study" "text",
     "faculty" "text",
     "is_reviewer" boolean DEFAULT false,
+    "is_test" boolean DEFAULT false,
     CONSTRAINT "users_speciality_check" CHECK ((("speciality" IS NULL) OR ("speciality" = ANY (ARRAY['Médecine'::"text", 'Pharmacie'::"text", 'Dentaire'::"text"])))),
     CONSTRAINT "users_year_of_study_check" CHECK ((("year_of_study" IS NULL) OR ("year_of_study" = ANY (ARRAY['1'::"text", '2'::"text", '3'::"text"]))))
 );
@@ -2061,6 +2208,16 @@ ALTER TABLE ONLY "public"."saved_questions"
 
 
 
+ALTER TABLE ONLY "public"."subscription_plans"
+    ADD CONSTRAINT "subscription_plans_name_key" UNIQUE ("name");
+
+
+
+ALTER TABLE ONLY "public"."subscription_plans"
+    ADD CONSTRAINT "subscription_plans_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."test_attempts"
     ADD CONSTRAINT "test_attempts_pkey" PRIMARY KEY ("id");
 
@@ -2397,6 +2554,14 @@ CREATE INDEX "idx_saved_questions_user" ON "public"."saved_questions" USING "btr
 
 
 
+CREATE INDEX "idx_subscription_plans_active" ON "public"."subscription_plans" USING "btree" ("is_active");
+
+
+
+CREATE INDEX "idx_subscription_plans_sort" ON "public"."subscription_plans" USING "btree" ("sort_order");
+
+
+
 CREATE INDEX "idx_test_attempts_completed" ON "public"."test_attempts" USING "btree" ("completed_at");
 
 
@@ -2502,6 +2667,10 @@ CREATE OR REPLACE TRIGGER "update_resources_updated_at" BEFORE UPDATE ON "public
 
 
 CREATE OR REPLACE TRIGGER "update_sales_points_updated_at" BEFORE UPDATE ON "public"."sales_points" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_subscription_plans_updated_at" BEFORE UPDATE ON "public"."subscription_plans" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -2724,6 +2893,10 @@ CREATE POLICY "Allow update for owners" ON "public"."app_config" FOR UPDATE USIN
 
 
 
+CREATE POLICY "Anyone can read subscription plans" ON "public"."subscription_plans" FOR SELECT USING (("is_active" = true));
+
+
+
 CREATE POLICY "Authenticated users insert courses" ON "public"."courses" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."role"() AS "role") = 'authenticated'::"text"));
 
 
@@ -2756,6 +2929,12 @@ CREATE POLICY "Managers can update resources" ON "public"."course_resources" FOR
 
 
 
+CREATE POLICY "Owners can create plans" ON "public"."subscription_plans" FOR INSERT WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
 CREATE POLICY "Owners can delete chat logs" ON "public"."chat_logs" FOR DELETE TO "authenticated" USING (( SELECT "public"."is_owner"() AS "is_owner"));
 
 
@@ -2770,11 +2949,23 @@ CREATE POLICY "Owners can delete feedback" ON "public"."user_feedback" FOR DELET
 
 
 
+CREATE POLICY "Owners can delete plans" ON "public"."subscription_plans" FOR DELETE USING ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
 CREATE POLICY "Owners can update courses" ON "public"."courses" FOR UPDATE TO "authenticated" USING ("public"."is_owner"()) WITH CHECK ("public"."is_owner"());
 
 
 
 CREATE POLICY "Owners can update feedback" ON "public"."user_feedback" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
+
+
+
+CREATE POLICY "Owners can update plans" ON "public"."subscription_plans" FOR UPDATE USING ((EXISTS ( SELECT 1
    FROM "public"."users"
   WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = 'owner'::"public"."user_role")))));
 
@@ -3032,6 +3223,9 @@ ALTER TABLE "public"."sales_points" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."saved_questions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."subscription_plans" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."test_attempts" ENABLE ROW LEVEL SECURITY;
@@ -3651,6 +3845,18 @@ GRANT ALL ON FUNCTION "public"."create_user_profile"("p_user_id" "uuid", "p_emai
 
 
 
+GRANT ALL ON TABLE "public"."subscription_plans" TO "anon";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "authenticated";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "service_role";
@@ -3747,6 +3953,12 @@ GRANT ALL ON FUNCTION "public"."rollback_failed_registration"("p_user_id" "uuid"
 
 
 
+
+
+
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "service_role";
 
 
 

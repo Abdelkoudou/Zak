@@ -131,6 +131,28 @@ export async function POST(request: NextRequest) {
     }
 
     // ====================================================================
+    // Deep Verification: Server-side userId validation
+    // ====================================================================
+    let verifiedUserId = body.userId;
+    if (verifiedUserId) {
+      const { data: userData, error: userError } = await supabaseAdmin
+        .from('users')
+        .select('email')
+        .eq('id', verifiedUserId)
+        .single();
+      
+      // If user not found or email doesn't match, clear the userId
+      // We use case-insensitive matching for reliability
+      if (userError || !userData || userData.email?.toLowerCase().trim() !== customerEmail) {
+        if (userError && userError.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.error('[Create Checkout] Error verifying userId:', userError);
+        }
+        console.warn(`[Create Checkout] userId mismatch or not found. Ignoring userId for auto-activation. User: ${verifiedUserId}, Email: ${customerEmail}`);
+        verifiedUserId = undefined;
+      }
+    }
+
+    // ====================================================================
     // Look up the plan dynamically from DB
     // ====================================================================
     const plan = await getActivePlanByDuration(durationDays);
@@ -146,7 +168,7 @@ export async function POST(request: NextRequest) {
     const subscriptionLabel = `${plan.name} - ${plan.price} DA`;
 
     // Auto-resolve userId from email if not provided (for renewal page guests)
-    let resolvedUserId = body.userId || '';
+    let resolvedUserId = verifiedUserId || '';
     if (!resolvedUserId && customerEmail) {
       const { data: userLookup } = await supabaseAdmin
         .from('users')
@@ -181,7 +203,7 @@ export async function POST(request: NextRequest) {
         source: 'web',
         customer_email: customerEmail,
         customer_name: customerName || '',
-        user_id: resolvedUserId, // Auto-resolved from email if not provided
+        user_id: resolvedUserId, // Auto-resolved/verified user ID for automatic activation
         plan_id: plan.id,
         plan_name: plan.name,
       },
@@ -198,6 +220,7 @@ export async function POST(request: NextRequest) {
         amount: subscriptionAmount,
         currency: 'dzd',
         duration_days: durationDays,
+        user_id: resolvedUserId || null, // Store the verified/resolved user ID if available
         checkout_url: checkout.checkout_url,
         success_url: successUrl,
         failure_url: failureUrl,

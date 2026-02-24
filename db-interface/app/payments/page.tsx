@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { formatAmount } from '@/lib/chargily';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { formatAmount } from "@/lib/chargily";
 
 interface OnlinePayment {
   id: string;
@@ -13,7 +13,7 @@ interface OnlinePayment {
   customerPhone: string | null;
   amount: number;
   currency: string;
-  status: 'pending' | 'paid' | 'failed' | 'canceled' | 'refunded';
+  status: "pending" | "paid" | "failed" | "canceled" | "refunded";
   paymentMethod: string | null;
   durationDays: number;
   activationKeyId: string | null;
@@ -41,30 +41,39 @@ export default function PaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [payments, setPayments] = useState<OnlinePayment[]>([]);
   const [stats, setStats] = useState<PaymentStats | null>(null);
-  const [filter, setFilter] = useState<'all' | 'paid' | 'pending' | 'failed'>('all');
-  const [searchEmail, setSearchEmail] = useState('');
+  const [filter, setFilter] = useState<"all" | "paid" | "pending" | "failed">(
+    "all",
+  );
+  const [offerFilter, setOfferFilter] = useState<"all" | "1000" | "300">("all");
+  const [searchEmail, setSearchEmail] = useState("");
 
   const fetchPayments = useCallback(async () => {
     let query = supabase
-      .from('online_payments')
-      .select(`
+      .from("online_payments")
+      .select(
+        `
         *,
         activation_key:activation_keys!online_payments_activation_key_id_fkey(key_code, is_used)
-      `)
-      .order('created_at', { ascending: false });
+      `,
+      )
+      .order("created_at", { ascending: false });
 
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
+
+    if (offerFilter !== "all") {
+      query = query.eq("amount", parseInt(offerFilter));
     }
 
     if (searchEmail) {
-      query = query.ilike('customer_email', `%${searchEmail}%`);
+      query = query.ilike("customer_email", `%${searchEmail}%`);
     }
 
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching payments:', error);
+      console.error("Error fetching payments:", error);
       return;
     }
 
@@ -80,26 +89,28 @@ export default function PaymentsPage() {
       paymentMethod: row.payment_method,
       durationDays: row.duration_days,
       activationKeyId: row.activation_key_id,
-      activationKey: row.activation_key ? {
-        keyCode: row.activation_key.key_code,
-        isUsed: row.activation_key.is_used,
-      } : undefined,
+      activationKey: row.activation_key
+        ? {
+            keyCode: row.activation_key.key_code,
+            isUsed: row.activation_key.is_used,
+          }
+        : undefined,
       checkoutUrl: row.checkout_url,
       createdAt: new Date(row.created_at),
       paidAt: row.paid_at ? new Date(row.paid_at) : null,
     }));
 
     setPayments(transformed);
-  }, [filter, searchEmail]);
+  }, [filter, offerFilter, searchEmail]);
 
   const fetchStats = async () => {
     const { data, error } = await supabase
-      .from('online_payment_stats')
-      .select('*')
+      .from("online_payment_stats")
+      .select("*")
       .single();
 
     if (error) {
-      console.error('Error fetching stats:', error);
+      console.error("Error fetching stats:", error);
       return;
     }
 
@@ -116,20 +127,22 @@ export default function PaymentsPage() {
   // Check auth
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
       const { data: user } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
         .single();
 
-      if (!user || user.role !== 'owner') {
-        router.push('/');
+      if (!user || user.role !== "owner") {
+        router.push("/");
         return;
       }
 
@@ -149,21 +162,23 @@ export default function PaymentsPage() {
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      paid: 'bg-green-100 text-green-800 border border-green-200',
-      pending: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-      failed: 'bg-red-100 text-red-800 border border-red-200',
-      canceled: 'bg-gray-100 text-gray-800 border border-gray-200',
-      refunded: 'bg-purple-100 text-purple-800 border border-purple-200',
+      paid: "bg-green-100 text-green-800 border border-green-200",
+      pending: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+      failed: "bg-red-100 text-red-800 border border-red-200",
+      canceled: "bg-gray-100 text-gray-800 border border-gray-200",
+      refunded: "bg-purple-100 text-purple-800 border border-purple-200",
     };
     const labels: Record<string, string> = {
-      paid: 'Payé',
-      pending: 'En attente',
-      failed: 'Échoué',
-      canceled: 'Annulé',
-      refunded: 'Remboursé',
+      paid: "Payé",
+      pending: "En attente",
+      failed: "Échoué",
+      canceled: "Annulé",
+      refunded: "Remboursé",
     };
     return (
-      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-heading uppercase tracking-wide ${styles[status] || 'bg-gray-100 text-gray-800 border border-gray-200'}`}>
+      <span
+        className={`px-2.5 py-0.5 rounded-full text-xs font-bold font-heading uppercase tracking-wide ${styles[status] || "bg-gray-100 text-gray-800 border border-gray-200"}`}
+      >
         {labels[status] || status}
       </span>
     );
@@ -192,7 +207,7 @@ export default function PaymentsPage() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => router.push('/activation-codes')}
+              onClick={() => router.push("/activation-codes")}
               className="px-4 py-2 bg-white border border-[#e8e1d5] rounded-lg text-[#404040] hover:bg-[#f0eadf] hover:text-[#262626] transition-colors font-medium text-sm shadow-sm"
             >
               Gérer les codes
@@ -204,24 +219,116 @@ export default function PaymentsPage() {
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">Total Paiements</p>
-              <p className="text-3xl font-bold text-[#262626] font-heading">{stats.totalPayments}</p>
+              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">
+                Total Paiements
+              </p>
+              <p className="text-3xl font-bold text-[#262626] font-heading">
+                {stats.totalPayments}
+              </p>
             </div>
             <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">Réussis</p>
-              <p className="text-3xl font-bold text-[#10B981] font-heading">{stats.successfulPayments}</p>
+              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">
+                Réussis
+              </p>
+              <p className="text-3xl font-bold text-[#10B981] font-heading">
+                {stats.successfulPayments}
+              </p>
             </div>
             <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow">
-              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">En Attente</p>
-              <p className="text-3xl font-bold text-yellow-600 font-heading">{stats.pendingPayments}</p>
+              <p className="text-xs font-bold text-[#737373] uppercase tracking-wider mb-2 font-heading">
+                En Attente
+              </p>
+              <p className="text-3xl font-bold text-yellow-600 font-heading">
+                {stats.pendingPayments}
+              </p>
             </div>
             <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <svg className="w-16 h-16 text-[#09b2ac]" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" /><path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" /></svg>
+                <svg
+                  className="w-16 h-16 text-[#09b2ac]"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                  <path
+                    fillRule="evenodd"
+                    d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
               </div>
-              <p className="text-xs font-bold text-[#09b2ac] uppercase tracking-wider mb-2 font-heading">Revenus Totaux</p>
+              <p className="text-xs font-bold text-[#09b2ac] uppercase tracking-wider mb-2 font-heading">
+                Revenus Totaux
+              </p>
               <p className="text-3xl font-bold text-[#09b2ac] font-heading">
-                {stats.totalRevenue.toLocaleString('fr-DZ')} <span className="text-lg text-[#09b2ac]/70">DA</span>
+                {stats.totalRevenue.toLocaleString("fr-DZ")}{" "}
+                <span className="text-lg text-[#09b2ac]/70">DA</span>
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Per-Offer Stats */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <span className="text-lg">📅</span>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#737373] uppercase tracking-wider font-heading">
+                    Offre 1 An (1000 DA)
+                  </p>
+                  <p className="text-2xl font-bold text-[#262626] font-heading">
+                    {
+                      payments.filter(
+                        (p) => p.amount === 1000 && p.status === "paid",
+                      ).length
+                    }{" "}
+                    ventes
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-[#737373] mt-1">
+                Revenu:{" "}
+                <span className="font-semibold text-[#10B981]">
+                  {payments
+                    .filter((p) => p.amount === 1000 && p.status === "paid")
+                    .reduce((sum, p) => sum + p.amount, 0)
+                    .toLocaleString("fr-DZ")}{" "}
+                  DA
+                </span>
+              </p>
+            </div>
+            <div className="bg-white rounded-xl p-6 border border-[#e8e1d5] shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <span className="text-lg">⚡</span>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-[#737373] uppercase tracking-wider font-heading">
+                    Offre 20 Jours (300 DA)
+                  </p>
+                  <p className="text-2xl font-bold text-[#262626] font-heading">
+                    {
+                      payments.filter(
+                        (p) => p.amount === 300 && p.status === "paid",
+                      ).length
+                    }{" "}
+                    ventes
+                  </p>
+                </div>
+              </div>
+              <p className="text-sm text-[#737373] mt-1">
+                Revenu:{" "}
+                <span className="font-semibold text-[#3b82f6]">
+                  {payments
+                    .filter((p) => p.amount === 300 && p.status === "paid")
+                    .reduce((sum, p) => sum + p.amount, 0)
+                    .toLocaleString("fr-DZ")}{" "}
+                  DA
+                </span>
               </p>
             </div>
           </div>
@@ -231,26 +338,54 @@ export default function PaymentsPage() {
         <div className="bg-white rounded-xl p-5 border border-[#e8e1d5] shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-wrap gap-2">
-              {(['all', 'paid', 'pending', 'failed'] as const).map((f) => (
+              {(["all", "paid", "pending", "failed"] as const).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 font-heading ${filter === f
-                      ? 'bg-[#09b2ac] text-white shadow-md shadow-[#09b2ac]/20'
-                      : 'bg-[#f0eadf] text-[#404040] hover:bg-[#e8e1d5] hover:text-[#262626]'
-                    }`}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 font-heading ${
+                    filter === f
+                      ? "bg-[#09b2ac] text-white shadow-md shadow-[#09b2ac]/20"
+                      : "bg-[#f0eadf] text-[#404040] hover:bg-[#e8e1d5] hover:text-[#262626]"
+                  }`}
                 >
-                  {f === 'all' && 'Tous'}
-                  {f === 'paid' && 'Payés'}
-                  {f === 'pending' && 'En attente'}
-                  {f === 'failed' && 'Échoués'}
+                  {f === "all" && "Tous"}
+                  {f === "paid" && "Payés"}
+                  {f === "pending" && "En attente"}
+                  {f === "failed" && "Échoués"}
+                </button>
+              ))}
+              <div className="w-px h-6 bg-[#e8e1d5] mx-1 hidden md:block" />
+              {(["all", "1000", "300"] as const).map((f) => (
+                <button
+                  key={`offer-${f}`}
+                  onClick={() => setOfferFilter(f)}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 font-heading ${
+                    offerFilter === f
+                      ? "bg-[#3b82f6] text-white shadow-md shadow-[#3b82f6]/20"
+                      : "bg-[#f0eadf] text-[#404040] hover:bg-[#e8e1d5] hover:text-[#262626]"
+                  }`}
+                >
+                  {f === "all" && "📦 Toutes offres"}
+                  {f === "1000" && "📅 1 An"}
+                  {f === "300" && "⚡ 20 Jours"}
                 </button>
               ))}
             </div>
             <div className="flex-1 max-w-md relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-[#a3a3a3]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg
+                  className="h-5 w-5 text-[#a3a3a3]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
               </div>
               <input
@@ -293,29 +428,54 @@ export default function PaymentsPage() {
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center text-[#737373]">
-                        <svg className="w-12 h-12 mb-3 text-[#e8e1d5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          className="w-12 h-12 mb-3 text-[#e8e1d5]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
-                        <p className="text-base font-medium">Aucun paiement trouvé</p>
-                        <p className="text-sm mt-1">Essayez de modifier vos filtres</p>
+                        <p className="text-base font-medium">
+                          Aucun paiement trouvé
+                        </p>
+                        <p className="text-sm mt-1">
+                          Essayez de modifier vos filtres
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   payments.map((payment) => (
-                    <tr key={payment.id} className="hover:bg-[#f8f2e8]/50 transition-colors">
+                    <tr
+                      key={payment.id}
+                      className="hover:bg-[#f8f2e8]/50 transition-colors"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-[#09b2ac]/10 flex items-center justify-center text-[#09b2ac] font-bold text-lg mr-3">
-                            {payment.customerName ? payment.customerName.charAt(0).toUpperCase() : (payment.customerEmail ? payment.customerEmail.charAt(0).toUpperCase() : '?')}
+                            {payment.customerName
+                              ? payment.customerName.charAt(0).toUpperCase()
+                              : payment.customerEmail
+                                ? payment.customerEmail.charAt(0).toUpperCase()
+                                : "?"}
                           </div>
                           <div>
                             <p className="font-bold text-[#262626] font-heading">
-                              {payment.customerName || 'N/A'}
+                              {payment.customerName || "N/A"}
                             </p>
-                            <p className="text-sm text-[#737373]">{payment.customerEmail}</p>
+                            <p className="text-sm text-[#737373]">
+                              {payment.customerEmail}
+                            </p>
                             {payment.customerPhone && (
-                              <p className="text-xs text-[#a3a3a3] mt-0.5">{payment.customerPhone}</p>
+                              <p className="text-xs text-[#a3a3a3] mt-0.5">
+                                {payment.customerPhone}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -333,7 +493,19 @@ export default function PaymentsPage() {
                           {getStatusBadge(payment.status)}
                           {payment.paymentMethod && (
                             <p className="text-xs text-[#a3a3a3] flex items-center gap-1">
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                />
+                              </svg>
                               {payment.paymentMethod}
                             </p>
                           )}
@@ -347,28 +519,50 @@ export default function PaymentsPage() {
                             </code>
                             {payment.activationKey.isUsed && (
                               <span className="inline-flex items-center text-xs font-medium text-[#10B981]">
-                                <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                <svg
+                                  className="w-3 h-3 mr-1"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
                                 Utilisé
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="text-[#a3a3a3] italic">Non généré</span>
+                          <span className="text-[#a3a3a3] italic">
+                            Non généré
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-[#737373]">
                         <p className="font-medium text-[#262626]">
-                          {payment.createdAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {payment.createdAt.toLocaleDateString("fr-FR", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
                         </p>
                         <p className="text-xs text-[#737373]">
-                          {payment.createdAt.toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {payment.createdAt.toLocaleTimeString("fr-FR", {
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </p>
                         {payment.paidAt && (
                           <p className="text-xs text-[#10B981] mt-1 font-medium">
-                            Payé le {payment.paidAt.toLocaleDateString('fr-FR', { day: 'numeric', month: 'numeric' })}
+                            Payé le{" "}
+                            {payment.paidAt.toLocaleDateString("fr-FR", {
+                              day: "numeric",
+                              month: "numeric",
+                            })}
                           </p>
                         )}
                       </td>

@@ -16,6 +16,92 @@ function checkResult<T>(
   return result.data ?? ([] as unknown as T);
 }
 
+// ── Helper: compute tendance (course repetition) stats ──────────────
+function computeTendance(questions: any[]) {
+  // Flatten: one entry per (module, cours_topic, exam_year)
+  const flat: { module: string; cours: string; examYear: number; examType: string }[] = [];
+  for (const q of questions) {
+    if (!q.cours || !Array.isArray(q.cours) || !q.exam_year) continue;
+    for (const c of q.cours) {
+      flat.push({ module: q.module_name, cours: c, examYear: q.exam_year, examType: q.exam_type });
+    }
+  }
+
+  // Total distinct exam years in the dataset
+  const allExamYears = new Set(flat.map((f) => f.examYear));
+  const totalExamYears = allExamYears.size;
+
+  // Per-cours stats
+  const coursMap: Record<string, {
+    module: string;
+    yearsSet: Set<number>;
+    totalQuestions: number;
+    examYears: number[];
+  }> = {};
+
+  for (const f of flat) {
+    const key = `${f.module}|||${f.cours}`;
+    if (!coursMap[key]) {
+      coursMap[key] = { module: f.module, yearsSet: new Set(), totalQuestions: 0, examYears: [] };
+    }
+    coursMap[key].yearsSet.add(f.examYear);
+    coursMap[key].totalQuestions += 1;
+  }
+
+  const coursStats = Object.entries(coursMap)
+    .map(([key, data]) => {
+      const [module, cours] = key.split('|||');
+      const yearsAppeared = data.yearsSet.size;
+      return {
+        module,
+        cours,
+        yearsAppeared,
+        totalQuestions: data.totalQuestions,
+        tendanceScore: totalExamYears > 0 ? Math.round((yearsAppeared / totalExamYears) * 100) : 0,
+        examYears: Array.from(data.yearsSet).sort((a, b) => a - b),
+      };
+    })
+    .sort((a, b) => b.tendanceScore - a.tendanceScore || b.totalQuestions - a.totalQuestions);
+
+  // Per-module summary
+  const moduleMap: Record<string, {
+    totalCours: number;
+    alwaysTendable: number;
+    oftenTendable: number;
+    totalQuestions: number;
+    coursTopics: string[];
+  }> = {};
+
+  for (const cs of coursStats) {
+    if (!moduleMap[cs.module]) {
+      moduleMap[cs.module] = { totalCours: 0, alwaysTendable: 0, oftenTendable: 0, totalQuestions: 0, coursTopics: [] };
+    }
+    moduleMap[cs.module].totalCours += 1;
+    moduleMap[cs.module].totalQuestions += cs.totalQuestions;
+    if (cs.yearsAppeared === totalExamYears) moduleMap[cs.module].alwaysTendable += 1;
+    else if (cs.yearsAppeared >= totalExamYears - 2) moduleMap[cs.module].oftenTendable += 1;
+  }
+
+  const moduleSummary = Object.entries(moduleMap)
+    .map(([name, data]) => ({
+      module: name,
+      totalCours: data.totalCours,
+      alwaysTendable: data.alwaysTendable,
+      oftenTendable: data.oftenTendable,
+      totalQuestions: data.totalQuestions,
+      tendabilityPct: data.totalCours > 0 ? Math.round((data.alwaysTendable / data.totalCours) * 100) : 0,
+    }))
+    .sort((a, b) => b.tendabilityPct - a.tendabilityPct);
+
+  return {
+    totalExamYears,
+    totalCours: coursStats.length,
+    alwaysTendableCount: coursStats.filter((c) => c.yearsAppeared === totalExamYears).length,
+    topCours: coursStats.slice(0, 30), // Top 30 for the chart
+    moduleSummary,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     // ── 1. Auth gate: verify caller is authenticated owner ──────────
@@ -95,10 +181,11 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 3. Build server-side filtered queries ───────────────────────
-    // Users: always fetch all (needed for demographic breakdowns)
+    // Users: fetch all non-test students (needed for demographic breakdowns)
     const usersQuery = supabaseAdmin
       .from('users')
       .select('id, role, is_paid, faculty, region, speciality, year_of_study, created_at, subscription_expires_at')
+      .eq('is_test', false)
       .limit(10000);
 
     // Questions: apply date filter server-side
@@ -136,7 +223,7 @@ export async function GET(request: NextRequest) {
     // Online payments: filter by created_at
     let onlinePaymentsQuery = supabaseAdmin
       .from('online_payments')
-      .select('id, status, amount, payment_method, created_at, paid_at')
+      .select('id, status, amount, duration_days, payment_method, created_at, paid_at')
       .limit(10000);
     if (dateFrom) onlinePaymentsQuery = onlinePaymentsQuery.gte('created_at', dateFrom.toISOString());
     if (dateTo) onlinePaymentsQuery = onlinePaymentsQuery.lte('created_at', dateTo.toISOString());
@@ -181,8 +268,23 @@ export async function GET(request: NextRequest) {
     // Also fetch unfiltered activation keys for timeline (used_at filter is different)
     const allActivationKeysQuery = supabaseAdmin
       .from('activation_keys')
-      .select('id, is_used, used_at, created_at')
+      .select('id, is_used, used_by, used_at, created_at, sales_point_id')
+      .order('used_at', { ascending: false })
       .limit(10000);
+
+    // Sales points: small table, needed to identify test/delegate points
+    const salesPointsQuery = supabaseAdmin
+      .from('sales_points')
+      .select('id, name');
+
+    // Also fetch all questions for tendance analysis (unfiltered — needs all historical data)
+    const TENDANCE_LIMIT = 50000;
+    const tendanceQuestionsQuery = supabaseAdmin
+      .from('questions')
+      .select('module_name, cours, exam_year, exam_type')
+      .not('cours', 'is', null)
+      .not('exam_year', 'is', null)
+      .limit(TENDANCE_LIMIT);
 
     // Also fetch all device sessions for active users calculation
     const allDeviceSessionsQuery = supabaseAdmin
@@ -205,6 +307,8 @@ export async function GET(request: NextRequest) {
       chatLogsResult,
       allActivationKeysResult,
       allDeviceSessionsResult,
+      tendanceQuestionsResult,
+      salesPointsResult,
     ] = await Promise.all([
       usersQuery,
       questionsQuery,
@@ -219,6 +323,8 @@ export async function GET(request: NextRequest) {
       chatLogsQuery,
       allActivationKeysQuery,
       allDeviceSessionsQuery,
+      tendanceQuestionsQuery,
+      salesPointsQuery,
     ]);
 
     // ── 5. Validate all query results ───────────────────────────────
@@ -235,10 +341,43 @@ export async function GET(request: NextRequest) {
     const chatLogs = checkResult(chatLogsResult, 'chat_logs');
     const allActivationKeys = checkResult(allActivationKeysResult, 'activation_keys (all)');
     const allDeviceSessions = checkResult(allDeviceSessionsResult, 'device_sessions (all)');
+    const tendanceQuestions = checkResult(tendanceQuestionsResult, 'tendance_questions') as any[];
+    const salesPoints = checkResult(salesPointsResult, 'sales_points') as any[];
 
     // ── 6. Compute stats ────────────────────────────────────────────
+    // Identify test/delegate sales point IDs
+    const TEST_SP_PATTERN = /\btest\b|\bdelegate\b/i;
+    const testSalesPointIds = new Set(
+      salesPoints
+        .filter((sp: any) => TEST_SP_PATTERN.test(sp.name ?? ''))
+        .map((sp: any) => sp.id)
+    );
+
+    // Build map: user_id → sales_point_id (from their used activation key)
+    // Keys are already sorted by used_at DESC from the query, so the first match wins (deterministic)
+    const userSalesPointMap = new Map<string, string>();
+    const usersWithActivationKey = new Set<string>();
+    for (const ak of allActivationKeys as any[]) {
+      if (ak.is_used && ak.used_by) {
+        usersWithActivationKey.add(ak.used_by);
+        // If we haven't seen this user yet, this is their latest key (due to sorting)
+        if (ak.sales_point_id && !userSalesPointMap.has(ak.used_by)) {
+          userSalesPointMap.set(ak.used_by, ak.sales_point_id);
+        }
+      }
+    }
+
     const allStudents = allUsers.filter((u) => u.role === 'student');
-    const students = allStudents.filter((s) => s.is_paid && s.faculty && s.faculty.trim() !== '');
+    const students = allStudents.filter(
+      (s) =>
+        s.is_paid &&
+        s.faculty &&
+        s.faculty.trim() !== '' &&
+        // Exclude users with no activation key
+        usersWithActivationKey.has(s.id) &&
+        // Exclude users whose activation key came from a test/delegate sales point
+        !testSalesPointIds.has(userSalesPointMap.get(s.id) ?? '')
+    );
     const studentsInRange = students.filter((u) => inRangeOrNoFilter(u.created_at));
 
     const now = new Date();
@@ -258,23 +397,36 @@ export async function GET(request: NextRequest) {
         .map((s) => s.user_id)
     ).size;
 
+    // Use date-filtered students for demographic breakdowns when filter is active
+    const demographicStudents = hasDateFilter ? studentsInRange : students;
+
     // Users by faculty
     const usersByFaculty: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.faculty || 'Non renseigné';
       usersByFaculty[key] = (usersByFaculty[key] || 0) + 1;
     });
 
+    // Users by faculty group (Fac Mère vs Annexes)
+    const usersByFacultyGroup: Record<string, number> = { 'Fac. Mère': 0, Annexes: 0 };
+    demographicStudents.forEach((u) => {
+      if (u.faculty === 'fac_mere') {
+        usersByFacultyGroup['Fac. Mère'] += 1;
+      } else if (u.faculty && u.faculty.startsWith('annexe_')) {
+        usersByFacultyGroup['Annexes'] += 1;
+      }
+    });
+
     // Users by year of study
     const usersByYear: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.year_of_study || 'Non renseigné';
       usersByYear[key] = (usersByYear[key] || 0) + 1;
     });
 
     // Users by speciality
     const usersBySpeciality: Record<string, number> = {};
-    students.forEach((u) => {
+    demographicStudents.forEach((u) => {
       const key = u.speciality || 'Non renseigné';
       usersBySpeciality[key] = (usersBySpeciality[key] || 0) + 1;
     });
@@ -358,6 +510,32 @@ export async function GET(request: NextRequest) {
     const paidPayments = onlinePayments.filter((p) => p.status === 'paid');
     const totalOnlineRevenue = paidPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
 
+    // Per-offer breakdown
+    const offerMap: Record<string, { count: number; revenue: number; durationDays: number }> = {};
+    paidPayments.forEach((p) => {
+      const key = `${p.amount}`;
+      if (!offerMap[key]) {
+        offerMap[key] = { count: 0, revenue: 0, durationDays: p.duration_days || 0 };
+      }
+      offerMap[key].count += 1;
+      offerMap[key].revenue += p.amount || 0;
+    });
+
+    const OFFER_LABELS: Record<string, string> = {
+      '1000': '1 An (1000 DA)',
+      '300': '20 Jours (300 DA)',
+    };
+
+    const offerBreakdown = Object.entries(offerMap)
+      .map(([amount, data]) => ({
+        offerName: OFFER_LABELS[amount] || `${amount} DA`,
+        amount: parseInt(amount),
+        count: data.count,
+        revenue: data.revenue,
+        durationDays: data.durationDays,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
+
     // Subscription status (always current snapshot)
     const expiredSubs = students.filter(
       (s) => s.subscription_expires_at && new Date(s.subscription_expires_at) < now
@@ -392,6 +570,9 @@ export async function GET(request: NextRequest) {
         byFaculty: Object.entries(usersByFaculty)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count),
+        byFacultyGroup: Object.entries(usersByFacultyGroup)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count),
         byYear: Object.entries(usersByYear)
           .map(([name, count]) => ({ name, count }))
           .sort((a, b) => b.count - a.count),
@@ -423,7 +604,9 @@ export async function GET(request: NextRequest) {
         keysOnline,
         totalOnlineRevenue,
         paidPaymentsCount: paidPayments.length,
+        offerBreakdown,
       },
+      tendance: computeTendance(tendanceQuestions),
     };
 
     return NextResponse.json(response);
