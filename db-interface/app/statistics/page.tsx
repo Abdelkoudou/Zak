@@ -813,9 +813,6 @@ export default function StatisticsPage() {
         </div>
       </Section>
 
-      {/* Revenue mini-section */}
-      
-
       {/* Footer */}
       <div className="text-center text-xs text-theme-muted pt-4 border-t border-theme">
         Données en temps réel depuis Supabase ·{" "}

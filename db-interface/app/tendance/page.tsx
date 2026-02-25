@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { Download } from "lucide-react";
+import html2canvas from "html2canvas-pro";
+import TendanceShareCard from "@/components/TendanceShareCard";
+import type { ShareSubDiscGroup } from "@/components/TendanceShareCard";
 
 // ── Types ───────────────────────────────────────────────────────────
 interface GranularEntry {
@@ -65,6 +69,8 @@ export default function TendancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedModule, setSelectedModule] = useState<string>("");
+  const [exporting, setExporting] = useState(false);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Available filters (from API)
   const [availableExamTypes, setAvailableExamTypes] = useState<string[]>([]);
@@ -290,6 +296,44 @@ export default function TendancePage() {
   const selectAllPromos = () => setSelectedPromos(availablePromos);
   const deselectAllPromos = () => setSelectedPromos([]);
 
+  // ── Export handler ──────────────────────────────────────────────────
+  const handleExport = useCallback(async () => {
+    if (!shareCardRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 1,
+        useCORS: true,
+        backgroundColor: null,
+        width: 1080,
+        height: 1080,
+      });
+      const link = document.createElement("a");
+      link.download = `tendance-${selectedModule.replace(/\s+/g, "-").toLowerCase()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [exporting, selectedModule]);
+
+  // ── Data for share card ────────────────────────────────────────────
+  const shareCardSubGroups: ShareSubDiscGroup[] = useMemo(() => {
+    return groupedBySubDisc.map(([subDisc, entries]) => ({
+      sub_discipline: subDisc,
+      entries: entries.map((e) => ({
+        cours_topic: e.cours_topic,
+        question_count: e.question_count,
+      })),
+    }));
+  }, [groupedBySubDisc]);
+
+  const selectedModuleInfo = useMemo(() => {
+    return modules.find((m) => m.module_name === selectedModule);
+  }, [modules, selectedModule]);
+
   // ── Loading / Error States ────────────────────────────────────────
   if (loading) {
     return (
@@ -332,6 +376,14 @@ export default function TendancePage() {
             ({examYearsRange}).
           </p>
         </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting || !selectedModule}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Download className="w-4 h-4" />
+          {exporting ? "Export en cours..." : "Exporter"}
+        </button>
       </div>
 
       {/* Filters Section */}
@@ -549,6 +601,27 @@ export default function TendancePage() {
       <div className="text-center text-xs text-theme-muted pt-4 border-t border-theme">
         Données basées sur {totalExamYears} promos ({examYearsRange}) · Analyse
         automatique de {filteredData.length} cours
+      </div>
+
+      {/* Hidden Share Card for export (rendered off-screen) */}
+      <div
+        style={{
+          position: "fixed",
+          left: -9999,
+          top: -9999,
+          zIndex: -1,
+          pointerEvents: "none",
+        }}
+        aria-hidden="true"
+      >
+        <TendanceShareCard
+          ref={shareCardRef}
+          moduleName={selectedModule}
+          totalQuestions={selectedModuleInfo?.total_questions ?? 0}
+          examYearsRange={examYearsRange}
+          totalExamYears={totalExamYears}
+          subDiscGroups={shareCardSubGroups}
+        />
       </div>
     </div>
   );
