@@ -290,34 +290,6 @@ export default function TendancePage() {
   const selectAllPromos = () => setSelectedPromos(availablePromos);
   const deselectAllPromos = () => setSelectedPromos([]);
 
-  // ── Fire intensity indicator ──────────────────────────────────────
-  const getFireIndicator = (yearsAppeared: number) => {
-    const ratio = yearsAppeared / Math.max(totalExamYears, 1);
-    if (ratio >= 1)
-      return {
-        fire: "🔥🔥🔥",
-        label: "Chaque année",
-        color: "text-red-600 dark:text-red-400",
-      };
-    if (ratio >= 0.8)
-      return {
-        fire: "🔥🔥",
-        label: "Très fréquent",
-        color: "text-orange-600 dark:text-orange-400",
-      };
-    if (ratio >= 0.5)
-      return {
-        fire: "🔥",
-        label: "Fréquent",
-        color: "text-amber-600 dark:text-amber-400",
-      };
-    return {
-      fire: "💡",
-      label: "Occasionnel",
-      color: "text-blue-600 dark:text-blue-400",
-    };
-  };
-
   // ── Loading / Error States ────────────────────────────────────────
   if (loading) {
     return (
@@ -526,7 +498,6 @@ export default function TendancePage() {
               <div className="p-4 md:p-5">
                 <div className="space-y-1.5">
                   {entries.map((entry, idx) => {
-                    const fire = getFireIndicator(entry.years_appeared);
                     const safeBase = entries[0]?.question_count || 1;
                     const barWidth = Math.max(
                       8,
@@ -545,14 +516,9 @@ export default function TendancePage() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-semibold text-theme-main truncate">
-                              {entry.cours_topic}
-                            </p>
-                            <span className="text-xs font-mono opacity-60 flex-shrink-0">
-                              {fire.fire}
-                            </span>
-                          </div>
+                          <p className="text-sm font-semibold text-theme-main truncate mb-1">
+                            {entry.cours_topic}
+                          </p>
 
                           {/* Progress Bar */}
                           <div className="w-full h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
@@ -565,9 +531,6 @@ export default function TendancePage() {
 
                         {/* Stats */}
                         <div className="flex items-center gap-3 flex-shrink-0">
-                          <span className="text-xs font-medium text-theme-muted">
-                            {entry.years_appeared}/{totalExamYears} promos
-                          </span>
                           <span className="text-sm font-bold text-theme-main bg-white dark:bg-slate-800 border border-theme rounded-lg px-2.5 py-1 shadow-sm">
                             {entry.question_count} Q
                           </span>
