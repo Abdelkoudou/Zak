@@ -167,17 +167,6 @@ export async function POST(request: NextRequest) {
     const subscriptionAmount = plan.price;
     const subscriptionLabel = `${plan.name} - ${plan.price} DA`;
 
-    // Auto-resolve userId from email if not provided (for renewal page guests)
-    let resolvedUserId = verifiedUserId || '';
-    if (!resolvedUserId && customerEmail) {
-      const { data: userLookup } = await supabaseAdmin
-        .from('users')
-        .select('id')
-        .eq('email', customerEmail)
-        .single();
-      resolvedUserId = userLookup?.id || '';
-    }
-
     // Build URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3005';
     const successUrl = `${baseUrl}/payment/success`;
@@ -203,7 +192,7 @@ export async function POST(request: NextRequest) {
         source: 'web',
         customer_email: customerEmail,
         customer_name: customerName || '',
-        user_id: resolvedUserId, // Auto-resolved/verified user ID for automatic activation
+        user_id: verifiedUserId || '', // Include the verified user ID for automatic activation
         plan_id: plan.id,
         plan_name: plan.name,
       },
@@ -220,7 +209,7 @@ export async function POST(request: NextRequest) {
         amount: subscriptionAmount,
         currency: 'dzd',
         duration_days: durationDays,
-        user_id: resolvedUserId || null, // Store the verified/resolved user ID if available
+        user_id: verifiedUserId || null, // Store the verified user ID if available
         checkout_url: checkout.checkout_url,
         success_url: successUrl,
         failure_url: failureUrl,

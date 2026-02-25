@@ -20,7 +20,6 @@ import {
   KeyboardAvoidingView,
   LayoutAnimation,
   ActivityIndicator,
-  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -421,20 +420,18 @@ export default function ProfileScreen() {
   };
 
   const getSubscriptionStatus = () => {
-    if (!user?.is_paid)
-      return { label: "Non actif", color: "error", daysLeft: 0 };
+    if (!user?.is_paid) return { label: "Non actif", color: "error" };
     if (!user.subscription_expires_at)
-      return { label: "Actif", color: "success", daysLeft: Infinity };
+      return { label: "Actif", color: "success" };
     const expiryDate = new Date(user.subscription_expires_at);
     const now = new Date();
-    if (expiryDate < now)
-      return { label: "Expiré", color: "error", daysLeft: 0 };
+    if (expiryDate < now) return { label: "Expiré", color: "error" };
     const daysLeft = Math.ceil(
       (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
     );
     if (daysLeft <= 7)
-      return { label: `Expire dans ${daysLeft}j`, color: "warning", daysLeft };
-    return { label: "Actif", color: "success", daysLeft };
+      return { label: `Expire dans ${daysLeft}j`, color: "warning" };
+    return { label: "Actif", color: "success" };
   };
 
   if (isLoading) {
@@ -755,170 +752,6 @@ export default function ProfileScreen() {
               )}
             </Animated.View>
           </Pressable>
-
-          {/* Subscription Renewal Warning Banner */}
-          {subscriptionStatus.daysLeft <= 10 &&
-            subscriptionStatus.daysLeft > 0 &&
-            user?.email && (
-              <FadeInView delay={30} animation="slideUp">
-                <View style={{ marginTop: 20 }}>
-                  <ThemedCard colors={colors} isDark={isDark}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 44,
-                          height: 44,
-                          backgroundColor: "rgba(245, 158, 11, 0.12)",
-                          borderRadius: 14,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginRight: 14,
-                        }}
-                      >
-                        <Text style={{ fontSize: 22 }}>⏰</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 16,
-                            fontWeight: "700",
-                            color: "#D97706",
-                          }}
-                        >
-                          Abonnement expire dans {subscriptionStatus.daysLeft}j
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: colors.textMuted,
-                            marginTop: 2,
-                          }}
-                        >
-                          Renouvelez pour garder l'accès à vos QCMs
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        const baseUrl = "https://www.fmcplatform.com";
-                        const renewUrl = `${baseUrl}/renew?email=${encodeURIComponent(user.email!)}`;
-                        Linking.openURL(renewUrl);
-                      }}
-                      activeOpacity={0.8}
-                      style={{
-                        backgroundColor: "#F59E0B",
-                        borderRadius: 14,
-                        paddingVertical: 13,
-                        alignItems: "center",
-                        shadowColor: "#F59E0B",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 8,
-                        elevation: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#ffffff",
-                          fontSize: 15,
-                          fontWeight: "700",
-                        }}
-                      >
-                        🔄 Renouveler maintenant
-                      </Text>
-                    </TouchableOpacity>
-                  </ThemedCard>
-                </View>
-              </FadeInView>
-            )}
-
-          {/* Subscription Expired Banner */}
-          {subscriptionStatus.color === "error" &&
-            user?.is_paid &&
-            user?.email && (
-              <FadeInView delay={30} animation="slideUp">
-                <View style={{ marginTop: 20 }}>
-                  <ThemedCard colors={colors} isDark={isDark}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 12,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 44,
-                          height: 44,
-                          backgroundColor: "rgba(239, 68, 68, 0.12)",
-                          borderRadius: 14,
-                          alignItems: "center",
-                          justifyContent: "center",
-                          marginRight: 14,
-                        }}
-                      >
-                        <Text style={{ fontSize: 22 }}>🚫</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{
-                            fontSize: 16,
-                            fontWeight: "700",
-                            color: "#DC2626",
-                          }}
-                        >
-                          Abonnement expiré
-                        </Text>
-                        <Text
-                          style={{
-                            fontSize: 13,
-                            color: colors.textMuted,
-                            marginTop: 2,
-                          }}
-                        >
-                          Votre accès est limité. Renouvelez pour continuer.
-                        </Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        const baseUrl = "https://www.fmcplatform.com";
-                        const renewUrl = `${baseUrl}/renew?email=${encodeURIComponent(user.email!)}`;
-                        Linking.openURL(renewUrl);
-                      }}
-                      activeOpacity={0.8}
-                      style={{
-                        backgroundColor: "#DC2626",
-                        borderRadius: 14,
-                        paddingVertical: 13,
-                        alignItems: "center",
-                        shadowColor: "#DC2626",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 8,
-                        elevation: 4,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: "#ffffff",
-                          fontSize: 15,
-                          fontWeight: "700",
-                        }}
-                      >
-                        🔄 Renouveler maintenant
-                      </Text>
-                    </TouchableOpacity>
-                  </ThemedCard>
-                </View>
-              </FadeInView>
-            )}
 
           {/* Dark Mode Toggle */}
           <FadeInView delay={50} animation="slideUp">

@@ -13,7 +13,6 @@ import {
   Image,
   useWindowDimensions,
   Animated,
-  Linking,
 } from "react-native";
 import { router, useNavigation, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -127,8 +126,6 @@ export default function LoginScreen() {
   const [showResendLink, setShowResendLink] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [subscriptionExpired, setSubscriptionExpired] = useState(false);
-  const [expiredEmail, setExpiredEmail] = useState<string | null>(null);
 
   // Check for URL errors on mount (password reset errors)
   useEffect(() => {
@@ -361,28 +358,20 @@ export default function LoginScreen() {
 
     setError(null);
     setShowResendLink(false);
-    setSubscriptionExpired(false);
-    setExpiredEmail(null);
 
     if (__DEV__) console.log("[Login] Starting login...");
-    const {
-      error: loginError,
-      subscriptionExpired: isExpired,
-      expiredEmail: userEmail,
-    } = await signIn(email.trim().toLowerCase(), password);
+    const { error: loginError } = await signIn(
+      email.trim().toLowerCase(),
+      password,
+    );
     if (__DEV__)
       console.log("[Login] Login result:", {
         hasError: !!loginError,
         error: loginError,
-        isExpired,
       });
 
     if (loginError) {
       setError(loginError);
-      if (isExpired) {
-        setSubscriptionExpired(true);
-        setExpiredEmail(userEmail || email.trim().toLowerCase());
-      }
     } else {
       if (__DEV__) console.log("[Login] Success, redirecting to tabs...");
       router.replace("/(tabs)");
@@ -653,80 +642,8 @@ export default function LoginScreen() {
               </FadeInView>
             )}
 
-            {/* Subscription Expired Renewal Card */}
-            {subscriptionExpired && expiredEmail && (
-              <FadeInView animation="scale">
-                <View
-                  style={{
-                    backgroundColor: "rgba(245, 158, 11, 0.08)",
-                    borderWidth: 1,
-                    borderColor: "rgba(245, 158, 11, 0.3)",
-                    borderRadius: 20,
-                    padding: 20,
-                    marginBottom: 24,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 32, marginBottom: 8 }}>⏰</Text>
-                  <Text
-                    style={{
-                      fontSize: 17,
-                      fontWeight: "700",
-                      color: BRAND_THEME.colors.gray[900],
-                      textAlign: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Abonnement expiré
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: BRAND_THEME.colors.gray[500],
-                      textAlign: "center",
-                      marginBottom: 16,
-                      lineHeight: 20,
-                    }}
-                  >
-                    Renouvelez votre abonnement pour continuer à accéder à vos
-                    QCMs
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const baseUrl = "https://www.fmcplatform.com";
-                      const renewUrl = `${baseUrl}/renew?email=${encodeURIComponent(expiredEmail)}`;
-                      Linking.openURL(renewUrl);
-                    }}
-                    style={{
-                      backgroundColor: "#F59E0B",
-                      borderRadius: 14,
-                      paddingVertical: 14,
-                      paddingHorizontal: 32,
-                      width: "100%",
-                      alignItems: "center",
-                      shadowColor: "#F59E0B",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#ffffff",
-                        fontSize: 16,
-                        fontWeight: "700",
-                      }}
-                    >
-                      🔄 Renouveler mon abonnement
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </FadeInView>
-            )}
-
             {/* Error */}
-            {error && !subscriptionExpired && (
+            {error && (
               <FadeInView animation="scale">
                 <View style={{ marginBottom: 24 }}>
                   <UIAlert
@@ -1066,80 +983,8 @@ export default function LoginScreen() {
               </FadeInView>
             )}
 
-            {/* Subscription Expired Renewal Card */}
-            {subscriptionExpired && expiredEmail && (
-              <FadeInView animation="scale">
-                <View
-                  style={{
-                    backgroundColor: "rgba(245, 158, 11, 0.08)",
-                    borderWidth: 1,
-                    borderColor: "rgba(245, 158, 11, 0.3)",
-                    borderRadius: 20,
-                    padding: 20,
-                    marginBottom: 24,
-                    alignItems: "center",
-                  }}
-                >
-                  <Text style={{ fontSize: 32, marginBottom: 8 }}>⏰</Text>
-                  <Text
-                    style={{
-                      fontSize: 17,
-                      fontWeight: "700",
-                      color: BRAND_THEME.colors.gray[900],
-                      textAlign: "center",
-                      marginBottom: 6,
-                    }}
-                  >
-                    Abonnement expiré
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: BRAND_THEME.colors.gray[500],
-                      textAlign: "center",
-                      marginBottom: 16,
-                      lineHeight: 20,
-                    }}
-                  >
-                    Renouvelez votre abonnement pour continuer à accéder à vos
-                    QCMs
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const baseUrl = "https://www.fmcplatform.com";
-                      const renewUrl = `${baseUrl}/renew?email=${encodeURIComponent(expiredEmail)}`;
-                      Linking.openURL(renewUrl);
-                    }}
-                    style={{
-                      backgroundColor: "#F59E0B",
-                      borderRadius: 14,
-                      paddingVertical: 14,
-                      paddingHorizontal: 32,
-                      width: "100%",
-                      alignItems: "center",
-                      shadowColor: "#F59E0B",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 4,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "#ffffff",
-                        fontSize: 16,
-                        fontWeight: "700",
-                      }}
-                    >
-                      🔄 Renouveler mon abonnement
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </FadeInView>
-            )}
-
             {/* Error */}
-            {error && !subscriptionExpired && (
+            {error && (
               <FadeInView animation="scale">
                 <View style={{ marginBottom: 24 }}>
                   <UIAlert

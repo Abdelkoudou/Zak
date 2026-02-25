@@ -51,11 +51,7 @@ interface AuthContextType {
   signIn: (
     email: string,
     password: string,
-  ) => Promise<{
-    error: string | null;
-    subscriptionExpired?: boolean;
-    expiredEmail?: string;
-  }>;
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<{ error: string | null }>;
   updateProfile: (data: ProfileUpdateData) => Promise<{ error: string | null }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -460,22 +456,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signIn = async (
     email: string,
     password: string,
-  ): Promise<{
-    error: string | null;
-    subscriptionExpired?: boolean;
-    expiredEmail?: string;
-  }> => {
+  ): Promise<{ error: string | null }> => {
     try {
       setIsLoading(true);
-      const {
-        user: loggedInUser,
-        error,
-        subscriptionExpired,
-        expiredEmail,
-      } = await authService.signIn(email, password);
+      const { user: loggedInUser, error } = await authService.signIn(
+        email,
+        password,
+      );
 
       if (error) {
-        return { error, subscriptionExpired, expiredEmail };
+        return { error };
       }
 
       setUser(loggedInUser);
