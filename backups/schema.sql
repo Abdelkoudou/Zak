@@ -495,6 +495,101 @@ $$;
 
 ALTER FUNCTION "public"."create_user_profile"("p_user_id" "uuid", "p_email" "text", "p_full_name" "text", "p_speciality" "text", "p_year_of_study" "text", "p_region" "text", "p_faculty" "text") OWNER TO "postgres";
 
+SET default_tablespace = '';
+
+SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."subscription_plans" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "name" "text" NOT NULL,
+    "duration_days" integer NOT NULL,
+    "price" integer NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_featured" boolean DEFAULT false NOT NULL,
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "subscription_plans_duration_days_check" CHECK (("duration_days" > 0)),
+    CONSTRAINT "subscription_plans_price_check" CHECK (("price" > 0))
+);
+
+
+ALTER TABLE "public"."subscription_plans" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."subscription_plans" IS 'Dynamic subscription plans configurable by the owner from the admin settings page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."duration_days" IS 'Number of days the subscription lasts (owner sets freely)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."price" IS 'Price in DZD (whole dinars, not centimes)';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_active" IS 'Whether this plan is shown on the buy page';
+
+
+
+COMMENT ON COLUMN "public"."subscription_plans"."is_featured" IS 'Whether to show a highlight badge on the buy page';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") RETURNS SETOF "public"."subscription_plans"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  target_plan public.subscription_plans;
+  active_count INTEGER;
+BEGIN
+  -- Authorization: allow service-role (auth.uid() IS NULL) or owner users
+  IF auth.uid() IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'Permission denied: only owners can delete plans'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  SELECT * INTO target_plan
+  FROM public.subscription_plans
+  WHERE id = plan_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Plan not found'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_plan.is_active THEN
+    SELECT COUNT(*) INTO active_count
+    FROM public.subscription_plans
+    WHERE is_active = true
+    FOR UPDATE;
+
+    IF active_count <= 1 THEN
+      RAISE EXCEPTION 'Cannot delete the last active plan'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  DELETE FROM public.subscription_plans
+  WHERE id = plan_id
+  RETURNING *;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") OWNER TO "postgres";
+
 
 CREATE OR REPLACE FUNCTION "public"."enforce_max_devices"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1098,6 +1193,61 @@ $$;
 ALTER FUNCTION "public"."search_knowledge_base"("query_embedding" "extensions"."vector", "match_threshold" double precision, "match_count" integer, "filter_category" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") RETURNS SETOF "public"."subscription_plans"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  target_plan public.subscription_plans;
+  active_count INTEGER;
+BEGIN
+  -- Authorization: allow service-role (auth.uid() IS NULL) or owner users
+  IF auth.uid() IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.users
+      WHERE id = auth.uid() AND role = 'owner'
+    ) THEN
+      RAISE EXCEPTION 'Permission denied: only owners can toggle plans'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  SELECT * INTO target_plan
+  FROM public.subscription_plans
+  WHERE id = plan_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Plan not found'
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  IF target_plan.is_active THEN
+    SELECT COUNT(*) INTO active_count
+    FROM public.subscription_plans
+    WHERE is_active = true
+    FOR UPDATE;
+
+    IF active_count <= 1 THEN
+      RAISE EXCEPTION 'Cannot deactivate the last active plan'
+        USING ERRCODE = 'P0001';
+    END IF;
+  END IF;
+
+  RETURN QUERY
+  UPDATE public.subscription_plans
+  SET
+    is_active = NOT target_plan.is_active,
+    updated_at = NOW()
+  WHERE id = plan_id
+  RETURNING *;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_session_on_message"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1178,10 +1328,6 @@ $$;
 
 ALTER FUNCTION "public"."validate_activation_key"("p_key_code" "text") OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
 
 CREATE TABLE IF NOT EXISTS "public"."activation_keys" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
@@ -1261,6 +1407,7 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "year_of_study" "text",
     "faculty" "text",
     "is_reviewer" boolean DEFAULT false,
+    "is_test" boolean DEFAULT false,
     CONSTRAINT "users_speciality_check" CHECK ((("speciality" IS NULL) OR ("speciality" = ANY (ARRAY['Médecine'::"text", 'Pharmacie'::"text", 'Dentaire'::"text"])))),
     CONSTRAINT "users_year_of_study_check" CHECK ((("year_of_study" IS NULL) OR ("year_of_study" = ANY (ARRAY['1'::"text", '2'::"text", '3'::"text"]))))
 );
@@ -1860,45 +2007,6 @@ COMMENT ON TABLE "public"."saved_questions" IS 'User bookmarked questions';
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."subscription_plans" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "name" "text" NOT NULL,
-    "duration_days" integer NOT NULL,
-    "price" integer NOT NULL,
-    "is_active" boolean DEFAULT true NOT NULL,
-    "sort_order" integer DEFAULT 0 NOT NULL,
-    "is_featured" boolean DEFAULT false NOT NULL,
-    "description" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "subscription_plans_duration_days_check" CHECK (("duration_days" > 0)),
-    CONSTRAINT "subscription_plans_price_check" CHECK (("price" > 0))
-);
-
-
-ALTER TABLE "public"."subscription_plans" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."subscription_plans" IS 'Dynamic subscription plans configurable by the owner from the admin settings page';
-
-
-
-COMMENT ON COLUMN "public"."subscription_plans"."duration_days" IS 'Number of days the subscription lasts (owner sets freely)';
-
-
-
-COMMENT ON COLUMN "public"."subscription_plans"."price" IS 'Price in DZD (whole dinars, not centimes)';
-
-
-
-COMMENT ON COLUMN "public"."subscription_plans"."is_active" IS 'Whether this plan is shown on the buy page';
-
-
-
-COMMENT ON COLUMN "public"."subscription_plans"."is_featured" IS 'Whether to show a highlight badge on the buy page';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."test_attempts" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2097,6 +2205,11 @@ ALTER TABLE ONLY "public"."saved_questions"
 
 ALTER TABLE ONLY "public"."saved_questions"
     ADD CONSTRAINT "saved_questions_user_id_question_id_key" UNIQUE ("user_id", "question_id");
+
+
+
+ALTER TABLE ONLY "public"."subscription_plans"
+    ADD CONSTRAINT "subscription_plans_name_key" UNIQUE ("name");
 
 
 
@@ -2780,7 +2893,7 @@ CREATE POLICY "Allow update for owners" ON "public"."app_config" FOR UPDATE USIN
 
 
 
-CREATE POLICY "Anyone can read subscription plans" ON "public"."subscription_plans" FOR SELECT USING (true);
+CREATE POLICY "Anyone can read subscription plans" ON "public"."subscription_plans" FOR SELECT USING (("is_active" = true));
 
 
 
@@ -3732,6 +3845,18 @@ GRANT ALL ON FUNCTION "public"."create_user_profile"("p_user_id" "uuid", "p_emai
 
 
 
+GRANT ALL ON TABLE "public"."subscription_plans" TO "anon";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "authenticated";
+GRANT ALL ON TABLE "public"."subscription_plans" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."delete_plan_safe"("plan_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enforce_max_devices"() TO "service_role";
@@ -3828,6 +3953,12 @@ GRANT ALL ON FUNCTION "public"."rollback_failed_registration"("p_user_id" "uuid"
 
 
 
+
+
+
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "service_role";
 
 
 
@@ -4047,12 +4178,6 @@ GRANT ALL ON TABLE "public"."sales_point_stats" TO "service_role";
 GRANT ALL ON TABLE "public"."saved_questions" TO "anon";
 GRANT ALL ON TABLE "public"."saved_questions" TO "authenticated";
 GRANT ALL ON TABLE "public"."saved_questions" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."subscription_plans" TO "anon";
-GRANT ALL ON TABLE "public"."subscription_plans" TO "authenticated";
-GRANT ALL ON TABLE "public"."subscription_plans" TO "service_role";
 
 
 

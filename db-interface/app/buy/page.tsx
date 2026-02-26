@@ -125,11 +125,22 @@ export default function BuyPage() {
     setLoading(true);
 
     try {
-      // Get current user ID if logged in
+      // Get current user session if logged in
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      const userId = session?.user?.id;
+
+      // OPTION 2: Smart Auto-Activation
+      // Only auto-activate if the logged-in user is purchasing for themselves (email match).
+      // This prevents admin/owner accounts from hijacking auto-activation for other customers.
+      // We use case-insensitive and trimmed comparison for reliability.
+      const userEmail = session?.user?.email?.toLowerCase().trim();
+      const formEmail = email.toLowerCase().trim();
+
+      const userId =
+        session?.user?.id && userEmail === formEmail
+          ? session.user.id
+          : undefined;
 
       const response = await fetch("/api/payments/create-checkout", {
         method: "POST",
@@ -291,8 +302,8 @@ export default function BuyPage() {
                             )}
                           </div>
                           <p className="text-sm text-slate-400 mt-0.5">
-                            {formatDuration(plan.durationDays)}
-                            {plan.description && ` • ${plan.description}`}
+                            {plan.description ||
+                              formatDuration(plan.durationDays)}
                           </p>
                         </div>
 
@@ -484,7 +495,9 @@ export default function BuyPage() {
                       <div className="flex justify-between items-center mb-2 text-sm">
                         <span className="text-slate-600">
                           {selectedPlan.name} (
-                          {formatDuration(selectedPlan.durationDays)})
+                          {selectedPlan.description ||
+                            formatDuration(selectedPlan.durationDays)}
+                          )
                         </span>
                         <span className="font-medium text-slate-900">
                           {selectedPlan.amount} DA

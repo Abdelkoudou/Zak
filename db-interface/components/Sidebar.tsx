@@ -18,6 +18,7 @@ const navigation = [
 
 const ownerOnlyNavigation = [
   { name: "Statistiques", href: "/statistics", icon: "📈", badge: "Owner" },
+  { name: "Tendance", href: "/tendance", icon: "🔥", badge: "Owner" },
   { name: "Utilisateurs", href: "/users", icon: "👥", badge: "Owner" },
   { name: "Courses", href: "/courses", icon: "📝", badge: "Owner" },
   {
@@ -27,6 +28,7 @@ const ownerOnlyNavigation = [
     badge: "Owner",
   },
   { name: "Paiements", href: "/payments", icon: "💳", badge: "Owner" },
+  { name: "Renouvellements", href: "/renewals", icon: "🔄", badge: "Owner" },
   { name: "Revenus", href: "/revenue", icon: "📈", badge: "Owner" },
   { name: "Contributions", href: "/contributions", icon: "💰", badge: "Owner" },
   { name: "Signalements", href: "/reports", icon: "🚩", badge: "Owner" },

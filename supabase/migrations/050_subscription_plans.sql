@@ -10,7 +10,7 @@
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS public.subscription_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4 (),
-    name TEXT NOT NULL, -- e.g. "2 Mois", "1 An"
+    name TEXT NOT NULL UNIQUE, -- e.g. "2 Mois", "1 An"
     duration_days INTEGER NOT NULL CHECK (duration_days > 0),
     price INTEGER NOT NULL CHECK (price > 0), -- Amount in DZD (whole dinars)
     is_active BOOLEAN NOT NULL DEFAULT true,
@@ -31,6 +31,8 @@ CREATE INDEX IF NOT EXISTS idx_subscription_plans_sort ON public.subscription_pl
 -- ============================================================================
 -- STEP 3: Updated_at trigger
 -- ============================================================================
+DROP TRIGGER IF EXISTS update_subscription_plans_updated_at ON public.subscription_plans;
+
 CREATE TRIGGER update_subscription_plans_updated_at
   BEFORE UPDATE ON public.subscription_plans
   FOR EACH ROW
@@ -42,8 +44,9 @@ CREATE TRIGGER update_subscription_plans_updated_at
 ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can read active plans (the buy page needs this)
+-- Admin uses supabaseAdmin (service role) which bypasses RLS, so this is safe
 CREATE POLICY "Anyone can read subscription plans" ON public.subscription_plans FOR
-SELECT USING (true);
+SELECT USING (is_active = true);
 
 -- Only owners can insert
 CREATE POLICY "Owners can create plans" ON public.subscription_plans FOR
@@ -112,7 +115,7 @@ VALUES (
         2,
         true,
         'Accès pendant 1 an — Meilleure offre'
-    ) ON CONFLICT DO NOTHING;
+    ) ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- STEP 6: Comments
