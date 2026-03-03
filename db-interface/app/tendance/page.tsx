@@ -3,8 +3,17 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Download, ChevronDown, FileDown, X, ArrowLeft, Check } from "lucide-react";
+import {
+  Download,
+  ChevronDown,
+  FileDown,
+  X,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
 import { generateTendanceSVG, downloadSVG } from "@/lib/tendance-svg-export";
+import html2canvas from "html2canvas-pro";
+import TendanceShareCard from "@/components/TendanceShareCard";
 
 // ── Types ───────────────────────────────────────────────────────────
 interface GranularEntry {
@@ -71,8 +80,11 @@ export default function TendancePage() {
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [exportStep, setExportStep] = useState<"module" | "subdisc">("module");
   const [exportSelectedModule, setExportSelectedModule] = useState<string>("");
-  const [exportSelectedSubDiscs, setExportSelectedSubDiscs] = useState<string[]>([]);
+  const [exportSelectedSubDiscs, setExportSelectedSubDiscs] = useState<
+    string[]
+  >([]);
   const exportDropdownRef = useRef<HTMLDivElement>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Available filters (from API)
   const [availableExamTypes, setAvailableExamTypes] = useState<string[]>([]);
@@ -320,12 +332,15 @@ export default function TendancePage() {
     return mod?.sub_disciplines ?? [];
   }, [exportSelectedModule, modules]);
 
-  const handleSelectExportModule = useCallback((modName: string) => {
-    setExportSelectedModule(modName);
-    const mod = modules.find((m) => m.module_name === modName);
-    setExportSelectedSubDiscs(mod?.sub_disciplines ?? []); // default: all selected
-    setExportStep("subdisc");
-  }, [modules]);
+  const handleSelectExportModule = useCallback(
+    (modName: string) => {
+      setExportSelectedModule(modName);
+      const mod = modules.find((m) => m.module_name === modName);
+      setExportSelectedSubDiscs(mod?.sub_disciplines ?? []); // default: all selected
+      setExportStep("subdisc");
+    },
+    [modules],
+  );
 
   const toggleExportSubDisc = useCallback((sd: string) => {
     setExportSelectedSubDiscs((prev) =>
@@ -340,7 +355,9 @@ export default function TendancePage() {
 
       // Filter by sub-disciplines if provided
       if (allowedSubDiscs && allowedSubDiscs.length > 0) {
-        modEntries = modEntries.filter((d) => allowedSubDiscs.includes(d.sub_discipline));
+        modEntries = modEntries.filter((d) =>
+          allowedSubDiscs.includes(d.sub_discipline),
+        );
       }
 
       // Recalculate total questions for the filtered set
@@ -352,7 +369,13 @@ export default function TendancePage() {
         if (!groups[d.sub_discipline]) groups[d.sub_discipline] = [];
         groups[d.sub_discipline].push(d);
       }
-      const order = ["Anatomie", "Histologie", "Physiologie", "Biochimie", "Biophysique"];
+      const order = [
+        "Anatomie",
+        "Histologie",
+        "Physiologie",
+        "Biochimie",
+        "Biophysique",
+      ];
       const sorted = Object.entries(groups).sort(([a], [b]) => {
         const ia = order.indexOf(a);
         const ib = order.indexOf(b);
@@ -381,10 +404,18 @@ export default function TendancePage() {
 
   // ── Export handler (SVG) ────────────────────────────────────────────
   const handleExportFinal = useCallback(() => {
-    if (exporting || !exportSelectedModule || exportSelectedSubDiscs.length === 0) return;
+    if (
+      exporting ||
+      !exportSelectedModule ||
+      exportSelectedSubDiscs.length === 0
+    )
+      return;
     setExporting(true);
     try {
-      const data = buildSvgDataForModule(exportSelectedModule, exportSelectedSubDiscs);
+      const data = buildSvgDataForModule(
+        exportSelectedModule,
+        exportSelectedSubDiscs,
+      );
       const svg = generateTendanceSVG(data);
       const filename = `tendance-${exportSelectedModule.replace(/\s+/g, "-").toLowerCase()}.svg`;
       downloadSVG(svg, filename);
@@ -395,7 +426,51 @@ export default function TendancePage() {
       setExportDropdownOpen(false);
       setExportStep("module");
     }
-  }, [exporting, exportSelectedModule, exportSelectedSubDiscs, buildSvgDataForModule]);
+  }, [
+    exporting,
+    exportSelectedModule,
+    exportSelectedSubDiscs,
+    buildSvgDataForModule,
+  ]);
+
+  // ── Export handler (PNG Image) ──────────────────────────────────────
+  const handleExportImage = useCallback(async () => {
+    if (
+      exporting ||
+      !exportSelectedModule ||
+      exportSelectedSubDiscs.length === 0 ||
+      !shareCardRef.current
+    )
+      return;
+    setExporting(true);
+    try {
+      // Small delay to ensure React has fully rendered the off-screen component with updated props
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2, // High DPI support for sharp images
+        useCORS: true,
+        backgroundColor: null,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const filename = `tendance-${exportSelectedModule.replace(/\s+/g, "-").toLowerCase()}.png`;
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Image Export failed:", err);
+    } finally {
+      setExporting(false);
+      setExportDropdownOpen(false);
+      setExportStep("module");
+    }
+  }, [exporting, exportSelectedModule, exportSelectedSubDiscs]);
 
   // ── Loading / Error States ────────────────────────────────────────
   if (loading) {
@@ -450,13 +525,14 @@ export default function TendancePage() {
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FileDown className="w-4 h-4" />
-            {exporting ? "Export en cours..." : "Exporter SVG"}
-            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${exportDropdownOpen ? "rotate-180" : ""}`} />
+            {exporting ? "Export en cours..." : "Exporter"}
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${exportDropdownOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           {exportDropdownOpen && (
             <div className="absolute right-0 top-full mt-2 w-80 bg-theme-card border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-
               {/* ── Step 1: Module selection ──────────────── */}
               {exportStep === "module" && (
                 <>
@@ -483,7 +559,8 @@ export default function TendancePage() {
                             {m.module_name}
                           </p>
                           <p className="text-[10px] text-theme-muted">
-                            {m.sub_disciplines.join(" · ")} · {m.total_questions}Q
+                            {m.sub_disciplines.join(" · ")} ·{" "}
+                            {m.total_questions}Q
                           </p>
                         </div>
                         <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-theme-muted group-hover:text-primary flex-shrink-0 ml-2" />
@@ -492,7 +569,7 @@ export default function TendancePage() {
                   </div>
                   <div className="px-4 py-2 border-t border-theme bg-primary/5">
                     <p className="text-[10px] text-theme-muted text-center">
-                      Export en SVG — Editable dans Figma, Illustrator, etc.
+                      Choisissez un format d&apos;export après sélection
                     </p>
                   </div>
                 </>
@@ -517,7 +594,10 @@ export default function TendancePage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => { setExportDropdownOpen(false); setExportStep("module"); }}
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        setExportStep("module");
+                      }}
                       className="p-1 rounded-lg hover:bg-theme-secondary transition-colors"
                     >
                       <X className="w-3.5 h-3.5 text-theme-muted" />
@@ -527,11 +607,14 @@ export default function TendancePage() {
                   {/* Select all / none */}
                   <div className="flex items-center justify-between px-4 py-2 border-b border-theme">
                     <span className="text-[10px] text-theme-muted font-medium">
-                      {exportSelectedSubDiscs.length}/{exportModuleSubDiscs.length} sélectionnées
+                      {exportSelectedSubDiscs.length}/
+                      {exportModuleSubDiscs.length} sélectionnées
                     </span>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setExportSelectedSubDiscs(exportModuleSubDiscs)}
+                        onClick={() =>
+                          setExportSelectedSubDiscs(exportModuleSubDiscs)
+                        }
                         className="text-[10px] uppercase font-bold text-primary hover:underline"
                       >
                         Toutes
@@ -550,26 +633,35 @@ export default function TendancePage() {
                     {exportModuleSubDiscs.map((sd) => {
                       const isSelected = exportSelectedSubDiscs.includes(sd);
                       const icon = SUB_DISC_ICONS[sd] || "📖";
-                      const colorCls = SUB_DISC_COLORS[sd] || "from-gray-500 to-slate-600";
+                      const colorCls =
+                        SUB_DISC_COLORS[sd] || "from-gray-500 to-slate-600";
                       return (
                         <button
                           key={sd}
                           onClick={() => toggleExportSubDisc(sd)}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left ${
-                            isSelected ? "bg-primary/10" : "hover:bg-theme-secondary"
+                            isSelected
+                              ? "bg-primary/10"
+                              : "hover:bg-theme-secondary"
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                            isSelected
-                              ? "bg-primary border-primary"
-                              : "border-theme"
-                          }`}>
-                            {isSelected && <Check className="w-3 h-3 text-white" />}
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                              isSelected
+                                ? "bg-primary border-primary"
+                                : "border-theme"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
                           </div>
                           <span className="text-base">{icon}</span>
-                          <span className={`text-sm font-semibold ${
-                            isSelected ? "text-primary" : "text-theme-main"
-                          }`}>
+                          <span
+                            className={`text-sm font-semibold ${
+                              isSelected ? "text-primary" : "text-theme-main"
+                            }`}
+                          >
                             {sd}
                           </span>
                         </button>
@@ -577,18 +669,29 @@ export default function TendancePage() {
                     })}
                   </div>
 
-                  {/* Export button */}
-                  <div className="px-4 py-3 border-t border-theme bg-primary/5">
+                  {/* Export buttons */}
+                  <div className="px-4 py-3 border-t border-theme bg-primary/5 flex flex-col gap-2">
                     <button
-                      onClick={handleExportFinal}
-                      disabled={exporting || exportSelectedSubDiscs.length === 0}
-                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleExportImage}
+                      disabled={
+                        exporting || exportSelectedSubDiscs.length === 0
+                      }
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold text-sm shadow-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Download className="w-4 h-4" />
                       {exporting
                         ? "Export en cours..."
-                        : `Exporter ${exportSelectedSubDiscs.length === exportModuleSubDiscs.length ? "tout" : exportSelectedSubDiscs.length + " sous-disc."}`
+                        : "Image (Format Mobile)"}
+                    </button>
+                    <button
+                      onClick={handleExportFinal}
+                      disabled={
+                        exporting || exportSelectedSubDiscs.length === 0
                       }
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-theme-secondary text-theme-main font-semibold text-sm hover:bg-theme-hover border border-theme transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      SVG Vectoriel
                     </button>
                   </div>
                 </>
@@ -815,7 +918,27 @@ export default function TendancePage() {
         automatique de {filteredData.length} cours
       </div>
 
-      {/* SVG export is handled purely via string generation — no hidden DOM element needed */}
+      {/* Hidden container for rendering the image export card */}
+      <div
+        style={{
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
+          pointerEvents: "none",
+          opacity: 0,
+          zIndex: -1,
+        }}
+      >
+        {exportSelectedModule && (
+          <TendanceShareCard
+            ref={shareCardRef}
+            {...buildSvgDataForModule(
+              exportSelectedModule,
+              exportSelectedSubDiscs,
+            )}
+          />
+        )}
+      </div>
     </div>
   );
 }
