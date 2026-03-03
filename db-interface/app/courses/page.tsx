@@ -121,14 +121,19 @@ export default function CoursesPage() {
     } catch (err) {
       console.error("Error fetching courses:", err);
       // Fallback: fetch courses without counts
-      const { data } = await supabase
-        .from("courses")
-        .select("*")
-        .order("module_name")
-        .order("name");
-      setCourses(
-        (data || []).map((c: Course) => ({ ...c, question_count: 0 })),
-      );
+      try {
+        const { data } = await supabase
+          .from("courses")
+          .select("*")
+          .order("module_name")
+          .order("name");
+        setCourses(
+          (data || []).map((c: Course) => ({ ...c, question_count: 0 })),
+        );
+      } catch (fallbackErr) {
+        console.error("Fallback fetch also failed:", fallbackErr);
+        setCourses([]);
+      }
     }
     setFetching(false);
   }, []);
