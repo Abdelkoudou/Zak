@@ -152,7 +152,7 @@ export function generateTendanceSVG(opts: SvgExportOptions): string {
 
   // Promos label
   headerParts.push(`
-    <text x="${statsX}" y="${y + 40}" font-family="'Manrope','Inter','Segoe UI',sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.5)" text-anchor="end">${totalExamYears} promos · ${esc(examYearsRange)}</text>
+    <text x="${statsX}" y="${y + 40}" font-family="'Manrope','Inter','Segoe UI',sans-serif" font-size="13" font-weight="500" fill="rgba(255,255,255,0.5)" text-anchor="end"> ${esc(examYearsRange)}</text>
   `);
 
   y += 60;

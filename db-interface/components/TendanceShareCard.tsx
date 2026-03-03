@@ -30,18 +30,10 @@ const SUB_DISC_ACCENT: Record<string, string> = {
   Biophysique: "#f59e0b",
 };
 
-const SUB_DISC_ICONS: Record<string, string> = {
-  Anatomie: "🫀",
-  Histologie: "🔬",
-  Physiologie: "⚡",
-  Biochimie: "🧪",
-  Biophysique: "📐",
-};
-
 /**
  * A purely presentational card designed for image export.
  * Rendered off-screen, captured by html2canvas as a PNG.
- * Fixed 1080×1080 px — ideal for Instagram posts.
+ * Scaled to 1080×1920 px.
  */
 const TendanceShareCard = React.forwardRef<
   HTMLDivElement,
@@ -58,89 +50,67 @@ const TendanceShareCard = React.forwardRef<
     ref,
   ) => {
     // Limit courses per sub-discipline for space
-    const MAX_COURSES = 5;
+    const MAX_COURSES = 99;
 
     return (
       <div
         ref={ref}
         style={{
           width: 1080,
-          height: 1080,
+          height: 1920,
           background:
-            "linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            "linear-gradient(to bottom, #101526 0%, #1b2646 40%, #11172d 100%)",
           color: "#ffffff",
           fontFamily: "'Manrope', 'Inter', 'Segoe UI', sans-serif",
           display: "flex",
           flexDirection: "column",
-          padding: 48,
+          padding: 64,
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Background decorative elements */}
-        <div
-          style={{
-            position: "absolute",
-            top: -120,
-            right: -120,
-            width: 400,
-            height: 400,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(9,178,172,0.15) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -80,
-            left: -80,
-            width: 300,
-            height: 300,
-            borderRadius: "50%",
-            background:
-              "radial-gradient(circle, rgba(153,65,255,0.1) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
-
         {/* ── Header ─────────────────────────────────────── */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: 32,
+            alignItems: "flex-end",
+            marginBottom: 24,
             flexShrink: 0,
           }}
         >
-          <div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              flex: 1,
+            }}
+          >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
-                marginBottom: 8,
+                gap: 16,
               }}
             >
               <div
                 style={{
                   background: "#09b2ac",
-                  color: "#262626",
+                  color: "#1a1a1a",
                   fontWeight: 800,
-                  fontSize: 18,
-                  padding: "6px 16px",
-                  borderRadius: 8,
-                  letterSpacing: 1,
+                  fontSize: 22,
+                  padding: "8px 20px",
+                  borderRadius: 12,
+                  letterSpacing: 0.5,
                 }}
               >
                 FMC App
               </div>
               <span
                 style={{
-                  fontSize: 14,
-                  color: "rgba(255,255,255,0.5)",
+                  fontSize: 22,
+                  color: "rgba(255,255,255,0.9)",
                   fontWeight: 500,
                 }}
               >
@@ -149,7 +119,7 @@ const TendanceShareCard = React.forwardRef<
             </div>
             <h1
               style={{
-                fontSize: 36,
+                fontSize: 42,
                 fontWeight: 800,
                 margin: 0,
                 lineHeight: 1.2,
@@ -159,37 +129,41 @@ const TendanceShareCard = React.forwardRef<
               {moduleName}
             </h1>
           </div>
+
           <div
             style={{
               textAlign: "right",
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-end",
-              gap: 6,
+              gap: 12,
+              flexShrink: 0,
+              paddingBottom: 4,
             }}
           >
+            <span
+              style={{
+                fontSize: 18,
+                color: "rgba(255,255,255,0.9)",
+                fontWeight: 500,
+                marginRight: 8,
+              }}
+            >
+              {examYearsRange.replace("-", " ")}
+            </span>
             <div
               style={{
-                background: "rgba(9,178,172,0.15)",
+                background: "rgba(25, 35, 60, 0.8)",
                 border: "1px solid rgba(9,178,172,0.3)",
-                borderRadius: 10,
-                padding: "8px 16px",
-                fontSize: 14,
+                borderRadius: 12,
+                padding: "10px 24px",
+                fontSize: 20,
                 fontWeight: 600,
-                color: "#09b2ac",
+                color: "#ffffff",
               }}
             >
               {totalQuestions} Questions
             </div>
-            <span
-              style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,0.5)",
-                fontWeight: 500,
-              }}
-            >
-              {totalExamYears} promos · {examYearsRange}
-            </span>
           </div>
         </div>
 
@@ -198,9 +172,9 @@ const TendanceShareCard = React.forwardRef<
           style={{
             height: 2,
             background:
-              "linear-gradient(90deg, #09b2ac, rgba(153,65,255,0.5), transparent)",
+              "linear-gradient(90deg, rgba(153,65,255,0.6), rgba(9,178,172,0.6), transparent)",
             borderRadius: 2,
-            marginBottom: 28,
+            marginBottom: 40,
             flexShrink: 0,
           }}
         />
@@ -211,13 +185,12 @@ const TendanceShareCard = React.forwardRef<
             flex: 1,
             display: "flex",
             flexDirection: "column",
-            gap: 20,
+            gap: 40,
             overflow: "hidden",
           }}
         >
           {subDiscGroups.map((group) => {
             const accent = SUB_DISC_ACCENT[group.sub_discipline] || "#09b2ac";
-            const icon = SUB_DISC_ICONS[group.sub_discipline] || "📖";
             const displayEntries = group.entries.slice(0, MAX_COURSES);
             const maxQ = displayEntries[0]?.question_count || 1;
 
@@ -226,37 +199,19 @@ const TendanceShareCard = React.forwardRef<
                 {/* Sub-disc header */}
                 <div
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    marginBottom: 10,
+                    fontSize: 32,
+                    fontWeight: 800,
+                    color: accent,
+                    letterSpacing: 1,
+                    marginBottom: 24,
                   }}
                 >
-                  <span style={{ fontSize: 22 }}>{icon}</span>
-                  <span
-                    style={{
-                      fontSize: 16,
-                      fontWeight: 700,
-                      color: accent,
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {group.sub_discipline}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: "rgba(255,255,255,0.35)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    — Top {displayEntries.length}
-                  </span>
+                  {group.sub_discipline}
                 </div>
 
                 {/* Course rows */}
                 <div
-                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
                 >
                   {displayEntries.map((entry, idx) => {
                     const barPct = Math.max(
@@ -270,18 +225,17 @@ const TendanceShareCard = React.forwardRef<
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 12,
-                          height: 32,
+                          gap: 16,
                         }}
                       >
                         {/* Rank */}
                         <span
                           style={{
-                            width: 24,
-                            fontSize: 13,
-                            fontWeight: 700,
+                            width: 50,
+                            fontSize: 28,
+                            fontWeight: 600,
                             color: "rgba(255,255,255,0.4)",
-                            textAlign: "right",
+                            textAlign: "left",
                             flexShrink: 0,
                           }}
                         >
@@ -293,9 +247,9 @@ const TendanceShareCard = React.forwardRef<
                           style={{
                             flex: 1,
                             position: "relative",
-                            height: 28,
-                            background: "rgba(255,255,255,0.05)",
-                            borderRadius: 6,
+                            height: 60,
+                            background: "rgba(255, 255, 255, 0.05)",
+                            borderRadius: 8,
                             overflow: "hidden",
                           }}
                         >
@@ -306,43 +260,28 @@ const TendanceShareCard = React.forwardRef<
                               left: 0,
                               height: "100%",
                               width: `${barPct}%`,
-                              background: `linear-gradient(90deg, ${accent}66, ${accent}22)`,
-                              borderRadius: 6,
+                              background: `linear-gradient(90deg, ${accent}88, ${accent}22)`,
+                              borderRadius: 8,
                             }}
                           />
                           <span
                             style={{
                               position: "relative",
                               zIndex: 1,
-                              padding: "0 12px",
-                              lineHeight: "28px",
-                              fontSize: 13,
-                              fontWeight: 600,
+                              padding: "0 24px",
+                              lineHeight: "60px",
+                              fontSize: 24,
+                              fontWeight: 700,
                               color: "#ffffff",
                               whiteSpace: "nowrap",
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               display: "block",
-                              maxWidth: "85%",
                             }}
                           >
                             {entry.cours_topic}
                           </span>
                         </div>
-
-                        {/* Count */}
-                        <span
-                          style={{
-                            fontSize: 14,
-                            fontWeight: 700,
-                            color: accent,
-                            flexShrink: 0,
-                            minWidth: 40,
-                            textAlign: "right",
-                          }}
-                        >
-                          {entry.question_count}Q
-                        </span>
                       </div>
                     );
                   })}
@@ -350,52 +289,6 @@ const TendanceShareCard = React.forwardRef<
               </div>
             );
           })}
-        </div>
-
-        {/* ── Footer ─────────────────────────────────────── */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginTop: 24,
-            paddingTop: 16,
-            borderTop: "1px solid rgba(255,255,255,0.1)",
-            flexShrink: 0,
-          }}
-        >
-          <span
-            style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.35)",
-              fontWeight: 500,
-            }}
-          >
-            Classement basé sur {totalExamYears} promos ({examYearsRange})
-          </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span
-              style={{
-                fontSize: 12,
-                color: "rgba(255,255,255,0.35)",
-                fontWeight: 500,
-              }}
-            >
-              Généré par
-            </span>
-            <span
-              style={{
-                background: "#09b2ac",
-                color: "#262626",
-                fontWeight: 800,
-                fontSize: 12,
-                padding: "3px 10px",
-                borderRadius: 6,
-              }}
-            >
-              FMC App
-            </span>
-          </div>
         </div>
       </div>
     );
