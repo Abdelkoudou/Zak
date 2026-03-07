@@ -3,10 +3,17 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { Download } from "lucide-react";
+import {
+  Download,
+  ChevronDown,
+  FileDown,
+  X,
+  ArrowLeft,
+  Check,
+} from "lucide-react";
+import { generateTendanceSVG, downloadSVG } from "@/lib/tendance-svg-export";
 import html2canvas from "html2canvas-pro";
 import TendanceShareCard from "@/components/TendanceShareCard";
-import type { ShareSubDiscGroup } from "@/components/TendanceShareCard";
 
 // ── Types ───────────────────────────────────────────────────────────
 interface GranularEntry {
@@ -70,6 +77,13 @@ export default function TendancePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedModule, setSelectedModule] = useState<string>("");
   const [exporting, setExporting] = useState(false);
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+  const [exportStep, setExportStep] = useState<"module" | "subdisc">("module");
+  const [exportSelectedModule, setExportSelectedModule] = useState<string>("");
+  const [exportSelectedSubDiscs, setExportSelectedSubDiscs] = useState<
+    string[]
+  >([]);
+  const exportDropdownRef = useRef<HTMLDivElement>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Available filters (from API)
@@ -296,43 +310,167 @@ export default function TendancePage() {
   const selectAllPromos = () => setSelectedPromos(availablePromos);
   const deselectAllPromos = () => setSelectedPromos([]);
 
-  // ── Export handler ──────────────────────────────────────────────────
-  const handleExport = useCallback(async () => {
-    if (!shareCardRef.current || exporting) return;
+  // ── Close dropdown on outside click ────────────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(event.target as Node)
+      ) {
+        setExportDropdownOpen(false);
+        setExportStep("module");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // ── Sub-disciplines for the selected export module ─────────────────
+  const exportModuleSubDiscs = useMemo(() => {
+    if (!exportSelectedModule) return [];
+    const mod = modules.find((m) => m.module_name === exportSelectedModule);
+    return mod?.sub_disciplines ?? [];
+  }, [exportSelectedModule, modules]);
+
+  const handleSelectExportModule = useCallback(
+    (modName: string) => {
+      setExportSelectedModule(modName);
+      const mod = modules.find((m) => m.module_name === modName);
+      setExportSelectedSubDiscs(mod?.sub_disciplines ?? []); // default: all selected
+      setExportStep("subdisc");
+    },
+    [modules],
+  );
+
+  const toggleExportSubDisc = useCallback((sd: string) => {
+    setExportSelectedSubDiscs((prev) =>
+      prev.includes(sd) ? prev.filter((s) => s !== sd) : [...prev, sd],
+    );
+  }, []);
+
+  // ── Build SVG data for a given module (with optional sub-disc filter) ──
+  const buildSvgDataForModule = useCallback(
+    (modName: string, allowedSubDiscs?: string[]) => {
+      let modEntries = filteredData.filter((d) => d.module_name === modName);
+
+      // Filter by sub-disciplines if provided
+      if (allowedSubDiscs && allowedSubDiscs.length > 0) {
+        modEntries = modEntries.filter((d) =>
+          allowedSubDiscs.includes(d.sub_discipline),
+        );
+      }
+
+      // Recalculate total questions for the filtered set
+      const totalQ = modEntries.reduce((sum, e) => sum + e.question_count, 0);
+
+      // Group by sub-discipline
+      const groups: Record<string, CoursEntry[]> = {};
+      for (const d of modEntries) {
+        if (!groups[d.sub_discipline]) groups[d.sub_discipline] = [];
+        groups[d.sub_discipline].push(d);
+      }
+      const order = [
+        "Anatomie",
+        "Histologie",
+        "Physiologie",
+        "Biochimie",
+        "Biophysique",
+      ];
+      const sorted = Object.entries(groups).sort(([a], [b]) => {
+        const ia = order.indexOf(a);
+        const ib = order.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+
+      return {
+        moduleName: modName,
+        totalQuestions: totalQ,
+        examYearsRange,
+        totalExamYears,
+        subDiscGroups: sorted.map(([subDisc, entries]) => ({
+          sub_discipline: subDisc,
+          entries: entries.map((e) => ({
+            cours_topic: e.cours_topic,
+            question_count: e.question_count,
+          })),
+        })),
+      };
+    },
+    [filteredData, examYearsRange, totalExamYears],
+  );
+
+  // ── Export handler (SVG) ────────────────────────────────────────────
+  const handleExportFinal = useCallback(() => {
+    if (
+      exporting ||
+      !exportSelectedModule ||
+      exportSelectedSubDiscs.length === 0
+    )
+      return;
     setExporting(true);
     try {
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1,
-        useCORS: true,
-        backgroundColor: null,
-        width: 1080,
-        height: 1080,
-      });
-      const link = document.createElement("a");
-      link.download = `tendance-${selectedModule.replace(/\s+/g, "-").toLowerCase()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      const data = buildSvgDataForModule(
+        exportSelectedModule,
+        exportSelectedSubDiscs,
+      );
+      const svg = generateTendanceSVG(data);
+      const filename = `tendance-${exportSelectedModule.replace(/\s+/g, "-").toLowerCase()}.svg`;
+      downloadSVG(svg, filename);
     } catch (err) {
-      console.error("Export failed:", err);
+      console.error("SVG Export failed:", err);
     } finally {
       setExporting(false);
+      setExportDropdownOpen(false);
+      setExportStep("module");
     }
-  }, [exporting, selectedModule]);
+  }, [
+    exporting,
+    exportSelectedModule,
+    exportSelectedSubDiscs,
+    buildSvgDataForModule,
+  ]);
 
-  // ── Data for share card ────────────────────────────────────────────
-  const shareCardSubGroups: ShareSubDiscGroup[] = useMemo(() => {
-    return groupedBySubDisc.map(([subDisc, entries]) => ({
-      sub_discipline: subDisc,
-      entries: entries.map((e) => ({
-        cours_topic: e.cours_topic,
-        question_count: e.question_count,
-      })),
-    }));
-  }, [groupedBySubDisc]);
+  // ── Export handler (PNG Image) ──────────────────────────────────────
+  const handleExportImage = useCallback(async () => {
+    if (
+      exporting ||
+      !exportSelectedModule ||
+      exportSelectedSubDiscs.length === 0 ||
+      !shareCardRef.current
+    )
+      return;
+    setExporting(true);
+    try {
+      // Small delay to ensure React has fully rendered the off-screen component with updated props
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-  const selectedModuleInfo = useMemo(() => {
-    return modules.find((m) => m.module_name === selectedModule);
-  }, [modules, selectedModule]);
+      const canvas = await html2canvas(shareCardRef.current, {
+        scale: 2, // High DPI support for sharp images
+        useCORS: true,
+        backgroundColor: null,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const filename = `tendance-${exportSelectedModule.replace(/\s+/g, "-").toLowerCase()}.png`;
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("Image Export failed:", err);
+    } finally {
+      setExporting(false);
+      setExportDropdownOpen(false);
+      setExportStep("module");
+    }
+  }, [exporting, exportSelectedModule, exportSelectedSubDiscs]);
 
   // ── Loading / Error States ────────────────────────────────────────
   if (loading) {
@@ -376,14 +514,191 @@ export default function TendancePage() {
             ({examYearsRange}).
           </p>
         </div>
-        <button
-          onClick={handleExport}
-          disabled={exporting || !selectedModule}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Download className="w-4 h-4" />
-          {exporting ? "Export en cours..." : "Exporter"}
-        </button>
+        {/* Export dropdown */}
+        <div className="relative" ref={exportDropdownRef}>
+          <button
+            onClick={() => {
+              setExportDropdownOpen(!exportDropdownOpen);
+              if (!exportDropdownOpen) setExportStep("module");
+            }}
+            disabled={exporting || modules.length === 0}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm shadow-lg shadow-primary/25 hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileDown className="w-4 h-4" />
+            {exporting ? "Export en cours..." : "Exporter"}
+            <ChevronDown
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${exportDropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {exportDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-80 bg-theme-card border-2 border-primary/20 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+              {/* ── Step 1: Module selection ──────────────── */}
+              {exportStep === "module" && (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-theme bg-primary/5">
+                    <span className="text-xs font-bold text-theme-main uppercase tracking-wider">
+                      📦 Étape 1 — Choisir un module
+                    </span>
+                    <button
+                      onClick={() => setExportDropdownOpen(false)}
+                      className="p-1 rounded-lg hover:bg-theme-secondary transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 text-theme-muted" />
+                    </button>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {modules.map((m) => (
+                      <button
+                        key={m.module_name}
+                        onClick={() => handleSelectExportModule(m.module_name)}
+                        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-primary/10 transition-colors text-left group"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-theme-main group-hover:text-primary truncate">
+                            {m.module_name}
+                          </p>
+                          <p className="text-[10px] text-theme-muted">
+                            {m.sub_disciplines.join(" · ")} ·{" "}
+                            {m.total_questions}Q
+                          </p>
+                        </div>
+                        <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-theme-muted group-hover:text-primary flex-shrink-0 ml-2" />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="px-4 py-2 border-t border-theme bg-primary/5">
+                    <p className="text-[10px] text-theme-muted text-center">
+                      Choisissez un format d&apos;export après sélection
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* ── Step 2: Sub-discipline selection ──────── */}
+              {exportStep === "subdisc" && (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-theme bg-primary/5">
+                    <button
+                      onClick={() => setExportStep("module")}
+                      className="p-1 rounded-lg hover:bg-theme-secondary transition-colors"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5 text-theme-muted" />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-bold text-theme-main uppercase tracking-wider">
+                        🧬 Étape 2 — Sous-disciplines
+                      </span>
+                      <p className="text-[10px] text-primary font-medium truncate">
+                        {exportSelectedModule}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setExportDropdownOpen(false);
+                        setExportStep("module");
+                      }}
+                      className="p-1 rounded-lg hover:bg-theme-secondary transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 text-theme-muted" />
+                    </button>
+                  </div>
+
+                  {/* Select all / none */}
+                  <div className="flex items-center justify-between px-4 py-2 border-b border-theme">
+                    <span className="text-[10px] text-theme-muted font-medium">
+                      {exportSelectedSubDiscs.length}/
+                      {exportModuleSubDiscs.length} sélectionnées
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          setExportSelectedSubDiscs(exportModuleSubDiscs)
+                        }
+                        className="text-[10px] uppercase font-bold text-primary hover:underline"
+                      >
+                        Toutes
+                      </button>
+                      <button
+                        onClick={() => setExportSelectedSubDiscs([])}
+                        className="text-[10px] uppercase font-bold text-primary hover:underline"
+                      >
+                        Aucune
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sub-discipline checkboxes */}
+                  <div className="py-1">
+                    {exportModuleSubDiscs.map((sd) => {
+                      const isSelected = exportSelectedSubDiscs.includes(sd);
+                      const icon = SUB_DISC_ICONS[sd] || "📖";
+                      const colorCls =
+                        SUB_DISC_COLORS[sd] || "from-gray-500 to-slate-600";
+                      return (
+                        <button
+                          key={sd}
+                          onClick={() => toggleExportSubDisc(sd)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 transition-colors text-left ${
+                            isSelected
+                              ? "bg-primary/10"
+                              : "hover:bg-theme-secondary"
+                          }`}
+                        >
+                          <div
+                            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                              isSelected
+                                ? "bg-primary border-primary"
+                                : "border-theme"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <span className="text-base">{icon}</span>
+                          <span
+                            className={`text-sm font-semibold ${
+                              isSelected ? "text-primary" : "text-theme-main"
+                            }`}
+                          >
+                            {sd}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Export buttons */}
+                  <div className="px-4 py-3 border-t border-theme bg-primary/5 flex flex-col gap-2">
+                    <button
+                      onClick={handleExportImage}
+                      disabled={
+                        exporting || exportSelectedSubDiscs.length === 0
+                      }
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold text-sm shadow-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" />
+                      {exporting
+                        ? "Export en cours..."
+                        : "Image (Format Mobile)"}
+                    </button>
+                    <button
+                      onClick={handleExportFinal}
+                      disabled={
+                        exporting || exportSelectedSubDiscs.length === 0
+                      }
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-theme-secondary text-theme-main font-semibold text-sm hover:bg-theme-hover border border-theme transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      SVG Vectoriel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filters Section */}
@@ -603,25 +918,26 @@ export default function TendancePage() {
         automatique de {filteredData.length} cours
       </div>
 
-      {/* Hidden Share Card for export (rendered off-screen) */}
+      {/* Hidden container for rendering the image export card */}
       <div
         style={{
-          position: "fixed",
-          left: -9999,
-          top: -9999,
-          zIndex: -1,
+          position: "absolute",
+          top: "-9999px",
+          left: "-9999px",
           pointerEvents: "none",
+          opacity: 0,
+          zIndex: -1,
         }}
-        aria-hidden="true"
       >
-        <TendanceShareCard
-          ref={shareCardRef}
-          moduleName={selectedModule}
-          totalQuestions={selectedModuleInfo?.total_questions ?? 0}
-          examYearsRange={examYearsRange}
-          totalExamYears={totalExamYears}
-          subDiscGroups={shareCardSubGroups}
-        />
+        {exportSelectedModule && (
+          <TendanceShareCard
+            ref={shareCardRef}
+            {...buildSvgDataForModule(
+              exportSelectedModule,
+              exportSelectedSubDiscs,
+            )}
+          />
+        )}
       </div>
     </div>
   );

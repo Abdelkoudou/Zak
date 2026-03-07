@@ -371,6 +371,34 @@ $$;
 ALTER FUNCTION "public"."activate_subscription"("p_user_id" "uuid", "p_key_code" "text", "p_is_registration" boolean) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."cascade_course_rename"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF OLD.name IS DISTINCT FROM NEW.name THEN
+    -- Update questions: scoped by module_name to prevent cross-module contamination
+    UPDATE questions
+    SET cours = array_replace(cours, OLD.name, NEW.name),
+        updated_at = now()
+    WHERE OLD.name = ANY(cours)
+      AND module_name = OLD.module_name;
+
+    -- Update course_resources: same logic
+    UPDATE course_resources
+    SET cours = array_replace(cours, OLD.name, NEW.name),
+        updated_at = now()
+    WHERE OLD.name = ANY(cours)
+      AND module_name = OLD.module_name;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cascade_course_rename"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."create_payment_record"("p_checkout_id" "text", "p_customer_email" "text", "p_customer_name" "text" DEFAULT NULL::"text", "p_customer_phone" "text" DEFAULT NULL::"text", "p_amount" integer DEFAULT 500000, "p_currency" "text" DEFAULT 'dzd'::"text", "p_duration_days" integer DEFAULT 365, "p_checkout_url" "text" DEFAULT NULL::"text", "p_success_url" "text" DEFAULT NULL::"text", "p_failure_url" "text" DEFAULT NULL::"text", "p_metadata" "jsonb" DEFAULT NULL::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -788,6 +816,29 @@ ALTER FUNCTION "public"."get_admin_payable_stats"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."get_admin_payable_stats"() IS 'Returns contribution statistics calculated since the last registered payment for each admin';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."get_all_cours_counts"() RETURNS TABLE("cours_name" "text", "module_name" "text", "question_count" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    unnest(q.cours) as cours_name,
+    q.module_name,
+    COUNT(*)::BIGINT as question_count
+  FROM public.questions q
+  WHERE q.cours IS NOT NULL
+    AND array_length(q.cours, 1) > 0
+  GROUP BY unnest(q.cours), q.module_name
+  HAVING COUNT(*) > 0
+  ORDER BY q.module_name, unnest(q.cours);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_all_cours_counts"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_all_module_question_counts"() RETURNS TABLE("module_name" "text", "question_count" bigint)
@@ -2638,6 +2689,10 @@ CREATE OR REPLACE TRIGGER "enforce_max_devices_trigger" BEFORE INSERT ON "public
 
 
 
+CREATE OR REPLACE TRIGGER "trg_cascade_course_rename" BEFORE UPDATE ON "public"."courses" FOR EACH ROW EXECUTE FUNCTION "public"."cascade_course_rename"();
+
+
+
 CREATE OR REPLACE TRIGGER "trigger_update_session_on_message" AFTER INSERT ON "public"."chat_messages" FOR EACH ROW EXECUTE FUNCTION "public"."update_session_on_message"();
 
 
@@ -3827,6 +3882,12 @@ GRANT ALL ON FUNCTION "public"."activate_subscription"("p_user_id" "uuid", "p_ke
 
 
 
+GRANT ALL ON FUNCTION "public"."cascade_course_rename"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cascade_course_rename"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cascade_course_rename"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."create_payment_record"("p_checkout_id" "text", "p_customer_email" "text", "p_customer_name" "text", "p_customer_phone" "text", "p_amount" integer, "p_currency" "text", "p_duration_days" integer, "p_checkout_url" "text", "p_success_url" "text", "p_failure_url" "text", "p_metadata" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."create_payment_record"("p_checkout_id" "text", "p_customer_email" "text", "p_customer_name" "text", "p_customer_phone" "text", "p_amount" integer, "p_currency" "text", "p_duration_days" integer, "p_checkout_url" "text", "p_success_url" "text", "p_failure_url" "text", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_payment_record"("p_checkout_id" "text", "p_customer_email" "text", "p_customer_name" "text", "p_customer_phone" "text", "p_amount" integer, "p_currency" "text", "p_duration_days" integer, "p_checkout_url" "text", "p_success_url" "text", "p_failure_url" "text", "p_metadata" "jsonb") TO "service_role";
@@ -3878,6 +3939,12 @@ GRANT ALL ON FUNCTION "public"."get_admin_contributions_by_period"("start_date" 
 GRANT ALL ON FUNCTION "public"."get_admin_payable_stats"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_admin_payable_stats"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_admin_payable_stats"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_all_cours_counts"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_all_cours_counts"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_all_cours_counts"() TO "service_role";
 
 
 
