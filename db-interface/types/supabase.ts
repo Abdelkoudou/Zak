@@ -32,6 +32,14 @@ export type UserRole = 'owner' | 'admin' | 'manager' | 'student'
 
 export type ResourceType = 'google_drive' | 'telegram' | 'youtube' | 'pdf' | 'other'
 
+export type CaisseTransactionType = 'income' | 'expense'
+
+export type CaisseIncomeCategory = 'online' | 'cash' | 'point_de_vente' | 'renewal' | 'other'
+
+export type CaisseExpenseCategory = 'rent' | 'server' | 'marketing' | 'salaries' | 'supplies' | 'transport' | 'food' | 'printing' | 'other'
+
+export type CaisseCategory = CaisseIncomeCategory | CaisseExpenseCategory
+
 export type FacultySource = 
   | 'fac_mere' 
   | 'annexe'
@@ -339,6 +347,85 @@ export interface Database {
           score_percentage?: number
           time_spent_seconds?: number | null
           completed_at?: string
+        }
+      }
+      caisse_transactions: {
+        Row: {
+          id: string
+          type: CaisseTransactionType
+          category: CaisseCategory
+          amount: number
+          description: string | null
+          reference_id: string | null
+          created_at: string
+          created_by: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          type: CaisseTransactionType
+          category: CaisseCategory
+          amount: number
+          description?: string | null
+          reference_id?: string | null
+          created_at?: string
+          created_by: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          type?: CaisseTransactionType
+          category?: CaisseCategory
+          amount?: number
+          description?: string | null
+          reference_id?: string | null
+          created_at?: string
+          created_by?: string
+          updated_at?: string
+        }
+      }
+      caisse_checkouts: {
+        Row: {
+          id: string
+          period_start: string
+          period_end: string
+          total_income: number
+          total_expenses: number
+          net_amount: number
+          amount_withdrawn: number
+          notes: string | null
+          is_voided: boolean
+          voided_at: string | null
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          period_start: string
+          period_end?: string
+          total_income: number
+          total_expenses: number
+          net_amount: number
+          amount_withdrawn: number
+          notes?: string | null
+          is_voided?: boolean
+          voided_at?: string | null
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          period_start?: string
+          period_end?: string
+          total_income?: number
+          total_expenses?: number
+          net_amount?: number
+          amount_withdrawn?: number
+          notes?: string | null
+          is_voided?: boolean
+          voided_at?: string | null
+          created_at?: string
+          created_by?: string
         }
       }
     }
