@@ -1299,6 +1299,19 @@ $$;
 ALTER FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."update_caisse_transaction_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_caisse_transaction_updated_at"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_session_on_message"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -1699,6 +1712,46 @@ CREATE TABLE IF NOT EXISTS "public"."app_config" (
 
 
 ALTER TABLE "public"."app_config" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."caisse_checkouts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "period_start" timestamp with time zone NOT NULL,
+    "period_end" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "total_income" numeric(12,2) DEFAULT 0 NOT NULL,
+    "total_expenses" numeric(12,2) DEFAULT 0 NOT NULL,
+    "net_amount" numeric(12,2) DEFAULT 0 NOT NULL,
+    "amount_withdrawn" numeric(12,2) NOT NULL,
+    "notes" "text",
+    "is_voided" boolean DEFAULT false NOT NULL,
+    "voided_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_by" "uuid" NOT NULL,
+    CONSTRAINT "caisse_checkouts_amount_withdrawn_check" CHECK (("amount_withdrawn" >= (0)::numeric))
+);
+
+
+ALTER TABLE "public"."caisse_checkouts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."caisse_transactions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "type" "text" NOT NULL,
+    "category" "text" NOT NULL,
+    "amount" numeric(12,2) NOT NULL,
+    "description" "text",
+    "reference_id" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_by" "uuid" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "caisse_transactions_amount_check" CHECK (("amount" > (0)::numeric)),
+    CONSTRAINT "caisse_transactions_category_check" CHECK (((("type" = 'income'::"text") AND ("category" = ANY (ARRAY['online'::"text", 'cash'::"text", 'point_de_vente'::"text", 'renewal'::"text", 'other'::"text"]))) OR (("type" = 'expense'::"text") AND ("category" = ANY (ARRAY['rent'::"text", 'server'::"text", 'marketing'::"text", 'salaries'::"text", 'supplies'::"text", 'transport'::"text", 'food'::"text", 'printing'::"text", 'other'::"text"]))))),
+    CONSTRAINT "caisse_transactions_description_length" CHECK ((("description" IS NULL) OR ("char_length"("description") <= 500))),
+    CONSTRAINT "caisse_transactions_type_check" CHECK (("type" = ANY (ARRAY['income'::"text", 'expense'::"text"])))
+);
+
+
+ALTER TABLE "public"."caisse_transactions" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."chat_messages" (
@@ -2149,6 +2202,16 @@ ALTER TABLE ONLY "public"."app_config"
 
 
 
+ALTER TABLE ONLY "public"."caisse_checkouts"
+    ADD CONSTRAINT "caisse_checkouts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."caisse_transactions"
+    ADD CONSTRAINT "caisse_transactions_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."chat_logs"
     ADD CONSTRAINT "chat_logs_pkey" PRIMARY KEY ("id");
 
@@ -2394,6 +2457,26 @@ CREATE INDEX "idx_answers_question" ON "public"."answers" USING "btree" ("questi
 
 
 CREATE INDEX "idx_app_config_updated_by" ON "public"."app_config" USING "btree" ("updated_by");
+
+
+
+CREATE INDEX "idx_caisse_checkouts_created_at" ON "public"."caisse_checkouts" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_caisse_checkouts_created_by" ON "public"."caisse_checkouts" USING "btree" ("created_by");
+
+
+
+CREATE INDEX "idx_caisse_transactions_created_at" ON "public"."caisse_transactions" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_caisse_transactions_created_by" ON "public"."caisse_transactions" USING "btree" ("created_by");
+
+
+
+CREATE INDEX "idx_caisse_transactions_type" ON "public"."caisse_transactions" USING "btree" ("type");
 
 
 
@@ -2693,6 +2776,10 @@ CREATE OR REPLACE TRIGGER "trg_cascade_course_rename" BEFORE UPDATE ON "public".
 
 
 
+CREATE OR REPLACE TRIGGER "trigger_update_caisse_transaction_updated_at" BEFORE UPDATE ON "public"."caisse_transactions" FOR EACH ROW EXECUTE FUNCTION "public"."update_caisse_transaction_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "trigger_update_session_on_message" AFTER INSERT ON "public"."chat_messages" FOR EACH ROW EXECUTE FUNCTION "public"."update_session_on_message"();
 
 
@@ -2775,6 +2862,16 @@ ALTER TABLE ONLY "public"."answers"
 
 ALTER TABLE ONLY "public"."app_config"
     ADD CONSTRAINT "app_config_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."caisse_checkouts"
+    ADD CONSTRAINT "caisse_checkouts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."caisse_transactions"
+    ADD CONSTRAINT "caisse_transactions_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -2981,6 +3078,34 @@ CREATE POLICY "Managers can update questions" ON "public"."questions" FOR UPDATE
 
 
 CREATE POLICY "Managers can update resources" ON "public"."course_resources" FOR UPDATE USING ("public"."is_manager_or_higher"());
+
+
+
+CREATE POLICY "Owner can delete caisse transactions" ON "public"."caisse_transactions" FOR DELETE USING ("public"."is_owner"());
+
+
+
+CREATE POLICY "Owner can insert caisse checkouts" ON "public"."caisse_checkouts" FOR INSERT WITH CHECK (("public"."is_owner"() AND ("auth"."uid"() = "created_by")));
+
+
+
+CREATE POLICY "Owner can insert caisse transactions" ON "public"."caisse_transactions" FOR INSERT WITH CHECK (("public"."is_owner"() AND ("auth"."uid"() = "created_by")));
+
+
+
+CREATE POLICY "Owner can update caisse checkouts" ON "public"."caisse_checkouts" FOR UPDATE USING ("public"."is_owner"()) WITH CHECK ("public"."is_owner"());
+
+
+
+CREATE POLICY "Owner can update caisse transactions" ON "public"."caisse_transactions" FOR UPDATE USING ("public"."is_owner"()) WITH CHECK ("public"."is_owner"());
+
+
+
+CREATE POLICY "Owner can view caisse checkouts" ON "public"."caisse_checkouts" FOR SELECT USING ("public"."is_owner"());
+
+
+
+CREATE POLICY "Owner can view caisse transactions" ON "public"."caisse_transactions" FOR SELECT USING ("public"."is_owner"());
 
 
 
@@ -3236,6 +3361,12 @@ ALTER TABLE "public"."answers" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_config" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."caisse_checkouts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."caisse_transactions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."chat_logs" ENABLE ROW LEVEL SECURITY;
@@ -4029,6 +4160,12 @@ GRANT ALL ON FUNCTION "public"."toggle_plan_active"("plan_id" "uuid") TO "servic
 
 
 
+GRANT ALL ON FUNCTION "public"."update_caisse_transaction_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_caisse_transaction_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_caisse_transaction_updated_at"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_session_on_message"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_session_on_message"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_session_on_message"() TO "service_role";
@@ -4149,6 +4286,18 @@ GRANT ALL ON TABLE "public"."answers" TO "service_role";
 GRANT ALL ON TABLE "public"."app_config" TO "anon";
 GRANT ALL ON TABLE "public"."app_config" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."caisse_checkouts" TO "anon";
+GRANT ALL ON TABLE "public"."caisse_checkouts" TO "authenticated";
+GRANT ALL ON TABLE "public"."caisse_checkouts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."caisse_transactions" TO "anon";
+GRANT ALL ON TABLE "public"."caisse_transactions" TO "authenticated";
+GRANT ALL ON TABLE "public"."caisse_transactions" TO "service_role";
 
 
 
