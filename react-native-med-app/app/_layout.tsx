@@ -7,9 +7,14 @@ import "../global.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Stack } from "expo-router";
 import { StatusBar as ExpoStatusBar } from "expo-status-bar";
-import { StatusBar, Platform } from "react-native";
+import { StatusBar, Platform, Alert } from "react-native";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { queryClient, asyncStoragePersister } from "@/lib/query-client";
+import {
+  preventScreenCaptureAsync,
+  addScreenshotListener,
+} from "expo-screen-capture";
+import { WebSecurityProvider } from "@/components/WebSecurityProvider";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { AppVisibilityProvider } from "@/context/AppVisibilityContext";
@@ -131,6 +136,33 @@ function RootLayoutContent() {
     useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState<string>("");
+
+  // 1. Android Native Screen Capture Blocking & iOS Recording Hiding
+  // We use the async function directly inside useEffect because `usePreventScreenCapture`
+  // crashes on the web unconditionally calling native module methods.
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      preventScreenCaptureAsync().catch((err) => {
+        if (__DEV__) console.warn("Failed to prevent screen capture:", err);
+      });
+    }
+  }, []);
+
+  // 2. iOS Screenshot Detection and Alert
+  useEffect(() => {
+    if (Platform.OS === "ios") {
+      const subscription = addScreenshotListener(() => {
+        Alert.alert(
+          "Security Error",
+          "Taking screenshots of premium content violates our Terms of Service.",
+          [{ text: "I understand", style: "destructive" }],
+        );
+      });
+      return () => {
+        subscription.remove();
+      };
+    }
+  }, []);
 
   // Check if user is admin (bypass maintenance)
   const isAdminUser =
@@ -295,7 +327,7 @@ function RootLayoutContent() {
   }
 
   return (
-    <>
+    <WebSecurityProvider>
       <ExpoStatusBar style={isDark ? "light" : "dark"} />
       <Stack
         screenOptions={{
@@ -326,7 +358,7 @@ function RootLayoutContent() {
           options={{ headerShown: true, title: "Saved Questions" }}
         />
       </Stack>
-    </>
+    </WebSecurityProvider>
   );
 }
 

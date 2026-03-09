@@ -114,58 +114,21 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       }
     }
 
-    let query = supabase
-      .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `, { count: 'exact' })
-
-    // Apply filters
-    if (filters.module_name && filters.module_name.trim() !== '') {
-      query = query.eq('module_name', filters.module_name)
-    }
-    if (filters.exam_type && filters.exam_type.trim() !== '') {
-      query = query.eq('exam_type', filters.exam_type)
-    }
-    if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
-      query = query.eq('sub_discipline', filters.sub_discipline)
-    }
-    if (filters.cours && filters.cours.trim() !== '') {
-      // Use .filter() with proper PostgreSQL array literal syntax
-      // Elements containing commas need double-quoting, and internal quotes/backslashes need escaping
-      const escapedCours = filters.cours
-        .replace(/\\/g, '\\\\')
-        .replace(/"/g, '\\"');
-      query = query.filter('cours', 'cs', `{"${escapedCours}"}`)
-    }
-    if (filters.year && filters.year.trim() !== '') {
-      query = query.eq('year', filters.year)
-    }
-    if (filters.exam_year) {
-      query = query.eq('exam_year', filters.exam_year)
-    }
-
-    // Sort by: Year (Latest First) -> Exam Type -> Number
-    // Adding exam_type to SQL sort ensures consistent pagination
-    // Alphabetically: EMD < Rattrapage < Residanat
-    query = query.order('exam_year', { ascending: false })
-    query = query.order('exam_type', { ascending: true })
-    query = query.order('number', { ascending: true })
-
-    // Pagination
-    if (filters.offset !== undefined) {
-      const limit = filters.limit || 20
-      query = query.range(filters.offset, filters.offset + limit - 1)
-    } else if (filters.limit) {
-      query = query.limit(filters.limit)
-    }
-
-    const { data, count, error } = await query
+    // Fallback to Secure Edge Function
+    const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
+      body: filters
+    })
 
     if (error) {
       return { questions: [], total: 0, error: error.message }
     }
+
+    // Decrypt the payload
+    const { decryptSecurePayload } = await import('@/lib/encryption');
+    const decryptedData = decryptSecurePayload<{ data: any[], count: number }>(edgeResponse);
+    
+    const data = decryptedData.data;
+    const count = decryptedData.count;
 
 
 
@@ -335,18 +298,17 @@ export async function getQuestionById(id: string): Promise<{
   error: string | null
 }> {
   try {
-    const { data, error } = await supabase
-      .from('questions')
-      .select(`
-        *,
-        answers (*)
-      `)
-      .eq('id', id)
-      .single()
+    const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
+      body: { id }
+    })
 
     if (error) {
       return { question: null, error: error.message }
     }
+
+    const { decryptSecurePayload } = await import('@/lib/encryption');
+    const decryptedData = decryptSecurePayload<{ data: any, count: number }>(edgeResponse);
+    const data = decryptedData.data;
 
     // Sort answers
     const questionWithSortedAnswers = {

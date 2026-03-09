@@ -133,49 +133,21 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
     }
   }
 
-  // Fallback to Supabase
-  let query = supabase
-    .from('questions')
-    .select('*, answers (*)', { count: 'exact' });
-
-  if (filters.module_name && filters.module_name.trim() !== '') {
-    query = query.eq('module_name', filters.module_name);
-  }
-  if (filters.exam_type && filters.exam_type.trim() !== '') {
-    query = query.eq('exam_type', filters.exam_type);
-  }
-  if (filters.sub_discipline && filters.sub_discipline.trim() !== '') {
-    query = query.eq('sub_discipline', filters.sub_discipline);
-  }
-  if (filters.cours && filters.cours.trim() !== '') {
-    query = query.contains('cours', [filters.cours]);
-  }
-  if (filters.year && filters.year.trim() !== '') {
-    query = query.eq('year', filters.year);
-  }
-  if (filters.exam_year) {
-    query = query.eq('exam_year', filters.exam_year);
-  }
-
-  // Sorting
-  query = query
-    .order('exam_year', { ascending: false })
-    .order('exam_type', { ascending: true })
-    .order('number', { ascending: true });
-
-  // Pagination
-  if (filters.limit) {
-    query = query.limit(filters.limit);
-  }
-  if (filters.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 20) - 1);
-  }
-
-  const { data, count, error } = await query;
+  // Fallback to Secure Edge Function (Layer 6 Protection)
+  const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
+    body: filters,
+  });
 
   if (error) {
     throw new Error(error.message);
   }
+
+  // Decrypt the payload
+  const { decryptSecurePayload } = await import('@/lib/encryption');
+  const decryptedData = decryptSecurePayload<{ data: any[], count: number }>(edgeResponse);
+
+  const data = decryptedData.data;
+  const count = decryptedData.count;
 
   // Sort answers by display_order
   const questionsWithSortedAnswers = (data || []).map((q) => ({
@@ -214,19 +186,22 @@ export function useQuestions(filters: QuestionFilters) {
 }
 
 /**
- * Hook to fetch a single question by ID.
+ * Hook to fetch a single question by ID using Edge Function
  */
 export function useQuestionById(id: string) {
   return useQuery({
     queryKey: queryKeys.questions.detail(id),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('questions')
-        .select('*, answers (*)')
-        .eq('id', id)
-        .single();
+      const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
+        body: { id },
+      });
 
       if (error) throw new Error(error.message);
+
+      // Decrypt the payload
+      const { decryptSecurePayload } = await import('@/lib/encryption');
+      const decryptedData = decryptSecurePayload<{ data: any, count: number }>(edgeResponse);
+      const data = decryptedData.data;
 
       return {
         ...data,

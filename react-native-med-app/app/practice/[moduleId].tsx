@@ -15,6 +15,7 @@ import {
   Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { SecureTextElement } from "@/components/SecureTextElement";
 import { useLocalSearchParams, router, Stack } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -938,11 +939,11 @@ export default function PracticeScreen() {
                 borderColor: colors.border,
               }}
             >
-              <Text
+              <SecureTextElement
                 style={{ color: colors.text, fontSize: 16, lineHeight: 24 }}
               >
                 {currentQuestion.question_text}
-              </Text>
+              </SecureTextElement>
               {currentQuestion.image_url && (
                 <Image
                   source={{ uri: currentQuestion.image_url }}
@@ -1055,11 +1056,11 @@ export default function PracticeScreen() {
                     Explication
                   </Text>
                 </View>
-                <Text
+                <SecureTextElement
                   style={{ color: colors.text, fontSize: 15, lineHeight: 22 }}
                 >
                   {currentQuestion.explanation}
-                </Text>
+                </SecureTextElement>
               </View>
             </Animated.View>
           )}
@@ -1287,7 +1288,7 @@ function AnimatedAnswerOption({
                 {answer.option_label}
               </Text>
             </View>
-            <Text
+            <SecureTextElement
               style={{
                 flex: 1,
                 color: finalTextColor,
@@ -1297,7 +1298,7 @@ function AnimatedAnswerOption({
               }}
             >
               {answer.answer_text}
-            </Text>
+            </SecureTextElement>
             {isSubmitted && isCorrect && (
               <Text
                 style={{ color: colors.success, fontSize: 20, marginLeft: 8 }}
