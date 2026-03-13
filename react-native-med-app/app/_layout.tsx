@@ -306,6 +306,7 @@ function RootLayoutContent() {
         }}
       >
         <Stack.Screen name="index" />
+        <Stack.Screen name="landing" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/callback" />

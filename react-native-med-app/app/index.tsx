@@ -80,5 +80,17 @@ export default function Index() {
     return <Redirect href="/(tabs)" />
   }
 
+  // On web, redirect to the standalone landing page (served from public/)
+  if (Platform.OS === 'web') {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/landing.html'
+    }
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#09B2AD" />
+      </View>
+    )
+  }
+
   return <Redirect href="/(auth)/welcome" />
 }
