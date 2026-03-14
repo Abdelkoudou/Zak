@@ -38,6 +38,8 @@
     "expo-secure-store": "~14.2.0",
     "expo-splash-screen": "~0.30.0",
     "expo-status-bar": "~2.2.0",
+    "framer-motion": "^12.36.0",
+    "lucide-react": "^0.577.0",
     "nativewind": "^4.2.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",

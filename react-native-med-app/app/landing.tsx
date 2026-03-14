@@ -231,6 +231,16 @@ export default function LandingPage() {
   // Standard HTML rendering for web — avoids React Native primitives for full CSS control
   return (
     <div className="landing-page">
+      {/* Glass Background Layer */}
+      <div className="glass-bg">
+        <div className="glass-orb glass-orb-1"></div>
+        <div className="glass-orb glass-orb-2"></div>
+        <div className="glass-orb glass-orb-3"></div>
+        <div className="glass-orb glass-orb-4"></div>
+        <div className="glass-orb glass-orb-5"></div>
+      </div>
+      <div className="glass-frost"></div>
+
       {/* ================================================================
           NAVBAR
           ================================================================ */}
