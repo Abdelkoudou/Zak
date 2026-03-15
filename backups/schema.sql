@@ -2111,6 +2111,20 @@ COMMENT ON TABLE "public"."saved_questions" IS 'User bookmarked questions';
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."security_audit_logs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "action" "text" NOT NULL,
+    "resource_id" "text",
+    "ip_address" "text",
+    "user_agent" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."security_audit_logs" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."test_attempts" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -2319,6 +2333,11 @@ ALTER TABLE ONLY "public"."saved_questions"
 
 ALTER TABLE ONLY "public"."saved_questions"
     ADD CONSTRAINT "saved_questions_user_id_question_id_key" UNIQUE ("user_id", "question_id");
+
+
+
+ALTER TABLE ONLY "public"."security_audit_logs"
+    ADD CONSTRAINT "security_audit_logs_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2960,6 +2979,11 @@ ALTER TABLE ONLY "public"."saved_questions"
 
 
 
+ALTER TABLE ONLY "public"."security_audit_logs"
+    ADD CONSTRAINT "security_audit_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."test_attempts"
     ADD CONSTRAINT "test_attempts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
 
@@ -2988,6 +3012,12 @@ CREATE POLICY "Admins can delete resources" ON "public"."course_resources" FOR D
 
 
 CREATE POLICY "Admins can insert users" ON "public"."users" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_admin_or_higher"());
+
+
+
+CREATE POLICY "Admins can view all audit logs" ON "public"."security_audit_logs" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."users"
+  WHERE (("users"."id" = "auth"."uid"()) AND ("users"."role" = ANY (ARRAY['owner'::"public"."user_role", 'admin'::"public"."user_role"]))))));
 
 
 
@@ -3227,6 +3257,10 @@ CREATE POLICY "Update activation keys" ON "public"."activation_keys" FOR UPDATE 
 
 
 
+CREATE POLICY "Users can only read their own audit logs" ON "public"."security_audit_logs" FOR SELECT USING (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can submit feedback" ON "public"."user_feedback" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
 
 
@@ -3409,6 +3443,9 @@ ALTER TABLE "public"."sales_points" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."saved_questions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."security_audit_logs" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."subscription_plans" ENABLE ROW LEVEL SECURITY;
@@ -4394,6 +4431,12 @@ GRANT ALL ON TABLE "public"."sales_point_stats" TO "service_role";
 GRANT ALL ON TABLE "public"."saved_questions" TO "anon";
 GRANT ALL ON TABLE "public"."saved_questions" TO "authenticated";
 GRANT ALL ON TABLE "public"."saved_questions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."security_audit_logs" TO "anon";
+GRANT ALL ON TABLE "public"."security_audit_logs" TO "authenticated";
+GRANT ALL ON TABLE "public"."security_audit_logs" TO "service_role";
 
 
 
