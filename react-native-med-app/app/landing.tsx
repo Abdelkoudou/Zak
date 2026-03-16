@@ -40,11 +40,7 @@ const FEATURES = [
     title: 'Notes Personnelles',
     description: 'Prenez des notes directement sur chaque question pour mieux mémoriser.',
   },
-  {
-    icon: '🏥',
-    title: 'Mode Examen',
-    description: 'Simulez les conditions réelles du concours avec un chronomètre intégré.',
-  },
+  
 ];
 
 const SELLING_POINTS = [
@@ -58,7 +54,7 @@ const SELLING_POINTS = [
 ];
 
 const STATS = [
-  { value: '+10K', label: 'QCMs' },
+  { value: '+3K', label: 'QCMs' },
   { value: '15+', label: 'Modules' },
   { value: '5', label: 'Wilayas' },
   { value: '24/7', label: 'Disponible' },

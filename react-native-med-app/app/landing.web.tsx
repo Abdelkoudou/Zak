@@ -8,7 +8,7 @@ import {
 
 // --- Constants & Data ---
 const STATS = [
-  { target: 10000, prefix: '+', suffix: 'K', label: 'QCMs', staticVal: null },
+  { target: 3000, prefix: '+', suffix: '', label: 'QCMs', staticVal: null },
   { target: 15, suffix: '+', label: 'Modules', staticVal: null },
   { target: 5, label: 'Wilayas', staticVal: null },
   { target: 0, staticVal: '24/7', label: 'Disponible' }
@@ -20,7 +20,7 @@ const FEATURES = [
   { icon: Target, title: 'Filtrage Avancé', desc: 'Filtrez par année, module, cours pour une révision ciblée.', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   { icon: BarChart2, title: 'Statistiques Détaillées', desc: 'Suivez votre progression et identifiez vos points faibles en temps réel.', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
   { icon: BookOpen, title: 'Notes Personnelles', desc: 'Prenez des notes directement sur chaque question pour mémoriser.', color: '#9941ff', bg: 'rgba(153,65,255,0.12)' },
-  { icon: Clock, title: 'Mode Examen', desc: 'Simulez les conditions réelles avec un chronomètre intégré.', color: '#10b981', bg: 'rgba(16,185,129,0.12)' }
+ 
 ]
 
 const SELLING_POINTS = [
@@ -136,8 +136,8 @@ export default function LandingWeb() {
         .fm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); text-decoration: none; border: none; }
         .fm-btn-primary { padding: 10px 24px; background: #09b2ac; color: #fff; }
         .fm-btn-primary:hover { background: #0d9488; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(9,178,172,0.35); }
-        .fm-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 16px 0; transition: all 0.3s; }
-        .fm-navbar.scrolled { background: rgba(255,255,255,0.72); backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); box-shadow: 0 4px 30px rgba(0,0,0,0.06); border-bottom: 1px solid rgba(255,255,255,0.4); padding: 10px 0; }
+        .fm-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 16px 0; transition: all 0.3s; background: rgba(255,255,255,0.45); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid rgba(255,255,255,0.3); }
+        .fm-navbar.scrolled { background: rgba(255,255,255,0.8); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); box-shadow: 0 4px 30px rgba(0,0,0,0.08); border-bottom: 1px solid rgba(255,255,255,0.5); padding: 12px 0; }
         .fm-nav-inner { display: flex; align-items: center; justify-content: space-between; }
         .fm-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .fm-brand img { width: 40px; height: 40px; border-radius: 12px; }
@@ -309,29 +309,96 @@ export default function LandingWeb() {
               height: '100%',
             }}
           >
-            {/* The user's freshly uploaded hero image */}
-            <motion.div
-              animate={{ y: [0, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-              style={{
-                position: 'relative',
-                width: '115%', // Slight overhang for a dynamic feel
-                maxWidth: 700,
-                right: '-5%',
-                zIndex: 0
-              }}
-            >
-              <img  
-                src="/fmc.png" 
-                alt="FMC App Interface" 
-                style={{ 
-                  width: '100%', 
-                  height: 'auto',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 25px 50px rgba(9,178,172,0.15))',
+            {/* Elegant UI Mockup accurately representing FMC App QCM view */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: 440, height: 440, transform: 'perspective(1200px) rotateY(-8deg) rotateX(4deg)' }}>
+              {/* Main QCM Card */}
+              <motion.div
+                animate={{ y: [0, -15, 0] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+                style={{
+                  position: 'absolute', inset: 0, margin: 'auto', width: '100%', height: '100%',
+                  background: 'rgba(255, 255, 255, 0.90)',
+                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                  borderRadius: 32, padding: 24,
+                  boxShadow: '0 30px 60px -12px rgba(9, 178, 172, 0.2), 0 0 0 1px rgba(255,255,255,0.8) inset, 0 0 0 1px rgba(0,0,0,0.05)',
+                  display: 'flex', flexDirection: 'column'
                 }}
-              />
-            </motion.div>
+              >
+                {/* Header matching [moduleId].tsx */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ background: '#09b2ac', color: '#ffffff', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>Q14</span>
+                    <span style={{ background: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>EMD M23</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🚩</div>
+                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📥</div>
+                  </div>
+                </div>
+                
+                <h3 style={{ fontSize: 16, color: '#111827', lineHeight: 1.5, marginBottom: 24, fontWeight: 500 }}>
+                  Parmi les signes suivants, lequel est typique d'une insuffisance cardiaque gauche ?
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
+                  {/* Option A - Unselected */}
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, background: '#ffffff', border: '2px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <span style={{ fontWeight: 700, color: '#9ca3af', fontSize: 14 }}>A</span>
+                    </div>
+                    <span style={{ flex: 1, fontSize: 16, color: '#111827', lineHeight: 1.4 }}>Hépatomégalie</span>
+                  </div>
+                  
+                  {/* Option B - Selected & Correct (isSubmitted) */}
+                  <motion.div 
+                    initial={{ background: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                    animate={{ background: ['rgba(16, 185, 129, 0.08)', 'rgba(16, 185, 129, 0.15)'], borderColor: ['rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0.7)'] }}
+                    transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
+                    style={{ 
+                      display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, borderWidth: 2, borderStyle: 'solid',
+                      boxShadow: '0 8px 16px rgba(16, 185, 129, 0.1)'
+                    }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#09b2ac', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, boxShadow: '0 2px 8px rgba(9,178,172,0.4)' }}>
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>B</span>
+                    </div>
+                    <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#10b981', lineHeight: 1.4 }}>Dyspnée d'effort</span>
+                    <span style={{ color: '#10b981', fontSize: 20, marginLeft: 8, fontWeight: 800 }}>✓</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Floating Badge 1 - Progress */}
+              <motion.div
+                animate={{ y: [0, 20, 0] }}
+                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                style={{
+                  position: 'absolute', top: -30, right: -60,
+                  background: 'rgba(255, 255, 255, 0.90)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                  padding: '20px 24px', borderRadius: 24,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8) inset',
+                  display: 'flex', alignItems: 'center', gap: 16, zIndex: 10
+                }}
+              >
+                <div style={{ position: 'relative', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="60" height="60" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
+                    <circle cx="50" cy="50" r="42" stroke="#f3f4f6" strokeWidth="8" fill="none" />
+                    <motion.circle 
+                      cx="50" cy="50" r="42" stroke="#9941ff" strokeWidth="8" fill="none" 
+                      strokeLinecap="round" strokeDasharray="264" strokeDashoffset="264" 
+                      animate={{ strokeDashoffset: 58 }} // approx 78%
+                      transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
+                    />
+                  </svg>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>78%</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', paddingRight: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Progression</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Excellente</span>
+                </div>
+              </motion.div>
+
+             
+            </div>
           </motion.div>
         </div>
       </section>
