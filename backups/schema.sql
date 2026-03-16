@@ -160,7 +160,9 @@ CREATE TYPE "public"."report_type" AS ENUM (
     'unclear',
     'duplicate',
     'outdated',
-    'other'
+    'other',
+    'orthographe',
+    'false_explanation'
 );
 
 
@@ -582,10 +584,11 @@ BEGIN
       WHERE id = auth.uid() AND role = 'owner'
     ) THEN
       RAISE EXCEPTION 'Permission denied: only owners can delete plans'
-        USING ERRCODE = '42501';
+        USING ERRCODE = '42501'; -- insufficient_privilege
     END IF;
   END IF;
 
+  -- Lock the target row
   SELECT * INTO target_plan
   FROM public.subscription_plans
   WHERE id = plan_id
@@ -593,21 +596,26 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Plan not found'
-      USING ERRCODE = 'P0002';
+      USING ERRCODE = 'P0002'; -- no_data_found
   END IF;
 
+  -- If the plan is active, ensure it's not the last one
   IF target_plan.is_active THEN
+    -- Lock all active rows to serialize concurrent delete attempts
+    PERFORM 1 FROM public.subscription_plans WHERE is_active = true FOR UPDATE;
+
+    -- Now safe to count
     SELECT COUNT(*) INTO active_count
     FROM public.subscription_plans
-    WHERE is_active = true
-    FOR UPDATE;
+    WHERE is_active = true;
 
     IF active_count <= 1 THEN
       RAISE EXCEPTION 'Cannot delete the last active plan'
-        USING ERRCODE = 'P0001';
+        USING ERRCODE = 'P0001'; -- raise_exception
     END IF;
   END IF;
 
+  -- Delete and return the deleted row
   RETURN QUERY
   DELETE FROM public.subscription_plans
   WHERE id = plan_id
@@ -1259,10 +1267,11 @@ BEGIN
       WHERE id = auth.uid() AND role = 'owner'
     ) THEN
       RAISE EXCEPTION 'Permission denied: only owners can toggle plans'
-        USING ERRCODE = '42501';
+        USING ERRCODE = '42501'; -- insufficient_privilege
     END IF;
   END IF;
 
+  -- Lock the target row to prevent concurrent modifications
   SELECT * INTO target_plan
   FROM public.subscription_plans
   WHERE id = plan_id
@@ -1270,21 +1279,26 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Plan not found'
-      USING ERRCODE = 'P0002';
+      USING ERRCODE = 'P0002'; -- no_data_found
   END IF;
 
+  -- If deactivating, ensure at least one other active plan remains
   IF target_plan.is_active THEN
+    -- Lock all active rows to serialize concurrent deactivation attempts
+    PERFORM 1 FROM public.subscription_plans WHERE is_active = true FOR UPDATE;
+    
+    -- Now safe to count (rows are locked)
     SELECT COUNT(*) INTO active_count
     FROM public.subscription_plans
-    WHERE is_active = true
-    FOR UPDATE;
+    WHERE is_active = true;
 
     IF active_count <= 1 THEN
       RAISE EXCEPTION 'Cannot deactivate the last active plan'
-        USING ERRCODE = 'P0001';
+        USING ERRCODE = 'P0001'; -- raise_exception
     END IF;
   END IF;
 
+  -- Perform the toggle
   RETURN QUERY
   UPDATE public.subscription_plans
   SET
