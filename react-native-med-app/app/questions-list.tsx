@@ -20,6 +20,7 @@ import { Card, Badge, LoadingSpinner, Button } from "@/components/ui";
 import { BRAND_THEME } from "@/constants/theme";
 import { EXAM_TYPES, YEARS } from "@/constants";
 import { toggleSaveQuestion, getSavedQuestionIds } from "@/lib/saved";
+import { SecureTextElement } from "@/components/SecureTextElement";
 
 export default function QuestionsListScreen() {
   const {
@@ -235,7 +236,7 @@ export default function QuestionsListScreen() {
             </View>
           </View>
 
-          <Text
+          <SecureTextElement
             style={{
               fontSize: 16,
               lineHeight: 24,
@@ -245,7 +246,7 @@ export default function QuestionsListScreen() {
             numberOfLines={3}
           >
             {question.question_text}
-          </Text>
+          </SecureTextElement>
 
           {question.sub_discipline && (
             <Badge
