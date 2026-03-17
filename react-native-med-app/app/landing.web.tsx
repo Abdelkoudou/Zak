@@ -217,12 +217,18 @@ export default function LandingWeb() {
         .fm-footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: rgba(255,255,255,0.35); }
         
         @media(max-width: 1024px) {
-          .fm-hero-content { grid-template-columns: 1fr; text-align: center; }
+          .fm-hero-content { grid-template-columns: 1fr; text-align: center; gap: 40px; }
           .fm-subtitle { margin: 0 auto 40px; }
           .fm-hero-actions { justify-content: center; }
-          .fm-visual { display: none; }
+          .fm-visual { margin-top: 24px; display: flex; justify-content: center; transform: scale(0.95); }
           .fm-features-grid { grid-template-columns: repeat(2, 1fr); }
           .fm-links, .fm-nav-actions { display: none; }
+          
+          .fm-mobile-menu { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; border-top: 1px solid #f3f4f6; animation: fmSlideDown 0.3s ease-out; }
+          .fm-mobile-links { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+          .fm-mobile-link { padding: 12px 16px; font-size: 1.0625rem; font-weight: 700; color: #262626; text-decoration: none; border-radius: 12px; transition: background 0.2s; }
+          .fm-mobile-link:hover { background: rgba(9,178,172,0.08); color: #09b2ac; }
+          .fm-mobile-actions { display: flex; flex-direction: column; gap: 12px; }
         }
         @media(max-width: 768px) {
           .fm-stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -231,10 +237,16 @@ export default function LandingWeb() {
           .fm-pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
           .fm-footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
           .fm-footer-bottom-inner { flex-direction: column; gap: 8px; text-align: center; }
+          .fm-visual { transform: scale(0.85); margin-top: 10px; }
         }
         @media(max-width: 480px) {
           .fm-footer-inner { grid-template-columns: 1fr; }
+          .fm-visual { transform: scale(0.7); margin-top: 0; margin-bottom: -40px; }
+          .fm-title { font-size: 2.25rem; }
+          .fm-hero-actions { flex-direction: column; }
+          .fm-hero-actions .fm-btn { width: 100%; }
         }
+        @keyframes fmSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
 
       {/* --- NAVBAR --- */}
@@ -260,6 +272,21 @@ export default function LandingWeb() {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="fm-mobile-menu">
+            <div className="fm-mobile-links">
+              <a href="#features" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités</a>
+              <a href="#how" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Comment ça marche</a>
+              <a href="#points" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Points de vente</a>
+            </div>
+            <div className="fm-mobile-actions">
+              <button onClick={goAuth} className="fm-btn fm-btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>Se connecter</button>
+              <button onClick={goAuth} className="fm-btn fm-btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Créer un compte</button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* --- HERO --- */}
