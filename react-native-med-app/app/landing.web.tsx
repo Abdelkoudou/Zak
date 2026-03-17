@@ -200,6 +200,17 @@ export default function LandingWeb() {
         .fm-btn-pricing-secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1.5px solid rgba(255,255,255,0.1); }
         .fm-btn-pricing-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
 
+        /* Points of Sale */
+        .fm-points { padding: 120px 0; background: #0a0b10; position: relative; border-top: 1px solid rgba(255,255,255,0.03); }
+        .fm-points-header { text-align: center; margin-bottom: 64px; }
+        .fm-points-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin: 0 auto; }
+        .fm-point-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 32px 24px; display: flex; align-items: center; gap: 20px; transition: all 0.4s; }
+        .fm-point-card:hover { transform: translateY(-6px); background: rgba(9,178,172,0.05); border-color: rgba(9,178,172,0.3); box-shadow: 0 16px 32px rgba(0,0,0,0.2); }
+        .fm-point-emoji { font-size: 2.5rem; line-height: 1; flex-shrink: 0; width: 64px; height: 64px; background: rgba(255,255,255,0.05); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+        .fm-point-info { flex: 1; text-align: left; }
+        .fm-point-name { font-size: 1.125rem; font-weight: 800; color: #fff; margin-bottom: 4px; font-family: 'Cairo', sans-serif; }
+        .fm-point-city { font-size: 0.875rem; color: #09b2ac; font-weight: 700; background: rgba(9,178,172,0.15); padding: 4px 10px; border-radius: 999px; display: inline-block; font-family: 'Cairo', sans-serif; }
+
         /* Footer */
         .fm-footer { background: #0a0b10; padding: 64px 0 0; border-top: 1px solid rgba(255,255,255,0.05); }
         .fm-footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -222,6 +233,7 @@ export default function LandingWeb() {
           .fm-hero-actions { justify-content: center; }
           .fm-visual { margin-top: 24px; display: flex; justify-content: center; transform: scale(0.95); }
           .fm-features-grid { grid-template-columns: repeat(2, 1fr); }
+          .fm-points-grid { grid-template-columns: repeat(2, 1fr); }
           .fm-links, .fm-nav-actions { display: none; }
           
           .fm-mobile-menu { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; border-top: 1px solid #f3f4f6; animation: fmSlideDown 0.3s ease-out; }
@@ -234,6 +246,7 @@ export default function LandingWeb() {
           .fm-stats-grid { grid-template-columns: repeat(2, 1fr); }
           .fm-stat-item:nth-child(2)::after { display: none; }
           .fm-features-grid { grid-template-columns: 1fr; }
+          .fm-points-grid { grid-template-columns: 1fr; }
           .fm-pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
           .fm-footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
           .fm-footer-bottom-inner { flex-direction: column; gap: 8px; text-align: center; }
@@ -548,6 +561,29 @@ export default function LandingWeb() {
                 Commencer maintenant <ChevronRight size={18} />
               </button>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* --- POINTS DE VENTE --- */}
+      <section id="points" className="fm-points">
+        <div className="fm-container">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-header">
+            <motion.div variants={fadeIn} className="fm-badge">Points de Vente</motion.div>
+            <motion.h2 variants={fadeIn} className="fm-title" style={{ color: '#fff' }}>Nos <span className="fm-accent">Partenaires</span></motion.h2>
+            <motion.p variants={fadeIn} className="fm-subtitle" style={{ margin: '16px auto 0', color: 'rgba(255,255,255,0.5)' }}>Procurez-vous votre abonnement dans l'un de nos points de vente.</motion.p>
+          </motion.div>
+
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-grid">
+            {SELLING_POINTS.map((point, i) => (
+              <motion.div key={i} variants={fadeIn} whileHover={{ y: -6 }} className="fm-point-card">
+                <div className="fm-point-emoji">{point.emoji}</div>
+                <div className="fm-point-info">
+                  <h4 className="fm-point-name">{point.name}</h4>
+                  <span className="fm-point-city">{point.city}</span>
+                </div>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
