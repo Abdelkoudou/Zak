@@ -26,6 +26,7 @@ import { ChevronLeftIcon } from "@/components/icons";
 import { ANIMATION_DURATION, ANIMATION_EASING } from "@/lib/animations";
 import { shadowPresets } from "@/lib/shadows";
 import { useWebVisibility } from "@/lib/useWebVisibility";
+import { SecureTextElement } from "@/components/SecureTextElement";
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -396,7 +397,7 @@ function SavedQuestionCard({
           </Animated.View>
         </View>
 
-        <Text
+        <SecureTextElement
           style={{
             color: colors.text,
             fontSize: 15,
@@ -405,7 +406,7 @@ function SavedQuestionCard({
           numberOfLines={isExpanded ? undefined : 2}
         >
           {question.question_text}
-        </Text>
+        </SecureTextElement>
 
         <View
           style={{
@@ -512,7 +513,7 @@ function SavedQuestionCard({
                         {answer.option_label}
                       </Text>
                     </View>
-                    <Text
+                    <SecureTextElement
                       style={{
                         flex: 1,
                         fontSize: 14,
@@ -523,7 +524,7 @@ function SavedQuestionCard({
                       }}
                     >
                       {answer.answer_text}
-                    </Text>
+                    </SecureTextElement>
                     {answer.is_correct && (
                       <Text
                         style={{

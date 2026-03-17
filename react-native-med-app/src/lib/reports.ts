@@ -5,19 +5,15 @@
 import { supabase } from './supabase'
 
 export type ReportType = 
-  | 'error_in_question'   // Erreur dans la question
+  | 'orthographe'         // Faute d'orthographe
   | 'wrong_answer'        // Réponse incorrecte
-  | 'unclear'             // Question pas claire
-  | 'duplicate'           // Question dupliquée
-  | 'outdated'            // Information obsolète
+  | 'false_explanation'   // Fausse explication
   | 'other'               // Autre
 
 export const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-  error_in_question: 'Erreur dans la question',
+  orthographe: "Faute d'orthographe",
   wrong_answer: 'Réponse incorrecte',
-  unclear: 'Question pas claire',
-  duplicate: 'Question dupliquée',
-  outdated: 'Information obsolète',
+  false_explanation: 'Fausse explication',
   other: 'Autre',
 }
 

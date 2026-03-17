@@ -112,8 +112,9 @@ export async function middleware(req: NextRequest) {
 
   // Check if route requires owner role
   const isContributionsRoute = req.nextUrl.pathname.startsWith('/contributions');
+  const isCaisseRoute = req.nextUrl.pathname.startsWith('/caisse');
   
-  if (isContributionsRoute) {
+  if (isContributionsRoute || isCaisseRoute) {
     // Only owner can access contributions
     if (!user || user.role !== 'owner') {
       const loginUrl = new URL('/login', req.url);
@@ -147,6 +148,7 @@ export const config = {
     '/history/:path*',
     '/export/:path*',
     '/contributions/:path*',
+    '/caisse/:path*',
     // Add other admin routes here
   ],
 };

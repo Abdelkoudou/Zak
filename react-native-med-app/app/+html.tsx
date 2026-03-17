@@ -17,8 +17,18 @@ export default function Root({ children }: PropsWithChildren) {
           Ensures each HTML document contains a non-empty <title> element.
           This helps with navigation and accessibility.
         */}
-        <title>QCM MED - Préparation Concours Médecine</title>
-        <meta name="description" content="Plateforme d'entraînement aux QCM pour les étudiants en médecine." />
+        <title>FMC App - Study Everywhere | Révision Médecine Constantine</title>
+        <meta name="description" content="La plateforme de révision incontournable pour les étudiants en médecine de Constantine et ses annexes. QCMs interactifs, mode hors-ligne et suivi personnalisé." />
+
+        {/* Open Graph */}
+        <meta property="og:title" content="FMC App - Study Everywhere" />
+        <meta property="og:description" content="La plateforme de révision incontournable pour les étudiants en médecine de Constantine." />
+        <meta property="og:type" content="website" />
+
+        {/* Brand Fonts: Manrope (headings) + Cairo (body/Arabic) per brand identity */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
 
         {/* 
           Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 

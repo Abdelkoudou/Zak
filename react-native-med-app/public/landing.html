@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FMC App — Study Everywhere | Révision Médecine Constantine</title>
+  <meta name="description" content="La plateforme de révision incontournable pour les étudiants en médecine de Constantine et ses annexes. QCMs interactifs, mode hors-ligne et suivi personnalisé." />
+  <meta property="og:title" content="FMC App — Study Everywhere" />
+  <meta property="og:description" content="La plateforme de révision incontournable pour les étudiants en médecine de Constantine." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== RESET ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+    /* ===== BASE ===== */
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #262626;
+      background: transparent;
+      overflow-x: hidden;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    /* ===== GLASS BACKGROUND ===== */
+    .glass-bg {
+      position: fixed; inset: 0; z-index: -2;
+      background: linear-gradient(135deg, #e0f7f5 0%, #f0f4ff 30%, #fdf2f8 60%, #e8f5e9 100%);
+      overflow: hidden;
+    }
+    .glass-orb {
+      position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.5;
+      animation: orbDrift 12s ease-in-out infinite alternate;
+    }
+    .glass-orb-1 { width: 600px; height: 600px; background: rgba(9,178,172,0.25); top: -10%; left: -5%; animation-duration: 14s; }
+    .glass-orb-2 { width: 500px; height: 500px; background: rgba(99,102,241,0.18); top: 30%; right: -8%; animation-duration: 18s; animation-delay: -4s; }
+    .glass-orb-3 { width: 450px; height: 450px; background: rgba(236,72,153,0.12); bottom: -5%; left: 20%; animation-duration: 16s; animation-delay: -8s; }
+    .glass-orb-4 { width: 350px; height: 350px; background: rgba(153,65,255,0.15); top: 60%; left: -10%; animation-duration: 20s; animation-delay: -2s; }
+    .glass-orb-5 { width: 300px; height: 300px; background: rgba(245,158,11,0.1); top: 10%; right: 20%; animation-duration: 15s; animation-delay: -6s; }
+    @keyframes orbDrift {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.08); }
+      100% { transform: translate(-20px, 30px) scale(0.95); }
+    }
+    .glass-frost {
+      position: fixed; inset: 0; z-index: -1;
+      backdrop-filter: blur(60px) saturate(1.4);
+      -webkit-backdrop-filter: blur(60px) saturate(1.4);
+      background: rgba(255,255,255,0.55);
+    }
+    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    img { max-width: 100%; height: auto; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ===== SECTION HEADERS ===== */
+    .section-header { text-align: center; margin-bottom: 64px; }
+    .section-badge {
+      display: inline-block; padding: 6px 16px; border-radius: 999px;
+      background: rgba(9,178,172,.1); color: #09b2ac;
+      font-size: 14px; font-weight: 700; letter-spacing: .5px; margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(1.75rem,4vw,2.75rem); font-weight: 800;
+      color: #262626; letter-spacing: -.03em; line-height: 1.2;
+    }
+    .section-subtitle {
+      font-family: 'Cairo', sans-serif; font-size: 1.125rem; color: #6b7280;
+      max-width: 600px; margin: 16px auto 0; line-height: 1.7;
+    }
+    .accent { color: #09b2ac; }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: 'Manrope', sans-serif; font-weight: 700; font-size: .9375rem;
+      border: none; border-radius: 12px; cursor: pointer;
+      transition: all .25s cubic-bezier(.4,0,.2,1); text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { padding: 10px 24px; background: #09b2ac; color: #fff; }
+    .btn-primary:hover { background: #0d9488; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(9,178,172,.35); }
+    .btn-ghost {
+      padding: 10px 24px; background: transparent; color: rgba(255,255,255,.9);
+      border: 1.5px solid rgba(255,255,255,.3);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.5); }
+    .btn-hero {
+      padding: 16px 32px; background: #09b2ac; color: #fff; font-size: 1.0625rem;
+      border-radius: 16px; box-shadow: 0 4px 20px rgba(9,178,172,.3);
+    }
+    .btn-hero:hover { background: #0d9488; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(9,178,172,.4); }
+    .btn-hero-secondary {
+      padding: 16px 32px; background: rgba(255,255,255,.1); color: #fff;
+      font-size: 1.0625rem; border-radius: 16px; border: 1.5px solid rgba(255,255,255,.25);
+    }
+    .btn-hero-secondary:hover { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.4); }
+    .btn-download { padding: 14px 28px; background: #262626; color: #fff; border-radius: 14px; }
+    .btn-download:hover { background: #1a1a1a; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      padding: 16px 0; transition: all .3s cubic-bezier(.4,0,.2,1);
+    }
+    .navbar.scrolled {
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(20px) saturate(1.3);
+      -webkit-backdrop-filter: blur(20px) saturate(1.3);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.06);
+      border-bottom: 1px solid rgba(255,255,255,0.4);
+      padding: 10px 0;
+    }
+    .navbar-inner { display: flex; align-items: center; justify-content: space-between; }
+    .navbar-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 10; }
+    .navbar-logo { width: 40px; height: 40px; border-radius: 12px; object-fit: contain; }
+    .navbar-name {
+      font-size: 1.25rem; font-weight: 800; color: #fff;
+      letter-spacing: -.02em; transition: color .3s;
+    }
+    .navbar.scrolled .navbar-name { color: #262626; }
+    .navbar-links { display: flex; align-items: center; gap: 32px; }
+    .navbar-link {
+      font-size: .9375rem; font-weight: 600; color: rgba(255,255,255,.8);
+      transition: color .2s;
+    }
+    .navbar-link:hover { color: #fff; }
+    .navbar.scrolled .navbar-link { color: #6b7280; }
+    .navbar.scrolled .navbar-link:hover { color: #09b2ac; }
+    .navbar-actions { display: flex; align-items: center; gap: 12px; }
+    .navbar.scrolled .btn-ghost { color: #262626; border-color: #e5e7eb; }
+    .navbar.scrolled .btn-ghost:hover { background: #f9fafb; border-color: #d1d5db; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 8px; z-index: 10; }
+    .hamburger span { width: 24px; height: 2px; background: #fff; border-radius: 2px; transition: all .3s; }
+    .navbar.scrolled .hamburger span { background: #262626; }
+    .mobile-menu {
+      display: none; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0;
+      background: #fff; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,.1);
+      border-radius: 0 0 24px 24px; gap: 8px;
+    }
+    .mobile-menu.open { display: flex; animation: fadeInUp .3s ease-out; }
+    .mobile-menu a {
+      display: block; padding: 12px 16px; font-size: 1rem; font-weight: 600;
+      color: #262626; border-radius: 12px; transition: background .2s;
+    }
+    .mobile-menu a:hover { background: rgba(9,178,172,.08); color: #09b2ac; }
+    .mobile-actions {
+      display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+      padding-top: 16px; border-top: 1px solid #f3f4f6;
+    }
+    .mobile-actions .btn { width: 100%; }
+    .mobile-actions .btn-ghost { color: #262626; border-color: #e5e7eb; }
+
+    @media (max-width: 768px) {
+      .navbar-links, .navbar-actions { display: none !important; }
+      .hamburger { display: flex; }
+    }
+
+    /* Hero Section (Light Theme) */
+    .hero { position: relative; min-height: 100vh; display: flex; align-items: center; background: rgba(255,255,255,0.3); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); padding: 120px 0 80px; }
+    .hero-bg { position: absolute; inset: 0; background-image: linear-gradient(rgba(9,178,172,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(9,178,172,0.06) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%); pointer-events: none; }
+    .hero-orb { position: absolute; border-radius: 50%; filter: blur(80px); animation: pulseOrb 8s ease-in-out infinite alternate; pointer-events: none; }
+    .hero-orb-1 { width: 400px; height: 400px; background: rgba(9,178,172,0.15); top: -10%; right: -5%; }
+    .hero-orb-2 { width: 300px; height: 300px; background: rgba(99,102,241,0.1); bottom: -5%; left: 0%; animation-delay: -3s; }
+    .hero-orb-3 { width: 250px; height: 250px; background: rgba(236,72,153,0.1); top: 50%; right: 20%; animation-delay: -6s; }
+    @keyframes pulseOrb { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(1.1); opacity: .8; } }
+    .hero-content { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; position: relative; z-index: 1; }
+    .hero-title { font-size: clamp(2.5rem, 4.5vw, 4rem); font-weight: 800; color: #111827; line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 24px; }
+    .hero-title .accent { color: #09b2ac; }
+    .hero-subtitle { font-family: 'Cairo', sans-serif; font-size: 1.1875rem; color: #4b5563; line-height: 1.7; max-width: 520px; margin-bottom: 40px; }
+    
+    .hero-actions { display: flex; gap: 16px; margin-bottom: 48px; }
+    .btn-hero { padding: 16px 32px; background: #09b2ac; color: #fff; border-radius: 16px; font-size: 1.0625rem; font-weight: 700; }
+    .btn-hero svg { width: 20px; height: 20px; }
+    .btn-hero-secondary { padding: 16px 32px; background: transparent; color: #09b2ac; border-radius: 16px; border: 2px solid rgba(9,178,172,0.3); font-weight: 700; transition: all 0.3s; }
+    .btn-hero-secondary:hover { border-color: #09b2ac; background: rgba(9,178,172,0.08); }
+
+    .hero-visual { display: flex; justify-content: flex-end; align-items: center; position: relative; width: 100%; height: 100%; z-index: 2; }
+    .hero-image-wrapper { position: relative; width: 100%; max-width: 700px; margin-right: -10%; animation: float 6s ease-in-out infinite; transform-origin: center right; }
+    .hero-image-wrapper img { width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 30px 60px rgba(9,178,172,0.25)); transform: scale(1.2) translateY(20px); }
+
+    @media (max-width: 1024px) {
+      .hero-content { grid-template-columns: 1fr; text-align: center; }
+      .hero-subtitle { margin-left: auto; margin-right: auto; }
+      .hero-actions { justify-content: center; }
+      .hero-visual { justify-content: center; }
+      .hero-image-wrapper { max-width: 500px; margin-right: 0; transform-origin: center center; margin-top: 40px; }
+      .hero-image-wrapper img { transform: scale(1.1) translateY(0); }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 100px 0 60px; }
+      .hero-actions { flex-direction: column; }
+      .hero-actions .btn { width: 100%; }
+      .hero-image-wrapper { max-width: 100%; padding: 0 10px; }
+      .hero-image-wrapper img { transform: scale(1.05) translateY(0); }
+    }
+
+    /* ===== STATS ===== */
+    .stats { background: transparent; padding: 0; margin-top: -40px; position: relative; z-index: 2; }
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,.06);
+      border: 1px solid rgba(255,255,255,0.6); overflow: hidden;
+    }
+    .stats-item { padding: 40px 24px; text-align: center; position: relative; }
+    .stats-item:not(:last-child)::after {
+      content: ''; position: absolute; right: 0; top: 20%; height: 60%;
+      width: 1px; background: #f3f4f6;
+    }
+    .stats-value {
+      font-size: clamp(1.75rem,3vw,2.5rem); font-weight: 800;
+      color: #09b2ac; letter-spacing: -.03em;
+    }
+    .stats-label { font-size: .9375rem; color: #9ca3af; font-weight: 600; margin-top: 4px; }
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .stats-item:nth-child(2)::after { display: none; }
+      .stats-item:nth-child(1), .stats-item:nth-child(2) { border-bottom: 1px solid #f3f4f6; }
+    }
+
+    /* ===== FEATURES ===== */
+    .features {
+      padding: 120px 0; background: #111113; position: relative; overflow: hidden;
+    }
+    .features::before {
+      content: ''; position: absolute; top: -150px; left: -150px;
+      width: 400px; height: 400px; border-radius: 50%;
+      background: rgba(9,178,172,.06); filter: blur(100px); pointer-events: none;
+    }
+    .features::after {
+      content: ''; position: absolute; bottom: -100px; right: -100px;
+      width: 350px; height: 350px; border-radius: 50%;
+      background: rgba(153,65,255,.04); filter: blur(100px); pointer-events: none;
+    }
+    .features .section-title { color: #fff; }
+    .features .section-subtitle { color: rgba(255,255,255,.5); }
+    .features .section-badge { background: rgba(9,178,172,.12); }
+    .features-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 20px;
+      position: relative; z-index: 1;
+    }
+    .feature-card {
+      position: relative; border-radius: 20px; padding: 40px 28px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.06);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: all .4s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px;
+      background: linear-gradient(135deg, transparent 40%, var(--card-glow, rgba(9,178,172,.3)) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude;
+      opacity: 0; transition: opacity .4s ease;
+      pointer-events: none;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      background: rgba(255,255,255,.05);
+      box-shadow: 0 20px 60px rgba(0,0,0,.3), 0 0 40px var(--card-shadow, rgba(9,178,172,.08));
+      border-color: transparent;
+    }
+    .feature-card:hover::before { opacity: 1; }
+    .feature-card:nth-child(1) { --card-glow: rgba(9,178,172,.4); --card-shadow: rgba(9,178,172,.1); --icon-bg: rgba(9,178,172,.12); --icon-color: #09b2ac; }
+    .feature-card:nth-child(2) { --card-glow: rgba(99,102,241,.4); --card-shadow: rgba(99,102,241,.1); --icon-bg: rgba(99,102,241,.12); --icon-color: #6366f1; }
+    .feature-card:nth-child(3) { --card-glow: rgba(245,158,11,.4); --card-shadow: rgba(245,158,11,.1); --icon-bg: rgba(245,158,11,.12); --icon-color: #f59e0b; }
+    .feature-card:nth-child(4) { --card-glow: rgba(236,72,153,.4); --card-shadow: rgba(236,72,153,.1); --icon-bg: rgba(236,72,153,.12); --icon-color: #ec4899; }
+    .feature-card:nth-child(5) { --card-glow: rgba(153,65,255,.4); --card-shadow: rgba(153,65,255,.1); --icon-bg: rgba(153,65,255,.12); --icon-color: #9941ff; }
+    .feature-card:nth-child(6) { --card-glow: rgba(16,185,129,.4); --card-shadow: rgba(16,185,129,.1); --icon-bg: rgba(16,185,129,.12); --icon-color: #10b981; }
+    .feature-icon {
+      width: 56px; height: 56px; display: flex;
+      align-items: center; justify-content: center;
+      background: var(--icon-bg, rgba(9,178,172,.12)); border-radius: 16px;
+      margin-bottom: 24px; transition: transform .3s ease, box-shadow .3s ease;
+    }
+    .feature-icon svg { width: 28px; height: 28px; stroke: var(--icon-color, #09b2ac); stroke-width: 1.8; fill: none; }
+    .feature-card:hover .feature-icon {
+      transform: scale(1.1) rotate(-3deg);
+      box-shadow: 0 0 20px var(--card-shadow, rgba(9,178,172,.15));
+    }
+    .feature-title { font-size: 1.1875rem; font-weight: 700; color: #fff; margin-bottom: 10px; letter-spacing: -.01em; }
+    .feature-desc { font-family: 'Cairo', sans-serif; font-size: .9375rem; color: rgba(255,255,255,.45); line-height: 1.7; }
+    @media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2,1fr); } }
+    @media (max-width: 640px) { .features-grid { grid-template-columns: 1fr; } }
+
+    /* ===== PRICING ===== */
+    .pricing { padding: 120px 0; background: #111113; position: relative; border-top: 1px solid rgba(255,255,255,.03); }
+    .pricing .section-title { color: #fff; }
+    .pricing .section-subtitle { color: rgba(255,255,255,.5); }
+    .pricing .section-badge { background: rgba(9,178,172,.12); }
+    .pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+    .pricing-card { background: rgba(255,255,255,.02); border: 2px solid rgba(255,255,255,.06); border-radius: 24px; padding: 40px 32px; position: relative; display: flex; flex-direction: column; transition: all .4s cubic-bezier(.4,0,.2,1); }
+    .pricing-card.popular { border-color: rgba(9,178,172,.5); background: linear-gradient(180deg, rgba(9,178,172,.08) 0%, rgba(9,178,172,0) 100%); }
+    .pricing-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,.4); border-color: rgba(255,255,255,.15); }
+    .pricing-card.popular:hover { box-shadow: 0 20px 40px rgba(9,178,172,.15); border-color: #09b2ac; }
+    .pricing-tag { position: absolute; top: -14px; right: 32px; background: #09b2ac; color: #fff; font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 14px; border-radius: 999px; box-shadow: 0 4px 12px rgba(9,178,172,.3); }
+    .pricing-title { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
+    .pricing-subtitle { font-family: 'Cairo', sans-serif; font-size: .9375rem; color: rgba(255,255,255,.6); margin-bottom: 24px; min-height: 44px; }
+    .pricing-price { font-size: 3.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1; display: flex; align-items: flex-start; gap: 8px; }
+    .pricing-currency { font-size: 1.25rem; color: rgba(255,255,255,.5); font-weight: 600; margin-top: 8px; }
+    .pricing-features { flex: 1; margin: 32px 0; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid rgba(255,255,255,.06); padding-top: 32px; }
+    .pricing-feature { display: flex; align-items: flex-start; gap: 12px; font-family: 'Cairo', sans-serif; font-size: .9375rem; color: rgba(255,255,255,.8); line-height: 1.5; }
+    .pricing-icon { flex-shrink: 0; color: #09b2ac; margin-top: 2px; }
+    .btn-pricing { width: 100%; padding: 16px 24px; border-radius: 14px; font-weight: 700; font-size: 1.0625rem; text-align: center; }
+    .btn-pricing-secondary { background: rgba(255,255,255,.05); color: #fff; border: 1.5px solid rgba(255,255,255,.1); }
+    .btn-pricing-secondary:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.25); transform: translateY(-2px); }
+    @media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; max-width: 400px; } }
+
+    /* ===== HOW IT WORKS ===== */
+    .how { padding: 100px 0; background: rgba(255,255,255,0.4); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+    .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 32px; }
+    .how-card { text-align: center; padding: 40px 24px; position: relative; }
+    .how-step { font-size: 3rem; font-weight: 800; color: rgba(9,178,172,.15); margin-bottom: 16px; line-height: 1; }
+    .how-title { font-size: 1.25rem; font-weight: 700; color: #262626; margin-bottom: 12px; }
+    .how-desc { font-family: 'Cairo', sans-serif; font-size: .9375rem; color: #6b7280; line-height: 1.6; max-width: 280px; margin: 0 auto; }
+    .how-connector { display: none; }
+    @media (min-width: 769px) {
+      .how-connector { display: block; position: absolute; top: 60px; right: -16px; width: 32px; height: 2px; background: linear-gradient(90deg,rgba(9,178,172,.3),rgba(9,178,172,.1)); }
+    }
+    @media (max-width: 768px) {
+      .how-grid { grid-template-columns: 1fr; gap: 16px; }
+      .how-card { padding: 24px; }
+    }
+
+    /* ===== SELLING POINTS ===== */
+    .selling { padding: 100px 0; background: rgba(250,250,250,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+    .selling-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr)); gap: 16px; max-width: 900px; margin: 0 auto; }
+    .selling-card {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.5); border-radius: 16px;
+      padding: 20px 24px; transition: all .25s ease;
+    }
+    .selling-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.06); border-color: rgba(9,178,172,.2); }
+    .selling-emoji {
+      font-size: 28px; width: 52px; height: 52px; display: flex;
+      align-items: center; justify-content: center;
+      background: rgba(9,178,172,.08); border-radius: 14px; flex-shrink: 0;
+    }
+    .selling-name { font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; color: #262626; direction: rtl; }
+    .selling-city { font-family: 'Cairo', sans-serif; font-size: .8125rem; color: #09b2ac; font-weight: 600; direction: rtl; }
+
+    /* ===== DOWNLOAD CTA ===== */
+    .download { padding: 100px 0; background: #1a1a1a; position: relative; overflow: hidden; }
+    .download::before {
+      content: ''; position: absolute; top: -200px; right: -200px;
+      width: 500px; height: 500px; border-radius: 50%;
+      background: rgba(9,178,172,.08); filter: blur(80px);
+    }
+    .download-inner { position: relative; z-index: 1; }
+    .download-content { text-align: center; max-width: 600px; margin: 0 auto; }
+    .download-title {
+      font-size: clamp(1.75rem,4vw,2.5rem); font-weight: 800; color: #fff;
+      letter-spacing: -.03em; margin-bottom: 16px;
+    }
+    .download-subtitle { font-family: 'Cairo', sans-serif; font-size: 1.0625rem; color: rgba(255,255,255,.6); line-height: 1.7; margin-bottom: 40px; }
+    .download-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    @media (max-width: 480px) {
+      .download-actions { flex-direction: column; }
+      .download-actions .btn { width: 100%; }
+    }
+
+    /* ===== FOOTER ===== */
+    .footer { background: #262626; padding: 64px 0 0; }
+    .footer-inner {
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+      padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .footer-brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .footer-logo { width: 36px; height: 36px; border-radius: 10px; }
+    .footer-brand-name { font-weight: 800; font-size: 1.25rem; color: #fff; }
+    .footer-tagline { font-size: .875rem; color: rgba(255,255,255,.5); line-height: 1.6; max-width: 300px; }
+    .footer-heading {
+      font-size: .875rem; font-weight: 700; color: rgba(255,255,255,.5);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;
+    }
+    .footer-links { display: flex; flex-direction: column; gap: 12px; }
+    .footer-link { display: inline-flex; align-items: center; gap: 8px; font-size: .9375rem; color: rgba(255,255,255,.7); transition: color .2s; }
+    .footer-link svg { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; transition: transform .2s ease; }
+    .footer-link:hover { color: #09b2ac; }
+    .footer-link:hover svg { transform: scale(1.1) rotate(-5deg); }
+    .footer-bottom { padding: 24px 0; }
+    .footer-bottom-inner {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: .8125rem; color: rgba(255,255,255,.35);
+    }
+    @media (max-width: 768px) {
+      .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .footer-bottom-inner { flex-direction: column; gap: 8px; text-align: center; }
+    }
+    @media (max-width: 480px) { .footer-inner { grid-template-columns: 1fr; } }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      33% { transform: translateY(-15px) rotate(1deg); }
+      66% { transform: translateY(-8px) rotate(-1deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: .4; transform: scale(1); }
+      50% { opacity: .7; transform: scale(1.05); }
+    }
+
+    /* Scroll reveal */
+    .reveal { opacity: 0; transform: translateY(40px) scale(0.98); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal.visible { opacity: 1; transform: translateY(0) scale(1); }
+    .reveal-left { opacity: 0; transform: translateX(-40px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal-left.visible { opacity: 1; transform: translateX(0); }
+    .reveal-right { opacity: 0; transform: translateX(40px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal-right.visible { opacity: 1; transform: translateX(0); }
+    .reveal-child { opacity: 0; transform: translateY(30px) scale(0.98); transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+    .reveal.visible .reveal-child, .reveal-left.visible .reveal-child, .reveal-right.visible .reveal-child { opacity: 1; transform: translateY(0) scale(1); }
+  </style>
+</head>
+<body>
+
+  <!-- Glass Background Layer -->
+  <div class="glass-bg">
+    <div class="glass-orb glass-orb-1"></div>
+    <div class="glass-orb glass-orb-2"></div>
+    <div class="glass-orb glass-orb-3"></div>
+    <div class="glass-orb glass-orb-4"></div>
+    <div class="glass-orb glass-orb-5"></div>
+  </div>
+  <div class="glass-frost"></div>
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" id="navbar">
+    <div class="container navbar-inner">
+      <a class="navbar-brand" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+        <img src="/logo.png" alt="FMC App" class="navbar-logo" />
+        <span class="navbar-name">FMC App</span>
+      </a>
+      <div class="navbar-links">
+        <a href="#features" class="navbar-link">Fonctionnalités</a>
+        <a href="#how-it-works" class="navbar-link">Comment ça marche</a>
+        <a href="#selling-points" class="navbar-link">Points de vente</a>
+      </div>
+      <div class="navbar-actions">
+        <a href="/" class="btn btn-ghost" onclick="window.location.href='/welcome';return false;">Se connecter</a>
+        <a href="/" class="btn btn-primary" onclick="window.location.href='/welcome';return false;">Créer un compte</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#features" onclick="closeMobile()">Fonctionnalités</a>
+      <a href="#how-it-works" onclick="closeMobile()">Comment ça marche</a>
+      <a href="#selling-points" onclick="closeMobile()">Points de vente</a>
+      <div class="mobile-actions">
+        <a href="/" class="btn btn-ghost" onclick="window.location.href='/welcome';return false;">Se connecter</a>
+        <a href="/" class="btn btn-primary" onclick="window.location.href='/welcome';return false;">Créer un compte</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="hero">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-orb hero-orb-3"></div>
+    <div class="hero-bg"></div>
+    <div class="container hero-content">
+      <div class="hero-text reveal-left">
+        <div class="badge" style="background: rgba(9,178,172,.15); color: #09b2ac; padding: 8px 16px; border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 24px; font-weight: 700;">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: #09b2ac; animation: pulse 2s infinite;"></div>
+          2ème Année Médecine • Constantine
+        </div>
+        <h1 class="hero-title">Révisez avec<br/><span class="accent">Excellence</span></h1>
+        <p class="hero-subtitle">
+          La plateforme de révision incontournable pour les étudiants en médecine de Constantine et ses annexes. QCMs interactifs, mode hors-ligne et suivi personnalisé.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-hero" onclick="window.location.href='/welcome';return false;">
+            Commencer gratuitement <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <button class="btn btn-hero-secondary" onclick="window.location.href='/welcome';return false;">J'ai déjà un compte</button>
+        </div>
+      </div>
+      <div class="hero-visual reveal-right">
+        <div class="hero-image-wrapper">
+          <img src="/fmc.png" alt="FMC App Interface" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== STATS ===== -->
+  <section class="stats">
+    <div class="container stats-grid reveal">
+      <div class="stats-item reveal-child" style="transition-delay: .0s"><div class="stats-value" data-target="10000" data-prefix="+" data-suffix="K">+0K</div><div class="stats-label">QCMs</div></div>
+      <div class="stats-item reveal-child" style="transition-delay: .1s"><div class="stats-value" data-target="15" data-suffix="+">0+</div><div class="stats-label">Modules</div></div>
+      <div class="stats-item reveal-child" style="transition-delay: .2s"><div class="stats-value" data-target="5">0</div><div class="stats-label">Wilayas</div></div>
+      <div class="stats-item reveal-child" style="transition-delay: .3s"><div class="stats-value" data-target="0" data-static="24/7">24/7</div><div class="stats-label">Disponible</div></div>
+    </div>
+  </section>
+
+  <!-- ===== FEATURES ===== -->
+  <section class="features" id="features">
+    <div class="container reveal">
+      <div class="section-header">
+        <span class="section-badge">Fonctionnalités</span>
+        <h2 class="section-title">Tout ce dont vous avez besoin pour <span class="accent">réussir</span></h2>
+        <p class="section-subtitle">Une plateforme complète conçue spécifiquement pour les étudiants en médecine.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal-child" style="transition-delay:.0s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </div>
+          <h3 class="feature-title">QCMs Interactifs</h3>
+          <p class="feature-desc">Des milliers de QCMs corrigés et commentés, classés par module et par cours.</p>
+        </div>
+        <div class="feature-card reveal-child" style="transition-delay:.1s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+          </div>
+          <h3 class="feature-title">Mode Hors-ligne</h3>
+          <p class="feature-desc">Révisez partout, même sans connexion internet. Vos données sont synchronisées.</p>
+        </div>
+        <div class="feature-card reveal-child" style="transition-delay:.2s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <h3 class="feature-title">Filtrage Avancé</h3>
+          <p class="feature-desc">Filtrez par année, module, cours ou source pour une révision ciblée.</p>
+        </div>
+        <div class="feature-card reveal-child" style="transition-delay:.3s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+          </div>
+          <h3 class="feature-title">Statistiques Détaillées</h3>
+          <p class="feature-desc">Suivez votre progression et identifiez vos points faibles en temps réel.</p>
+        </div>
+        <div class="feature-card reveal-child" style="transition-delay:.4s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          </div>
+          <h3 class="feature-title">Notes Personnelles</h3>
+          <p class="feature-desc">Prenez des notes directement sur chaque question pour mieux mémoriser.</p>
+        </div>
+        <div class="feature-card reveal-child" style="transition-delay:.5s">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <h3 class="feature-title">Mode Examen</h3>
+          <p class="feature-desc">Simulez les conditions réelles du concours avec un chronomètre intégré.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PRICING ===== -->
+  <section class="pricing" id="tarifs">
+    <div class="container reveal">
+      <div class="section-header">
+        <span class="section-badge">Tarifs</span>
+        <h2 class="section-title">Choisissez votre <span class="accent">formule</span></h2>
+        <p class="section-subtitle">Des offres adaptées à vos besoins pour une révision optimale.</p>
+      </div>
+      <div class="pricing-grid">
+        <!-- 10 Days Plan -->
+        <div class="pricing-card reveal-child" style="transition-delay:.0s">
+          <h3 class="pricing-title">10 Jours</h3>
+          <p class="pricing-subtitle">Accès complet pendant 10 jours</p>
+          <div class="pricing-price">
+            200 <span class="pricing-currency">DA</span>
+          </div>
+          <div class="pricing-features">
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Accès à <b>tous les QCMs</b> de l'année choisie</span>
+            </div>
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Accès pour les QCMs de <b>tous les modules</b></span>
+            </div>
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Ressources importantes (Drive, Chaîne Telegram)</span>
+            </div>
+          </div>
+          <button class="btn btn-pricing btn-pricing-secondary" onclick="window.location.href='/welcome';return false;">
+            Choisir cette formule <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+
+        <!-- End of Year Plan (Popular) -->
+        <div class="pricing-card popular reveal-child" style="transition-delay:.2s">
+          <div class="pricing-tag">⭐️ Populaire</div>
+          <h3 class="pricing-title">Jusqu'à la fin d'année</h3>
+          <p class="pricing-subtitle">Accès illimité jusqu'à la fin d'année — Meilleure offre</p>
+          <div class="pricing-price">
+            1000 <span class="pricing-currency">DA</span>
+          </div>
+          <div class="pricing-features">
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Accès à <b>tous les QCMs</b> de l'année choisie</span>
+            </div>
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Accès pour les QCMs de <b>tous les modules</b></span>
+            </div>
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Ressources importantes (Drive, Chaîne Telegram)</span>
+            </div>
+            <div class="pricing-feature">
+              <svg class="pricing-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+              <span>Mises à jour des <b>QCMs en temps réel</b></span>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-pricing" onclick="window.location.href='/welcome';return false;">
+            Commencer maintenant <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 8px;"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW IT WORKS ===== -->
+  <section class="how" id="how-it-works">
+    <div class="container reveal">
+      <div class="section-header">
+        <span class="section-badge">Simple et Rapide</span>
+        <h2 class="section-title">Comment ça <span class="accent">marche</span></h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-card reveal-child" style="transition-delay:.0s">
+          <div class="how-step">01</div>
+          <h3 class="how-title">Créez votre compte</h3>
+          <p class="how-desc">Inscrivez-vous en quelques secondes avec votre email.</p>
+          <div class="how-connector"></div>
+        </div>
+        <div class="how-card reveal-child" style="transition-delay:.15s">
+          <div class="how-step">02</div>
+          <h3 class="how-title">Choisissez vos modules</h3>
+          <p class="how-desc">Sélectionnez les modules que vous souhaitez réviser.</p>
+          <div class="how-connector"></div>
+        </div>
+        <div class="how-card reveal-child" style="transition-delay:.3s">
+          <div class="how-step">03</div>
+          <h3 class="how-title">Révisez et progressez</h3>
+          <p class="how-desc">Pratiquez avec des QCMs et suivez vos statistiques.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SELLING POINTS ===== -->
+  <section class="selling" id="selling-points">
+    <div class="container reveal">
+      <div class="section-header">
+        <span class="section-badge">نقاط البيع</span>
+        <h2 class="section-title">Nos <span class="accent">Points de Vente</span></h2>
+        <p class="section-subtitle">Procurez-vous votre abonnement dans l'un de nos points de vente partenaires.</p>
+      </div>
+      <div class="selling-grid">
+        <div class="selling-card reveal-child" style="transition-delay:.0s">
+          <div class="selling-emoji">📚</div>
+          <div><div class="selling-name">مكتبة The Best Print</div><div class="selling-city">قسنطينة</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.08s">
+          <div class="selling-emoji">📚</div>
+          <div><div class="selling-name">مكتبة الواحة</div><div class="selling-city">قسنطينة</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.16s">
+          <div class="selling-emoji">📱</div>
+          <div><div class="selling-name">Hero Phone</div><div class="selling-city">قسنطينة</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.24s">
+          <div class="selling-emoji">📚</div>
+          <div><div class="selling-name">مكتبة نوميديا</div><div class="selling-city">ملحقة بسكرة</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.32s">
+          <div class="selling-emoji">🏪</div>
+          <div><div class="selling-name">Khirou KMS</div><div class="selling-city">ملحقة أم البواقي</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.4s">
+          <div class="selling-emoji">🏠</div>
+          <div><div class="selling-name">Foyer</div><div class="selling-city">ملحقة خنشلة</div></div>
+        </div>
+        <div class="selling-card reveal-child" style="transition-delay:.48s">
+          <div class="selling-emoji">📚</div>
+          <div><div class="selling-name">مكتبة الأمان</div><div class="selling-city">ملحقة سوق أهراس</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DOWNLOAD CTA ===== -->
+  <section class="download">
+    <div class="container download-inner reveal">
+      <div class="download-content">
+        <h2 class="download-title">Prêt à réussir vos examens ?</h2>
+        <p class="download-subtitle">Téléchargez FMC App sur Google Play ou accédez directement à la plateforme web.</p>
+        <div class="download-actions">
+          <a href="https://play.google.com/store/apps/details?id=com.fmcapp.mobile" target="_blank" rel="noopener noreferrer" class="btn btn-download">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302a1 1 0 010 1.38l-2.302 2.302L15.396 13l2.302-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302L5.864 2.658z"/></svg>
+            Google Play
+          </a>
+          <a href="/" class="btn btn-hero" onclick="window.location.href='/welcome';return false;">
+            Accéder à la plateforme
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="container footer-inner reveal">
+      <div>
+        <div class="footer-brand-row">
+          <img src="/logo.png" alt="FMC App" class="footer-logo" />
+          <span class="footer-brand-name">FMC App</span>
+        </div>
+        <p class="footer-tagline">Study Everywhere — La plateforme de révision pour les étudiants en médecine de Constantine.</p>
+      </div>
+      <div class="footer-links">
+        <h4 class="footer-heading">Liens Rapides</h4>
+        <a href="#features" class="footer-link">Fonctionnalités</a>
+        <a href="#how-it-works" class="footer-link">Comment ça marche</a>
+        <a href="#selling-points" class="footer-link">Points de vente</a>
+      </div>
+      <div class="footer-links">
+        <h4 class="footer-heading">Suivez-nous</h4>
+        <a href="https://t.me/FMC_App" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          Telegram
+        </a>
+        <a href="https://www.instagram.com/fmc.app" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+          Instagram
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61585713960728" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+          Facebook
+        </a>
+      </div>
+      <div class="footer-links">
+        <h4 class="footer-heading">Contact</h4>
+        <a href="mailto:fmc.app.contact@gmail.com" class="footer-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          fmc.app.contact@gmail.com
+        </a>
+        <a href="https://play.google.com/store/apps/details?id=com.fmcapp.mobile" target="_blank" rel="noopener noreferrer" class="footer-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+          Google Play Store
+        </a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-inner reveal">
+        <span>&copy; 2026 FMC App. Tous droits réservés.</span>
+        <span>Faculté de Médecine de Constantine</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // === Navbar scroll effect ===
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      const scrollPos = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (scrollPos > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    }, { passive: true });
+
+    // === Mobile menu ===
+    const hamburger = document.getElementById('hamburger');
+    const mobileMenu = document.getElementById('mobileMenu');
+    hamburger.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+      const lines = hamburger.querySelectorAll('span');
+      const isOpen = mobileMenu.classList.contains('open');
+      lines[0].style.transform = isOpen ? 'rotate(45deg) translate(5px,5px)' : '';
+      lines[1].style.opacity = isOpen ? '0' : '1';
+      lines[2].style.transform = isOpen ? 'rotate(-45deg) translate(5px,-5px)' : '';
+    });
+    function closeMobile() {
+      mobileMenu.classList.remove('open');
+      const lines = hamburger.querySelectorAll('span');
+      lines[0].style.transform = '';
+      lines[1].style.opacity = '1';
+      lines[2].style.transform = '';
+    }
+
+    // === Scroll reveal ===
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+    document.querySelectorAll('.reveal, .reveal-left, .reveal-right').forEach(el => observer.observe(el));
+
+    // === Counter animation ===
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const target = parseInt(el.dataset.target, 10);
+          if (el.dataset.static) return; // Skip static values like 24/7
+          const prefix = el.dataset.prefix || '';
+          const suffix = el.dataset.suffix || '';
+          const duration = 1500;
+          const start = Date.now();
+
+          function animate() {
+            const elapsed = Date.now() - start;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(target * eased);
+            const display = target >= 1000 ? (current / 1000).toFixed(current >= 1000 ? 0 : 1) + 'K' : current;
+            el.textContent = prefix + display + suffix;
+            if (progress < 1) requestAnimationFrame(animate);
+            else {
+              const final = target >= 1000 ? (target / 1000) + 'K' : target;
+              el.textContent = prefix + final + suffix;
+            }
+          }
+          animate();
+          counterObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.3 });
+    document.querySelectorAll('.stats-value').forEach(el => counterObserver.observe(el));
+  </script>
+</body>
+</html>

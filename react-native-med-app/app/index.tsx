@@ -80,5 +80,10 @@ export default function Index() {
     return <Redirect href="/(tabs)" />
   }
 
+  // On web, redirect to the new Framer Motion React landing page
+  if (Platform.OS === 'web') {
+    return <Redirect href="/landing" />
+  }
+
   return <Redirect href="/(auth)/welcome" />
 }
