@@ -43,6 +43,18 @@ import { showConfirm } from "@/lib/alerts";
 import { supabase } from "@/lib/supabase";
 import { OfflineContentService, OfflineVersion } from "@/lib/offline-content";
 import { getUserActivationCode } from "@/lib/auth";
+import {
+  CloudDownload,
+  Database,
+  RefreshCw,
+  MessageSquare,
+  ChevronRight,
+  LogOut,
+  Moon,
+  Sun,
+  Settings,
+  Info
+} from "lucide-react-native";
 
 // Use native driver only on native platforms, not on web
 const USE_NATIVE_DRIVER = Platform.OS !== "web";
@@ -778,9 +790,11 @@ export default function ProfileScreen() {
                         marginRight: 16,
                       }}
                     >
-                      <Text style={{ fontSize: 26 }}>
-                        {isDark ? "🌙" : "☀️"}
-                      </Text>
+                      {isDark ? (
+                        <Moon color="#FBBF24" size={26} />
+                      ) : (
+                        <Sun color={colors.primary} size={26} />
+                      )}
                     </View>
                     <View>
                       <Text
@@ -854,22 +868,30 @@ export default function ProfileScreen() {
                         style={{
                           width: 52,
                           height: 52,
-                          backgroundColor: offlineStatus.downloaded
-                            ? "rgba(16, 185, 129, 0.1)"
-                            : "rgba(99, 102, 241, 0.1)",
+                          backgroundColor: isDownloading
+                            ? "rgba(99, 102, 241, 0.1)"
+                            : offlineStatus.downloaded
+                              ? offlineStatus.updateAvailable
+                                ? "rgba(245, 158, 11, 0.1)"
+                                : "rgba(16, 185, 129, 0.1)"
+                              : "rgba(99, 102, 241, 0.1)",
                           borderRadius: 16,
                           alignItems: "center",
                           justifyContent: "center",
                           marginRight: 16,
                         }}
                       >
-                        <Text style={{ fontSize: 26 }}>
-                          {isDownloading
-                            ? "⏳"
-                            : offlineStatus.downloaded
-                              ? "✅"
-                              : "📥"}
-                        </Text>
+                        {isDownloading ? (
+                          <ActivityIndicator size="small" color={colors.primary} />
+                        ) : offlineStatus.downloaded ? (
+                          offlineStatus.updateAvailable ? (
+                            <RefreshCw color={colors.warning || "#F59E0B"} size={26} />
+                          ) : (
+                            <Database color={colors.success || "#10B981"} size={26} />
+                          )
+                        ) : (
+                          <CloudDownload color={colors.primary} size={26} />
+                        )}
                       </View>
                       <View style={{ flex: 1 }}>
                         <View
@@ -888,26 +910,7 @@ export default function ProfileScreen() {
                           >
                             Mode hors-ligne
                           </Text>
-                          {offlineStatus.updateAvailable && !isDownloading && (
-                            <View
-                              style={{
-                                backgroundColor: colors.warning || "#f59e0b",
-                                borderRadius: 10,
-                                paddingHorizontal: 8,
-                                paddingVertical: 2,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: "#fff",
-                                  fontSize: 10,
-                                  fontWeight: "700",
-                                }}
-                              >
-                                MAJ
-                              </Text>
-                            </View>
-                          )}
+                         
                         </View>
                         <Text
                           style={{
@@ -919,7 +922,9 @@ export default function ProfileScreen() {
                           {isDownloading
                             ? `Téléchargement... ${Math.round(downloadProgress * 100)}%`
                             : offlineStatus.downloaded
-                              ? `${offlineStatus.questionCount} questions • v${offlineStatus.version}`
+                              ? offlineStatus.updateAvailable
+                                ? "Nouvelle version disponible"
+                                : `${offlineStatus.questionCount} questions • v${offlineStatus.version}`
                               : "Télécharger pour utiliser sans internet"}
                         </Text>
                       </View>
@@ -937,22 +942,20 @@ export default function ProfileScreen() {
                         !isDeleting &&
                         (!offlineStatus.downloaded ||
                           offlineStatus.updateAvailable) && (
-                          <Text style={{ fontSize: 20, color: colors.primary }}>
-                            →
-                          </Text>
+                          <ChevronRight color={colors.primary} size={24} />
                         )}
 
                       {/* Manage Button (Settings Icon) */}
                       {!isDownloading &&
                         !isDeleting &&
                         offlineStatus.downloaded && (
-                          <View style={{ flexDirection: "row", gap: 8 }}>
+                          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
                             {offlineStatus.updateAvailable && (
                               <TouchableOpacity
                                 onPress={handleDownloadOffline}
                                 style={{ padding: 4 }}
                               >
-                                <Text style={{ fontSize: 20 }}>🔄</Text>
+                                <RefreshCw color={colors.text} size={20} />
                               </TouchableOpacity>
                             )}
                             <TouchableOpacity
@@ -966,7 +969,7 @@ export default function ProfileScreen() {
                                 borderRadius: 12,
                               }}
                             >
-                              <Text style={{ fontSize: 16 }}>⚙️</Text>
+                              <Settings color={colors.text} size={20} />
                             </TouchableOpacity>
                           </View>
                         )}
@@ -1026,7 +1029,7 @@ export default function ProfileScreen() {
                         marginRight: 16,
                       }}
                     >
-                      <Text style={{ fontSize: 26 }}>💬</Text>
+                      <MessageSquare color={colors.success || "#10B981"} size={26} />
                     </View>
                     <View>
                       <Text
@@ -1049,7 +1052,7 @@ export default function ProfileScreen() {
                       </Text>
                     </View>
                   </View>
-                  <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+                  <ChevronRight color={colors.primary} size={24} />
                 </View>
               </ThemedCard>
             </Pressable>
@@ -1152,9 +1155,7 @@ export default function ProfileScreen() {
                           </Text>
                         </View>
                       </View>
-                      <Text style={{ fontSize: 20, color: colors.primary }}>
-                        →
-                      </Text>
+                      <ChevronRight color={colors.primary} size={24} />
                     </View>
                   </ThemedCard>
                 </Pressable>
@@ -1400,7 +1401,7 @@ export default function ProfileScreen() {
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 20, marginRight: 10 }}>🚪</Text>
+                  <LogOut color={colors.error} size={24} style={{ marginRight: 10 }} />
                   <Text
                     style={{
                       color: colors.error,
