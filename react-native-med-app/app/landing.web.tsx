@@ -8,7 +8,7 @@ import {
 
 // --- Constants & Data ---
 const STATS = [
-  { target: 10000, prefix: '+', suffix: 'K', label: 'QCMs', staticVal: null },
+  { target: 3000, prefix: '+', suffix: '', label: 'QCMs', staticVal: null },
   { target: 15, suffix: '+', label: 'Modules', staticVal: null },
   { target: 5, label: 'Wilayas', staticVal: null },
   { target: 0, staticVal: '24/7', label: 'Disponible' }
@@ -20,17 +20,17 @@ const FEATURES = [
   { icon: Target, title: 'Filtrage Avancé', desc: 'Filtrez par année, module, cours pour une révision ciblée.', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
   { icon: BarChart2, title: 'Statistiques Détaillées', desc: 'Suivez votre progression et identifiez vos points faibles en temps réel.', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
   { icon: BookOpen, title: 'Notes Personnelles', desc: 'Prenez des notes directement sur chaque question pour mémoriser.', color: '#9941ff', bg: 'rgba(153,65,255,0.12)' },
-  { icon: Clock, title: 'Mode Examen', desc: 'Simulez les conditions réelles avec un chronomètre intégré.', color: '#10b981', bg: 'rgba(16,185,129,0.12)' }
+ 
 ]
 
 const SELLING_POINTS = [
-  { emoji: '📚', name: 'مكتبة The Best Print', city: 'قسنطينة' },
-  { emoji: '📚', name: 'مكتبة الواحة', city: 'قسنطينة' },
-  { emoji: '📱', name: 'Hero Phone', city: 'قسنطينة' },
-  { emoji: '📚', name: 'مكتبة نوميديا', city: 'ملحقة بسكرة' },
-  { emoji: '🏪', name: 'Khirou KMS', city: 'ملحقة أم البواقي' },
-  { emoji: '🏠', name: 'Foyer', city: 'ملحقة خنشلة' },
-  { emoji: '📚', name: 'مكتبة الأمان', city: 'ملحقة سوق أهراس' }
+  { emoji: '📚', name: 'مكتبة The Best Print', city: 'كلية الطب قسنطينة', desc: 'مقابل مدخل جامعة قسنطينة 3', link: 'https://maps.app.goo.gl/QyXXSVMnx8nUfXmv5' },
+  { emoji: '📚', name: 'مكتبة الواحة', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - إقامة الياسمين وج15', link: 'https://maps.app.goo.gl/74pCVT3WK9LEaacp7' },
+  { emoji: '📱', name: 'Hero Phone', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - بالقرب من محطة الاستقلال', link: 'https://maps.app.goo.gl/DSubQHw7Sbe4kUeY7' },
+  { emoji: '📚', name: 'مكتبة نوميديا', city: 'ملحقة بسكرة', desc: 'بسكرة - مقابل مدخل الجامعة', link: 'https://maps.app.goo.gl/7xDqRrwTm2TNRUtH6' },
+  { emoji: '🏪', name: 'Khirou KMS', city: 'ملحقة أم البواقي', desc: 'أم البواقي - مقابل مدخل الملحقة', link: 'https://goo.gl/maps/RrcPeibFArYGPWi98' },
+  { emoji: '🏠', name: 'Foyer', city: 'ملحقة خنشلة', desc: 'خنشلة - جامعة عباس لغرور', link: 'https://goo.gl/maps/33UHDZhf95412CjA9' },
+  { emoji: '📚', name: 'مكتبة الأمان', city: 'ملحقة سوق أهراس', desc: 'سوق أهراس - وسط المدينة', link: 'https://maps.app.goo.gl/kcb6RSTcSxJoSYH98' }
 ]
 
 // --- Animation Variants ---
@@ -136,8 +136,8 @@ export default function LandingWeb() {
         .fm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); text-decoration: none; border: none; }
         .fm-btn-primary { padding: 10px 24px; background: #09b2ac; color: #fff; }
         .fm-btn-primary:hover { background: #0d9488; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(9,178,172,0.35); }
-        .fm-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 16px 0; transition: all 0.3s; }
-        .fm-navbar.scrolled { background: rgba(255,255,255,0.72); backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3); box-shadow: 0 4px 30px rgba(0,0,0,0.06); border-bottom: 1px solid rgba(255,255,255,0.4); padding: 10px 0; }
+        .fm-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 16px 0; transition: all 0.3s; background: rgba(255,255,255,0.45); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid rgba(255,255,255,0.3); }
+        .fm-navbar.scrolled { background: rgba(255,255,255,0.8); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); box-shadow: 0 4px 30px rgba(0,0,0,0.08); border-bottom: 1px solid rgba(255,255,255,0.5); padding: 12px 0; }
         .fm-nav-inner { display: flex; align-items: center; justify-content: space-between; }
         .fm-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .fm-brand img { width: 40px; height: 40px; border-radius: 12px; }
@@ -200,6 +200,17 @@ export default function LandingWeb() {
         .fm-btn-pricing-secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1.5px solid rgba(255,255,255,0.1); }
         .fm-btn-pricing-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
 
+        /* Points of Sale */
+        .fm-points { padding: 120px 0; background: #0a0b10; position: relative; border-top: 1px solid rgba(255,255,255,0.03); }
+        .fm-points-header { text-align: center; margin-bottom: 64px; }
+        .fm-points-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin: 0 auto; }
+        .fm-point-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 32px 24px; display: flex; align-items: center; gap: 20px; transition: all 0.4s; }
+        .fm-point-card:hover { transform: translateY(-6px); background: rgba(9,178,172,0.05); border-color: rgba(9,178,172,0.3); box-shadow: 0 16px 32px rgba(0,0,0,0.2); }
+        .fm-point-emoji { font-size: 2.5rem; line-height: 1; flex-shrink: 0; width: 64px; height: 64px; background: rgba(255,255,255,0.05); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+        .fm-point-info { flex: 1; text-align: left; }
+        .fm-point-name { font-size: 1.125rem; font-weight: 800; color: #fff; margin-bottom: 4px; font-family: 'Cairo', sans-serif; }
+        .fm-point-city { font-size: 0.875rem; color: #09b2ac; font-weight: 700; background: rgba(9,178,172,0.15); padding: 4px 10px; border-radius: 999px; display: inline-block; font-family: 'Cairo', sans-serif; }
+
         /* Footer */
         .fm-footer { background: #0a0b10; padding: 64px 0 0; border-top: 1px solid rgba(255,255,255,0.05); }
         .fm-footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); }
@@ -217,24 +228,38 @@ export default function LandingWeb() {
         .fm-footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: rgba(255,255,255,0.35); }
         
         @media(max-width: 1024px) {
-          .fm-hero-content { grid-template-columns: 1fr; text-align: center; }
+          .fm-hero-content { grid-template-columns: 1fr; text-align: center; gap: 40px; }
           .fm-subtitle { margin: 0 auto 40px; }
           .fm-hero-actions { justify-content: center; }
-          .fm-visual { display: none; }
+          .fm-visual { margin-top: 24px; display: flex; justify-content: center; transform: scale(0.95); }
           .fm-features-grid { grid-template-columns: repeat(2, 1fr); }
+          .fm-points-grid { grid-template-columns: repeat(2, 1fr); }
           .fm-links, .fm-nav-actions { display: none; }
+          
+          .fm-mobile-menu { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; border-top: 1px solid #f3f4f6; animation: fmSlideDown 0.3s ease-out; }
+          .fm-mobile-links { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+          .fm-mobile-link { padding: 12px 16px; font-size: 1.0625rem; font-weight: 700; color: #262626; text-decoration: none; border-radius: 12px; transition: background 0.2s; }
+          .fm-mobile-link:hover { background: rgba(9,178,172,0.08); color: #09b2ac; }
+          .fm-mobile-actions { display: flex; flex-direction: column; gap: 12px; }
         }
         @media(max-width: 768px) {
           .fm-stats-grid { grid-template-columns: repeat(2, 1fr); }
           .fm-stat-item:nth-child(2)::after { display: none; }
           .fm-features-grid { grid-template-columns: 1fr; }
+          .fm-points-grid { grid-template-columns: 1fr; }
           .fm-pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
           .fm-footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
           .fm-footer-bottom-inner { flex-direction: column; gap: 8px; text-align: center; }
+          .fm-visual { transform: scale(0.85); margin-top: 10px; }
         }
         @media(max-width: 480px) {
           .fm-footer-inner { grid-template-columns: 1fr; }
+          .fm-visual { transform: scale(0.7); margin-top: 0; margin-bottom: -40px; }
+          .fm-title { font-size: 2.25rem; }
+          .fm-hero-actions { flex-direction: column; }
+          .fm-hero-actions .fm-btn { width: 100%; }
         }
+        @keyframes fmSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
 
       {/* --- NAVBAR --- */}
@@ -260,6 +285,21 @@ export default function LandingWeb() {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </div>
         </div>
+
+        {/* Mobile Menu Dropdown */}
+        {mobileMenuOpen && (
+          <div className="fm-mobile-menu">
+            <div className="fm-mobile-links">
+              <a href="#features" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités</a>
+              <a href="#how" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Comment ça marche</a>
+              <a href="#points" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Points de vente</a>
+            </div>
+            <div className="fm-mobile-actions">
+              <button onClick={goAuth} className="fm-btn fm-btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>Se connecter</button>
+              <button onClick={goAuth} className="fm-btn fm-btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Créer un compte</button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* --- HERO --- */}
@@ -309,29 +349,96 @@ export default function LandingWeb() {
               height: '100%',
             }}
           >
-            {/* The user's freshly uploaded hero image */}
-            <motion.div
-              animate={{ y: [0, -15, 0] }}
-              transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-              style={{
-                position: 'relative',
-                width: '115%', // Slight overhang for a dynamic feel
-                maxWidth: 700,
-                right: '-5%',
-                zIndex: 0
-              }}
-            >
-              <img  
-                src="/fmc.png" 
-                alt="FMC App Interface" 
-                style={{ 
-                  width: '100%', 
-                  height: 'auto',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 25px 50px rgba(9,178,172,0.15))',
+            {/* Elegant UI Mockup accurately representing FMC App QCM view */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: 440, height: 440, transform: 'perspective(1200px) rotateY(-8deg) rotateX(4deg)' }}>
+              {/* Main QCM Card */}
+              <motion.div
+                animate={{ y: [0, -15, 0] }}
+                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+                style={{
+                  position: 'absolute', inset: 0, margin: 'auto', width: '100%', height: '100%',
+                  background: 'rgba(255, 255, 255, 0.90)',
+                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                  borderRadius: 32, padding: 24,
+                  boxShadow: '0 30px 60px -12px rgba(9, 178, 172, 0.2), 0 0 0 1px rgba(255,255,255,0.8) inset, 0 0 0 1px rgba(0,0,0,0.05)',
+                  display: 'flex', flexDirection: 'column'
                 }}
-              />
-            </motion.div>
+              >
+                {/* Header matching [moduleId].tsx */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <span style={{ background: '#09b2ac', color: '#ffffff', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>Q14</span>
+                    <span style={{ background: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>EMD M23</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🚩</div>
+                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📥</div>
+                  </div>
+                </div>
+                
+                <h3 style={{ fontSize: 16, color: '#111827', lineHeight: 1.5, marginBottom: 24, fontWeight: 500 }}>
+                  Parmi les signes suivants, lequel est typique d'une insuffisance cardiaque gauche ?
+                </h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
+                  {/* Option A - Unselected */}
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, background: '#ffffff', border: '2px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <span style={{ fontWeight: 700, color: '#9ca3af', fontSize: 14 }}>A</span>
+                    </div>
+                    <span style={{ flex: 1, fontSize: 16, color: '#111827', lineHeight: 1.4 }}>Hépatomégalie</span>
+                  </div>
+                  
+                  {/* Option B - Selected & Correct (isSubmitted) */}
+                  <motion.div 
+                    initial={{ background: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                    animate={{ background: ['rgba(16, 185, 129, 0.08)', 'rgba(16, 185, 129, 0.15)'], borderColor: ['rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0.7)'] }}
+                    transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
+                    style={{ 
+                      display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, borderWidth: 2, borderStyle: 'solid',
+                      boxShadow: '0 8px 16px rgba(16, 185, 129, 0.1)'
+                    }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#09b2ac', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, boxShadow: '0 2px 8px rgba(9,178,172,0.4)' }}>
+                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>B</span>
+                    </div>
+                    <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#10b981', lineHeight: 1.4 }}>Dyspnée d'effort</span>
+                    <span style={{ color: '#10b981', fontSize: 20, marginLeft: 8, fontWeight: 800 }}>✓</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Floating Badge 1 - Progress */}
+              <motion.div
+                animate={{ y: [0, 20, 0] }}
+                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
+                style={{
+                  position: 'absolute', top: -30, right: -60,
+                  background: 'rgba(255, 255, 255, 0.90)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
+                  padding: '20px 24px', borderRadius: 24,
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8) inset',
+                  display: 'flex', alignItems: 'center', gap: 16, zIndex: 10
+                }}
+              >
+                <div style={{ position: 'relative', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="60" height="60" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
+                    <circle cx="50" cy="50" r="42" stroke="#f3f4f6" strokeWidth="8" fill="none" />
+                    <motion.circle 
+                      cx="50" cy="50" r="42" stroke="#9941ff" strokeWidth="8" fill="none" 
+                      strokeLinecap="round" strokeDasharray="264" strokeDashoffset="264" 
+                      animate={{ strokeDashoffset: 58 }} // approx 78%
+                      transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
+                    />
+                  </svg>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>78%</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', paddingRight: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Progression</span>
+                  <span style={{ fontSize: 18, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Excellente</span>
+                </div>
+              </motion.div>
+
+             
+            </div>
           </motion.div>
         </div>
       </section>
@@ -454,6 +561,35 @@ export default function LandingWeb() {
                 Commencer maintenant <ChevronRight size={18} />
               </button>
             </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* --- POINTS DE VENTE --- */}
+      <section id="points" className="fm-points">
+        <div className="fm-container">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-header">
+            <motion.div variants={fadeIn} className="fm-badge">Points de Vente</motion.div>
+            <motion.h2 variants={fadeIn} className="fm-title" style={{ color: '#fff' }}>Nos <span className="fm-accent">Partenaires</span></motion.h2>
+            <motion.p variants={fadeIn} className="fm-subtitle" style={{ margin: '16px auto 0', color: 'rgba(255,255,255,0.5)' }}>Procurez-vous votre abonnement dans l'un de nos points de vente.</motion.p>
+          </motion.div>
+
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-grid">
+            {SELLING_POINTS.map((point, i) => (
+              <motion.div key={i} variants={fadeIn} whileHover={{ y: -6 }} className="fm-point-card">
+                <div className="fm-point-emoji">{point.emoji}</div>
+                <div className="fm-point-info">
+                  <h4 className="fm-point-name">{point.name}</h4>
+                  <span className="fm-point-city">{point.city}</span>
+                  {point.desc && <p style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontFamily: 'Cairo, sans-serif' }}>{point.desc}</p>}
+                </div>
+                {point.link && (
+                  <a href={point.link} target="_blank" rel="noreferrer" title="Voir sur Google Maps" style={{ width: 44, height: 44, background: 'rgba(9,178,172,0.1)', color: '#09b2ac', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none', transition: 'all 0.2s', marginLeft: 'auto' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#09b2ac'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(9,178,172,0.1)'; e.currentTarget.style.color = '#09b2ac'; e.currentTarget.style.transform = 'scale(1)'; }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </a>
+                )}
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>

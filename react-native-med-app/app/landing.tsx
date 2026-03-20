@@ -40,25 +40,21 @@ const FEATURES = [
     title: 'Notes Personnelles',
     description: 'Prenez des notes directement sur chaque question pour mieux mémoriser.',
   },
-  {
-    icon: '🏥',
-    title: 'Mode Examen',
-    description: 'Simulez les conditions réelles du concours avec un chronomètre intégré.',
-  },
+  
 ];
 
 const SELLING_POINTS = [
-  { name: 'مكتبة The Best Print', city: 'قسنطينة', emoji: '📚' },
-  { name: 'مكتبة الواحة', city: 'قسنطينة', emoji: '📚' },
-  { name: 'Hero Phone', city: 'قسنطينة', emoji: '📱' },
-  { name: 'مكتبة نوميديا', city: 'ملحقة بسكرة', emoji: '📚' },
-  { name: 'Khirou KMS', city: 'ملحقة أم البواقي', emoji: '🏪' },
-  { name: 'Foyer', city: 'ملحقة خنشلة', emoji: '🏠' },
-  { name: 'مكتبة الأمان', city: 'ملحقة سوق أهراس', emoji: '📚' },
+  { name: 'مكتبة The Best Print', city: 'كلية الطب قسنطينة', desc: 'مقابل مدخل جامعة قسنطينة 3', emoji: '📚', link: 'https://maps.app.goo.gl/QyXXSVMnx8nUfXmv5' },
+  { name: 'مكتبة الواحة', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - إقامة الياسمين وج15', emoji: '📚', link: 'https://maps.app.goo.gl/74pCVT3WK9LEaacp7' },
+  { name: 'Hero Phone', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - بالقرب من محطة الاستقلال', emoji: '📱', link: 'https://maps.app.goo.gl/DSubQHw7Sbe4kUeY7' },
+  { name: 'مكتبة نوميديا', city: 'ملحقة بسكرة', desc: 'بسكرة - مقابل مدخل الجامعة', emoji: '📚', link: 'https://maps.app.goo.gl/7xDqRrwTm2TNRUtH6' },
+  { name: 'Khirou KMS', city: 'ملحقة أم البواقي', desc: 'أم البواقي - مقابل مدخل الملحقة', emoji: '🏪', link: 'https://goo.gl/maps/RrcPeibFArYGPWi98' },
+  { name: 'Foyer', city: 'ملحقة خنشلة', desc: 'خنشلة - جامعة عباس لغرور', emoji: '🏠', link: 'https://goo.gl/maps/33UHDZhf95412CjA9' },
+  { name: 'مكتبة الأمان', city: 'ملحقة سوق أهراس', desc: 'سوق أهراس - وسط المدينة', emoji: '📚', link: 'https://maps.app.goo.gl/kcb6RSTcSxJoSYH98' },
 ];
 
 const STATS = [
-  { value: '+10K', label: 'QCMs' },
+  { value: '+3K', label: 'QCMs' },
   { value: '15+', label: 'Modules' },
   { value: '5', label: 'Wilayas' },
   { value: '24/7', label: 'Disponible' },
@@ -589,7 +585,13 @@ function SellingPointsSection() {
               <div className="landing-selling__info">
                 <h4 className="landing-selling__name">{point.name}</h4>
                 <span className="landing-selling__city">{point.city}</span>
+                {point.desc && <p style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontFamily: 'Cairo, sans-serif' }}>{point.desc}</p>}
               </div>
+              {point.link && (
+                <a href={point.link} target="_blank" rel="noreferrer" title="Voir sur Google Maps" style={{ width: 44, height: 44, background: 'rgba(9,178,172,0.1)', color: '#09b2ac', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none', transition: 'all 0.2s', marginLeft: 'auto' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#09b2ac'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(9,178,172,0.1)'; e.currentTarget.style.color = '#09b2ac'; e.currentTarget.style.transform = 'scale(1)'; }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                </a>
+              )}
             </div>
           ))}
         </div>
