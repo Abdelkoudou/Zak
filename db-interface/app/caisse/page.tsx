@@ -759,8 +759,9 @@ export default function CaissePage() {
               <Activity className="w-3.5 h-3.5" />
               {stats.carryOver !== 0
                 ? `Report: ${formatCurrency(stats.carryOver)}`
-                : "Depuis dernier checkout"}
-            </p>
+                : lastCheckout
+                  ? "Depuis dernier checkout"
+                  : "Depuis le début"}            </p>
           </div>
 
           {/* Revenus */}
