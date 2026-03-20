@@ -426,7 +426,10 @@ export default function CaissePage() {
     const totalExpenses = src
       .filter((t) => t.type === "expense")
       .reduce((s, t) => s + t.amount, 0);
-    const net = totalIncome - totalExpenses;
+    const carryOver = lastCheckout
+      ? Number(lastCheckout.net_amount) - Number(lastCheckout.amount_withdrawn)
+      : 0;
+    const net = totalIncome - totalExpenses + carryOver;
 
     const incomeBySource: Record<string, number> = {};
     src
@@ -435,8 +438,8 @@ export default function CaissePage() {
         incomeBySource[t.source] = (incomeBySource[t.source] || 0) + t.amount;
       });
 
-    return { totalIncome, totalExpenses, net, incomeBySource };
-  }, [transactionsSinceCheckout]);
+    return { totalIncome, totalExpenses, net, carryOver, incomeBySource };
+  }, [transactionsSinceCheckout, lastCheckout]);
 
   const filteredTransactions = useMemo(() => {
     let list = allTransactions;
@@ -753,7 +756,10 @@ export default function CaissePage() {
               {formatCurrency(stats.net)}
             </p>
             <p className="text-xs text-theme-muted mt-2 inline-flex items-center gap-1.5 relative">
-              <Activity className="w-3.5 h-3.5" /> Depuis dernier checkout
+              <Activity className="w-3.5 h-3.5" />
+              {stats.carryOver !== 0
+                ? `Report: ${formatCurrency(stats.carryOver)}`
+                : "Depuis dernier checkout"}
             </p>
           </div>
 
