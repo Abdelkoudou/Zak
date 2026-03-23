@@ -86,6 +86,7 @@ export default function LandingWeb() {
   const { scrollY } = useScroll()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isDarkSection, setIsDarkSection] = useState(false)
 
   // Use body overflow reset to prevent Expo from locking the web page scrolling
   useEffect(() => {
@@ -103,6 +104,14 @@ export default function LandingWeb() {
   useEffect(() => {
     return scrollY.onChange((latest) => {
       setScrolled(latest > 50)
+      
+      const featuresEl = document.getElementById('features')
+      const footerEl = document.querySelector('footer')
+      if (featuresEl && footerEl) {
+        const featuresTop = featuresEl.getBoundingClientRect().top
+        const footerTop = footerEl.getBoundingClientRect().top
+        setIsDarkSection(featuresTop <= 80 && footerTop > 80)
+      }
     })
   }, [scrollY])
 
@@ -124,24 +133,30 @@ export default function LandingWeb() {
       `}} />
 
       {/* Navigation Shell */}
-      <nav className={`fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-full border border-white/20 z-50 transition-all duration-300 flex justify-between items-center px-8 py-3 ${scrolled ? 'bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)]' : 'bg-white/10 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.06)]'}`}>
+      <nav className={`fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-full border z-50 transition-all duration-300 flex justify-between items-center px-8 py-3 ${
+        isDarkSection 
+          ? 'bg-[#18181b]/80 border-white/10 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]' 
+          : scrolled 
+            ? 'bg-white/80 border-slate-200/50 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)]' 
+            : 'bg-white/10 border-white/20 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.06)]'
+      }`}>
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           <img src="/logo.png" alt="FMC App" className="w-8 h-8 rounded-lg" />
           <div className="text-2xl font-extrabold tracking-tighter text-[#09b2ac] font-['Manrope']">FMC App</div>
         </div>
         
         <div className="hidden md:flex gap-8 items-center">
-          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#features">Fonctionnalités</a>
-          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#tarifs">Tarifs</a>
-          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#points">Points de vente</a>
+          <a className={`font-['Manrope'] font-bold text-sm tracking-wide hover:text-[#9941ff] transition-colors duration-300 ${isDarkSection ? 'text-white' : 'text-slate-700'}`} href="#features">Fonctionnalités</a>
+          <a className={`font-['Manrope'] font-bold text-sm tracking-wide hover:text-[#9941ff] transition-colors duration-300 ${isDarkSection ? 'text-white' : 'text-slate-700'}`} href="#tarifs">Tarifs</a>
+          <a className={`font-['Manrope'] font-bold text-sm tracking-wide hover:text-[#9941ff] transition-colors duration-300 ${isDarkSection ? 'text-white' : 'text-slate-700'}`} href="#points">Points de vente</a>
         </div>
         
         <div className="hidden md:flex items-center gap-4">
-          <button onClick={goAuth} className="font-['Manrope'] font-medium text-sm tracking-wide text-[#09b2ac] hover:text-[#9941ff] transition-colors duration-300">Se connecter</button>
+          <button onClick={goAuth} className={`font-['Manrope'] font-bold text-sm tracking-wide hover:text-[#9941ff] transition-colors duration-300 ${isDarkSection ? 'text-white' : 'text-[#09b2ac]'}`}>Se connecter</button>
           <button onClick={goAuth} className="bg-[#09b2ac] text-white font-['Manrope'] font-bold text-sm px-6 py-2.5 rounded-full hover:scale-95 transition-all shadow-lg shadow-[#09b2ac]/20 hover:bg-[#0d9488]">Créer un compte</button>
         </div>
 
-        <button className="md:hidden text-[#1d1b16] p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <button className={`md:hidden p-2 transition-colors duration-300 ${isDarkSection ? 'text-white' : 'text-[#1d1b16]'}`} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </nav>
