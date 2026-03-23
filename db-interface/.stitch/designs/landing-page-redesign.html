@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FMC App - Révisez avec Excellence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Cairo:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-secondary-fixed": "#2a0054",
+          "surface-dim": "#dfd9d0",
+          "on-primary-fixed-variant": "#00504d",
+          "on-tertiary": "#ffffff",
+          "primary-fixed": "#73f7f0",
+          "on-primary-container": "#003e3b",
+          "background": "#fff9ef",
+          "inverse-primary": "#52dad3",
+          "secondary-container": "#9840fe",
+          "secondary-fixed": "#eedcff",
+          "surface-tint": "#006a66",
+          "on-tertiary-container": "#612200",
+          "on-secondary": "#ffffff",
+          "primary-container": "#09b2ac",
+          "outline": "#6c7a78",
+          "tertiary": "#98471d",
+          "on-secondary-fixed-variant": "#6400ba",
+          "surface-container-highest": "#e7e2d8",
+          "tertiary-fixed-dim": "#ffb595",
+          "on-primary": "#ffffff",
+          "on-tertiary-fixed-variant": "#7a3006",
+          "tertiary-fixed": "#ffdbcd",
+          "on-primary-fixed": "#00201e",
+          "outline-variant": "#bbc9c7",
+          "on-background": "#1d1b16",
+          "on-error-container": "#93000a",
+          "surface-bright": "#fff9ef",
+          "primary": "#006a66",
+          "on-surface": "#1d1b16",
+          "surface": "#fff9ef",
+          "surface-container-lowest": "#ffffff",
+          "error": "#ba1a1a",
+          "surface-variant": "#e7e2d8",
+          "secondary": "#7e17e4",
+          "inverse-on-surface": "#f6f0e6",
+          "tertiary-container": "#e98556",
+          "on-secondary-container": "#fffbff",
+          "on-error": "#ffffff",
+          "inverse-surface": "#32302a",
+          "surface-container-high": "#ede7de",
+          "on-tertiary-fixed": "#360f00",
+          "surface-container-low": "#f9f3e9",
+          "on-surface-variant": "#3c4948",
+          "error-container": "#ffdad6",
+          "surface-container": "#f3ede3",
+          "secondary-fixed-dim": "#d9b9ff",
+          "primary-fixed-dim": "#52dad3"
+},
+        fontFamily: {
+          "headline": ["Manrope"],
+          "body": ["Cairo"],
+          "label": ["Manrope"]
+        },
+        borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+      },
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .orb-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(9, 178, 172, 0.15) 0%, rgba(153, 65, 255, 0.1) 50%, transparent 100%);
+            filter: blur(80px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body overflow-x-hidden selection:bg-primary-container selection:text-white">
+<!-- Navigation Shell -->
+<nav class="fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-full border border-white/20 bg-white/10 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.06)] flex justify-between items-center px-8 py-3 z-50">
+<div class="text-2xl font-extrabold tracking-tighter text-[#09b2ac] font-['Manrope']">FMC App</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#">Fonctionnalités</a>
+<a class="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#">Comment ça marche</a>
+<a class="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#">Points de vente</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="font-['Manrope'] font-medium text-sm tracking-wide text-[#09b2ac] hover:text-[#9941ff] transition-colors duration-300">Se connecter</button>
+<button class="bg-[#09b2ac] text-white font-['Manrope'] font-bold text-sm px-6 py-2.5 rounded-full Active:scale-95 transition-all shadow-lg shadow-[#09b2ac]/20">Créer un compte</button>
+</div>
+</nav>
+<!-- Hero Section -->
+<section class="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
+<div class="absolute inset-0 orb-gradient pointer-events-none"></div>
+<div class="relative z-10 max-w-5xl mx-auto text-center">
+<!-- Floating Pill -->
+<div class="inline-flex items-center gap-2 px-4 py-2 bg-surface-container-lowest rounded-full shadow-sm mb-8 border border-outline-variant/10">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-label font-bold tracking-widest uppercase text-on-surface-variant">2ème Année Médecine • Constantine</span>
+</div>
+<!-- Headline -->
+<h1 class="font-headline font-extrabold text-5xl md:text-8xl leading-[1.1] mb-6 tracking-tight text-on-background">
+                Révisez avec <span class="text-primary-container">Excellence</span>
+</h1>
+<!-- Subtitle -->
+<p class="text-lg md:text-2xl text-on-surface-variant max-w-2xl mx-auto mb-12 leading-relaxed">
+                La plateforme de révision incontournable pour les étudiants en médecine de Constantine.
+            </p>
+<!-- CTAs -->
+<div class="flex flex-col sm:flex-row items-center justify-center gap-6 mb-24">
+<button class="bg-primary text-on-primary font-headline font-bold text-lg px-10 py-5 rounded-xl flex items-center gap-2 hover:bg-primary-container transition-all shadow-xl shadow-primary/20">
+                    Commencer gratuitement
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="border-2 border-primary-container/30 text-primary-container font-headline font-bold text-lg px-10 py-5 rounded-xl hover:bg-primary-container/5 transition-all">
+                    J'ai déjà un compte
+                </button>
+</div>
+<!-- Visual Component: 3D Card Mockup -->
+<div class="relative w-full max-w-4xl mx-auto mt-10 perspective-1000">
+<div class="relative transform rotate-y-[-12deg] rotate-x-[5deg] bg-surface-container-lowest p-8 rounded-xl shadow-2xl border border-outline-variant/10 text-left max-w-xl mx-auto md:ml-auto md:mr-0">
+<div class="flex justify-between items-center mb-6">
+<span class="px-3 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full text-xs font-bold font-label">PHYSIOLOGIE</span>
+<div class="flex gap-1">
+<span class="w-3 h-3 rounded-full bg-error/20"></span>
+<span class="w-3 h-3 rounded-full bg-primary/20"></span>
+<span class="w-3 h-3 rounded-full bg-secondary/20"></span>
+</div>
+</div>
+<h3 class="text-xl font-bold mb-6 font-headline">Lequel de ces mécanismes n'intervient pas dans la régulation de la pression artérielle ?</h3>
+<div class="space-y-4">
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/20 flex items-center gap-4">
+<span class="w-6 h-6 rounded-full border border-primary text-xs flex items-center justify-center font-bold">A</span>
+<p class="text-sm font-medium">Système Rénine-Angiotensine</p>
+</div>
+<div class="p-4 rounded-lg bg-primary/10 border border-primary/40 flex items-center justify-center gap-4 relative">
+<span class="w-6 h-6 rounded-full bg-primary text-on-primary text-xs flex items-center justify-center font-bold">B</span>
+<p class="text-sm font-bold text-primary">Barorécepteurs carotidiens</p>
+<span class="absolute right-4 material-symbols-outlined text-primary" data-weight="fill">check_circle</span>
+</div>
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant/20 flex items-center gap-4">
+<span class="w-6 h-6 rounded-full border border-primary text-xs flex items-center justify-center font-bold">C</span>
+<p class="text-sm font-medium">Inhibition de l'ADH</p>
+</div>
+</div>
+</div>
+<!-- Progress Floating Badge -->
+<div class="absolute top-1/2 left-0 md:-left-12 -translate-y-1/2 bg-surface-container-lowest p-6 rounded-xl shadow-xl border border-outline-variant/10 flex items-center gap-4 rotate-3">
+<div class="relative w-16 h-16">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-high" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-primary-container" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="38.7" stroke-width="6"></circle>
+</svg>
+<span class="absolute inset-0 flex items-center justify-center font-headline font-extrabold text-sm text-primary">78%</span>
+</div>
+<div>
+<p class="text-xs font-label font-bold text-on-surface-variant uppercase tracking-tighter">Progression</p>
+<p class="text-lg font-bold">Sémiologie</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats Bar -->
+<section class="px-6 -mt-20 relative z-20">
+<div class="max-w-7xl mx-auto bg-surface-container-lowest p-10 md:p-14 rounded-xl shadow-2xl shadow-on-surface/5 grid grid-cols-2 md:grid-cols-4 gap-12 border border-outline-variant/10">
+<div class="text-center md:text-left">
+<h4 class="text-4xl md:text-5xl font-extrabold font-headline text-on-background mb-2">+3K</h4>
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-bold">QCMs Vérifiés</p>
+</div>
+<div class="text-center md:text-left">
+<h4 class="text-4xl md:text-5xl font-extrabold font-headline text-on-background mb-2">15+</h4>
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-bold">Modules Clés</p>
+</div>
+<div class="text-center md:text-left">
+<h4 class="text-4xl md:text-5xl font-extrabold font-headline text-on-background mb-2">5</h4>
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-bold">Wilayas Actives</p>
+</div>
+<div class="text-center md:text-left">
+<h4 class="text-4xl md:text-5xl font-extrabold font-headline text-on-background mb-2">24/7</h4>
+<p class="text-on-surface-variant font-label text-sm uppercase tracking-widest font-bold">Accès Illimité</p>
+</div>
+</div>
+</section>
+<!-- Features Section (Dark) -->
+<section class="bg-[#262626] text-white py-40 px-6 mt-20 rounded-t-[5rem]">
+<div class="max-w-7xl mx-auto">
+<div class="flex flex-col md:flex-row justify-between items-end gap-10 mb-24">
+<div class="max-w-2xl">
+<span class="text-primary-container font-headline font-bold uppercase tracking-[0.3em] text-sm block mb-4">Fonctionnalités</span>
+<h2 class="text-4xl md:text-6xl font-headline font-extrabold leading-tight">Étudiez plus intelligemment, pas plus dur.</h2>
+</div>
+<p class="text-slate-400 text-lg max-w-sm mb-2">Des outils conçus spécifiquement pour la méthode d'apprentissage médicale.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="glass-card p-10 rounded-xl hover:bg-white/5 transition-all group border border-white/5">
+<div class="w-16 h-16 bg-primary-container/20 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary-container text-3xl">quiz</span>
+</div>
+<h3 class="text-2xl font-bold mb-4 font-headline">QCMs Interactifs</h3>
+<p class="text-slate-400 leading-relaxed font-body">Une base de données massive classée par module et par année pour une révision ciblée.</p>
+</div>
+<!-- Card 2 -->
+<div class="glass-card p-10 rounded-xl hover:bg-white/5 transition-all group border border-white/5">
+<div class="w-16 h-16 bg-secondary-container/20 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-secondary-container text-3xl">cloud_off</span>
+</div>
+<h3 class="text-2xl font-bold mb-4 font-headline">Mode Hors-ligne</h3>
+<p class="text-slate-400 leading-relaxed font-body">Réservez vos données. Téléchargez vos modules et révisez n'importe où sans connexion.</p>
+</div>
+<!-- Card 3 -->
+<div class="glass-card p-10 rounded-xl hover:bg-white/5 transition-all group border border-white/5">
+<div class="w-16 h-16 bg-tertiary-container/20 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-tertiary-container text-3xl">filter_list</span>
+</div>
+<h3 class="text-2xl font-bold mb-4 font-headline">Filtrage Avancé</h3>
+<p class="text-slate-400 leading-relaxed font-body">Triez par source, par difficulté ou par thématique précise en un clic.</p>
+</div>
+<!-- Card 4 -->
+<div class="glass-card p-10 rounded-xl md:col-span-2 hover:bg-white/5 transition-all group border border-white/5 flex flex-col md:flex-row gap-10 items-center">
+<div class="flex-1">
+<div class="w-16 h-16 bg-primary/20 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl">insights</span>
+</div>
+<h3 class="text-2xl font-bold mb-4 font-headline">Statistiques Détaillées</h3>
+<p class="text-slate-400 leading-relaxed font-body">Visualisez vos points forts et identifiez vos lacunes grâce à nos graphiques de performance en temps réel.</p>
+</div>
+<div class="flex-1 w-full bg-black/20 p-6 rounded-xl border border-white/5">
+<div class="flex justify-between items-center mb-4">
+<span class="text-xs font-bold text-slate-500 uppercase">Moyenne Globale</span>
+<span class="text-primary-container font-bold">14.5/20</span>
+</div>
+<div class="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-8">
+<div class="h-full bg-primary-container w-[72%]"></div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between text-sm">
+<span class="text-slate-400">Cardiologie</span>
+<span class="font-bold">88%</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-400">Pneumologie</span>
+<span class="font-bold text-error">42%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="glass-card p-10 rounded-xl hover:bg-white/5 transition-all group border border-white/5">
+<div class="w-16 h-16 bg-secondary/20 rounded-xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-secondary text-3xl">edit_note</span>
+</div>
+<h3 class="text-2xl font-bold mb-4 font-headline">Notes Personnelles</h3>
+<p class="text-slate-400 leading-relaxed font-body">Ajoutez vos propres explications directement sur les questions difficiles.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Section -->
+<section class="bg-[#262626] pb-40 px-6">
+<div class="max-w-5xl mx-auto">
+<div class="text-center mb-20">
+<h2 class="text-4xl md:text-5xl font-headline font-extrabold text-white mb-6">Investissez dans votre succès</h2>
+<p class="text-slate-400 max-w-xl mx-auto">Des tarifs simples pour un accès premium à toutes nos ressources.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<!-- Plan 1 -->
+<div class="bg-white/5 p-12 rounded-xl border border-white/5 relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full translate-x-16 -translate-y-16 blur-2xl"></div>
+<h3 class="text-xl font-bold font-headline text-white mb-2">10 Jours</h3>
+<div class="flex items-baseline gap-2 mb-8">
+<span class="text-5xl font-extrabold text-white">200</span>
+<span class="text-slate-400 font-bold">DA</span>
+</div>
+<ul class="space-y-5 mb-10">
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Accès complet 10 jours
+                        </li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            QCMs illimités
+                        </li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Stats en temps réel
+                        </li>
+</ul>
+<button class="w-full py-4 rounded-xl border border-primary-container/30 text-primary-container font-bold hover:bg-primary-container hover:text-white transition-all">S'abonner</button>
+</div>
+<!-- Plan 2 -->
+<div class="bg-white/5 p-12 rounded-xl border-2 border-primary-container shadow-[0_0_40px_rgba(9,178,172,0.15)] relative overflow-hidden group">
+<div class="absolute -top-4 -right-4 bg-primary-container text-white px-8 py-2 rotate-12 font-bold text-sm">POPULAIRE</div>
+<h3 class="text-xl font-bold font-headline text-white mb-2">Jusqu'à la fin d'année</h3>
+<div class="flex items-baseline gap-2 mb-8">
+<span class="text-5xl font-extrabold text-white">1000</span>
+<span class="text-slate-400 font-bold">DA</span>
+</div>
+<ul class="space-y-5 mb-10">
+<li class="flex items-center gap-3 text-slate-300 font-bold">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Accès complet toute l'année
+                        </li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Support prioritaire 24/7
+                        </li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Mode hors-ligne inclus
+                        </li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary-container" data-weight="fill">check_circle</span>
+                            Notes illimitées
+                        </li>
+</ul>
+<button class="w-full py-4 rounded-xl bg-primary-container text-white font-bold hover:shadow-lg hover:shadow-primary-container/30 transition-all">S'abonner maintenant</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Points de Vente Section -->
+<section class="py-40 px-6 bg-[#262626] border-t border-white/5">
+<div class="max-w-7xl mx-auto">
+<div class="text-center mb-24">
+<span class="text-primary-container font-headline font-bold uppercase tracking-[0.3em] text-sm block mb-4">Disponibilité</span>
+<h2 class="text-4xl md:text-5xl font-headline font-extrabold text-white mb-6">Où acheter votre code ?</h2>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Location Card 1 -->
+<div class="bg-white/5 p-8 rounded-xl border border-white/10 text-right group hover:bg-white/10 transition-all">
+<div class="flex justify-between items-start mb-6">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary-container" href="#">
+<span class="material-symbols-outlined">map</span>
+</a>
+<span class="px-3 py-1 bg-primary-container/20 text-primary-container rounded-full text-xs font-bold font-label">CONSTANTINE</span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2">مكتبة الوفاء</h3>
+<p class="text-slate-400 text-sm mb-4">حي فيلالي - قسنطينة</p>
+<div class="flex items-center justify-end gap-2 text-primary-container">
+<span class="text-xs font-bold">Disponible</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</div>
+</div>
+<!-- Location Card 2 -->
+<div class="bg-white/5 p-8 rounded-xl border border-white/10 text-right group hover:bg-white/10 transition-all">
+<div class="flex justify-between items-start mb-6">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary-container" href="#">
+<span class="material-symbols-outlined">map</span>
+</a>
+<span class="px-3 py-1 bg-secondary-container/20 text-secondary-container rounded-full text-xs font-bold font-label">BISKRA</span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2">متجر النجاح</h3>
+<p class="text-slate-400 text-sm mb-4">وسط المدينة - بسكرة</p>
+<div class="flex items-center justify-end gap-2 text-primary-container">
+<span class="text-xs font-bold">Disponible</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</div>
+</div>
+<!-- Location Card 3 -->
+<div class="bg-white/5 p-8 rounded-xl border border-white/10 text-right group hover:bg-white/10 transition-all">
+<div class="flex justify-between items-start mb-6">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary-container" href="#">
+<span class="material-symbols-outlined">map</span>
+</a>
+<span class="px-3 py-1 bg-primary-container/20 text-primary-container rounded-full text-xs font-bold font-label">CONSTANTINE</span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2">مكتبة الطالب</h3>
+<p class="text-slate-400 text-sm mb-4">المدينة الجديدة - علي منجلي</p>
+<div class="flex items-center justify-end gap-2 text-primary-container">
+<span class="text-xs font-bold">Disponible</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</div>
+</div>
+<!-- Location Card 4 -->
+<div class="bg-white/5 p-8 rounded-xl border border-white/10 text-right group hover:bg-white/10 transition-all">
+<div class="flex justify-between items-start mb-6">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-primary-container" href="#">
+<span class="material-symbols-outlined">map</span>
+</a>
+<span class="px-3 py-1 bg-secondary/20 text-secondary rounded-full text-xs font-bold font-label">BATNA</span>
+</div>
+<h3 class="text-xl font-bold text-white mb-2">مكتبة المستقبل</h3>
+<p class="text-slate-400 text-sm mb-4">حي الزهور - باتنة</p>
+<div class="flex items-center justify-end gap-2 text-primary-container">
+<span class="text-xs font-bold">Disponible</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer Shell -->
+<footer class="bg-[#262626] w-full rounded-t-[3rem] mt-20 relative z-10">
+<div class="flex flex-col md:flex-row justify-between items-start gap-8 px-12 py-16 max-w-7xl mx-auto border-t border-white/5">
+<div class="flex-1">
+<div class="text-xl font-bold text-white font-['Manrope'] mb-6">FMC App</div>
+<p class="font-['Cairo'] text-slate-400 text-sm leading-relaxed max-w-xs">
+                    La première plateforme dédiée aux étudiants en médecine pour une préparation optimale aux examens.
+                </p>
+</div>
+<div class="flex flex-wrap gap-12 md:gap-24">
+<div class="flex flex-col gap-4">
+<h4 class="text-white font-bold font-headline text-sm uppercase tracking-wider">Liens Utiles</h4>
+<nav class="flex flex-col gap-3">
+<a class="font-['Cairo'] text-slate-400 text-sm hover:text-[#09b2ac] transition-colors" href="#">Politique de confidentialité</a>
+<a class="font-['Cairo'] text-slate-400 text-sm hover:text-[#09b2ac] transition-colors" href="#">Conditions d'utilisation</a>
+<a class="font-['Cairo'] text-slate-400 text-sm hover:text-[#09b2ac] transition-colors" href="#">Contact</a>
+<a class="font-['Cairo'] text-slate-400 text-sm hover:text-[#09b2ac] transition-colors" href="#">Aide</a>
+</nav>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-white font-bold font-headline text-sm uppercase tracking-wider">Communauté</h4>
+<div class="flex gap-4">
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#09b2ac] transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">social_leaderboard</span>
+</a>
+<a class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-[#09b2ac] transition-colors" href="#">
+<span class="material-symbols-outlined text-xl">camera</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+<div class="max-w-7xl mx-auto px-12 py-8 border-t border-white/5 text-center md:text-left">
+<p class="font-['Cairo'] text-slate-500 text-xs">© 2024 FMC App. Tous droits réservés.</p>
+</div>
+</footer>
+</body></html>

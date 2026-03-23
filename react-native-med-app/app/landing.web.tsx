@@ -3,34 +3,35 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'expo-router'
 import {
   FileText, Wifi, Target, BarChart2, BookOpen, Clock,
-  Play, Smartphone, ChevronRight, Menu, X, Mail, CheckCircle2
+  Play, Smartphone, ChevronRight, Menu, X, Mail, CheckCircle2,
+  ArrowRight, MapPin, Map, Share2, Award, Camera,
+  HelpCircle, CloudOff, Filter, Edit3, Send, Instagram, Facebook
 } from 'lucide-react'
 
 // --- Constants & Data ---
 const STATS = [
-  { target: 3000, prefix: '+', suffix: '', label: 'QCMs', staticVal: null },
-  { target: 15, suffix: '+', label: 'Modules', staticVal: null },
-  { target: 5, label: 'Wilayas', staticVal: null },
-  { target: 0, staticVal: '24/7', label: 'Disponible' }
+  { target: 3000, prefix: '+', suffix: '', label: 'QCMs Vérifiés', staticVal: null },
+  { target: 15, suffix: '+', label: 'Modules Clés', staticVal: null },
+  { target: 5, label: 'Wilayas Actives', staticVal: null },
+  { target: 0, staticVal: '24/7', label: 'Accès Illimité' }
 ]
 
 const FEATURES = [
-  { icon: FileText, title: 'QCMs Interactifs', desc: 'Des milliers de QCMs corrigés et commentés, classés par module.', color: '#09b2ac', bg: 'rgba(9,178,172,0.12)' },
-  { icon: Wifi, title: 'Mode Hors-ligne', desc: 'Révisez partout, même sans connexion internet. Synchronisation auto.', color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-  { icon: Target, title: 'Filtrage Avancé', desc: 'Filtrez par année, module, cours pour une révision ciblée.', color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  { icon: BarChart2, title: 'Statistiques Détaillées', desc: 'Suivez votre progression et identifiez vos points faibles en temps réel.', color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
-  { icon: BookOpen, title: 'Notes Personnelles', desc: 'Prenez des notes directement sur chaque question pour mémoriser.', color: '#9941ff', bg: 'rgba(153,65,255,0.12)' },
- 
+  { icon: HelpCircle, title: 'QCMs Interactifs', desc: 'Une base de données massive classée par module et par année pour une révision ciblée.', color: '#09b2ac', bg: 'rgba(9,178,172,0.2)' },
+  { icon: CloudOff, title: 'Mode Hors-ligne', desc: "Réservez vos données. Téléchargez vos modules et révisez n'importe où sans connexion.", color: '#9840fe', bg: 'rgba(152,64,254,0.2)' },
+  { icon: Filter, title: 'Filtrage Avancé', desc: 'Triez par source, par difficulté ou par thématique précise en un clic.', color: '#e98556', bg: 'rgba(233,133,86,0.2)' },
+  { icon: BarChart2, title: 'Statistiques Détaillées', desc: 'Visualisez vos points forts et identifiez vos lacunes grâce à nos graphiques de performance en temps réel.', color: '#006a66', bg: 'rgba(0,106,102,0.2)' },
+  { icon: Edit3, title: 'Notes Personnelles', desc: 'Ajoutez vos propres explications directement sur les questions difficiles.', color: '#7e17e4', bg: 'rgba(126,23,228,0.2)' },
 ]
 
 const SELLING_POINTS = [
-  { emoji: '📚', name: 'مكتبة The Best Print', city: 'كلية الطب قسنطينة', desc: 'مقابل مدخل جامعة قسنطينة 3', link: 'https://maps.app.goo.gl/QyXXSVMnx8nUfXmv5' },
-  { emoji: '📚', name: 'مكتبة الواحة', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - إقامة الياسمين وج15', link: 'https://maps.app.goo.gl/74pCVT3WK9LEaacp7' },
-  { emoji: '📱', name: 'Hero Phone', city: 'كلية الطب قسنطينة', desc: 'علي منجلي - بالقرب من محطة الاستقلال', link: 'https://maps.app.goo.gl/DSubQHw7Sbe4kUeY7' },
-  { emoji: '📚', name: 'مكتبة نوميديا', city: 'ملحقة بسكرة', desc: 'بسكرة - مقابل مدخل الجامعة', link: 'https://maps.app.goo.gl/7xDqRrwTm2TNRUtH6' },
-  { emoji: '🏪', name: 'Khirou KMS', city: 'ملحقة أم البواقي', desc: 'أم البواقي - مقابل مدخل الملحقة', link: 'https://goo.gl/maps/RrcPeibFArYGPWi98' },
-  { emoji: '🏠', name: 'Foyer', city: 'ملحقة خنشلة', desc: 'خنشلة - جامعة عباس لغرور', link: 'https://goo.gl/maps/33UHDZhf95412CjA9' },
-  { emoji: '📚', name: 'مكتبة الأمان', city: 'ملحقة سوق أهراس', desc: 'سوق أهراس - وسط المدينة', link: 'https://maps.app.goo.gl/kcb6RSTcSxJoSYH98' }
+  { emoji: '📚', name: 'مكتبة The Best Print', city: 'CONSTANTINE', desc: 'مقابل مدخل جامعة قسنطينة 3', link: 'https://maps.app.goo.gl/QyXXSVMnx8nUfXmv5', color: '#09b2ac' },
+  { emoji: '📚', name: 'مكتبة الواحة', city: 'CONSTANTINE', desc: 'علي منجلي - إقامة الياسمين وج15', link: 'https://maps.app.goo.gl/74pCVT3WK9LEaacp7', color: '#9840fe' },
+  { emoji: '📱', name: 'Hero Phone', city: 'CONSTANTINE', desc: 'علي منجلي - بالقرب من محطة الاستقلال', link: 'https://maps.app.goo.gl/DSubQHw7Sbe4kUeY7', color: '#09b2ac' },
+  { emoji: '📚', name: 'مكتبة نوميديا', city: 'BISKRA', desc: 'بسكرة - مقابل مدخل الجامعة', link: 'https://maps.app.goo.gl/7xDqRrwTm2TNRUtH6', color: '#e98556' },
+  { emoji: '🏪', name: 'Khirou KMS', city: 'OUM EL BOUAGHI', desc: 'أم البواقي - مقابل مدخل الملحقة', link: 'https://goo.gl/maps/RrcPeibFArYGPWi98', color: '#09b2ac' },
+  { emoji: '🏠', name: 'Foyer', city: 'KHENCHELA', desc: 'خنشلة - جامعة عباس لغرور', link: 'https://goo.gl/maps/33UHDZhf95412CjA9', color: '#7e17e4' },
+  { emoji: '📚', name: 'مكتبة الأمان', city: 'SOUK AHRAS', desc: 'سوق أهراس - وسط المدينة', link: 'https://maps.app.goo.gl/kcb6RSTcSxJoSYH98', color: '#09b2ac' }
 ]
 
 // --- Animation Variants ---
@@ -69,11 +70,13 @@ const AnimatedStat = ({ stat }: { stat: typeof STATS[0] }) => {
   const display = stat.staticVal || (val >= 1000 ? (val / 1000).toFixed(val >= 1000 ? 0 : 1) + 'K' : val)
 
   return (
-    <motion.div variants={fadeIn} className="fm-stat-item">
-      <div className="fm-stat-value">
+    <motion.div variants={fadeIn} className="text-center md:text-left">
+      <h4 className="text-4xl md:text-5xl font-extrabold font-['Manrope'] text-[#1d1b16] mb-2 tracking-tight">
         {stat.prefix || ''}{display}{stat.suffix || ''}
-      </div>
-      <div className="fm-stat-label">{stat.label}</div>
+      </h4>
+      <p className="text-[#3c4948] font-['Manrope'] text-sm uppercase tracking-widest font-bold">
+        {stat.label}
+      </p>
     </motion.div>
   )
 }
@@ -103,391 +106,237 @@ export default function LandingWeb() {
     })
   }, [scrollY])
 
-  const goAuth = () => router.push('/(auth)/welcome')
+  const goAuth = () => router.push('/(auth)/welcome' as any)
 
   return (
-    <div className="fm-landing">
-      {/* Glass background layer with animated orbs */}
-      <div className="fm-glass-bg">
-        <div className="fm-glass-orb fm-glass-orb-1" />
-        <div className="fm-glass-orb fm-glass-orb-2" />
-        <div className="fm-glass-orb fm-glass-orb-3" />
-        <div className="fm-glass-orb fm-glass-orb-4" />
-        <div className="fm-glass-orb fm-glass-orb-5" />
-      </div>
-      <div className="fm-glass-frost" />
-      {/* Styles injected to avoid contaminating global styles but keep component self-contained */}
+    <div className="min-h-screen bg-[#fff9ef] text-[#1d1b16] font-['Cairo'] overflow-x-hidden selection:bg-[#09b2ac] selection:text-white">
       <style dangerouslySetInnerHTML={{ __html: `
-        .fm-landing { font-family: 'Manrope', sans-serif; color: #262626; background: transparent; overflow-x: hidden; position: relative; }
-        .fm-glass-bg { position: fixed; inset: 0; z-index: -2; background: linear-gradient(135deg, #e0f7f5 0%, #f0f4ff 30%, #fdf2f8 60%, #e8f5e9 100%); overflow: hidden; }
-        .fm-glass-orb { position: absolute; border-radius: 50%; filter: blur(100px); opacity: 0.5; animation: fm-orb-drift 12s ease-in-out infinite alternate; }
-        .fm-glass-orb-1 { width: 600px; height: 600px; background: rgba(9,178,172,0.25); top: -10%; left: -5%; animation-duration: 14s; }
-        .fm-glass-orb-2 { width: 500px; height: 500px; background: rgba(99,102,241,0.18); top: 30%; right: -8%; animation-duration: 18s; animation-delay: -4s; }
-        .fm-glass-orb-3 { width: 450px; height: 450px; background: rgba(236,72,153,0.12); bottom: -5%; left: 20%; animation-duration: 16s; animation-delay: -8s; }
-        .fm-glass-orb-4 { width: 350px; height: 350px; background: rgba(153,65,255,0.15); top: 60%; left: -10%; animation-duration: 20s; animation-delay: -2s; }
-        .fm-glass-orb-5 { width: 300px; height: 300px; background: rgba(245,158,11,0.1); top: 10%; right: 20%; animation-duration: 15s; animation-delay: -6s; }
-        @keyframes fm-orb-drift {
-          0% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(30px, -20px) scale(1.08); }
-          100% { transform: translate(-20px, 30px) scale(0.95); }
+        .orb-gradient {
+            background: radial-gradient(circle at 50% 50%, rgba(9, 178, 172, 0.15) 0%, rgba(153, 65, 255, 0.1) 50%, transparent 100%);
+            filter: blur(80px);
         }
-        .fm-glass-frost { position: fixed; inset: 0; z-index: -1; backdrop-filter: blur(60px) saturate(1.4); -webkit-backdrop-filter: blur(60px) saturate(1.4); background: rgba(255,255,255,0.55); }
-        .fm-container { max-width: 1200px; margin: 0 auto; padding: 0 24px; width: 100%; }
-        .fm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); text-decoration: none; border: none; }
-        .fm-btn-primary { padding: 10px 24px; background: #09b2ac; color: #fff; }
-        .fm-btn-primary:hover { background: #0d9488; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(9,178,172,0.35); }
-        .fm-navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 16px 0; transition: all 0.3s; background: rgba(255,255,255,0.45); backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2); border-bottom: 1px solid rgba(255,255,255,0.3); }
-        .fm-navbar.scrolled { background: rgba(255,255,255,0.8); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); box-shadow: 0 4px 30px rgba(0,0,0,0.08); border-bottom: 1px solid rgba(255,255,255,0.5); padding: 12px 0; }
-        .fm-nav-inner { display: flex; align-items: center; justify-content: space-between; }
-        .fm-brand { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .fm-brand img { width: 40px; height: 40px; border-radius: 12px; }
-        .fm-brand-name { font-size: 1.25rem; font-weight: 800; color: #111827; transition: color 0.3s; }
-        .fm-links { display: flex; gap: 32px; }
-        .fm-link { font-weight: 600; color: #4b5563; transition: color 0.2s; text-decoration: none; cursor: pointer;}
-        .fm-link:hover { color: #09b2ac; }
-        .fm-nav-actions { display: flex; gap: 12px; }
-        .fm-btn-ghost { padding: 10px 24px; background: transparent; color: #111827; border: 1.5px solid #e5e7eb; }
-        .fm-navbar.scrolled .fm-btn-ghost { background: #f9fafb; border-color: #d1d5db; }
-        
-        /* Hero Light Theme */
-        .fm-hero { position: relative; min-height: 100vh; display: flex; align-items: center; background: rgba(255,255,255,0.3); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); overflow: hidden; padding: 120px 0 80px; }
-        .fm-hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(9,178,172,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(9,178,172,0.06) 1px, transparent 1px); background-size: 60px 60px; mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%); }
-        .fm-orb { position: absolute; border-radius: 50%; filter: blur(80px); }
-        .fm-hero-content { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; position: relative; z-index: 1; }
-        .fm-title { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 800; color: #111827; line-height: 1.1; letter-spacing: -0.04em; margin-bottom: 24px; }
-        .fm-accent { color: #09b2ac; }
-        .fm-subtitle { font-family: 'Cairo', sans-serif; font-size: 1.1875rem; color: #4b5563; line-height: 1.7; max-width: 520px; margin-bottom: 40px; }
-        .fm-hero-actions { display: flex; gap: 16px; margin-bottom: 48px; }
-        .fm-btn-hero { padding: 16px 32px; background: #09b2ac; color: #fff; border-radius: 16px; font-size: 1.0625rem; }
-        .fm-btn-hero-secondary { padding: 16px 32px; background: transparent; color: #09b2ac; border-radius: 16px; border: 2px solid rgba(9,178,172,0.3); font-weight: 700; transition: all 0.3s; }
-        .fm-btn-hero-secondary:hover { border-color: #09b2ac; background: rgba(9,178,172,0.05); }
-        
-        .fm-stats { margin-top: -40px; position: relative; z-index: 2; }
-        .fm-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border: 1px solid rgba(255,255,255,0.6); }
-        .fm-stat-item { padding: 40px 24px; text-align: center; position: relative; }
-        .fm-stat-item:not(:last-child)::after { content: ''; position: absolute; right: 0; top: 20%; height: 60%; width: 1px; background: #f3f4f6; }
-        .fm-stat-value { font-size: clamp(1.75rem,3vw,2.5rem); font-weight: 800; color: #09b2ac; letter-spacing: -0.03em; }
-        .fm-stat-label { font-size: 0.9375rem; color: #9ca3af; font-weight: 600; margin-top: 4px; }
-        
-        /* Features Section */
-        .fm-features { padding: 120px 0; background: #0a0b10; position: relative; }
-        .fm-features-header { text-align: center; margin-bottom: 64px; }
-        .fm-badge { display: inline-block; padding: 6px 16px; border-radius: 999px; background: rgba(9,178,172,0.12); color: #09b2ac; font-size: 14px; font-weight: 700; margin-bottom: 16px; }
-        .fm-features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-        .fm-feature-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 40px 32px; position: relative; overflow: hidden; transition: all 0.4s; }
-        .fm-feature-title { font-size: 1.25rem; font-weight: 700; color: #fff; margin-bottom: 12px; }
-        .fm-feature-desc { font-family: 'Cairo', sans-serif; font-size: 0.9375rem; color: rgba(255,255,255,0.5); line-height: 1.7; }
-        
-        /* Pricing Section */
-        .fm-pricing { padding: 120px 0; background: #0a0b10; position: relative; border-top: 1px solid rgba(255,255,255,0.03); }
-        .fm-pricing-header { text-align: center; margin-bottom: 64px; }
-        .fm-pricing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; max-width: 900px; margin: 0 auto; }
-        .fm-pricing-card { background: rgba(255,255,255,0.02); border: 2px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 40px 32px; position: relative; display: flex; flex-direction: column; transition: all 0.4s; }
-        .fm-pricing-card.popular { border-color: rgba(9,178,172,0.5); background: linear-gradient(180deg, rgba(9,178,172,0.08) 0%, rgba(9,178,172,0) 100%); }
-        .fm-pricing-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.15); }
-        .fm-pricing-card.popular:hover { box-shadow: 0 20px 40px rgba(9,178,172,0.15); border-color: #09b2ac; }
-        .fm-pricing-tag { position: absolute; top: -14px; right: 32px; background: #09b2ac; color: #fff; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; padding: 6px 14px; border-radius: 999px; box-shadow: 0 4px 12px rgba(9,178,172,0.3); }
-        .fm-pricing-title { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; }
-        .fm-pricing-subtitle { font-family: 'Cairo', sans-serif; font-size: 0.9375rem; color: rgba(255,255,255,0.6); margin-bottom: 24px; min-height: 44px; }
-        .fm-pricing-price { font-size: 3.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; line-height: 1; display: flex; align-items: flex-start; gap: 8px; }
-        .fm-pricing-currency { font-size: 1.25rem; color: rgba(255,255,255,0.5); font-weight: 600; margin-top: 8px; }
-        .fm-pricing-features { flex: 1; margin: 32px 0; display: flex; flex-direction: column; gap: 16px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 32px; }
-        .fm-pricing-feature { display: flex; align-items: flex-start; gap: 12px; font-family: 'Cairo', sans-serif; font-size: 0.9375rem; color: rgba(255,255,255,0.8); line-height: 1.5; }
-        .fm-pricing-icon { flex-shrink: 0; color: #09b2ac; margin-top: 2px; }
-        .fm-btn-pricing { width: 100%; padding: 16px 24px; border-radius: 14px; font-weight: 700; font-size: 1.0625rem; text-align: center; transition: all 0.3s; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .fm-btn-pricing-primary { background: #09b2ac; color: #fff; }
-        .fm-btn-pricing-primary:hover { background: #0d9488; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(9,178,172,0.25); }
-        .fm-btn-pricing-secondary { background: rgba(255,255,255,0.05); color: #fff; border: 1.5px solid rgba(255,255,255,0.1); }
-        .fm-btn-pricing-secondary:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
-
-        /* Points of Sale */
-        .fm-points { padding: 120px 0; background: #0a0b10; position: relative; border-top: 1px solid rgba(255,255,255,0.03); }
-        .fm-points-header { text-align: center; margin-bottom: 64px; }
-        .fm-points-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 1000px; margin: 0 auto; }
-        .fm-point-card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 32px 24px; display: flex; align-items: center; gap: 20px; transition: all 0.4s; }
-        .fm-point-card:hover { transform: translateY(-6px); background: rgba(9,178,172,0.05); border-color: rgba(9,178,172,0.3); box-shadow: 0 16px 32px rgba(0,0,0,0.2); }
-        .fm-point-emoji { font-size: 2.5rem; line-height: 1; flex-shrink: 0; width: 64px; height: 64px; background: rgba(255,255,255,0.05); border-radius: 20px; display: flex; align-items: center; justify-content: center; }
-        .fm-point-info { flex: 1; text-align: left; }
-        .fm-point-name { font-size: 1.125rem; font-weight: 800; color: #fff; margin-bottom: 4px; font-family: 'Cairo', sans-serif; }
-        .fm-point-city { font-size: 0.875rem; color: #09b2ac; font-weight: 700; background: rgba(9,178,172,0.15); padding: 4px 10px; border-radius: 999px; display: inline-block; font-family: 'Cairo', sans-serif; }
-
-        /* Footer */
-        .fm-footer { background: #0a0b10; padding: 64px 0 0; border-top: 1px solid rgba(255,255,255,0.05); }
-        .fm-footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .fm-footer-brand-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-        .fm-footer-logo { width: 36px; height: 36px; border-radius: 10px; }
-        .fm-footer-name { font-weight: 800; font-size: 1.25rem; color: #fff; }
-        .fm-footer-tagline { font-size: 0.875rem; color: rgba(255,255,255,0.5); line-height: 1.6; max-width: 300px; }
-        .fm-footer-heading { font-size: 0.875rem; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
-        .fm-footer-links { display: flex; flex-direction: column; gap: 12px; }
-        .fm-footer-link { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9375rem; color: rgba(255,255,255,0.7); transition: color 0.2s; text-decoration: none; cursor: pointer; }
-        .fm-footer-link svg { width: 18px; height: 18px; stroke-width: 2; flex-shrink: 0; transition: transform 0.2s ease; }
-        .fm-footer-link:hover { color: #09b2ac; }
-        .fm-footer-link:hover svg { transform: scale(1.1) rotate(-5deg); }
-        .fm-footer-bottom { padding: 24px 0; }
-        .fm-footer-bottom-inner { display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; color: rgba(255,255,255,0.35); }
-        
-        @media(max-width: 1024px) {
-          .fm-hero-content { grid-template-columns: 1fr; text-align: center; gap: 40px; }
-          .fm-subtitle { margin: 0 auto 40px; }
-          .fm-hero-actions { justify-content: center; }
-          .fm-visual { margin-top: 24px; display: flex; justify-content: center; transform: scale(0.95); }
-          .fm-features-grid { grid-template-columns: repeat(2, 1fr); }
-          .fm-points-grid { grid-template-columns: repeat(2, 1fr); }
-          .fm-links, .fm-nav-actions { display: none; }
-          
-          .fm-mobile-menu { display: flex; flex-direction: column; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border-radius: 0 0 24px 24px; border-top: 1px solid #f3f4f6; animation: fmSlideDown 0.3s ease-out; }
-          .fm-mobile-links { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
-          .fm-mobile-link { padding: 12px 16px; font-size: 1.0625rem; font-weight: 700; color: #262626; text-decoration: none; border-radius: 12px; transition: background 0.2s; }
-          .fm-mobile-link:hover { background: rgba(9,178,172,0.08); color: #09b2ac; }
-          .fm-mobile-actions { display: flex; flex-direction: column; gap: 12px; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
-        @media(max-width: 768px) {
-          .fm-stats-grid { grid-template-columns: repeat(2, 1fr); }
-          .fm-stat-item:nth-child(2)::after { display: none; }
-          .fm-features-grid { grid-template-columns: 1fr; }
-          .fm-points-grid { grid-template-columns: 1fr; }
-          .fm-pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
-          .fm-footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
-          .fm-footer-bottom-inner { flex-direction: column; gap: 8px; text-align: center; }
-          .fm-visual { transform: scale(0.85); margin-top: 10px; }
-        }
-        @media(max-width: 480px) {
-          .fm-footer-inner { grid-template-columns: 1fr; }
-          .fm-visual { transform: scale(0.7); margin-top: 0; margin-bottom: -40px; }
-          .fm-title { font-size: 2.25rem; }
-          .fm-hero-actions { flex-direction: column; }
-          .fm-hero-actions .fm-btn { width: 100%; }
-        }
-        @keyframes fmSlideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
       `}} />
 
-      {/* --- NAVBAR --- */}
-      <nav className={`fm-navbar ${scrolled ? 'scrolled' : ''}`}>
-        <div className="fm-container fm-nav-inner">
-          <div className="fm-brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="FMC App" />
-            <span className="fm-brand-name">FMC App</span>
-          </div>
-          <div className="fm-links">
-            <a href="#features" className="fm-link">Fonctionnalités</a>
-            <a href="#how" className="fm-link">Comment ça marche</a>
-            <a href="#points" className="fm-link">Points de vente</a>
-          </div>
-          <div className="fm-nav-actions">
-            <button onClick={goAuth} className="fm-btn fm-btn-ghost">Se connecter</button>
-            <button onClick={goAuth} className="fm-btn fm-btn-primary">Créer un compte</button>
-          </div>
-          {/* Mobile hamburger icon */}
-          <div className="md:hidden flex items-center justify-center p-2 cursor-pointer" 
-               style={{ display: typeof window !== 'undefined' && window.innerWidth < 1024 ? 'flex' : 'none', color: '#111827' }}
-               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </div>
+      {/* Navigation Shell */}
+      <nav className={`fixed top-4 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl rounded-full border border-white/20 z-50 transition-all duration-300 flex justify-between items-center px-8 py-3 ${scrolled ? 'bg-white/80 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)]' : 'bg-white/10 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.06)]'}`}>
+        <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <img src="/logo.png" alt="FMC App" className="w-8 h-8 rounded-lg" />
+          <div className="text-2xl font-extrabold tracking-tighter text-[#09b2ac] font-['Manrope']">FMC App</div>
+        </div>
+        
+        <div className="hidden md:flex gap-8 items-center">
+          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#features">Fonctionnalités</a>
+          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#tarifs">Tarifs</a>
+          <a className="font-['Manrope'] font-medium text-sm tracking-wide text-slate-700 hover:text-[#9941ff] transition-colors duration-300" href="#points">Points de vente</a>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-4">
+          <button onClick={goAuth} className="font-['Manrope'] font-medium text-sm tracking-wide text-[#09b2ac] hover:text-[#9941ff] transition-colors duration-300">Se connecter</button>
+          <button onClick={goAuth} className="bg-[#09b2ac] text-white font-['Manrope'] font-bold text-sm px-6 py-2.5 rounded-full hover:scale-95 transition-all shadow-lg shadow-[#09b2ac]/20 hover:bg-[#0d9488]">Créer un compte</button>
         </div>
 
-        {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="fm-mobile-menu">
-            <div className="fm-mobile-links">
-              <a href="#features" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Fonctionnalités</a>
-              <a href="#how" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Comment ça marche</a>
-              <a href="#points" className="fm-mobile-link" onClick={() => setMobileMenuOpen(false)}>Points de vente</a>
-            </div>
-            <div className="fm-mobile-actions">
-              <button onClick={goAuth} className="fm-btn fm-btn-ghost" style={{ width: '100%', justifyContent: 'center' }}>Se connecter</button>
-              <button onClick={goAuth} className="fm-btn fm-btn-primary" style={{ width: '100%', justifyContent: 'center' }}>Créer un compte</button>
-            </div>
-          </div>
-        )}
+        <button className="md:hidden text-[#1d1b16] p-2" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </nav>
 
-      {/* --- HERO --- */}
-      <section className="fm-hero">
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+      {mobileMenuOpen && (
         <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} 
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-          className="fm-orb" style={{ width: 500, height: 500, background: 'rgba(9,178,172,0.15)', top: -100, right: -100 }} 
+          initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+          className="fixed top-20 left-4 right-4 bg-white rounded-3xl shadow-2xl p-6 z-40 md:hidden flex flex-col gap-6 border border-slate-100"
+        >
+          <div className="flex flex-col gap-4">
+            <a href="#features" onClick={() => setMobileMenuOpen(false)} className="font-['Manrope'] text-lg font-bold text-slate-800">Fonctionnalités</a>
+            <a href="#tarifs" onClick={() => setMobileMenuOpen(false)} className="font-['Manrope'] text-lg font-bold text-slate-800">Tarifs</a>
+            <a href="#points" onClick={() => setMobileMenuOpen(false)} className="font-['Manrope'] text-lg font-bold text-slate-800">Points de vente</a>
+          </div>
+          <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
+            <button onClick={goAuth} className="w-full py-3 rounded-xl border border-slate-200 text-[#09b2ac] font-bold font-['Manrope']">Se connecter</button>
+            <button onClick={goAuth} className="w-full py-3 rounded-xl bg-[#09b2ac] text-white font-bold font-['Manrope'] shadow-lg shadow-[#09b2ac]/20">Créer un compte</button>
+          </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 overflow-hidden">
+        <div className="absolute inset-0 orb-gradient pointer-events-none"></div>
+        {/* Animated Orbs */}
+        <motion.div 
+            animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }} 
+            transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute rounded-full blur-[80px]" style={{ width: 500, height: 500, background: 'rgba(9,178,172,0.15)', top: '-10%', right: '-10%', zIndex: 0 }} 
         />
         <motion.div 
-          animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }} 
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-          className="fm-orb" style={{ width: 400, height: 400, background: 'rgba(153,65,255,0.08)', bottom: -100, left: -100 }} 
+            animate={{ scale: [1, 1.15, 1], opacity: [0.2, 0.4, 0.2] }} 
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+            className="absolute rounded-full blur-[80px]" style={{ width: 400, height: 400, background: 'rgba(153,65,255,0.08)', bottom: '10%', left: '-10%', zIndex: 0 }} 
         />
-        <div className="fm-hero-grid" />
-        
-        <div className="fm-container fm-hero-content">
-          <motion.div 
-            initial="hidden" animate="visible" variants={staggerContainer}
-          >
-            <motion.div variants={fadeIn} className="fm-badge mb-6" style={{ background: 'rgba(9,178,172,0.15)', color: '#09b2ac', padding: '8px 16px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <motion.div animate={{ opacity: [0.4, 1, 0.4] }} transition={{ duration: 2, repeat: Infinity }} style={{ width: 8, height: 8, borderRadius: '50%', background: '#09b2ac' }} />
-              2ème Année Médecine • Constantine
+
+        <div className="relative z-10 max-w-5xl mx-auto w-full text-center mt-10">
+          
+          <motion.div initial="hidden" animate="visible" variants={staggerContainer} className="pt-10">
+            {/* Floating Pill */}
+            <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-6 py-2.5 bg-white rounded-full shadow-sm mb-8 border border-slate-100">
+              <span className="w-2 h-2 rounded-full bg-[#006a66] animate-pulse"></span>
+              <span className="text-xs font-['Manrope'] font-bold tracking-widest uppercase text-slate-600">2ème Année Médecine • Constantine</span>
             </motion.div>
-            <motion.h1 variants={fadeIn} className="fm-title">Révisez avec<br/><span className="fm-accent">Excellence</span></motion.h1>
-            <motion.p variants={fadeIn} className="fm-subtitle">
-              La plateforme de révision incontournable pour les étudiants en médecine
-              de Constantine et ses annexes. QCMs interactifs, mode hors-ligne et suivi personnalisé.
+            
+            {/* Headline */}
+            <motion.h1 variants={fadeIn} className="font-['Manrope'] font-extrabold text-5xl md:text-7xl lg:text-8xl leading-[1.1] mb-6 tracking-tight text-[#1d1b16]">
+              Révisez avec <br className="hidden md:block" />
+              <span className="text-[#09b2ac]">Excellence</span>
+            </motion.h1>
+            
+            {/* Subtitle */}
+            <motion.p variants={fadeIn} className="text-lg md:text-2xl text-slate-600 max-w-2xl mx-auto mb-12 leading-relaxed">
+              La plateforme de révision incontournable pour les étudiants en médecine de Constantine.
             </motion.p>
-            <motion.div variants={fadeIn} className="fm-hero-actions">
-              <button onClick={goAuth} className="fm-btn fm-btn-hero">Commencer gratuitement <ChevronRight size={20} /></button>
-              <button onClick={goAuth} className="fm-btn fm-btn-hero-secondary">J'ai déjà un compte</button>
+            
+            {/* CTAs */}
+            <motion.div variants={fadeIn} className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-24">
+              <button onClick={goAuth} className="w-full sm:w-auto bg-[#006a66] text-white font-['Manrope'] font-bold text-lg px-10 py-5 rounded-[3rem] flex items-center justify-center gap-2 hover:bg-[#00504d] transition-all shadow-xl shadow-[#006a66]/20">
+                Commencer gratuitement
+                <ArrowRight size={20} />
+              </button>
+              <button onClick={goAuth} className="w-full sm:w-auto border-2 border-[#09b2ac]/30 text-[#09b2ac] font-['Manrope'] font-bold text-lg px-10 py-5 rounded-[3rem] hover:bg-[#09b2ac]/5 transition-all">
+                J'ai déjà un compte
+              </button>
             </motion.div>
           </motion.div>
 
+          {/* Visual Component: Floating Card Mockup */}
           <motion.div 
-            initial={{ opacity: 0, scale: 0.9, x: 40 }}
-            animate={{ opacity: 1, scale: 1, x: 0 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            className="fm-visual"
-            style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              position: 'relative',
-              width: '100%',
-              height: '100%',
+            initial={{ opacity: 0, y: 40 }} 
+            animate={{ opacity: 1, y: [0, -15, 0] }} 
+            transition={{ 
+              opacity: { duration: 1, ease: 'easeOut', delay: 0.2 },
+              y: { duration: 6, ease: 'easeInOut', repeat: Infinity, delay: 0.2 }
             }}
+            className="relative w-full max-w-3xl mx-auto mt-16 px-4 z-20"
           >
-            {/* Elegant UI Mockup accurately representing FMC App QCM view */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: 440, height: 440, transform: 'perspective(1200px) rotateY(-8deg) rotateX(4deg)' }}>
-              {/* Main QCM Card */}
-              <motion.div
-                animate={{ y: [0, -15, 0] }}
-                transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                style={{
-                  position: 'absolute', inset: 0, margin: 'auto', width: '100%', height: '100%',
-                  background: 'rgba(255, 255, 255, 0.90)',
-                  backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-                  borderRadius: 32, padding: 24,
-                  boxShadow: '0 30px 60px -12px rgba(9, 178, 172, 0.2), 0 0 0 1px rgba(255,255,255,0.8) inset, 0 0 0 1px rgba(0,0,0,0.05)',
-                  display: 'flex', flexDirection: 'column'
-                }}
-              >
-                {/* Header matching [moduleId].tsx */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ background: '#09b2ac', color: '#ffffff', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>Q14</span>
-                    <span style={{ background: '#f3f4f6', color: '#4b5563', padding: '4px 8px', borderRadius: 6, fontSize: 13, fontWeight: 700 }}>EMD M23</span>
+            <div className="relative bg-white p-8 md:p-10 rounded-[2rem] md:rounded-[3rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 text-left max-w-2xl mx-auto">
+              <div className="flex justify-between items-center mb-6">
+                <span className="px-4 py-1.5 bg-[#eedcff] text-[#2a0054] rounded-full text-xs font-bold font-['Manrope']">PHYSIOLOGIE</span>
+                <div className="flex gap-1.5">
+                  <span className="w-3.5 h-3.5 rounded-full bg-red-100"></span>
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#09b2ac]/20"></span>
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#9941ff]/20"></span>
+                </div>
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold mb-8 font-['Manrope'] leading-snug text-[#1d1b16]">Lequel de ces mécanismes n'intervient pas dans la régulation de la pression artérielle ?</h3>
+              <div className="space-y-4">
+                <div className="p-4 md:p-5 rounded-2xl bg-[#f9f3e9] border border-slate-200 flex items-center gap-4">
+                  <span className="w-8 h-8 rounded-full border border-[#006a66] text-[#006a66] text-sm flex items-center justify-center font-bold">A</span>
+                  <p className="text-sm md:text-base font-medium">Système Rénine-Angiotensine</p>
+                </div>
+                <div className="p-4 md:p-5 rounded-2xl bg-[#09b2ac]/10 border-2 border-[#09b2ac] flex items-center justify-between shadow-lg shadow-[#09b2ac]/10 relative">
+                  <div className="flex items-center gap-4">
+                    <span className="w-8 h-8 rounded-full bg-[#006a66] text-white text-sm flex items-center justify-center font-bold">B</span>
+                    <p className="text-sm md:text-base font-bold text-[#006a66]">Barorécepteurs carotidiens</p>
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🚩</div>
-                    <div style={{ width: 36, height: 36, borderRadius: 18, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>📥</div>
-                  </div>
+                  <CheckCircle2 size={24} className="text-[#006a66] absolute right-5" />
                 </div>
-                
-                <h3 style={{ fontSize: 16, color: '#111827', lineHeight: 1.5, marginBottom: 24, fontWeight: 500 }}>
-                  Parmi les signes suivants, lequel est typique d'une insuffisance cardiaque gauche ?
-                </h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 'auto' }}>
-                  {/* Option A - Unselected */}
-                  <div style={{ display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, background: '#ffffff', border: '2px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <span style={{ fontWeight: 700, color: '#9ca3af', fontSize: 14 }}>A</span>
-                    </div>
-                    <span style={{ flex: 1, fontSize: 16, color: '#111827', lineHeight: 1.4 }}>Hépatomégalie</span>
-                  </div>
-                  
-                  {/* Option B - Selected & Correct (isSubmitted) */}
-                  <motion.div 
-                    initial={{ background: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
-                    animate={{ background: ['rgba(16, 185, 129, 0.08)', 'rgba(16, 185, 129, 0.15)'], borderColor: ['rgba(16, 185, 129, 0.4)', 'rgba(16, 185, 129, 0.7)'] }}
-                    transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
-                    style={{ 
-                      display: 'flex', alignItems: 'center', padding: '16px', borderRadius: 16, borderWidth: 2, borderStyle: 'solid',
-                      boxShadow: '0 8px 16px rgba(16, 185, 129, 0.1)'
-                    }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 16, background: '#09b2ac', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: 12, boxShadow: '0 2px 8px rgba(9,178,172,0.4)' }}>
-                      <span style={{ fontWeight: 700, color: '#ffffff', fontSize: 14 }}>B</span>
-                    </div>
-                    <span style={{ flex: 1, fontSize: 16, fontWeight: 600, color: '#10b981', lineHeight: 1.4 }}>Dyspnée d'effort</span>
-                    <span style={{ color: '#10b981', fontSize: 20, marginLeft: 8, fontWeight: 800 }}>✓</span>
-                  </motion.div>
+                <div className="p-4 md:p-5 rounded-2xl bg-[#f9f3e9] border border-slate-200 flex items-center gap-4">
+                  <span className="w-8 h-8 rounded-full border border-[#006a66] text-[#006a66] text-sm flex items-center justify-center font-bold">C</span>
+                  <p className="text-sm md:text-base font-medium">Inhibition de l'ADH</p>
                 </div>
-              </motion.div>
-
-              {/* Floating Badge 1 - Progress */}
-              <motion.div
-                animate={{ y: [0, 20, 0] }}
-                transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-                style={{
-                  position: 'absolute', top: -30, right: -60,
-                  background: 'rgba(255, 255, 255, 0.90)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)',
-                  padding: '20px 24px', borderRadius: 24,
-                  boxShadow: '0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.8) inset',
-                  display: 'flex', alignItems: 'center', gap: 16, zIndex: 10
-                }}
-              >
-                <div style={{ position: 'relative', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="60" height="60" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', position: 'absolute' }}>
-                    <circle cx="50" cy="50" r="42" stroke="#f3f4f6" strokeWidth="8" fill="none" />
-                    <motion.circle 
-                      cx="50" cy="50" r="42" stroke="#9941ff" strokeWidth="8" fill="none" 
-                      strokeLinecap="round" strokeDasharray="264" strokeDashoffset="264" 
-                      animate={{ strokeDashoffset: 58 }} // approx 78%
-                      transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
-                    />
-                  </svg>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: '#111827' }}>78%</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', paddingRight: 8 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>Progression</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>Excellente</span>
-                </div>
-              </motion.div>
-
-             
+              </div>
             </div>
+
+            {/* Progress Floating Badge */}
+            <motion.div 
+              animate={{ y: [0, -10, 0] }} 
+              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut", delay: 1 }}
+              className="absolute top-1/2 left-0 md:-left-12 -translate-y-1/2 bg-white p-5 md:p-6 rounded-3xl shadow-2xl border border-slate-100 flex items-center gap-4 md:gap-5 rotate-3"
+            >
+              <div className="relative w-16 h-16">
+                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 64 64">
+                  <circle className="text-[#ede7de]" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="6"></circle>
+                  <motion.circle 
+                    className="text-[#09b2ac]" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" strokeWidth="6"
+                    strokeLinecap="round" strokeDasharray="175.9" strokeDashoffset="175.9"
+                    animate={{ strokeDashoffset: 38.7 }} // 78% progress
+                    transition={{ duration: 1.5, ease: "easeOut", delay: 0.8 }}
+                  ></motion.circle>
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center font-['Manrope'] font-extrabold text-xs md:text-sm text-[#006a66]">78%</span>
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] md:text-xs font-['Manrope'] font-bold text-slate-500 uppercase tracking-widest mb-1">Progression</p>
+                <p className="text-base md:text-lg font-bold text-[#1d1b16] leading-tight">Sémiologie</p>
+              </div>
+            </motion.div>
           </motion.div>
+
         </div>
       </section>
 
-      {/* --- STATS --- */}
-      <section className="fm-stats">
+      {/* Stats Bar */}
+      <section className="px-6 -mt-16 relative z-20">
         <motion.div 
-          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }}
-          variants={staggerContainer}
-          className="fm-container fm-stats-grid"
+          initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
+          className="max-w-6xl mx-auto bg-white p-10 md:p-12 rounded-3xl shadow-2xl shadow-slate-200/50 grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-12 border border-slate-100"
         >
           {STATS.map((stat, i) => <AnimatedStat key={i} stat={stat} />)}
         </motion.div>
       </section>
 
-      {/* --- FEATURES --- */}
-      <section className="fm-features" id="features">
-        <div className="fm-container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn} className="fm-features-header">
-            <span className="fm-badge">Fonctionnalités</span>
-            <h2 className="fm-title" style={{ color: '#fff' }}>Tout ce dont vous avez besoin pour <span className="fm-accent">réussir</span></h2>
-            <p className="fm-subtitle" style={{ color: 'rgba(255,255,255,0.5)' }}>Une plateforme complète conçue spécifiquement pour les étudiants en médecine.</p>
+      {/* Features Section (Dark) */}
+      <section id="features" className="bg-[#262626] text-white pt-40 pb-32 px-6 mt-32 rounded-t-[4rem]">
+        <div className="max-w-7xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="flex flex-col md:flex-row justify-between items-end gap-10 mb-20">
+            <div className="max-w-2xl">
+              <span className="text-[#09b2ac] font-['Manrope'] font-bold uppercase tracking-[0.2em] text-sm block mb-4">Fonctionnalités</span>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-['Manrope'] font-extrabold leading-tight">Étudiez plus intelligemment, pas plus dur.</h2>
+            </div>
+            <p className="text-slate-400 text-lg max-w-sm mb-2">Des outils conçus spécifiquement pour la méthode d'apprentissage médicale.</p>
           </motion.div>
-
-          <motion.div 
-            initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
-            className="fm-features-grid"
-          >
+          
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {FEATURES.map((feat, i) => {
               const Icon = feat.icon
+              const isWide = i === 3
+              
               return (
-                <motion.div 
-                  key={i} variants={fadeIn}
-                  whileHover={{ y: -8, scale: 1.02 }}
-                  className="fm-feature-card"
-                >
-                  {/* Simulated gradient border effect in React */}
-                  <motion.div 
-                    initial={{ opacity: 0 }} whileHover={{ opacity: 1 }}
-                    style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at top left, ${feat.color}40, transparent 60%)`, opacity: 0, zIndex: 0, pointerEvents: 'none' }} 
-                  />
-                  <motion.div 
-                    whileHover={{ scale: 1.1, rotate: -5, boxShadow: `0 0 20px ${feat.color}40` }}
-                    style={{ width: 56, height: 56, background: feat.bg, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, position: 'relative', zIndex: 1 }}
-                  >
-                    <Icon color={feat.color} size={28} />
-                  </motion.div>
-                  <h3 className="fm-feature-title" style={{ position: 'relative', zIndex: 1 }}>{feat.title}</h3>
-                  <p className="fm-feature-desc" style={{ position: 'relative', zIndex: 1 }}>{feat.desc}</p>
+                <motion.div key={i} variants={fadeIn} className={`glass-card p-10 rounded-2xl hover:bg-white/5 transition-all group border border-white/5 ${isWide ? 'md:col-span-2 flex flex-col md:flex-row gap-10 items-center' : ''}`}>
+                  <div className={isWide ? 'flex-1' : ''}>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform" style={{ backgroundColor: feat.bg }}>
+                      <Icon color={feat.color} size={32} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4 font-['Manrope'] text-white">{feat.title}</h3>
+                    <p className="text-slate-400 leading-relaxed font-['Cairo']">{feat.desc}</p>
+                  </div>
+                  
+                  {isWide && (
+                    <div className="flex-1 w-full bg-black/20 p-6 rounded-2xl border border-white/5">
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Moyenne Globale</span>
+                        <span className="text-[#09b2ac] font-bold">14.5/20</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-6">
+                        <motion.div initial={{ width: 0 }} whileInView={{ width: '72%' }} transition={{ duration: 1, delay: 0.5 }} className="h-full bg-[#09b2ac] rounded-full"></motion.div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Cardiologie</span>
+                          <span className="font-bold text-white">88%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Pneumologie</span>
+                          <span className="font-bold text-red-400">42%</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )
             })}
@@ -495,148 +344,167 @@ export default function LandingWeb() {
         </div>
       </section>
 
-      {/* --- PRICING --- */}
-      <section id="tarifs" className="fm-pricing">
-        <div className="fm-container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-pricing-header">
-            <motion.div variants={fadeIn} className="fm-badge">Tarifs</motion.div>
-            <motion.h2 variants={fadeIn} className="fm-title" style={{ color: '#fff', fontSize: 'clamp(2rem, 4vw, 3rem)' }}>Choisissez votre <span className="fm-accent">formule</span></motion.h2>
-            <motion.p variants={fadeIn} className="fm-subtitle" style={{ margin: '16px auto 0' }}>Des offres adaptées à vos besoins pour une révision optimale.</motion.p>
+      {/* Pricing Section */}
+      <section id="tarifs" className="bg-[#262626] pb-32 px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-16">
+            <span className="text-[#09b2ac] font-['Manrope'] font-bold uppercase tracking-[0.2em] text-sm block mb-4">Tarifs</span>
+            <h2 className="text-4xl md:text-5xl font-['Manrope'] font-extrabold text-white mb-6">Investissez dans votre succès</h2>
+            <p className="text-slate-400 max-w-xl mx-auto text-lg">Des tarifs simples pour un accès premium à toutes nos ressources.</p>
           </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-pricing-grid">
-            {/* 10 Days Plan */}
-            <motion.div variants={fadeIn} whileHover={{ y: -8 }} className="fm-pricing-card">
-              <h3 className="fm-pricing-title">10 Jours</h3>
-              <p className="fm-pricing-subtitle">Accès complet pendant 10 jours</p>
-              <div className="fm-pricing-price">
-                200 <span className="fm-pricing-currency">DA</span>
+          
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+            {/* Plan 1 */}
+            <motion.div variants={fadeIn} className="bg-white/5 p-10 md:p-12 rounded-3xl border border-white/5 relative overflow-hidden group hover:bg-white/10 transition-all">
+              <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">10 Jours</h3>
+              <p className="text-slate-400 mb-8 text-sm">Idéal pour la révision d'avant examen.</p>
+              <div className="flex items-baseline gap-2 mb-8">
+                <span className="text-5xl font-extrabold text-white">200</span>
+                <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">DA</span>
               </div>
-              <div className="fm-pricing-features">
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Accès à <b>tous les QCMs</b> de l'année choisie</span>
-                </div>
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Accès pour les QCMs de <b>tous les modules</b></span>
-                </div>
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Ressources importantes (Drive, Chaîne Telegram)</span>
-                </div>
-              </div>
-              <button onClick={goAuth} className="fm-btn fm-btn-pricing fm-btn-pricing-secondary">
-                Choisir cette formule <ChevronRight size={18} />
-              </button>
+              <ul className="space-y-5 mb-10">
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Accès à <b>tous les QCMs</b> et modules</span>
+                </li>
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Statistiques en temps réel via l'application</span>
+                </li>
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Ressources OneDrive et Telegram incluses</span>
+                </li>
+              </ul>
+              <button onClick={goAuth} className="w-full py-4 rounded-xl border border-[#09b2ac]/50 text-[#09b2ac] font-bold font-['Manrope'] hover:bg-[#09b2ac] hover:text-white transition-all">Choisir cette offre</button>
             </motion.div>
 
-            {/* End of Year Plan (Popular) */}
-            <motion.div variants={fadeIn} whileHover={{ y: -8 }} className="fm-pricing-card popular">
-              <div className="fm-pricing-tag">⭐️ Populaire</div>
-              <h3 className="fm-pricing-title">Jusqu'à la fin d'année</h3>
-              <p className="fm-pricing-subtitle">Accès illimité jusqu'à la fin d'année — Meilleure offre</p>
-              <div className="fm-pricing-price">
-                1000 <span className="fm-pricing-currency">DA</span>
+            {/* Plan 2 */}
+            <motion.div variants={fadeIn} className="bg-white/5 p-10 md:p-12 rounded-3xl border-2 border-[#09b2ac] shadow-[0_0_40px_rgba(9,178,172,0.15)] relative overflow-hidden group">
+              <div className="absolute top-6 right-0 bg-[#09b2ac] text-white px-8 py-2 font-bold text-xs tracking-widest uppercase">Populaire</div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#09b2ac]/10 rounded-full translate-x-16 -translate-y-16 blur-2xl"></div>
+              
+              <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">Jusqu'à la fin d'année</h3>
+              <p className="text-slate-400 mb-8 text-sm">Meilleure offre pour une révision sereine.</p>
+              <div className="flex items-baseline gap-2 mb-8 relative z-10">
+                <span className="text-5xl font-extrabold text-white">1000</span>
+                <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">DA</span>
               </div>
-              <div className="fm-pricing-features">
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Accès à <b>tous les QCMs</b> de l'année choisie</span>
-                </div>
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Accès pour les QCMs de <b>tous les modules</b></span>
-                </div>
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Ressources importantes (Drive, Chaîne Telegram)</span>
-                </div>
-                <div className="fm-pricing-feature">
-                  <CheckCircle2 size={20} className="fm-pricing-icon" />
-                  <span>Mises à jour des <b>QCMs en temps réel</b></span>
-                </div>
-              </div>
-              <button onClick={goAuth} className="fm-btn fm-btn-pricing fm-btn-pricing-primary">
-                Commencer maintenant <ChevronRight size={18} />
-              </button>
+              <ul className="space-y-5 mb-10 relative z-10">
+                <li className="flex items-start gap-4 text-slate-300 font-bold">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Accès complet toute l'année</span>
+                </li>
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Mises à jour des QCMs en temps réel</span>
+                </li>
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Mode hors-ligne débloqué</span>
+                </li>
+                <li className="flex items-start gap-4 text-slate-300">
+                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                  <span>Accès notes personnelles &amp; favoris</span>
+                </li>
+              </ul>
+              <button onClick={goAuth} className="w-full py-4 rounded-xl bg-[#09b2ac] text-white font-bold font-['Manrope'] hover:shadow-lg hover:bg-[#0d9488] hover:shadow-[#09b2ac]/30 transition-all relative z-10">Commencer maintenant</button>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* --- POINTS DE VENTE --- */}
-      <section id="points" className="fm-points">
-        <div className="fm-container">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-header">
-            <motion.div variants={fadeIn} className="fm-badge">Points de Vente</motion.div>
-            <motion.h2 variants={fadeIn} className="fm-title" style={{ color: '#fff' }}>Nos <span className="fm-accent">Partenaires</span></motion.h2>
-            <motion.p variants={fadeIn} className="fm-subtitle" style={{ margin: '16px auto 0', color: 'rgba(255,255,255,0.5)' }}>Procurez-vous votre abonnement dans l'un de nos points de vente.</motion.p>
+      {/* Points de Vente Section */}
+      <section id="points" className="py-32 px-6 bg-[#262626] border-t border-white/5">
+        <div className="max-w-7xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-20">
+            <span className="text-[#9941ff] font-['Manrope'] font-bold uppercase tracking-[0.2em] text-sm block mb-4">Disponibilité</span>
+            <h2 className="text-4xl md:text-5xl font-['Manrope'] font-extrabold text-white mb-6">Où acheter votre code ?</h2>
+            <p className="text-slate-400 text-lg">Nos partenaires vous accueillent pour activer votre abonnement FMC App.</p>
           </motion.div>
-
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="fm-points-grid">
+          
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {SELLING_POINTS.map((point, i) => (
-              <motion.div key={i} variants={fadeIn} whileHover={{ y: -6 }} className="fm-point-card">
-                <div className="fm-point-emoji">{point.emoji}</div>
-                <div className="fm-point-info">
-                  <h4 className="fm-point-name">{point.name}</h4>
-                  <span className="fm-point-city">{point.city}</span>
-                  {point.desc && <p style={{ fontSize: '0.8125rem', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontFamily: 'Cairo, sans-serif' }}>{point.desc}</p>}
+              <motion.div key={i} variants={fadeIn} className="bg-white/5 p-8 rounded-2xl border border-white/10 text-right group hover:bg-white/10 hover:-translate-y-1 transition-all">
+                <div className="flex justify-between items-start mb-6">
+                  {point.link && (
+                    <a href={point.link} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#09b2ac] transition-all">
+                      <MapPin size={22} />
+                    </a>
+                  )}
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-bold font-['Manrope']" style={{ color: point.color, backgroundColor: `${point.color}20` }}>
+                      {point.city}
+                    </span>
+                    <span className="text-4xl leading-none" role="img" aria-label={point.name}>{point.emoji}</span>
+                  </div>
                 </div>
-                {point.link && (
-                  <a href={point.link} target="_blank" rel="noreferrer" title="Voir sur Google Maps" style={{ width: 44, height: 44, background: 'rgba(9,178,172,0.1)', color: '#09b2ac', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, textDecoration: 'none', transition: 'all 0.2s', marginLeft: 'auto' }} onMouseEnter={(e) => { e.currentTarget.style.background = '#09b2ac'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'scale(1.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(9,178,172,0.1)'; e.currentTarget.style.color = '#09b2ac'; e.currentTarget.style.transform = 'scale(1)'; }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  </a>
-                )}
+                <h3 className="text-2xl font-bold text-white mb-2 font-['Cairo']">{point.name}</h3>
+                <p className="text-slate-400 text-sm mb-6 font-['Cairo']">{point.desc}</p>
+                <div className="flex items-center justify-end gap-2 lowercase" style={{ color: point.color }}>
+                  <span className="text-xs font-bold uppercase tracking-widest text-[#09b2ac]">Disponible</span>
+                  <span className="w-2 h-2 rounded-full bg-[#09b2ac] animate-pulse"></span>
+                </div>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      {/* --- FOOTER --- */}
-      <footer className="fm-footer">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="fm-container fm-footer-inner">
-          <motion.div variants={fadeIn}>
-            <div className="fm-footer-brand-row">
-              <img src="/logo.png" alt="FMC App" className="fm-footer-logo" />
-              <span className="fm-footer-name">FMC App</span>
+      {/* Footer */}
+      <footer className="bg-[#fff9ef] w-full relative z-10 border-t border-slate-200 py-16 text-sm font-['Manrope']">
+        <div className="max-w-7xl mx-auto px-8 md:px-12 w-full grid grid-cols-1 md:grid-cols-4 gap-12 text-slate-600">
+          
+          <div className="flex flex-col gap-6 md:pr-8">
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="FMC App Logo" className="w-10 h-10 rounded-xl" />
+              <span className="text-2xl font-extrabold text-[#1d1b16] font-['Manrope'] tracking-tight">FMC App</span>
             </div>
-            <p className="fm-footer-tagline">Study Everywhere — La plateforme de révision pour les étudiants en médecine de Constantine.</p>
-          </motion.div>
-          <motion.div variants={fadeIn} className="fm-footer-links">
-            <h4 className="fm-footer-heading">Liens Rapides</h4>
-            <a href="#features" className="fm-footer-link">Fonctionnalités</a>
-            <a href="#how" className="fm-footer-link">Comment ça marche</a>
-            <a href="#points" className="fm-footer-link">Points de vente</a>
-          </motion.div>
-          <motion.div variants={fadeIn} className="fm-footer-links">
-            <h4 className="fm-footer-heading">Suivez-nous</h4>
-            <a href="https://t.me/FMC_App" target="_blank" rel="noreferrer" className="fm-footer-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg> Telegram
-            </a>
-            <a href="https://www.instagram.com/fmc.app" target="_blank" rel="noreferrer" className="fm-footer-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg> Instagram
-            </a>
-            <a href="https://www.facebook.com/profile.php?id=61585713960728" target="_blank" rel="noreferrer" className="fm-footer-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg> Facebook
-            </a>
-          </motion.div>
-          <motion.div variants={fadeIn} className="fm-footer-links">
-            <h4 className="fm-footer-heading">Contact</h4>
-            <a href="mailto:fmc.app.contact@gmail.com" className="fm-footer-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg> fmc.app.contact@gmail.com
-            </a>
-            <a href="https://play.google.com/store/apps/details?id=com.fmcapp.mobile" target="_blank" rel="noreferrer" className="fm-footer-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg> Google Play Store
-            </a>
-          </motion.div>
-        </motion.div>
-        <div className="fm-footer-bottom">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeIn} className="fm-container fm-footer-bottom-inner">
-            <span>&copy; 2026 FMC App. Tous droits réservés.</span>
-            <span>Faculté de Médecine de Constantine</span>
-          </motion.div>
+            <p className="leading-relaxed font-['Cairo'] text-slate-500">
+              Study Everywhere — La plateforme de révision pour les étudiants en médecine de Constantine.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <h4 className="text-slate-400 font-extrabold text-[11px] uppercase tracking-widest">Liens Rapides</h4>
+            <nav className="flex flex-col gap-4 font-['Cairo'] text-[15px]">
+              <a className="hover:text-[#006a66] transition-colors" href="#features">Fonctionnalités</a>
+              <a className="hover:text-[#006a66] transition-colors" href="#">Comment ça marche</a>
+              <a className="hover:text-[#006a66] transition-colors" href="#points">Points de vente</a>
+            </nav>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <h4 className="text-slate-400 font-extrabold text-[11px] uppercase tracking-widest">Suivez-Nous</h4>
+            <nav className="flex flex-col gap-4 font-['Cairo'] text-[15px]">
+              <a className="hover:text-[#006a66] transition-colors flex items-center gap-3" href="https://t.me/FMC_App" target="_blank" rel="noreferrer">
+                <Send size={18} className="text-slate-400" /> Telegram
+              </a>
+              <a className="hover:text-[#006a66] transition-colors flex items-center gap-3" href="https://www.instagram.com/fmc.app" target="_blank" rel="noreferrer">
+                <Instagram size={18} className="text-slate-400" /> Instagram
+              </a>
+              <a className="hover:text-[#006a66] transition-colors flex items-center gap-3" href="#" target="_blank" rel="noreferrer">
+                <Facebook size={18} className="text-slate-400" /> Facebook
+              </a>
+            </nav>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <h4 className="text-slate-400 font-extrabold text-[11px] uppercase tracking-widest">Contact</h4>
+            <nav className="flex flex-col gap-4 font-['Cairo'] text-[15px]">
+              <a className="hover:text-[#006a66] transition-colors flex items-center gap-3" href="mailto:fmc.app.contact@gmail.com">
+                <Mail size={18} className="text-slate-400" /> fmc.app.contact@gmail.com
+              </a>
+              <a className="hover:text-[#006a66] transition-colors flex items-center gap-3" href="https://play.google.com/store/apps/details?id=com.fmcapp.mobile" target="_blank" rel="noreferrer">
+                <Smartphone size={18} className="text-slate-400" /> Google Play Store
+              </a>
+            </nav>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-8 md:px-12 mt-16 pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left text-slate-500 font-['Cairo'] text-[13px]">
+          <p>© 2026 FMC App. Tous droits réservés.</p>
+          <p>Faculté de Médecine de Constantine</p>
         </div>
       </footer>
     </div>
