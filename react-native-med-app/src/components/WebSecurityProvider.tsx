@@ -82,45 +82,9 @@ export function WebSecurityProvider({
     return <>{children}</>;
   }
 
-  // Generate a pattern for watermarking
-  const emailText = "fmc app";
-  const watermarkText = Array.from({ length: 50 })
-    .map(() => emailText)
-    .join("     ");
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* Dynamic Watermark Background */}
-      <View
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 50, // Over all content
-          opacity: 0.04, // Very faint
-          overflow: "hidden",
-          pointerEvents: "none", // Clicks pass through
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "#000",
-            transform: [{ rotate: "-30deg" }],
-            width: "200%",
-            height: "200%",
-            marginTop: "-50%",
-            marginLeft: "-50%",
-            lineHeight: 60,
-          }}
-          selectable={false}
-        >
-          {watermarkText}
-        </Text>
-      </View>
 
       {/* Main Content wrapper */}
       <View

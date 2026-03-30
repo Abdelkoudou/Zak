@@ -1,8 +1,9 @@
-name: Nightly Backup
+name: Bi-Weekly Backup
 
 on:
   schedule:
-    - cron: "0 2 * * *" # Runs at 2 AM daily
+    # Runs at 2 AM on Sundays (0) and Thursdays (4)
+    - cron: "0 2 * * 0,4" 
   workflow_dispatch: # Allows manual trigger
 
 permissions:
@@ -39,5 +40,5 @@ jobs:
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          commit_message: Nightly Supabase backup
+          commit_message: Bi-Weekly Supabase backup
           file_pattern: backups/*.sql
