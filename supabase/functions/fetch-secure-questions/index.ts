@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const jwt = authHeader.replace(/^Bearer\s+/i, '');
+    const jwt = authHeader.replace(/^Bearer +/i, '').trim();
     const { data: { user }, error: userError } = await userClient.auth.getUser(jwt);
 
     if (userError || !user) {
@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
     if (year && year.toString().trim() !== '') {
       query = query.eq('year', year);
     }
-    if (exam_year) {
+    if (exam_year !== undefined && exam_year !== null && exam_year.toString().trim() !== '') {
       query = query.eq('exam_year', exam_year);
     }
 
@@ -98,13 +98,18 @@ Deno.serve(async (req: Request) => {
       .order('exam_type', { ascending: true })
       .order('number', { ascending: true });
 
-    // Pagination — only apply when client explicitly requests it
-    if (limit && offset !== undefined && offset !== null) {
+    // Pagination — validate and sanitize inputs, only apply when client explicitly requests it
+    const parsedLimit = typeof limit === 'number' ? limit : Number(limit);
+    const parsedOffset = typeof offset === 'number' ? offset : Number(offset);
+    const validLimit = Number.isFinite(parsedLimit) && Number.isInteger(parsedLimit) && parsedLimit > 0 ? parsedLimit : null;
+    const validOffset = Number.isFinite(parsedOffset) && Number.isInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
+
+    if (validLimit && offset !== undefined && offset !== null) {
       // Both limit and offset provided: use range-based pagination
-      query = query.range(offset, offset + limit - 1);
-    } else if (limit) {
+      query = query.range(validOffset, validOffset + validLimit - 1);
+    } else if (validLimit) {
       // Only limit provided: cap the results
-      query = query.limit(limit);
+      query = query.limit(validLimit);
     }
 
     const { data: questions, count, error: fetchError } = await query;
@@ -113,15 +118,22 @@ Deno.serve(async (req: Request) => {
       throw fetchError;
     }
 
-    await adminClient.from("security_audit_logs").insert({
+    const auditPayload = {
       user_id: user.id,
       action: "fetch_secure_questions",
       resource_id: `module:${module_name || 'all'}|exam:${exam_type || 'all'}`,
       ip_address: req.headers.get("x-forwarded-for") || "unknown",
       user_agent: req.headers.get("user-agent") || "unknown",
-    });
+    };
+    const { error: auditError } = await adminClient.from("security_audit_logs").insert(auditPayload);
+    if (auditError) {
+      console.error("[AuditLog] Failed to insert security audit log:", auditError.message, auditPayload);
+    }
 
     const encryptionKey = Deno.env.get("SECRET_PAYLOAD_KEY") || "default_dev_key_change_in_prod!";
+    if (!Deno.env.get("SECRET_PAYLOAD_KEY")) {
+      console.warn("[Config] SECRET_PAYLOAD_KEY not set, using fallback key. Set this in production!");
+    }
     
     // Return both questions correctly mapped and the count
     const encryptedResponse = encryptData({ data: questions || [], count: count || 0 }, encryptionKey);
