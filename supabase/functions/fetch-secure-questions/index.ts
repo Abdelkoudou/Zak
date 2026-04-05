@@ -63,8 +63,8 @@ Deno.serve(async (req: Request) => {
       cours, 
       year, 
       exam_year, 
-      limit = 50, 
-      offset = 0 
+      limit, 
+      offset 
     } = body;
 
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
@@ -98,12 +98,13 @@ Deno.serve(async (req: Request) => {
       .order('exam_type', { ascending: true })
       .order('number', { ascending: true });
 
-    // Pagination
-    if (limit) {
+    // Pagination — only apply when client explicitly requests it
+    if (limit && offset !== undefined && offset !== null) {
+      // Both limit and offset provided: use range-based pagination
+      query = query.range(offset, offset + limit - 1);
+    } else if (limit) {
+      // Only limit provided: cap the results
       query = query.limit(limit);
-    }
-    if (offset !== undefined && offset !== null) {
-      query = query.range(offset, offset + (limit || 20) - 1);
     }
 
     const { data: questions, count, error: fetchError } = await query;
