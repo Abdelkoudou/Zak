@@ -651,8 +651,9 @@ export default function ModuleDetailScreen() {
                   </View>
                   <ScrollView 
                     horizontal 
-                    showsHorizontalScrollIndicator={false} 
-                    contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}
+                    showsHorizontalScrollIndicator={true} 
+                    contentContainerStyle={{ gap: 8, paddingHorizontal: 4, paddingBottom: 8 }}
+                    style={{ maxHeight: 56 }}
                   >
                     {Array.from({ length: maxQuestions }, (_, i) => i + 1).map((num) => (
                       <TouchableOpacity
