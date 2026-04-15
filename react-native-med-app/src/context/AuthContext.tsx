@@ -94,6 +94,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
   // Track user-initiated signouts to distinguish from accidental ones (e.g., failed token refresh)
   const userInitiatedSignOut = useRef(false);
+  // Guard against parallel session recovery attempts (e.g., multiple SIGNED_OUT events firing in rapid succession)
+  const isRecoveringSession = useRef(false);
 
   // Check for existing session on mount
   useEffect(() => {
@@ -147,12 +149,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false);
         } else {
           // Unexpected signout (e.g., failed token refresh after app resume)
-          // Try to recover the session before giving up
+          // Guard: skip if another recovery is already in progress
+          if (isRecoveringSession.current) {
+            if (__DEV__) {
+              console.log(
+                "[Auth] Skipping SIGNED_OUT recovery — already in progress",
+              );
+            }
+            return;
+          }
+
           if (__DEV__) {
             console.log(
               "[Auth] Unexpected SIGNED_OUT event — attempting session recovery...",
             );
           }
+
+          isRecoveringSession.current = true;
           try {
             const {
               data: { session: recoveredSession },
@@ -176,6 +189,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 recoveryException,
               );
             }
+          } finally {
+            isRecoveringSession.current = false;
           }
           // Recovery failed — truly signed out
           if (__DEV__) {
