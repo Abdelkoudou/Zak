@@ -868,6 +868,43 @@ $$;
 ALTER FUNCTION "public"."get_all_module_question_counts"() OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."club_registrations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "full_name" "text" NOT NULL,
+    "email" "text" NOT NULL,
+    "phone" "text" NOT NULL,
+    "faculty" "text" NOT NULL,
+    "year_of_study" "text" NOT NULL,
+    "department" "text",
+    "motivation" "text" NOT NULL,
+    "skills" "text",
+    "previous_experience" "text",
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "linkedin_url" "text",
+    "portfolio_url" "text",
+    CONSTRAINT "club_registrations_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'approved'::"text", 'rejected'::"text"])))
+);
+
+
+ALTER TABLE "public"."club_registrations" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."club_registrations" IS 'Registration submissions for the Axium Scientific Club';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."get_club_registrations"() RETURNS SETOF "public"."club_registrations"
+    LANGUAGE "sql" SECURITY DEFINER
+    AS $$
+  SELECT * FROM club_registrations ORDER BY created_at DESC;
+$$;
+
+
+ALTER FUNCTION "public"."get_club_registrations"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_cours_with_counts"("p_module_name" "text") RETURNS TABLE("cours_name" "text", "question_count" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2255,6 +2292,11 @@ ALTER TABLE ONLY "public"."chat_sessions"
 
 
 
+ALTER TABLE ONLY "public"."club_registrations"
+    ADD CONSTRAINT "club_registrations_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."course_resources"
     ADD CONSTRAINT "course_resources_pkey" PRIMARY KEY ("id");
 
@@ -2367,6 +2409,11 @@ ALTER TABLE ONLY "public"."subscription_plans"
 
 ALTER TABLE ONLY "public"."test_attempts"
     ADD CONSTRAINT "test_attempts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."club_registrations"
+    ADD CONSTRAINT "unique_email" UNIQUE ("email");
 
 
 
@@ -2514,6 +2561,14 @@ CREATE INDEX "idx_caisse_transactions_type" ON "public"."caisse_transactions" US
 
 
 CREATE INDEX "idx_chat_logs_session_id" ON "public"."chat_logs" USING "btree" ("session_id");
+
+
+
+CREATE INDEX "idx_club_registrations_email" ON "public"."club_registrations" USING "btree" ("email");
+
+
+
+CREATE INDEX "idx_club_registrations_status" ON "public"."club_registrations" USING "btree" ("status");
 
 
 
@@ -3069,7 +3124,23 @@ CREATE POLICY "Admins update reports" ON "public"."question_reports" FOR UPDATE 
 
 
 
+CREATE POLICY "Allow anonymous inserts" ON "public"."club_registrations" FOR INSERT TO "anon" WITH CHECK (true);
+
+
+
 CREATE POLICY "Allow anonymous profile creation" ON "public"."users" FOR INSERT TO "anon" WITH CHECK ((("role" = 'student'::"public"."user_role") AND ("email" IS NOT NULL) AND ("full_name" IS NOT NULL)));
+
+
+
+CREATE POLICY "Allow anonymous read" ON "public"."club_registrations" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "Allow authenticated read" ON "public"."club_registrations" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Allow authenticated update" ON "public"."club_registrations" FOR UPDATE TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
@@ -3426,6 +3497,9 @@ ALTER TABLE "public"."chat_messages" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."chat_sessions" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."club_registrations" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."course_resources" ENABLE ROW LEVEL SECURITY;
 
 
@@ -3488,6 +3562,10 @@ ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."app_config";
 
 
 ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."device_sessions";
+
+
+
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."subscription_plans";
 
 
 
@@ -4133,6 +4211,18 @@ GRANT ALL ON FUNCTION "public"."get_all_cours_counts"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_all_module_question_counts"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_all_module_question_counts"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_all_module_question_counts"() TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."club_registrations" TO "anon";
+GRANT ALL ON TABLE "public"."club_registrations" TO "authenticated";
+GRANT ALL ON TABLE "public"."club_registrations" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_club_registrations"() TO "anon";
+GRANT ALL ON FUNCTION "public"."get_club_registrations"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_club_registrations"() TO "service_role";
 
 
 
