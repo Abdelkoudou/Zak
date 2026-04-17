@@ -6,9 +6,11 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    // Explicitly pin AGP 8.8.2 to match the version declared in @react-native/gradle-plugin.
-    // This ensures a consistent AgpVersionAttr across all sub-projects (fixes Gradle 8.13 variant resolution).
-    classpath('com.android.tools.build:gradle:8.8.2')
+    // DO NOT pin AGP explicitly here. The React Native Gradle Plugin (included
+    // via settings.gradle -> includeBuild) manages AGP internally. Pinning AGP
+    // 8.8.2 here stamps AgpVersionAttr=8.8.2 on the consumer, but the
+    // autolinked sub-projects (built by the RN plugin) declare no variants,
+    // which causes the "No matching variant / No variants exist" fatal error.
     classpath('com.facebook.react:react-native-gradle-plugin')
     classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }

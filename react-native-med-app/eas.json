@@ -10,13 +10,15 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "sdk-53"
       },
       "node": "20.18.0"
     },
     "production": {
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "image": "sdk-53"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -26,7 +28,8 @@
     "apk": {
       "extends": "production",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "image": "sdk-53"
       }
     }
   },
