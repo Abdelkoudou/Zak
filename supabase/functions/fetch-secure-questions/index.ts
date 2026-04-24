@@ -49,7 +49,16 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: userError } = await userClient.auth.getUser(jwt);
 
     if (userError || !user) {
-        return new Response(JSON.stringify({ error: "Unauthorized", details: userError?.message || "User not found" }), {
+        const errorMessage = userError?.message || "User not found";
+        const errorCode = errorMessage.toLowerCase().includes('session_not_found') || errorMessage.toLowerCase().includes("doesn't exist")
+          ? 'session_not_found'
+          : errorMessage.toLowerCase().includes('expired')
+          ? 'token_expired'
+          : 'invalid_token';
+
+        console.warn(`[Auth] User validation failed: code=${errorCode}, message=${errorMessage}`);
+
+        return new Response(JSON.stringify({ error: "Unauthorized", code: errorCode, details: errorMessage }), {
             status: 401,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

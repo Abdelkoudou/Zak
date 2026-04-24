@@ -96,6 +96,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const userInitiatedSignOut = useRef(false);
   // Guard against parallel session recovery attempts (e.g., multiple SIGNED_OUT events firing in rapid succession)
   const isRecoveringSession = useRef(false);
+  // Time-based cooldown to prevent recovery loops (e.g., refreshSession() triggering another SIGNED_OUT)
+  const lastRecoveryAttempt = useRef<number>(0);
+  const RECOVERY_COOLDOWN_MS = 5000; // 5 seconds
 
   // Check for existing session on mount
   useEffect(() => {
@@ -149,6 +152,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setIsLoading(false);
         } else {
           // Unexpected signout (e.g., failed token refresh after app resume)
+          // Guard: skip if within cooldown period from a recent recovery attempt
+          const now = Date.now();
+          if (now - lastRecoveryAttempt.current < RECOVERY_COOLDOWN_MS) {
+            if (__DEV__) {
+              console.log(
+                "[Auth] Skipping SIGNED_OUT recovery — within cooldown period",
+              );
+            }
+            return;
+          }
+
           // Guard: skip if another recovery is already in progress
           if (isRecoveringSession.current) {
             if (__DEV__) {
@@ -166,6 +180,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
 
           isRecoveringSession.current = true;
+          lastRecoveryAttempt.current = Date.now();
           try {
             const {
               data: { session: recoveredSession },

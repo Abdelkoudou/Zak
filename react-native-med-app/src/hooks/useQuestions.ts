@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import { QuestionWithAnswers, ExamType, YearLevel } from '@/types';
 import { OfflineContentService } from '@/lib/offline-content';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 
 // ============================================================================
 // Types
@@ -40,6 +40,28 @@ const getExamTypeWeight = (type: string | undefined | null) => {
   if (t.includes('residanat')) return 3;
   return 10;
 };
+
+/**
+ * Invokes the fetch-secure-questions Edge Function with:
+ * 1. Proactive session refresh (ensureValidSession)
+ * 2. Single-retry on 401 (refresh token + retry once)
+ */
+async function invokeWithRetry(
+  body: Record<string, unknown>
+): Promise<{ data: any; error: { message: string } | null }> {
+  await ensureValidSession();
+
+  const { data, error } = await supabase.functions.invoke('fetch-secure-questions', { body });
+
+  if (error && (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('session_not_found'))) {
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (!refreshError) {
+      return supabase.functions.invoke('fetch-secure-questions', { body });
+    }
+  }
+
+  return { data, error };
+}
 
 function sortQuestions(questions: QuestionWithAnswers[]): QuestionWithAnswers[] {
   return questions.sort((a, b) => {
@@ -133,10 +155,8 @@ async function fetchQuestions(filters: QuestionFilters): Promise<QuestionsResult
     }
   }
 
-  // Fallback to Secure Edge Function (Layer 6 Protection)
-  const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
-    body: filters,
-  });
+  // Fallback to Secure Edge Function (with session validation + retry)
+  const { data: edgeResponse, error } = await invokeWithRetry(filters as Record<string, unknown>);
 
   if (error) {
     throw new Error(error.message);
@@ -192,9 +212,7 @@ export function useQuestionById(id: string) {
   return useQuery({
     queryKey: queryKeys.questions.detail(id),
     queryFn: async () => {
-      const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
-        body: { id },
-      });
+      const { data: edgeResponse, error } = await invokeWithRetry({ id });
 
       if (error) throw new Error(error.message);
 

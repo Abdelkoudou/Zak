@@ -2,9 +2,45 @@
 // Questions Service
 // ============================================================================
 
-import { supabase } from './supabase'
+import { supabase, ensureValidSession } from './supabase'
 import { Question, QuestionWithAnswers, ExamType, YearLevel } from '@/types'
 import { OfflineContentService } from './offline-content'
+
+// ============================================================================
+// Edge Function Invocation with Retry
+// ============================================================================
+
+/**
+ * Invokes the fetch-secure-questions Edge Function with:
+ * 1. Proactive session refresh (ensureValidSession)
+ * 2. Single-retry on 401 (refresh token + retry once)
+ */
+async function invokeWithRetry(
+  body: Record<string, unknown>
+): Promise<{ data: any; error: { message: string } | null }> {
+  // Step 1: Proactively refresh if token is near expiry
+  await ensureValidSession();
+
+  // Step 2: First attempt
+  const { data, error } = await supabase.functions.invoke('fetch-secure-questions', { body });
+
+  // Step 3: If 401, refresh session and retry ONCE
+  if (error && (error.message?.includes('401') || error.message?.includes('Unauthorized') || error.message?.includes('session_not_found'))) {
+    if (__DEV__) {
+      console.log('[Questions] 401 received, attempting token refresh and retry...');
+    }
+    const { error: refreshError } = await supabase.auth.refreshSession();
+    if (!refreshError) {
+      // Retry with fresh token
+      return supabase.functions.invoke('fetch-secure-questions', { body });
+    }
+    if (__DEV__) {
+      console.warn('[Questions] Token refresh failed, cannot retry:', refreshError.message);
+    }
+  }
+
+  return { data, error };
+}
 
 // ============================================================================
 // Get Questions with Answers
@@ -114,10 +150,8 @@ export async function getQuestions(filters: QuestionFilters): Promise<{
       }
     }
 
-    // Fallback to Secure Edge Function
-    const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
-      body: filters
-    })
+    // Fallback to Secure Edge Function (with session validation + retry)
+    const { data: edgeResponse, error } = await invokeWithRetry(filters as Record<string, unknown>)
 
     if (error) {
       return { questions: [], total: 0, error: error.message }
@@ -298,9 +332,7 @@ export async function getQuestionById(id: string): Promise<{
   error: string | null
 }> {
   try {
-    const { data: edgeResponse, error } = await supabase.functions.invoke('fetch-secure-questions', {
-      body: { id }
-    })
+    const { data: edgeResponse, error } = await invokeWithRetry({ id })
 
     if (error) {
       return { question: null, error: error.message }
