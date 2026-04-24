@@ -269,6 +269,7 @@ function QuestionsPageContent() {
 
   // Auto-fetch existing question numbers when module/exam context changes
   useEffect(() => {
+    let cancelled = false;
     const fetchExistingNumbers = async () => {
       // Only fetch if we have the required fields and not editing
       if (formData.year && formData.moduleId && formData.examType && !editingId) {
@@ -280,6 +281,8 @@ function QuestionsPageContent() {
           exam_type: formData.examType,
           exam_year: formData.examYear,
         });
+        // Skip if this effect was superseded (e.g., editingId changed while we were fetching)
+        if (cancelled) return;
         if (result.success && result.data) {
           const numbers = result.data.existingNumbers as number[];
           setExistingNumbers(numbers);
@@ -294,6 +297,7 @@ function QuestionsPageContent() {
       }
     };
     fetchExistingNumbers();
+    return () => { cancelled = true; };
   }, [formData.year, formData.moduleId, formData.subDisciplineId, formData.examType, formData.examYear, editingId]);
 
   // Reload when filters change

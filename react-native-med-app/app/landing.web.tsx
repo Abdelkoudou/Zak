@@ -5,8 +5,36 @@ import {
   FileText, Wifi, Target, BarChart2, BookOpen, Clock,
   Play, Smartphone, ChevronRight, Menu, X, Mail, CheckCircle2,
   ArrowRight, MapPin, Map, Share2, Award, Camera,
-  HelpCircle, CloudOff, Filter, Edit3, Send, Instagram, Facebook
+  HelpCircle, CloudOff, Filter, Edit3, Send, Instagram, Facebook,
+  Loader2
 } from 'lucide-react'
+import { supabase } from '../src/lib/supabase'
+
+// --- Types ---
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  duration_days: number;
+  price: number;
+  is_active: boolean;
+  sort_order: number;
+  is_featured: boolean;
+  description: string | null;
+}
+
+// Default features included in all plans
+const PLAN_FEATURES_DEFAULT = [
+  'Accès à <b>tous les QCMs</b> et modules',
+  'Statistiques en temps réel via l\'application',
+  'Ressources OneDrive et Telegram incluses',
+];
+
+const PLAN_FEATURES_FEATURED = [
+  'Accès complet toute l\'année',
+  'Mises à jour des QCMs en temps réel',
+  'Mode hors-ligne débloqué',
+  'Accès notes personnelles & favoris',
+];
 
 // --- Constants & Data ---
 const STATS = [
@@ -359,75 +387,8 @@ export default function LandingWeb() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="tarifs" className="bg-[#262626] pb-32 px-6">
-        <div className="max-w-5xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-16">
-            <span className="text-[#09b2ac] font-['Manrope'] font-bold uppercase tracking-[0.2em] text-sm block mb-4">Tarifs</span>
-            <h2 className="text-4xl md:text-5xl font-['Manrope'] font-extrabold text-white mb-6">Investissez dans votre succès</h2>
-            <p className="text-slate-400 max-w-xl mx-auto text-lg">Des tarifs simples pour un accès premium à toutes nos ressources.</p>
-          </motion.div>
-          
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-            {/* Plan 1 */}
-            <motion.div variants={fadeIn} className="bg-white/5 p-10 md:p-12 rounded-3xl border border-white/5 relative overflow-hidden group hover:bg-white/10 transition-all">
-              <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">10 Jours</h3>
-              <p className="text-slate-400 mb-8 text-sm">Idéal pour la révision d'avant examen.</p>
-              <div className="flex items-baseline gap-2 mb-8">
-                <span className="text-5xl font-extrabold text-white">200</span>
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">DA</span>
-              </div>
-              <ul className="space-y-5 mb-10">
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Accès à <b>tous les QCMs</b> et modules</span>
-                </li>
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Statistiques en temps réel via l'application</span>
-                </li>
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Ressources OneDrive et Telegram incluses</span>
-                </li>
-              </ul>
-              <button onClick={goAuth} className="w-full py-4 rounded-xl border border-[#09b2ac]/50 text-[#09b2ac] font-bold font-['Manrope'] hover:bg-[#09b2ac] hover:text-white transition-all">Choisir cette offre</button>
-            </motion.div>
-
-            {/* Plan 2 */}
-            <motion.div variants={fadeIn} className="bg-white/5 p-10 md:p-12 rounded-3xl border-2 border-[#09b2ac] shadow-[0_0_40px_rgba(9,178,172,0.15)] relative overflow-hidden group">
-              <div className="absolute top-6 right-0 bg-[#09b2ac] text-white px-8 py-2 font-bold text-xs tracking-widest uppercase">Populaire</div>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#09b2ac]/10 rounded-full translate-x-16 -translate-y-16 blur-2xl"></div>
-              
-              <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">Jusqu'à la fin d'année</h3>
-              <p className="text-slate-400 mb-8 text-sm">Meilleure offre pour une révision sereine.</p>
-              <div className="flex items-baseline gap-2 mb-8 relative z-10">
-                <span className="text-5xl font-extrabold text-white">1000</span>
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">DA</span>
-              </div>
-              <ul className="space-y-5 mb-10 relative z-10">
-                <li className="flex items-start gap-4 text-slate-300 font-bold">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Accès complet toute l'année</span>
-                </li>
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Mises à jour des QCMs en temps réel</span>
-                </li>
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Mode hors-ligne débloqué</span>
-                </li>
-                <li className="flex items-start gap-4 text-slate-300">
-                  <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
-                  <span>Accès notes personnelles &amp; favoris</span>
-                </li>
-              </ul>
-              <button onClick={goAuth} className="w-full py-4 rounded-xl bg-[#09b2ac] text-white font-bold font-['Manrope'] hover:shadow-lg hover:bg-[#0d9488] hover:shadow-[#09b2ac]/30 transition-all relative z-10">Commencer maintenant</button>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      {/* Pricing Section - Dynamically synced with database */}
+      <PricingSection goAuth={goAuth} />
 
       {/* Points de Vente Section */}
       <section id="points" className="py-32 px-6 bg-[#262626] border-t border-white/5">
@@ -523,5 +484,173 @@ export default function LandingWeb() {
         </div>
       </footer>
     </div>
+  )
+}
+
+// ============================================================================
+// PricingSection - Dynamically synced with database
+// ============================================================================
+
+function PricingSection({ goAuth }: { goAuth: () => void }) {
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+
+        if (fetchError) {
+          console.error('[Landing] Error fetching plans:', fetchError)
+          setError(true)
+          return
+        }
+
+        if (data && data.length > 0) {
+          setPlans(data as SubscriptionPlan[])
+        } else {
+          setError(true)
+        }
+      } catch (err) {
+        console.error('[Landing] Failed to fetch plans:', err)
+        setError(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPlans()
+  }, [])
+
+  // Helper to format duration for display
+  const formatDuration = (days: number): string => {
+    if (days >= 365) {
+      const years = Math.floor(days / 365)
+      return years === 1 ? "1 an" : `${years} ans`
+    }
+    if (days >= 30) {
+      const months = Math.round(days / 30)
+      return `${months} mois`
+    }
+    return `${days} jours`
+  }
+
+  // Determine grid columns based on plan count
+  const gridCols = plans.length === 1 
+    ? 'grid-cols-1 max-w-lg mx-auto' 
+    : plans.length === 3 
+      ? 'grid-cols-1 md:grid-cols-3' 
+      : 'grid-cols-1 md:grid-cols-2'
+
+  return (
+    <section id="tarifs" className="bg-[#262626] pb-32 px-6">
+      <div className="max-w-5xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-16">
+          <span className="text-[#09b2ac] font-['Manrope'] font-bold uppercase tracking-[0.2em] text-sm block mb-4">Tarifs</span>
+          <h2 className="text-4xl md:text-5xl font-['Manrope'] font-extrabold text-white mb-6">Investissez dans votre succès</h2>
+          <p className="text-slate-400 max-w-xl mx-auto text-lg">Des tarifs simples pour un accès premium à toutes nos ressources.</p>
+        </motion.div>
+
+        {loading ? (
+          /* Loading skeleton */
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10`}>
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-white/5 p-10 md:p-12 rounded-3xl border border-white/5 animate-pulse">
+                <div className="h-7 w-32 bg-white/10 rounded-lg mb-3" />
+                <div className="h-4 w-48 bg-white/5 rounded mb-8" />
+                <div className="flex items-baseline gap-2 mb-8">
+                  <div className="h-14 w-24 bg-white/10 rounded-lg" />
+                  <div className="h-5 w-8 bg-white/5 rounded" />
+                </div>
+                <div className="space-y-5 mb-10">
+                  {[1, 2, 3].map((j) => (
+                    <div key={j} className="h-5 bg-white/5 rounded w-3/4" />
+                  ))}
+                </div>
+                <div className="h-14 bg-white/10 rounded-xl" />
+              </div>
+            ))}
+          </div>
+        ) : error || plans.length === 0 ? (
+          /* Fallback: single featured plan */
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid grid-cols-1 max-w-lg mx-auto gap-8">
+            <motion.div variants={fadeIn} className="bg-white/5 p-10 md:p-12 rounded-3xl border-2 border-[#09b2ac] shadow-[0_0_40px_rgba(9,178,172,0.15)] relative overflow-hidden group">
+              <div className="absolute top-6 right-0 bg-[#09b2ac] text-white px-8 py-2 font-bold text-xs tracking-widest uppercase">Populaire</div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#09b2ac]/10 rounded-full translate-x-16 -translate-y-16 blur-2xl" />
+              <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">Accès Premium</h3>
+              <p className="text-slate-400 mb-8 text-sm">Contactez-nous pour les tarifs actuels.</p>
+              <button onClick={goAuth} className="w-full py-4 rounded-xl bg-[#09b2ac] text-white font-bold font-['Manrope'] hover:shadow-lg hover:bg-[#0d9488] hover:shadow-[#09b2ac]/30 transition-all relative z-10">
+                Commencer maintenant
+              </button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          /* Dynamic plans from database */
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className={`grid ${gridCols} gap-8 md:gap-10`}>
+            {plans.map((plan) => {
+              const features = plan.is_featured ? PLAN_FEATURES_FEATURED : PLAN_FEATURES_DEFAULT
+
+              return (
+                <motion.div
+                  key={plan.id}
+                  variants={fadeIn}
+                  className={`bg-white/5 p-10 md:p-12 rounded-3xl relative overflow-hidden group transition-all ${
+                    plan.is_featured
+                      ? 'border-2 border-[#09b2ac] shadow-[0_0_40px_rgba(9,178,172,0.15)]'
+                      : 'border border-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  {/* Featured badge */}
+                  {plan.is_featured && (
+                    <>
+                      <div className="absolute top-6 right-0 bg-[#09b2ac] text-white px-8 py-2 font-bold text-xs tracking-widest uppercase">Populaire</div>
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#09b2ac]/10 rounded-full translate-x-16 -translate-y-16 blur-2xl" />
+                    </>
+                  )}
+
+                  {/* Plan name */}
+                  <h3 className="text-2xl font-bold font-['Manrope'] text-white mb-2">{plan.name}</h3>
+                  <p className="text-slate-400 mb-8 text-sm">
+                    {plan.description || `Accès pendant ${formatDuration(plan.duration_days)}`}
+                  </p>
+
+                  {/* Price */}
+                  <div className={`flex items-baseline gap-2 mb-8 ${plan.is_featured ? 'relative z-10' : ''}`}>
+                    <span className="text-5xl font-extrabold text-white">{plan.price}</span>
+                    <span className="text-slate-400 font-bold uppercase tracking-widest text-sm">DA</span>
+                  </div>
+
+                  {/* Features */}
+                  <ul className={`space-y-5 mb-10 ${plan.is_featured ? 'relative z-10' : ''}`}>
+                    {features.map((feature, i) => (
+                      <li key={i} className={`flex items-start gap-4 text-slate-300 ${plan.is_featured && i === 0 ? 'font-bold' : ''}`}>
+                        <CheckCircle2 className="text-[#09b2ac] flex-shrink-0" size={20} />
+                        <span dangerouslySetInnerHTML={{ __html: feature }} />
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA Button */}
+                  {plan.is_featured ? (
+                    <button onClick={goAuth} className="w-full py-4 rounded-xl bg-[#09b2ac] text-white font-bold font-['Manrope'] hover:shadow-lg hover:bg-[#0d9488] hover:shadow-[#09b2ac]/30 transition-all relative z-10">
+                      Commencer maintenant
+                    </button>
+                  ) : (
+                    <button onClick={goAuth} className="w-full py-4 rounded-xl border border-[#09b2ac]/50 text-[#09b2ac] font-bold font-['Manrope'] hover:bg-[#09b2ac] hover:text-white transition-all">
+                      Choisir cette offre
+                    </button>
+                  )}
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        )}
+      </div>
+    </section>
   )
 }
