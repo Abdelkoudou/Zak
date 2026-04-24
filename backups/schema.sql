@@ -875,7 +875,6 @@ CREATE TABLE IF NOT EXISTS "public"."club_registrations" (
     "phone" "text" NOT NULL,
     "faculty" "text" NOT NULL,
     "year_of_study" "text" NOT NULL,
-    "department" "text",
     "motivation" "text" NOT NULL,
     "skills" "text",
     "previous_experience" "text",
@@ -884,6 +883,9 @@ CREATE TABLE IF NOT EXISTS "public"."club_registrations" (
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "linkedin_url" "text",
     "portfolio_url" "text",
+    "matricule" "text",
+    "university" "text",
+    "interested_departments" "text"[],
     CONSTRAINT "club_registrations_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'approved'::"text", 'rejected'::"text"])))
 );
 
